@@ -9,6 +9,7 @@ class tracker
 {
 public:
 	tracker();
+	~tracker();
 	void spin();
 private:
 	std::string topicPath;
@@ -16,12 +17,15 @@ private:
 	std::string frameRobot;
 	double hz;
 	double lookForward;
+	double curvForward;
 	double k[3];
 	double d_lim;
 	double vel[2];
 	double acc[2];
 	double w;
 	double v;
+	double dec;
+	int pathStep;
 
 	ros::NodeHandle nh;
 	ros::Subscriber subPath;
@@ -65,17 +69,27 @@ tracker::tracker():
 	nh.param("cmd_vel", topicCmdVel, std::string("cmd_vel"));
 	nh.param("hz", hz, 50.0);
 	nh.param("look_forward", lookForward, 1.0);
+	nh.param("curv_forward", curvForward, 0.5);
 	nh.param("k_dist", k[0], 1.0);
 	nh.param("k_ang", k[1], 1.0);
 	nh.param("k_avel", k[2], 1.0);
+	nh.param("k_dcel", dec, 0.2);
 	nh.param("dist_lim", d_lim, 0.5);
 	nh.param("max_vel", vel[0], 0.5);
 	nh.param("max_angvel", vel[1], 1.0);
 	nh.param("max_acc", acc[0], 1.0);
 	nh.param("max_angacc", acc[1], 2.0);
+	nh.param("path_step", pathStep, 2);
 
 	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
 	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
+}
+tracker::~tracker()
+{
+	geometry_msgs::Twist cmd_vel;
+	cmd_vel.linear.x = 0;
+	cmd_vel.angular.z = 0;
+	pubVel.publish(cmd_vel);
 }
 
 float dist2d(geometry_msgs::Point &a, geometry_msgs::Point &b)
@@ -181,15 +195,18 @@ void tracker::control()
 		pubVel.publish(cmd_vel);
 		return;
 	}
-	nav_msgs::Path lpath = path;
+	nav_msgs::Path lpath;
+	lpath.header = path.header;
 	try
 	{
 		ros::Time now = ros::Time(0);
 		tf.waitForTransform(frameRobot, path.header.frame_id, now, ros::Duration(0.2));
 
-		for(int i = 0; i < path.poses.size(); i ++)
+		for(int i = 0; i < path.poses.size(); i += pathStep)
 		{
-			tf.transformPose(frameRobot, now, path.poses[i], path.header.frame_id, lpath.poses[i]);
+			geometry_msgs::PoseStamped pose;
+			tf.transformPose(frameRobot, now, path.poses[i], path.header.frame_id, pose);
+			lpath.poses.push_back(pose);
 		}
 	}
 	catch (tf::TransformException &e)
@@ -200,9 +217,8 @@ void tracker::control()
 	float minDist = FLT_MAX;
 	int iclose = 0;
 	geometry_msgs::Point origin;
-	for(int i = 0; i < path.poses.size(); i ++)
+	for(int i = 1; i < lpath.poses.size(); i ++)
 	{
-		if(i < 1) continue;
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
 		if(d < minDist)
 		{
@@ -211,7 +227,6 @@ void tracker::control()
 		}
 	}
 	if(iclose < 1) return;
-
 	// Signed distance error
 	float dist = dist2d_line(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
 	
@@ -223,9 +238,9 @@ void tracker::control()
 	average<float> curv;
 	geometry_msgs::Point posLine = projection2d(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
 	float remain = dist2d(lpath.poses.back().pose.position, posLine);
-	for(int i = iclose + 1; i < path.poses.size() - 1; i ++)
+	for(int i = iclose + 1; i < lpath.poses.size() - 1; i ++)
 	{
-		if(dist2d(lpath.poses[i].pose.position, posLine) > lookForward) break;
+		if(dist2d(lpath.poses[i].pose.position, posLine) > curvForward) break;
 		if(i > 2)
 			curv += curv3p(lpath.poses[i-2].pose.position, lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
 		else

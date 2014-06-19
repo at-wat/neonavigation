@@ -1,6 +1,8 @@
 <launch>
-	<rosparam param="footprint" ns="/move_base/global_costmap">[[0.5,-0.5], [0.5,0.5], [-0.6,0.5], [-0.6,-0.5]]</rosparam>
-	<rosparam param="footprint" ns="/move_base/local_costmap">[[0.5,-0.5], [0.5,0.5], [-0.6,0.5], [-0.6,-0.5]]</rosparam>
+	<rosparam param="footprint" ns="/move_base/global_costmap">
+[[0.5,-0.45], [0.5,0.3], [0.15,0.37], [-0.15,0.37], [-0.75,0.35], [-0.75,-0.35], [-0.15,-0.37], [0.15,-0.37], [0.2,-0.45]]</rosparam>
+	<rosparam param="footprint" ns="/move_base/local_costmap">
+[[0.5,-0.45], [0.5,0.3], [0.15,0.37], [-0.15,0.37], [-0.75,0.35], [-0.75,-0.35], [-0.15,-0.37], [0.15,-0.37], [0.2,-0.45]]</rosparam>
 
 	<node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
 		<rosparam file="$(find trajectory_tracker)/config/move_base_params.yaml" command="load" />
@@ -12,15 +14,16 @@
 	<node pkg="trajectory_tracker" type="trajectory_tracker" name="spur" output="screen">
 		<param name="cmd_vel" value="/limiter/cmd_vel" type="string" />
 		<param name="path" value="/move_base/NavfnROS/plan" type="string" />
+		<param name="path_step" value="10" type="int" />
 
-		<param name="max_vel" value="1.4" type="double" />
+		<param name="max_vel" value="0.8" type="double" />
 		<param name="max_angvel" value="1.5" type="double" />
-		<param name="max_acc" value="0.5" type="double" />
+		<param name="max_acc" value="0.3" type="double" />
 		<param name="max_angacc" value="3" type="double" />
 
-		<param name="look_forward" value="0.5" type="double" />
-		<param name="k_dist" value="2" type="double" />
-		<param name="k_ang" value="6" type="double" />
+		<param name="curv_forward" value="0.5" type="double" />
+		<param name="k_dist" value="7" type="double" />
+		<param name="k_ang" value="10" type="double" />
 		<param name="k_avel" value="4" type="double" />
 		<param name="dist_lim" value="0.6" type="double" />
 	</node>
