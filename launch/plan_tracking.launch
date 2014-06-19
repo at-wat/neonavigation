@@ -1,0 +1,27 @@
+<launch>
+	<rosparam param="footprint" ns="/move_base/global_costmap">[[0.5,-0.5], [0.5,0.5], [-0.6,0.5], [-0.6,-0.5]]</rosparam>
+	<rosparam param="footprint" ns="/move_base/local_costmap">[[0.5,-0.5], [0.5,0.5], [-0.6,0.5], [-0.6,-0.5]]</rosparam>
+
+	<node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+		<rosparam file="$(find trajectory_tracker)/config/move_base_params.yaml" command="load" />
+		<rosparam file="$(find trajectory_tracker)/config/global_costmap_params.yaml" command="load" />
+		<rosparam file="$(find trajectory_tracker)/config/local_costmap_params.yaml" command="load" />
+		<rosparam file="$(find trajectory_tracker)/config/navfn_params.yaml" command="load" />
+		<remap from="/cmd_vel" to="/trajectory_tracker/cmd_vel" />
+	</node>
+	<node pkg="trajectory_tracker" type="trajectory_tracker" name="spur" output="screen">
+		<param name="cmd_vel" value="/limiter/cmd_vel" type="string" />
+		<param name="path" value="/move_base/NavfnROS/plan" type="string" />
+
+		<param name="max_vel" value="1.4" type="double" />
+		<param name="max_angvel" value="1.5" type="double" />
+		<param name="max_acc" value="0.5" type="double" />
+		<param name="max_angacc" value="3" type="double" />
+
+		<param name="look_forward" value="0.5" type="double" />
+		<param name="k_dist" value="2" type="double" />
+		<param name="k_ang" value="6" type="double" />
+		<param name="k_avel" value="4" type="double" />
+		<param name="dist_lim" value="0.6" type="double" />
+	</node>
+</launch>
