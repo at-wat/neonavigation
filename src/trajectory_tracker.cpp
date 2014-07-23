@@ -20,6 +20,7 @@ private:
 	double curvForward;
 	double k[3];
 	double d_lim;
+	double d_stop;
 	double vel[2];
 	double acc[2];
 	double w;
@@ -42,7 +43,8 @@ template<typename T>
 class average
 {
 public:
-	average()
+	average():
+		sum()
 	{
 		num = 0;
 	};
@@ -75,6 +77,7 @@ tracker::tracker():
 	nh.param("k_avel", k[2], 1.0);
 	nh.param("k_dcel", dec, 0.2);
 	nh.param("dist_lim", d_lim, 0.5);
+	nh.param("dist_stop", d_stop, 2.0);
 	nh.param("max_vel", vel[0], 0.5);
 	nh.param("max_angvel", vel[1], 1.0);
 	nh.param("max_acc", acc[0], 1.0);
@@ -202,7 +205,7 @@ void tracker::control()
 		ros::Time now = ros::Time(0);
 		tf.waitForTransform(frameRobot, path.header.frame_id, now, ros::Duration(0.2));
 
-		for(int i = 0; i < path.poses.size(); i += pathStep)
+		for(int i = 0; i < (int)path.poses.size(); i += pathStep)
 		{
 			geometry_msgs::PoseStamped pose;
 			tf.transformPose(frameRobot, now, path.poses[i], path.header.frame_id, pose);
@@ -217,7 +220,7 @@ void tracker::control()
 	float minDist = FLT_MAX;
 	int iclose = 0;
 	geometry_msgs::Point origin;
-	for(int i = 1; i < lpath.poses.size(); i ++)
+	for(int i = 1; i < (int)lpath.poses.size(); i ++)
 	{
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
 		if(d < minDist)
@@ -238,7 +241,7 @@ void tracker::control()
 	average<float> curv;
 	geometry_msgs::Point posLine = projection2d(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
 	float remain = dist2d(lpath.poses.back().pose.position, posLine);
-	for(int i = iclose + 1; i < lpath.poses.size() - 1; i ++)
+	for(int i = iclose + 1; i < (int)lpath.poses.size() - 1; i ++)
 	{
 		if(dist2d(lpath.poses[i].pose.position, posLine) > curvForward) break;
 		if(i > 2)
@@ -246,11 +249,19 @@ void tracker::control()
 		else
 			curv += 0.0;
 	}
-	if(iclose + 1 >= path.poses.size())
+	if(iclose + 1 >= (int)path.poses.size())
 	{
 		remain = -dist2d(lpath.poses[iclose].pose.position, posLine);
 	}
 	printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
+	if(fabs(dist) > d_stop)
+	{
+		geometry_msgs::Twist cmd_vel;
+		cmd_vel.linear.x = 0;
+		cmd_vel.angular.z = 0;
+		pubVel.publish(cmd_vel);
+		return;
+	}
 
 	if(dist < -d_lim) dist = -d_lim;
 	else if(dist > d_lim) dist = d_lim;
