@@ -55,23 +55,41 @@ bool server::change(trajectory_tracker::ChangePath::Request &req,
 void server::spin()
 {
 	ros::Rate loop_rate(hz);
+	int seq = 0;
 
 	while(ros::ok())
 	{
 		if(!load)
 		{
-			std::ifstream ifs(filename.c_str());
-			ifs.seekg(0, ifs.end);
-			int serial_size = ifs.tellg();
-			ifs.seekg(0, ifs.beg);
-			boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
-			ifs.read((char*)buffer.get(), serial_size);
+			if(filename.size() <= 0)
+			{
+				path.poses.clear();
+				path.header.frame_id = "map";
+			}
+			else
+			{
+				std::ifstream ifs(filename.c_str());
+				if(ifs.good())
+				{
+					ifs.seekg(0, ifs.end);
+					int serial_size = ifs.tellg();
+					ifs.seekg(0, ifs.beg);
+					boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+					ifs.read((char*)buffer.get(), serial_size);
 
-			ros::serialization::IStream stream(buffer.get(), serial_size);
-			ros::serialization::deserialize(stream, path);
-
+					ros::serialization::IStream stream(buffer.get(), serial_size);
+					ros::serialization::deserialize(stream, path);
+				}
+				else
+				{
+					path.poses.clear();
+					path.header.frame_id = "map";
+				}
+			}
 			load = true;
 		}
+		path.header.stamp = ros::Time(0);
+		path.header.seq = seq;
 		pubPath.publish(path);
 		ros::spinOnce();
 		loop_rate.sleep();
