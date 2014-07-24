@@ -26,6 +26,7 @@ private:
 	double w;
 	double v;
 	double dec;
+	double rotate_ang;
 	int pathStep;
 
 	ros::NodeHandle nh;
@@ -78,6 +79,7 @@ tracker::tracker():
 	nh.param("k_dcel", dec, 0.2);
 	nh.param("dist_lim", d_lim, 0.5);
 	nh.param("dist_stop", d_stop, 2.0);
+	nh.param("rotate_ang", rotate_ang, M_PI / 4);
 	nh.param("max_vel", vel[0], 0.5);
 	nh.param("max_angvel", vel[1], 1.0);
 	nh.param("max_acc", acc[0], 1.0);
@@ -235,6 +237,15 @@ void tracker::control()
 	if(iclose < 1) return;
 	// Signed distance error
 	float dist = dist2d_line(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
+	float _dist = dist;
+	if(iclose == 0)
+	{
+		_dist = -dist2d(lpath.poses[iclose].pose.position, origin);
+	}
+	if(iclose + 1 >= (int)path.poses.size())
+	{
+		_dist = -dist2d(lpath.poses[iclose].pose.position, origin);
+	}
 	
 	// Angular error
 	geometry_msgs::Point vec = sub2d(lpath.poses[iclose].pose.position, lpath.poses[iclose-1].pose.position);
@@ -244,7 +255,7 @@ void tracker::control()
 	average<float> curv;
 	geometry_msgs::Point posLine = projection2d(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
 	float remain = dist2d(lpath.poses.back().pose.position, posLine);
-	for(int i = iclose + 1; i < (int)lpath.poses.size() - 1; i ++)
+	for(int i = iclose - 1; i < (int)lpath.poses.size() - 1; i ++)
 	{
 		if(dist2d(lpath.poses[i].pose.position, posLine) > curvForward) break;
 		if(i > 2)
@@ -256,15 +267,7 @@ void tracker::control()
 	{
 		remain = -dist2d(lpath.poses[iclose].pose.position, posLine);
 	}
-	printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
-	if(fabs(dist) > d_stop)
-	{
-		geometry_msgs::Twist cmd_vel;
-		cmd_vel.linear.x = 0;
-		cmd_vel.angular.z = 0;
-		pubVel.publish(cmd_vel);
-		return;
-	}
+	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
 
 	if(dist < -d_lim) dist = -d_lim;
 	else if(dist > d_lim) dist = d_lim;
@@ -294,6 +297,31 @@ void tracker::control()
 	if(!std::isfinite(v)) v = 0;
 	if(!std::isfinite(w)) w = 0;
 
+	// Too far from given path
+	if(fabs(_dist) > d_stop)
+	{
+		geometry_msgs::Twist cmd_vel;
+		cmd_vel.linear.x = 0;
+		cmd_vel.angular.z = 0;
+		pubVel.publish(cmd_vel);
+		//ROS_WARN("Far from given path");
+		return;
+	}
+	// Stop and rotate
+	if(fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle))
+	{
+		w = -sign(angle) * sqrtf(2 * fabs(angle) * acc[1] * 0.95);
+		v = 0;
+		if(v > vel[0]) v = vel[0];
+		else if(v < -vel[0]) v = -vel[0];
+		if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
+		else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
+		if(w > vel[1]) w = vel[1];
+		else if(w < -vel[1]) w = -vel[1];
+		if(w > _w + dt*acc[1]) w = _w + dt*acc[1];
+		else if(w < _w - dt*acc[1]) w = _w - dt*acc[1];
+		//ROS_WARN("Rotate");
+	}
 	cmd_vel.linear.x = v;
 	cmd_vel.angular.z = w;
 	pubVel.publish(cmd_vel);
