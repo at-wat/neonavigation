@@ -70,7 +70,7 @@ tracker::tracker():
 	nh.param("path", topicPath, std::string("path"));
 	nh.param("cmd_vel", topicCmdVel, std::string("cmd_vel"));
 	nh.param("hz", hz, 50.0);
-	nh.param("look_forward", lookForward, 1.0);
+	nh.param("look_forward", lookForward, 0.5);
 	nh.param("curv_forward", curvForward, 0.5);
 	nh.param("k_dist", k[0], 1.0);
 	nh.param("k_ang", k[1], 1.0);
@@ -202,9 +202,10 @@ void tracker::control()
 	lpath.header = path.header;
 	try
 	{
+		tf::StampedTransform transform;
 		ros::Time now = ros::Time(0);
-		tf.waitForTransform(frameRobot, path.header.frame_id, now, ros::Duration(0.2));
-
+		tf.waitForTransform(frameRobot, path.header.frame_id, now, ros::Duration(0.1));
+		
 		for(int i = 0; i < (int)path.poses.size(); i += pathStep)
 		{
 			geometry_msgs::PoseStamped pose;
@@ -220,6 +221,8 @@ void tracker::control()
 	float minDist = FLT_MAX;
 	int iclose = 0;
 	geometry_msgs::Point origin;
+	origin.x = cos(w * lookForward / 2) * v * lookForward;
+	origin.y = sin(w * lookForward / 2) * v * lookForward;
 	for(int i = 1; i < (int)lpath.poses.size(); i ++)
 	{
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
