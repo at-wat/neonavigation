@@ -28,6 +28,7 @@ private:
 	double v;
 	double dec;
 	double rotate_ang;
+	double angFactor;
 	double goalToleranceDist;
 	double goalToleranceAng;
 	int pathStep;
@@ -89,6 +90,7 @@ tracker::tracker():
 	nh.param("max_acc", acc[0], 1.0);
 	nh.param("max_angacc", acc[1], 2.0);
 	nh.param("path_step", pathStep, 2);
+	nh.param("distance_angle_factor", angFactor, 0.5);
 	nh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
 	nh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
 
@@ -165,8 +167,8 @@ float dist2d_line(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msg
 }
 float dist2d_linestrip(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msgs::Point &c)
 {
-	if(dot2d(sub2d(b, a), sub2d(c, a) ) <= 0) return dist2d(c, a);
-	if(dot2d(sub2d(a, b), sub2d(c, b) ) <= 0) return dist2d(c, b);
+	if(dot2d(sub2d(b, a), sub2d(c, a) ) <= 0) return -dist2d(c, a) - 0.001;
+	if(dot2d(sub2d(a, b), sub2d(c, b) ) <= 0) return -dist2d(c, b) - 0.001;
 	return fabs( dist2d_line(a, b, c) );
 }
 geometry_msgs::Point projection2d(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msgs::Point &c)
@@ -240,17 +242,20 @@ void tracker::control()
 	float minDist = FLT_MAX;
 	int iclose = 0;
 	geometry_msgs::Point origin;
-	origin.x = cos(w * lookForward / 2) * v * lookForward;
-	origin.y = sin(w * lookForward / 2) * v * lookForward;
+	origin.x = cos(w * lookForward / 2.0) * v * lookForward;
+	origin.y = sin(w * lookForward / 2.0) * v * lookForward;
+	// Find nearest line strip
+	bool outOfLineStrip = false;
 	for(int i = 1; i < (int)lpath.poses.size(); i ++)
 	{
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
-		if(d < minDist)
+		if(fabs(d) < fabs(minDist))
 		{
 			minDist = d;
 			iclose = i;
 		}
 	}
+	if(minDist < 0) outOfLineStrip = true;
 	if(iclose < 1)
 	{
 		status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
@@ -272,7 +277,14 @@ void tracker::control()
 	// Angular error
 	geometry_msgs::Point vec = sub2d(lpath.poses[iclose].pose.position, lpath.poses[iclose-1].pose.position);
 	float angle = -atan2(vec.y, vec.x);
-	
+	float anglePose = tf::getYaw(lpath.poses[iclose-1].pose.orientation);
+	float signVel = 1.0;
+	if(cos(-angle) * cos(anglePose) + sin(-angle) * sin(anglePose) < 0)
+	{
+		signVel = -1.0;
+		angle = angle + M_PI;
+		if(angle > M_PI) angle -= 2.0 * M_PI;
+	}
 	// Curvature
 	average<float> curv;
 	geometry_msgs::Point posLine = projection2d(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
@@ -281,13 +293,28 @@ void tracker::control()
 	{
 		if(dist2d(lpath.poses[i].pose.position, posLine) > curvForward) break;
 		if(i > 2)
+		{
+			geometry_msgs::Point vec = sub2d(lpath.poses[i-1].pose.position, 
+					lpath.poses[i-2].pose.position);
+			float angle = -atan2(vec.y, vec.x);
+			float anglePose = tf::getYaw(lpath.poses[i-1].pose.orientation);
+			float signVelPath = 1.0;
+			if(cos(-angle) * cos(anglePose) + sin(-angle) * sin(anglePose) < 0)
+				signVelPath = -1.0;
+			if(signVel * signVelPath < 0)
+			{
+				// Stop read forward if the path switched back
+				curv += 0.0;
+				break;
+			}
 			curv += curv3p(lpath.poses[i-2].pose.position, lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
+		}
 		else
 			curv += 0.0;
 	}
-	if(iclose + 1 >= (int)path.poses.size())
+	if(iclose + 1 >= (int)path.poses.size() && outOfLineStrip)
 	{
-		remain = -dist2d(lpath.poses[iclose].pose.position, posLine);
+		remain = -remain;
 	}
 	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
 
@@ -297,7 +324,7 @@ void tracker::control()
 	float dt = 1/hz;
 	float _v = v;
 	
-	v = sign(remain) * sqrtf(2 * fabs(remain) * acc[0] * 0.95);
+	v = sign(remain) * signVel * sqrtf(2 * fabs(remain) * acc[0] * 0.95);
 	if(fabs(remain) < 0.3) v = 0;
 	
 	if(v > vel[0]) v = vel[0];
@@ -305,7 +332,7 @@ void tracker::control()
 	if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
 	else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
 
-	float wref = v * curv;
+	float wref = v * signVel * curv;
 	float _w = w;
 	
 	w += dt * (-dist*k[0] -angle*k[1] -(w - wref)*k[2]);
