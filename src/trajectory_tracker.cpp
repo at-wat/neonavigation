@@ -29,14 +29,18 @@ private:
 	double dec;
 	double rotate_ang;
 	double angFactor;
+	double swDist;
 	double goalToleranceDist;
 	double goalToleranceAng;
 	int pathStep;
+	int pathStepDone;
+	bool outOfLineStrip;
 
 	ros::NodeHandle nh;
 	ros::Subscriber subPath;
 	ros::Publisher pubVel;
 	ros::Publisher pubStatus;
+	ros::Publisher pubTracking;
 	tf::TransformListener tf;
 
 	nav_msgs::Path path;
@@ -89,14 +93,16 @@ tracker::tracker():
 	nh.param("max_angvel", vel[1], 1.0);
 	nh.param("max_acc", acc[0], 1.0);
 	nh.param("max_angacc", acc[1], 2.0);
-	nh.param("path_step", pathStep, 2);
-	nh.param("distance_angle_factor", angFactor, 0.5);
+	nh.param("path_step", pathStep, 1);
+	nh.param("distance_angle_factor", angFactor, 0.0);
+	nh.param("switchback_dist", swDist, 0.3);
 	nh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
 	nh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
 
 	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
 	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
 	pubStatus = nh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
+	pubTracking = nh.advertise<geometry_msgs::PoseStamped>("tracking", 10);
 }
 tracker::~tracker()
 {
@@ -167,7 +173,7 @@ float dist2d_line(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msg
 }
 float dist2d_linestrip(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msgs::Point &c)
 {
-	if(dot2d(sub2d(b, a), sub2d(c, a) ) <= 0) return -dist2d(c, a) - 0.001;
+	if(dot2d(sub2d(b, a), sub2d(c, a) ) <= 0) return dist2d(c, a) + 0.001;
 	if(dot2d(sub2d(a, b), sub2d(c, b) ) <= 0) return -dist2d(c, b) - 0.001;
 	return fabs( dist2d_line(a, b, c) );
 }
@@ -184,6 +190,7 @@ geometry_msgs::Point projection2d(geometry_msgs::Point &a, geometry_msgs::Point 
 void tracker::cbPath(const nav_msgs::Path::ConstPtr& msg)
 {
 	path = *msg;
+	pathStepDone = 0;
 }
 
 void tracker::spin()
@@ -217,6 +224,7 @@ void tracker::control()
 		pubStatus.publish(status);
 		return;
 	}
+	// Transform
 	nav_msgs::Path lpath;
 	lpath.header = path.header;
 	try
@@ -245,11 +253,15 @@ void tracker::control()
 	origin.x = cos(w * lookForward / 2.0) * v * lookForward;
 	origin.y = sin(w * lookForward / 2.0) * v * lookForward;
 	// Find nearest line strip
-	bool outOfLineStrip = false;
-	for(int i = 1; i < (int)lpath.poses.size(); i ++)
+	outOfLineStrip = false;
+	for(int i = pathStepDone; i < (int)lpath.poses.size(); i ++)
 	{
+		if(i <= 1) continue;
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
-		if(fabs(d) < fabs(minDist))
+		float anglePose = tf::getYaw(lpath.poses[i-1].pose.orientation);
+		float dplus = (1 - cosf(anglePose)) * 0.5 * angFactor * sign(v);
+		if(fabs(v) < 0.001) dplus = 0;
+		if(fabs(d) + dplus < fabs(minDist))
 		{
 			minDist = d;
 			iclose = i;
@@ -277,7 +289,7 @@ void tracker::control()
 	// Angular error
 	geometry_msgs::Point vec = sub2d(lpath.poses[iclose].pose.position, lpath.poses[iclose-1].pose.position);
 	float angle = -atan2(vec.y, vec.x);
-	float anglePose = tf::getYaw(lpath.poses[iclose-1].pose.orientation);
+	float anglePose = tf::getYaw(lpath.poses[iclose].pose.orientation);
 	float signVel = 1.0;
 	if(cos(-angle) * cos(anglePose) + sin(-angle) * sin(anglePose) < 0)
 	{
@@ -288,7 +300,6 @@ void tracker::control()
 	// Curvature
 	average<float> curv;
 	geometry_msgs::Point posLine = projection2d(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
-	float remain = dist2d(lpath.poses.back().pose.position, posLine);
 	for(int i = iclose - 1; i < (int)lpath.poses.size() - 1; i ++)
 	{
 		if(dist2d(lpath.poses[i].pose.position, posLine) > curvForward) break;
@@ -312,20 +323,31 @@ void tracker::control()
 		else
 			curv += 0.0;
 	}
-	if(iclose + 1 >= (int)path.poses.size() && outOfLineStrip)
+	float remain = dist2d(origin, lpath.poses[iclose+1].pose.position);
+	for(int i = iclose+1; i < (int)lpath.poses.size() - 1; i ++)
 	{
-		remain = -remain;
+		remain += dist2d(lpath.poses[i].pose.position, lpath.poses[i+1].pose.position);
+	}
+	float remainLocal = remain;
+	if(outOfLineStrip)
+	{
+		remainLocal = -dist2d(origin, lpath.poses[iclose+1].pose.position);
+		if(iclose + 1 >= (int)path.poses.size())
+		{
+			remain = remainLocal;
+		}
 	}
 	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
 
+	// Control
 	if(dist < -d_lim) dist = -d_lim;
 	else if(dist > d_lim) dist = d_lim;
 
 	float dt = 1/hz;
 	float _v = v;
 	
-	v = sign(remain) * signVel * sqrtf(2 * fabs(remain) * acc[0] * 0.95);
-	if(fabs(remain) < 0.3) v = 0;
+	v = sign(remainLocal) * signVel * sqrtf(2 * fabs(remainLocal) * acc[0] * 0.95);
+	if(fabs(remainLocal) < goalToleranceDist) v = 0;
 	
 	if(v > vel[0]) v = vel[0];
 	else if(v < -vel[0]) v = -vel[0];
@@ -386,6 +408,15 @@ void tracker::control()
 		status.status = trajectory_tracker::TrajectoryTrackerStatus::GOAL;
 	}
 	pubStatus.publish(status);
+	geometry_msgs::PoseStamped tracking;
+	tracking.header = status.header;
+	tracking.header.frame_id = frameRobot;
+	tracking.pose.position = posLine;
+	tracking.pose.orientation = lpath.poses[iclose].pose.orientation;
+	pubTracking.publish(tracking);
+
+	pathStepDone = iclose;
+	if(pathStepDone < 0) pathStepDone = 0;
 }
 
 

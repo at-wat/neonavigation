@@ -26,5 +26,6 @@
 		<param name="k_ang" value="10" type="double" />
 		<param name="k_avel" value="4" type="double" />
 		<param name="dist_lim" value="0.6" type="double" />
+		<param name="distance_angle_factor" value="0.5" type="double" />
 	</node>
 </launch>
