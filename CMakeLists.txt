@@ -5,7 +5,7 @@ project(trajectory_tracker)
 find_package(catkin REQUIRED COMPONENTS roscpp rospy nav_msgs geometry_msgs tf)
 
 add_service_files(FILES ChangePath.srv)
-add_message_files(FILES TrajectoryTrackerStatus.msg)
+add_message_files(FILES TrajectoryTrackerStatus.msg TrajectoryServerStatus.msg)
 generate_messages(DEPENDENCIES std_msgs)
 
 ## Declare a catkin package

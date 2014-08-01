@@ -7,6 +7,7 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <trajectory_tracker/ChangePath.h>
+#include <trajectory_tracker/TrajectoryServerStatus.h>
 
 class server
 {
@@ -14,81 +15,105 @@ public:
 	server();
 	~server();
 	void spin();
-	void loadPath();
-	bool change(trajectory_tracker::ChangePath::Request &req,
-			trajectory_tracker::ChangePath::Response &res);
 private:
 	ros::NodeHandle nh;
 	ros::Publisher pubPath;
+	ros::Publisher pubStatus;
 	tf::TransformListener tf;
 	ros::ServiceServer srvChangePath;
 
 	nav_msgs::Path path;
 	std::string topicPath;
-	std::string filename;
+	trajectory_tracker::ChangePath::Request reqPath;
 	double hz;
 	bool load;
+	boost::shared_array<uint8_t> buffer;
+	int serial_size;
+	
+	bool loadFile();
+	void loadPath();
+	bool change(trajectory_tracker::ChangePath::Request &req,
+			trajectory_tracker::ChangePath::Response &res);
 };
 
 server::server():
-	nh("~"), load(false)
+	nh("~"), load(false),
+	buffer(new uint8_t[1024])
 {
 	nh.param("path", topicPath, std::string("path"));
-	nh.param("file", filename, std::string("a.path"));
+	nh.param("file", reqPath.filename, std::string("a.path"));
 	nh.param("hz", hz, double(5));
 
 	pubPath = nh.advertise<nav_msgs::Path>(topicPath, 2, true);
+	pubStatus = nh.advertise<trajectory_tracker::TrajectoryServerStatus>("status", 2);
 	srvChangePath = nh.advertiseService("ChangePath", &server::change, this);
 }
 server::~server()
 {
 }
 
+bool server::loadFile()
+{
+	std::ifstream ifs(reqPath.filename.c_str());
+	if(ifs.good())
+	{
+		ifs.seekg(0, ifs.end);
+		serial_size = ifs.tellg();
+		ifs.seekg(0, ifs.beg);
+		buffer.reset(new uint8_t[serial_size]);
+		ifs.read((char*)buffer.get(), serial_size);
+		return true;
+	}
+	return false;
+}
+
 bool server::change(trajectory_tracker::ChangePath::Request &req,
 		trajectory_tracker::ChangePath::Response &res)
 {
-	filename = req.filename;
-	load = false;
+	reqPath = req;
+	res.success = false;
+
+	if(loadFile())
+	{
+		load = false;
+		res.success = true;
+	}
+	else
+	{
+		serial_size = 0;
+		reqPath.filename = "";
+	}
 	return true;
 }
 
 void server::spin()
 {
 	ros::Rate loop_rate(hz);
+	trajectory_tracker::TrajectoryServerStatus status;
 
 	while(ros::ok())
 	{
 		if(!load)
 		{
-			if(filename.size() <= 0)
+			if(reqPath.filename.size() <= 0)
 			{
 				path.poses.clear();
 				path.header.frame_id = "map";
 			}
 			else
 			{
-				std::ifstream ifs(filename.c_str());
-				if(ifs.good())
-				{
-					ifs.seekg(0, ifs.end);
-					int serial_size = ifs.tellg();
-					ifs.seekg(0, ifs.beg);
-					boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
-					ifs.read((char*)buffer.get(), serial_size);
-
-					ros::serialization::IStream stream(buffer.get(), serial_size);
-					ros::serialization::deserialize(stream, path);
-				}
-				else
-				{
-					path.poses.clear();
-					path.header.frame_id = "map";
-				}
+				ros::serialization::IStream stream(buffer.get(), serial_size);
+				ros::serialization::deserialize(stream, path);
 			}
 			load = true;
 		}
-		path.header.stamp = ros::Time(0);
+		path.header.stamp = ros::Time::now();
 		pubPath.publish(path);
+
+		status.header = path.header;
+		status.filename = reqPath.filename;
+		status.id = reqPath.id;
+		pubStatus.publish(status);
 		ros::spinOnce();
 		loop_rate.sleep();
 	}
