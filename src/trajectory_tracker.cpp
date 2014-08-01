@@ -28,6 +28,8 @@ private:
 	double v;
 	double dec;
 	double rotate_ang;
+	double goalToleranceDist;
+	double goalToleranceAng;
 	int pathStep;
 
 	ros::NodeHandle nh;
@@ -87,6 +89,8 @@ tracker::tracker():
 	nh.param("max_acc", acc[0], 1.0);
 	nh.param("max_angacc", acc[1], 2.0);
 	nh.param("path_step", pathStep, 2);
+	nh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
+	nh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
 
 	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
 	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
@@ -349,6 +353,11 @@ void tracker::control()
 	cmd_vel.angular.z = w;
 	pubVel.publish(cmd_vel);
 	status.status = trajectory_tracker::TrajectoryTrackerStatus::FOLLOWING;
+	if(fabs(status.distance_remains) < goalToleranceDist &&
+			fabs(status.angle_remains) < goalToleranceAng)
+	{
+		status.status = trajectory_tracker::TrajectoryTrackerStatus::GOAL;
+	}
 	pubStatus.publish(status);
 }
 
