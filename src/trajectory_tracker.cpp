@@ -2,6 +2,7 @@
 #include <math.h>
 
 #include <geometry_msgs/Twist.h>
+#include <trajectory_tracker/TrajectoryTrackerStatus.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_listener.h>
 
@@ -32,6 +33,7 @@ private:
 	ros::NodeHandle nh;
 	ros::Subscriber subPath;
 	ros::Publisher pubVel;
+	ros::Publisher pubStatus;
 	tf::TransformListener tf;
 
 	nav_msgs::Path path;
@@ -88,6 +90,7 @@ tracker::tracker():
 
 	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
 	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
+	pubStatus = nh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
 }
 tracker::~tracker()
 {
@@ -191,6 +194,12 @@ void tracker::spin()
 
 void tracker::control()
 {
+	trajectory_tracker::TrajectoryTrackerStatus status;
+	status.header.stamp = ros::Time::now();
+	status.header.seq = path.header.seq;
+	status.distance_remains = 0.0;
+	status.angle_remains = 0.0;
+
 	if(path.header.frame_id.size() == 0 ||
 			path.poses.size() < 3)
 	{
@@ -198,6 +207,8 @@ void tracker::control()
 		cmd_vel.linear.x = 0;
 		cmd_vel.angular.z = 0;
 		pubVel.publish(cmd_vel);
+		status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
+		pubStatus.publish(status);
 		return;
 	}
 	nav_msgs::Path lpath;
@@ -218,6 +229,8 @@ void tracker::control()
 	catch (tf::TransformException &e)
 	{
 		ROS_WARN("TF exception: %s", e.what());
+		status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
+		pubStatus.publish(status);
 		return;
 	}
 	float minDist = FLT_MAX;
@@ -234,7 +247,12 @@ void tracker::control()
 			iclose = i;
 		}
 	}
-	if(iclose < 1) return;
+	if(iclose < 1)
+	{
+		status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
+		pubStatus.publish(status);
+		return;
+	}
 	// Signed distance error
 	float dist = dist2d_line(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
 	float _dist = dist;
@@ -297,6 +315,9 @@ void tracker::control()
 	if(!std::isfinite(v)) v = 0;
 	if(!std::isfinite(w)) w = 0;
 
+	status.distance_remains = remain;
+	status.angle_remains = angle;
+
 	// Too far from given path
 	if(fabs(_dist) > d_stop)
 	{
@@ -305,6 +326,8 @@ void tracker::control()
 		cmd_vel.angular.z = 0;
 		pubVel.publish(cmd_vel);
 		//ROS_WARN("Far from given path");
+		status.status = trajectory_tracker::TrajectoryTrackerStatus::FAR_FROM_PATH;
+		pubStatus.publish(status);
 		return;
 	}
 	// Stop and rotate
@@ -325,6 +348,8 @@ void tracker::control()
 	cmd_vel.linear.x = v;
 	cmd_vel.angular.z = w;
 	pubVel.publish(cmd_vel);
+	status.status = trajectory_tracker::TrajectoryTrackerStatus::FOLLOWING;
+	pubStatus.publish(status);
 }
 
 

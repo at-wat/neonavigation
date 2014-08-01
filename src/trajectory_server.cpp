@@ -55,7 +55,6 @@ bool server::change(trajectory_tracker::ChangePath::Request &req,
 void server::spin()
 {
 	ros::Rate loop_rate(hz);
-	int seq = 0;
 
 	while(ros::ok())
 	{
@@ -89,7 +88,6 @@ void server::spin()
 			load = true;
 		}
 		path.header.stamp = ros::Time(0);
-		path.header.seq = seq;
 		pubPath.publish(path);
 		ros::spinOnce();
 		loop_rate.sleep();
