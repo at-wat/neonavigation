@@ -26,7 +26,6 @@ private:
 	std::string topicPath;
 	trajectory_tracker::ChangePath::Request reqPath;
 	double hz;
-	bool load;
 	boost::shared_array<uint8_t> buffer;
 	int serial_size;
 	
@@ -37,7 +36,7 @@ private:
 };
 
 server::server():
-	nh("~"), load(false),
+	nh("~"),
 	buffer(new uint8_t[1024])
 {
 	nh.param("path", topicPath, std::string("path"));
@@ -75,13 +74,18 @@ bool server::change(trajectory_tracker::ChangePath::Request &req,
 
 	if(loadFile())
 	{
-		load = false;
 		res.success = true;
+		ros::serialization::IStream stream(buffer.get(), serial_size);
+		ros::serialization::deserialize(stream, path);
+		path.header.stamp = ros::Time::now();
+		pubPath.publish(path);
 	}
 	else
 	{
 		serial_size = 0;
 		reqPath.filename = "";
+		path.poses.clear();
+		path.header.frame_id = "map";
 	}
 	return true;
 }
@@ -93,23 +97,6 @@ void server::spin()
 
 	while(ros::ok())
 	{
-		if(!load)
-		{
-			if(reqPath.filename.size() <= 0)
-			{
-				path.poses.clear();
-				path.header.frame_id = "map";
-			}
-			else
-			{
-				ros::serialization::IStream stream(buffer.get(), serial_size);
-				ros::serialization::deserialize(stream, path);
-			}
-			load = true;
-		}
-		path.header.stamp = ros::Time::now();
-		pubPath.publish(path);
-
 		status.header = path.header;
 		status.filename = reqPath.filename;
 		status.id = reqPath.id;
