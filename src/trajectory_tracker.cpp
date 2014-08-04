@@ -4,6 +4,7 @@
 #include <geometry_msgs/Twist.h>
 #include <trajectory_tracker/TrajectoryTrackerStatus.h>
 #include <nav_msgs/Path.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/transform_listener.h>
 
 class tracker
@@ -15,6 +16,7 @@ public:
 private:
 	std::string topicPath;
 	std::string topicCmdVel;
+	std::string topicOdom;
 	std::string frameRobot;
 	double hz;
 	double lookForward;
@@ -38,14 +40,17 @@ private:
 
 	ros::NodeHandle nh;
 	ros::Subscriber subPath;
+	ros::Subscriber subOdom;
 	ros::Publisher pubVel;
 	ros::Publisher pubStatus;
 	ros::Publisher pubTracking;
 	tf::TransformListener tf;
 
 	nav_msgs::Path path;
+	nav_msgs::Odometry odom;
 
 	void cbPath(const nav_msgs::Path::ConstPtr& msg);
+	void cbOdom(const nav_msgs::Odometry::ConstPtr& msg);
 	void control();
 };
 
@@ -78,6 +83,7 @@ tracker::tracker():
 {
 	nh.param("frame_robot", frameRobot, std::string("base_link"));
 	nh.param("path", topicPath, std::string("path"));
+	nh.param("odom", topicOdom, std::string("odom"));
 	nh.param("cmd_vel", topicCmdVel, std::string("cmd_vel"));
 	nh.param("hz", hz, 50.0);
 	nh.param("look_forward", lookForward, 0.5);
@@ -100,6 +106,7 @@ tracker::tracker():
 	nh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
 
 	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
+	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
 	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
 	pubStatus = nh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
 	pubTracking = nh.advertise<geometry_msgs::PoseStamped>("tracking", 10);
@@ -173,8 +180,8 @@ float dist2d_line(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msg
 }
 float dist2d_linestrip(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msgs::Point &c)
 {
-	if(dot2d(sub2d(b, a), sub2d(c, a) ) <= 0) return dist2d(c, a) + 0.001;
-	if(dot2d(sub2d(a, b), sub2d(c, b) ) <= 0) return -dist2d(c, b) - 0.001;
+	if(dot2d(sub2d(b, a), sub2d(c, a) ) <= 0) return dist2d(c, a);
+	if(dot2d(sub2d(a, b), sub2d(c, b) ) <= 0) return -dist2d(c, b) - 0.005;
 	return fabs( dist2d_line(a, b, c) );
 }
 geometry_msgs::Point projection2d(geometry_msgs::Point &a, geometry_msgs::Point &b, geometry_msgs::Point &c)
@@ -186,6 +193,10 @@ geometry_msgs::Point projection2d(geometry_msgs::Point &a, geometry_msgs::Point 
 	return ret;
 }
 
+void tracker::cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
+{
+	odom = *msg;
+}
 
 void tracker::cbPath(const nav_msgs::Path::ConstPtr& msg)
 {
@@ -254,14 +265,14 @@ void tracker::control()
 	origin.y = sin(w * lookForward / 2.0) * v * lookForward;
 	// Find nearest line strip
 	outOfLineStrip = false;
+	float distancePath = 0;
 	for(int i = pathStepDone; i < (int)lpath.poses.size(); i ++)
 	{
 		if(i <= 1) continue;
+		distancePath += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
+		if(iclose > 0 && distancePath > 1.0) break;
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
-		float anglePose = tf::getYaw(lpath.poses[i-1].pose.orientation);
-		float dplus = (1 - cosf(anglePose)) * 0.5 * angFactor * sign(v);
-		if(fabs(v) < 0.001) dplus = 0;
-		if(fabs(d) + dplus < fabs(minDist))
+		if(fabs(d) < fabs(minDist))
 		{
 			minDist = d;
 			iclose = i;
@@ -337,6 +348,7 @@ void tracker::control()
 			remain = remainLocal;
 		}
 	}
+	//fprintf(stderr,"%d %d  %f %f  %f\n",outOfLineStrip, iclose, remain,remainLocal,minDist);
 	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
 
 	// Control
@@ -347,7 +359,7 @@ void tracker::control()
 	float _v = v;
 	
 	v = sign(remainLocal) * signVel * sqrtf(2 * fabs(remainLocal) * acc[0] * 0.95);
-	if(fabs(remainLocal) < goalToleranceDist) v = 0;
+	if(fabs(remainLocal) < goalToleranceDist / 3.0) v = 0;
 	
 	if(v > vel[0]) v = vel[0];
 	else if(v < -vel[0]) v = -vel[0];
