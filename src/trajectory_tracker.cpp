@@ -284,7 +284,7 @@ void tracker::control()
 			iclose = i;
 		}
 	}
-	if(minDist < 0) outOfLineStrip = true;
+	if(minDist < 0 && iclose == (int)lpath.poses.size()-1) outOfLineStrip = true;
 	if(iclose < 1)
 	{
 		status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
@@ -340,24 +340,11 @@ void tracker::control()
 		else
 			curv += 0.0;
 	}
-	float remain = dist2d(origin, lpath.poses[iclose+1].pose.position);
-	for(int i = iclose+1; i < (int)lpath.poses.size() - 1; i ++)
-	{
-		remain += dist2d(lpath.poses[i].pose.position, lpath.poses[i+1].pose.position);
-	}
-	if(distancePath < noPosCntlDist)
-	{
-		remain = 0;
-	}
-	float remainLocal = remain;
-	if(outOfLineStrip)
-	{
-		remainLocal = -dist2d(origin, lpath.poses[iclose+1].pose.position);
-		if(iclose + 1 >= (int)path.poses.size())
-		{
-			remain = remainLocal;
-		}
-	}
+	float remain;
+	float remainLocal;
+	remain = remainLocal = dist2d(origin, lpath.poses.back().pose.position);
+	if(outOfLineStrip) remain = remainLocal = -remain;
+	if(distancePath < noPosCntlDist) remain = remainLocal = 0;
 	//fprintf(stderr,"%d %d  %f %f  %f\n",outOfLineStrip, iclose, remain,remainLocal,minDist);
 	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
 
