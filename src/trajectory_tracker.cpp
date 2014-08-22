@@ -40,6 +40,7 @@ private:
 	int pathStep;
 	int pathStepDone;
 	bool outOfLineStrip;
+    bool allowBackward;
 
 	ros::NodeHandle nh;
 	ros::Subscriber subPath;
@@ -110,6 +111,7 @@ tracker::tracker():
 	nh.param("stop_tolerance_dist", stopToleranceDist, 0.1);
 	nh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
 	nh.param("no_position_control_dist", noPosCntlDist, 0.0);
+	nh.param("allow_backward", allowBackward, true);
 
 	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
 	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
@@ -306,7 +308,9 @@ void tracker::control()
 	// Angular error
 	geometry_msgs::Point vec = sub2d(lpath.poses[iclose].pose.position, lpath.poses[iclose-1].pose.position);
 	float angle = -atan2(vec.y, vec.x);
-	float anglePose = tf::getYaw(lpath.poses[iclose].pose.orientation);
+	float anglePose;
+    if(allowBackward) anglePose = tf::getYaw(lpath.poses[iclose].pose.orientation);
+    else anglePose = -angle;
 	float signVel = 1.0;
 	if(cos(-angle) * cos(anglePose) + sin(-angle) * sin(anglePose) < 0)
 	{
@@ -325,8 +329,10 @@ void tracker::control()
 			geometry_msgs::Point vec = sub2d(lpath.poses[i-1].pose.position, 
 					lpath.poses[i-2].pose.position);
 			float angle = -atan2(vec.y, vec.x);
-			float anglePose = tf::getYaw(lpath.poses[i-1].pose.orientation);
-			float signVelPath = 1.0;
+            float anglePose;
+            if(allowBackward) anglePose = tf::getYaw(lpath.poses[i-1].pose.orientation);
+            else anglePose = -angle;
+            float signVelPath = 1.0;
 			if(cos(-angle) * cos(anglePose) + sin(-angle) * sin(anglePose) < 0)
 				signVelPath = -1.0;
 			if(signVel * signVelPath < 0)
@@ -347,6 +353,8 @@ void tracker::control()
 	if(distancePath < noPosCntlDist) remain = remainLocal = 0;
 	//fprintf(stderr,"%d %d  %f %f  %f\n",outOfLineStrip, iclose, remain,remainLocal,minDist);
 	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
+    while(angle < -M_PI) angle += 2.0*M_PI;
+    while(angle > M_PI) angle -= 2.0*M_PI;
 
 	// Control
 	if(dist < -d_lim) dist = -d_lim;
