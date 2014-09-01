@@ -28,7 +28,7 @@ target_link_libraries(trajectory_recorder ${catkin_LIBRARIES})
 add_executable(trajectory_saver src/trajectory_saver.cpp)
 target_link_libraries(trajectory_saver ${catkin_LIBRARIES})
 
-add_executable(trajectory_server src/trajectory_server.cpp)
+add_executable(trajectory_server src/trajectory_server.cpp src/filter.cpp)
 target_link_libraries(trajectory_server ${catkin_LIBRARIES})
 add_dependencies(trajectory_server trajectory_tracker_gencpp)
 

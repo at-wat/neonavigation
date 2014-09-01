@@ -12,6 +12,8 @@
 #include <trajectory_tracker/TrajectoryServerStatus.h>
 #include <interactive_markers/interactive_marker_server.h>
 
+#include "filter.h"
+
 class server
 {
 public:
@@ -32,6 +34,8 @@ private:
 	double hz;
 	boost::shared_array<uint8_t> buffer;
 	int serial_size;
+    double filter_step;
+    filter *lpf[2];
 	
 	bool loadFile();
 	void loadPath();
@@ -57,6 +61,7 @@ server::server():
 	nh.param("path", topicPath, std::string("path"));
 	nh.param("file", reqPath.filename, std::string("a.path"));
 	nh.param("hz", hz, double(5));
+	nh.param("filter_step", filter_step, 0.0);
 
 	pubPath = nh.advertise<nav_msgs::Path>(topicPath, 2, true);
 	pubStatus = nh.advertise<trajectory_tracker::TrajectoryServerStatus>("status", 2);
@@ -78,6 +83,7 @@ bool server::loadFile()
 		ifs.seekg(0, ifs.beg);
 		buffer.reset(new uint8_t[serial_size]);
 		ifs.read((char*)buffer.get(), serial_size);
+    
 		return true;
 	}
 	return false;
@@ -192,6 +198,22 @@ bool server::change(trajectory_tracker::ChangePath::Request &req,
 		ros::serialization::IStream stream(buffer.get(), serial_size);
 		ros::serialization::deserialize(stream, path);
 		path.header.stamp = ros::Time::now();
+        if(filter_step > 0)
+        {
+            std::cout << filter_step << std::endl;
+            lpf[0] = new filter(FILTER_LPF, filter_step, path.poses[0].pose.position.x);
+            lpf[1] = new filter(FILTER_LPF, filter_step, path.poses[0].pose.position.y);
+		    
+            for(int i = 0; i < (int)path.poses.size(); i ++)
+            {
+                path.poses[i].pose.position.x = lpf[0]->in(path.poses[i].pose.position.x);
+                path.poses[i].pose.position.y = lpf[1]->in(path.poses[i].pose.position.y);
+            }
+
+            delete lpf[0];
+            delete lpf[1];
+        }
+
 		pubPath.publish(path);
 		updateIM();
 	}
