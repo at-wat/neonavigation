@@ -140,7 +140,7 @@ void server::updateIM()
 		mark.name = ss.str();
 		marker.ns = "Path";
 		marker.id = i;
-		marker.scale.x = -0.2;
+		marker.scale.x = 0.2;
 		marker.scale.y = 0.05;
 		marker.scale.z = 0.05;
 		marker.color.r = 1;
@@ -152,7 +152,7 @@ void server::updateIM()
 		ss << " ctl";
 		ctl.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, M_PI/2.0, 0.0);
 		ctl.interaction_mode = ctl.MOVE_ROTATE;
-		ctl.orientation_mode = ctl.FIXED;
+		ctl.orientation_mode = ctl.INHERIT;
 		ctl.always_visible = true;
 		ctl.markers.push_back(marker);
 		ctl.name = ss.str();
