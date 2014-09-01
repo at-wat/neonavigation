@@ -34,6 +34,9 @@ private:
 	double swDist;
 	double goalToleranceDist;
 	double goalToleranceAng;
+	double stopToleranceDist;
+	double stopToleranceAng;
+	double noPosCntlDist;
 	int pathStep;
 	int pathStepDone;
 	bool outOfLineStrip;
@@ -104,6 +107,9 @@ tracker::tracker():
 	nh.param("switchback_dist", swDist, 0.3);
 	nh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
 	nh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
+	nh.param("stop_tolerance_dist", stopToleranceDist, 0.1);
+	nh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
+	nh.param("no_position_control_dist", noPosCntlDist, 0.0);
 
 	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
 	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
@@ -339,6 +345,10 @@ void tracker::control()
 	{
 		remain += dist2d(lpath.poses[i].pose.position, lpath.poses[i+1].pose.position);
 	}
+	if(distancePath < noPosCntlDist)
+	{
+		remain = 0;
+	}
 	float remainLocal = remain;
 	if(outOfLineStrip)
 	{
@@ -359,7 +369,6 @@ void tracker::control()
 	float _v = v;
 	
 	v = sign(remainLocal) * signVel * sqrtf(2 * fabs(remainLocal) * acc[0] * 0.95);
-	if(fabs(remainLocal) < goalToleranceDist / 3.0) v = 0;
 	
 	if(v > vel[0]) v = vel[0];
 	else if(v < -vel[0]) v = -vel[0];
@@ -396,7 +405,8 @@ void tracker::control()
 		return;
 	}
 	// Stop and rotate
-	if(fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle))
+	if((fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle)) ||
+		fabs(status.distance_remains) < stopToleranceDist)
 	{
 		w = -sign(angle) * sqrtf(2 * fabs(angle) * acc[1] * 0.95);
 		v = 0;
@@ -410,6 +420,14 @@ void tracker::control()
 		else if(w < _w - dt*acc[1]) w = _w - dt*acc[1];
 		//ROS_WARN("Rotate");
 	}
+
+	if(fabs(status.distance_remains) < stopToleranceDist &&
+			fabs(status.angle_remains) < stopToleranceAng)
+	{
+		v = 0;
+		w = 0;
+	}
+
 	cmd_vel.linear.x = v;
 	cmd_vel.angular.z = w;
 	pubVel.publish(cmd_vel);
