@@ -274,11 +274,16 @@ void tracker::control()
 	// Find nearest line strip
 	outOfLineStrip = false;
 	float distancePath = 0;
+	for(int i = 0; i < (int)lpath.poses.size(); i ++)
+	{
+		distancePath += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
+	}
+	float distancePathSearch = 0;
 	for(int i = pathStepDone; i < (int)lpath.poses.size(); i ++)
 	{
+		distancePathSearch += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
 		if(i <= 1) continue;
-		distancePath += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
-		if(iclose > 0 && distancePath > 1.0) break;
+		if(iclose > 0 && distancePathSearch > 1.0) break;
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
 		if(fabs(d) < fabs(minDist))
 		{
