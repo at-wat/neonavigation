@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(trajectory_tracker)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy nav_msgs geometry_msgs tf interactive_markers)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy message_generation nav_msgs geometry_msgs tf interactive_markers)
 
 add_service_files(FILES ChangePath.srv)
 add_message_files(FILES TrajectoryTrackerStatus.msg TrajectoryServerStatus.msg)
@@ -10,7 +10,7 @@ generate_messages(DEPENDENCIES std_msgs)
 
 ## Declare a catkin package
 catkin_package(
-    DEPENDS roscpp std_msgs nav_msgs geometry_msgs tf interactive_markers
+    DEPENDS roscpp message_runtime std_msgs nav_msgs geometry_msgs tf interactive_markers
 )
 
 ## Build 
