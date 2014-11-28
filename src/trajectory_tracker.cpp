@@ -42,7 +42,6 @@ private:
 	bool outOfLineStrip;
     bool allowBackward;
 
-	ros::NodeHandle nh;
 	ros::Subscriber subPath;
 	ros::Subscriber subOdom;
 	ros::Publisher pubVel;
@@ -82,42 +81,42 @@ private:
 	int num;
 };
 
-tracker::tracker():
-	nh("~")
-{
-	nh.param("frame_robot", frameRobot, std::string("base_link"));
-	nh.param("path", topicPath, std::string("path"));
-	nh.param("odom", topicOdom, std::string("odom"));
-	nh.param("cmd_vel", topicCmdVel, std::string("cmd_vel"));
-	nh.param("hz", hz, 50.0);
-	nh.param("look_forward", lookForward, 0.5);
-	nh.param("curv_forward", curvForward, 0.5);
-	nh.param("k_dist", k[0], 1.0);
-	nh.param("k_ang", k[1], 1.0);
-	nh.param("k_avel", k[2], 1.0);
-	nh.param("k_dcel", dec, 0.2);
-	nh.param("dist_lim", d_lim, 0.5);
-	nh.param("dist_stop", d_stop, 2.0);
-	nh.param("rotate_ang", rotate_ang, M_PI / 4);
-	nh.param("max_vel", vel[0], 0.5);
-	nh.param("max_angvel", vel[1], 1.0);
-	nh.param("max_acc", acc[0], 1.0);
-	nh.param("max_angacc", acc[1], 2.0);
-	nh.param("path_step", pathStep, 1);
-	nh.param("distance_angle_factor", angFactor, 0.0);
-	nh.param("switchback_dist", swDist, 0.3);
-	nh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
-	nh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
-	nh.param("stop_tolerance_dist", stopToleranceDist, 0.1);
-	nh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
-	nh.param("no_position_control_dist", noPosCntlDist, 0.0);
-	nh.param("allow_backward", allowBackward, true);
+tracker::tracker(){
+        ros::NodeHandle pnh("~");
 
-	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
-	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
-	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
-	pubStatus = nh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
-	pubTracking = nh.advertise<geometry_msgs::PoseStamped>("tracking", 10);
+	pnh.param("frame_robot", frameRobot, std::string("base_link"));
+	pnh.param("path", topicPath, std::string("path"));
+	pnh.param("odom", topicOdom, std::string("odom"));
+	pnh.param("cmd_vel", topicCmdVel, std::string("cmd_vel"));
+	pnh.param("hz", hz, 50.0);
+	pnh.param("look_forward", lookForward, 0.5);
+	pnh.param("curv_forward", curvForward, 0.5);
+	pnh.param("k_dist", k[0], 1.0);
+	pnh.param("k_ang", k[1], 1.0);
+	pnh.param("k_avel", k[2], 1.0);
+	pnh.param("k_dcel", dec, 0.2);
+	pnh.param("dist_lim", d_lim, 0.5);
+	pnh.param("dist_stop", d_stop, 2.0);
+	pnh.param("rotate_ang", rotate_ang, M_PI / 4);
+	pnh.param("max_vel", vel[0], 0.5);
+	pnh.param("max_angvel", vel[1], 1.0);
+	pnh.param("max_acc", acc[0], 1.0);
+	pnh.param("max_angacc", acc[1], 2.0);
+	pnh.param("path_step", pathStep, 1);
+	pnh.param("distance_angle_factor", angFactor, 0.0);
+	pnh.param("switchback_dist", swDist, 0.3);
+	pnh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
+	pnh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
+	pnh.param("stop_tolerance_dist", stopToleranceDist, 0.1);
+	pnh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
+	pnh.param("no_position_control_dist", noPosCntlDist, 0.0);
+	pnh.param("allow_backward", allowBackward, true);
+
+	subPath = pnh.subscribe(topicPath, 200, &tracker::cbPath, this);
+	subOdom = pnh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
+	pubVel = pnh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
+	pubStatus = pnh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
+	pubTracking = pnh.advertise<geometry_msgs::PoseStamped>("tracking", 10);
 }
 tracker::~tracker()
 {

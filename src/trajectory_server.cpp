@@ -21,7 +21,6 @@ public:
 	~server();
 	void spin();
 private:
-	ros::NodeHandle nh;
 	ros::Publisher pubPath;
 	ros::Publisher pubStatus;
 	tf::TransformListener tf;
@@ -54,18 +53,19 @@ private:
 };
 
 server::server():
-	nh("~"),
 	srvIMFb("trajectory_server"),
 	buffer(new uint8_t[1024])
 {
-	nh.param("path", topicPath, std::string("path"));
-	nh.param("file", reqPath.filename, std::string("a.path"));
-	nh.param("hz", hz, double(5));
-	nh.param("filter_step", filter_step, 0.0);
+        ros::NodeHandle pnh("~");
 
-	pubPath = nh.advertise<nav_msgs::Path>(topicPath, 2, true);
-	pubStatus = nh.advertise<trajectory_tracker::TrajectoryServerStatus>("status", 2);
-	srvChangePath = nh.advertiseService("ChangePath", &server::change, this);
+	pnh.param("path", topicPath, std::string("path"));
+	pnh.param("file", reqPath.filename, std::string("a.path"));
+	pnh.param("hz", hz, double(5));
+	pnh.param("filter_step", filter_step, 0.0);
+
+	pubPath = pnh.advertise<nav_msgs::Path>(topicPath, 2, true);
+	pubStatus = pnh.advertise<trajectory_tracker::TrajectoryServerStatus>("status", 2);
+	srvChangePath = pnh.advertiseService("ChangePath", &server::change, this);
 	updateNum = 0;
 	maxMarkers = 0;
 }
