@@ -265,6 +265,7 @@ void tracker::control()
 		pubStatus.publish(status);
 		return;
 	}
+
 	float minDist = FLT_MAX;
 	int iclose = 0;
 	geometry_msgs::Point origin;
@@ -280,9 +281,9 @@ void tracker::control()
 	float distancePathSearch = 0;
 	for(int i = pathStepDone; i < (int)lpath.poses.size(); i ++)
 	{
-		distancePathSearch += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
 		if(i <= 1) continue;
-		if(iclose > 0 && distancePathSearch > 1.0) break;
+		distancePathSearch += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
+		if(pathStepDone > 0 && distancePathSearch > 1.0) break;
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
 		if(fabs(d) < fabs(minDist))
 		{
