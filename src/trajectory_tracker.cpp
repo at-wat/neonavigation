@@ -47,6 +47,7 @@ private:
 	ros::Publisher pubVel;
 	ros::Publisher pubStatus;
 	ros::Publisher pubTracking;
+	ros::NodeHandle nh;
 	tf::TransformListener tf;
 
 	nav_msgs::Path path;
@@ -81,42 +82,44 @@ private:
 	int num;
 };
 
-tracker::tracker(){
-        ros::NodeHandle pnh("~");
+tracker::tracker() :
+	w(0.0),
+	v(0.0),
+	nh("~")
+{
+	nh.param("frame_robot", frameRobot, std::string("base_link"));
+	nh.param("path", topicPath, std::string("path"));
+	nh.param("odom", topicOdom, std::string("odom"));
+	nh.param("cmd_vel", topicCmdVel, std::string("cmd_vel"));
+	nh.param("hz", hz, 50.0);
+	nh.param("look_forward", lookForward, 0.5);
+	nh.param("curv_forward", curvForward, 0.5);
+	nh.param("k_dist", k[0], 1.0);
+	nh.param("k_ang", k[1], 1.0);
+	nh.param("k_avel", k[2], 1.0);
+	nh.param("k_dcel", dec, 0.2);
+	nh.param("dist_lim", d_lim, 0.5);
+	nh.param("dist_stop", d_stop, 2.0);
+	nh.param("rotate_ang", rotate_ang, M_PI / 4);
+	nh.param("max_vel", vel[0], 0.5);
+	nh.param("max_angvel", vel[1], 1.0);
+	nh.param("max_acc", acc[0], 1.0);
+	nh.param("max_angacc", acc[1], 2.0);
+	nh.param("path_step", pathStep, 1);
+	nh.param("distance_angle_factor", angFactor, 0.0);
+	nh.param("switchback_dist", swDist, 0.3);
+	nh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
+	nh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
+	nh.param("stop_tolerance_dist", stopToleranceDist, 0.1);
+	nh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
+	nh.param("no_position_control_dist", noPosCntlDist, 0.0);
+	nh.param("allow_backward", allowBackward, true);
 
-	pnh.param("frame_robot", frameRobot, std::string("base_link"));
-	pnh.param("path", topicPath, std::string("path"));
-	pnh.param("odom", topicOdom, std::string("odom"));
-	pnh.param("cmd_vel", topicCmdVel, std::string("cmd_vel"));
-	pnh.param("hz", hz, 50.0);
-	pnh.param("look_forward", lookForward, 0.5);
-	pnh.param("curv_forward", curvForward, 0.5);
-	pnh.param("k_dist", k[0], 1.0);
-	pnh.param("k_ang", k[1], 1.0);
-	pnh.param("k_avel", k[2], 1.0);
-	pnh.param("k_dcel", dec, 0.2);
-	pnh.param("dist_lim", d_lim, 0.5);
-	pnh.param("dist_stop", d_stop, 2.0);
-	pnh.param("rotate_ang", rotate_ang, M_PI / 4);
-	pnh.param("max_vel", vel[0], 0.5);
-	pnh.param("max_angvel", vel[1], 1.0);
-	pnh.param("max_acc", acc[0], 1.0);
-	pnh.param("max_angacc", acc[1], 2.0);
-	pnh.param("path_step", pathStep, 1);
-	pnh.param("distance_angle_factor", angFactor, 0.0);
-	pnh.param("switchback_dist", swDist, 0.3);
-	pnh.param("goal_tolerance_dist", goalToleranceDist, 0.2);
-	pnh.param("goal_tolerance_ang", goalToleranceAng, 0.1);
-	pnh.param("stop_tolerance_dist", stopToleranceDist, 0.1);
-	pnh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
-	pnh.param("no_position_control_dist", noPosCntlDist, 0.0);
-	pnh.param("allow_backward", allowBackward, true);
-
-	subPath = pnh.subscribe(topicPath, 200, &tracker::cbPath, this);
-	subOdom = pnh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
-	pubVel = pnh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
-	pubStatus = pnh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
-	pubTracking = pnh.advertise<geometry_msgs::PoseStamped>("tracking", 10);
+	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
+	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
+	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
+	pubStatus = nh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
+	pubTracking = nh.advertise<geometry_msgs::PoseStamped>("tracking", 10);
 }
 tracker::~tracker()
 {
@@ -208,6 +211,17 @@ void tracker::cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
 void tracker::cbPath(const nav_msgs::Path::ConstPtr& msg)
 {
 	path = *msg;
+	auto i = path.poses.begin();
+	for(auto j = path.poses.begin(); j != path.poses.end();)
+	{
+		if(i != j && dist2d((*i).pose.position, (*j).pose.position) < 0.001)
+		{
+			j = path.poses.erase(j);
+			continue;
+		}
+		i = j;
+		j ++;
+	}
 	pathStepDone = 0;
 }
 
@@ -266,8 +280,8 @@ void tracker::control()
 		return;
 	}
 
-	float minDist = FLT_MAX;
-	int iclose = 0;
+	float minDist = 10000.0;
+	int iclose = -1;
 	geometry_msgs::Point origin;
 	origin.x = cos(w * lookForward / 2.0) * v * lookForward;
 	origin.y = sin(w * lookForward / 2.0) * v * lookForward;
@@ -281,23 +295,24 @@ void tracker::control()
 	float distancePathSearch = 0;
 	for(int i = pathStepDone; i < (int)lpath.poses.size(); i ++)
 	{
-		if(i <= 1) continue;
+		if(i < 1) continue;
 		distancePathSearch += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
-		if(pathStepDone > 0 && distancePathSearch > 1.0) break;
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
 		if(fabs(d) < fabs(minDist))
 		{
 			minDist = d;
 			iclose = i;
 		}
+		if(pathStepDone > 0 && distancePathSearch > 1.0) break;
 	}
-	if(minDist < 0 && iclose == (int)lpath.poses.size()-1) outOfLineStrip = true;
-	if(iclose < 1)
+	if(iclose < 0)
 	{
+		ROS_WARN("failed to find nearest node");
 		status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
 		pubStatus.publish(status);
 		return;
 	}
+	if(minDist < 0 && iclose == (int)lpath.poses.size()-1) outOfLineStrip = true;
 	// Signed distance error
 	float dist = dist2d_line(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
 	float _dist = dist;
@@ -368,7 +383,7 @@ void tracker::control()
 	float dt = 1/hz;
 	float _v = v;
 	
-	v = sign(remainLocal) * signVel * sqrtf(2 * fabs(remainLocal) * acc[0] * 0.95);
+	v = sign(remainLocal) * signVel * sqrtf(fabs(2 * remainLocal * acc[0] * 0.95));
 	
 	if(v > vel[0]) v = vel[0];
 	else if(v < -vel[0]) v = -vel[0];
@@ -408,7 +423,7 @@ void tracker::control()
 	if((fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle)) ||
 		fabs(status.distance_remains) < stopToleranceDist)
 	{
-		w = -sign(angle) * sqrtf(2 * fabs(angle) * acc[1] * 0.95);
+		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.95));
 		v = 0;
 		if(v > vel[0]) v = vel[0];
 		else if(v < -vel[0]) v = -vel[0];
