@@ -41,6 +41,7 @@ private:
 	int pathStepDone;
 	bool outOfLineStrip;
     bool allowBackward;
+	bool limitVelByAvel;
 
 	ros::Subscriber subPath;
 	ros::Subscriber subOdom;
@@ -114,8 +115,9 @@ tracker::tracker() :
 	nh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
 	nh.param("no_position_control_dist", noPosCntlDist, 0.0);
 	nh.param("allow_backward", allowBackward, true);
+	nh.param("limit_vel_by_avel", limitVelByAvel, false);
 
-	subPath = nh.subscribe(topicPath, 200, &tracker::cbPath, this);
+	subPath = nh.subscribe(topicPath, 2, &tracker::cbPath, this);
 	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
 	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
 	pubStatus = nh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
@@ -307,7 +309,11 @@ void tracker::control()
 	}
 	if(iclose < 0)
 	{
-		ROS_WARN("failed to find nearest node");
+		geometry_msgs::Twist cmd_vel;
+		cmd_vel.linear.x = 0;
+		cmd_vel.angular.z = 0;
+		pubVel.publish(cmd_vel);
+		//ROS_WARN("failed to find nearest node");
 		status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
 		pubStatus.publish(status);
 		return;
@@ -392,6 +398,18 @@ void tracker::control()
 
 	float wref = v * signVel * curv;
 	float _w = w;
+
+	if(limitVelByAvel)
+	{
+		if(fabs(wref) > vel[1])
+		{
+			v = wref / (signVel * curv);
+			if(v > vel[0]) v = vel[0];
+			else if(v < -vel[0]) v = -vel[0];
+			if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
+			else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
+		}
+	}
 	
 	w += dt * (-dist*k[0] -angle*k[1] -(w - wref)*k[2]);
 
