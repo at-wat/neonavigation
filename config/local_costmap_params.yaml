@@ -6,7 +6,12 @@ local_costmap:
   static_map: true 
   rolling_window: true
   width: 5.0
-  height: 4.0
-  resolution: 0.05
+  height: 5.0
+  resolution: 0.1
   plugins:
    - {name: footprint_layer, type: "costmap_2d::FootprintLayer"}
+   - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
+   - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
+  obstacle_layer:
+    observation_sources: laser
+    laser: {topic: scan, data_type: LaserScan, expected_update_rate: 1.0, observation_persistence: 0.0, marking: true, clearing: true}
