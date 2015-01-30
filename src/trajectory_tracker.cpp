@@ -439,7 +439,8 @@ void tracker::control()
 	}
 	// Stop and rotate
 	if((fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle)) ||
-		fabs(status.distance_remains) < stopToleranceDist)
+		fabs(status.distance_remains) < stopToleranceDist ||
+		distancePath < stopToleranceDist)
 	{
 		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.95));
 		v = 0;
