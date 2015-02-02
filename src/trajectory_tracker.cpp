@@ -290,7 +290,7 @@ void tracker::control()
 	// Find nearest line strip
 	outOfLineStrip = false;
 	float distancePath = 0;
-	for(int i = 0; i < (int)lpath.poses.size(); i ++)
+	for(int i = 1; i < (int)lpath.poses.size(); i ++)
 	{
 		distancePath += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
 	}
@@ -377,72 +377,22 @@ void tracker::control()
 	remain = remainLocal = dist2d(origin, lpath.poses.back().pose.position);
 	if(outOfLineStrip) remain = remainLocal = -remain;
 	if(distancePath < noPosCntlDist) remain = remainLocal = 0;
-	//fprintf(stderr,"%d %d  %f %f  %f\n",outOfLineStrip, iclose, remain,remainLocal,minDist);
+	//fprintf(stderr,"%d %d   %f  %f %f  %f  %f\n",outOfLineStrip, iclose, distancePath, remain,remainLocal,minDist, angle);
 	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
     while(angle < -M_PI) angle += 2.0*M_PI;
     while(angle > M_PI) angle -= 2.0*M_PI;
 
-	// Control
-	if(dist < -d_lim) dist = -d_lim;
-	else if(dist > d_lim) dist = d_lim;
-
-	float dt = 1/hz;
-	float _v = v;
-	
-	v = sign(remainLocal) * signVel * sqrtf(fabs(2 * remainLocal * acc[0] * 0.95));
-	
-	if(v > vel[0]) v = vel[0];
-	else if(v < -vel[0]) v = -vel[0];
-	if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
-	else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
-
-	float wref = v * signVel * curv;
-	float _w = w;
-
-	if(limitVelByAvel)
-	{
-		if(fabs(wref) > vel[1])
-		{
-			v = wref / (signVel * curv);
-			if(v > vel[0]) v = vel[0];
-			else if(v < -vel[0]) v = -vel[0];
-			if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
-			else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
-		}
-	}
-	
-	w += dt * (-dist*k[0] -angle*k[1] -(w - wref)*k[2]);
-
-	if(w > vel[1]) w = vel[1];
-	else if(w < -vel[1]) w = -vel[1];
-	if(w > _w + dt*acc[1]) w = _w + dt*acc[1];
-	else if(w < _w - dt*acc[1]) w = _w - dt*acc[1];
-
-	geometry_msgs::Twist cmd_vel;
-	if(!std::isfinite(v)) v = 0;
-	if(!std::isfinite(w)) w = 0;
-
 	status.distance_remains = remain;
 	status.angle_remains = angle;
 
-	// Too far from given path
-	if(fabs(_dist) > d_stop)
-	{
-		geometry_msgs::Twist cmd_vel;
-		cmd_vel.linear.x = 0;
-		cmd_vel.angular.z = 0;
-		pubVel.publish(cmd_vel);
-		//ROS_WARN("Far from given path");
-		status.status = trajectory_tracker::TrajectoryTrackerStatus::FAR_FROM_PATH;
-		pubStatus.publish(status);
-		return;
-	}
+	float dt = 1/hz;
+	float _v = v;
+	float _w = w;
 	// Stop and rotate
 	if((fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle)) ||
-		fabs(status.distance_remains) < stopToleranceDist ||
-		distancePath < stopToleranceDist)
+		fabs(status.distance_remains) < stopToleranceDist)
 	{
-		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.95));
+		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.9));
 		v = 0;
 		if(v > vel[0]) v = vel[0];
 		else if(v < -vel[0]) v = -vel[0];
@@ -454,7 +404,59 @@ void tracker::control()
 		else if(w < _w - dt*acc[1]) w = _w - dt*acc[1];
 		//ROS_WARN("Rotate");
 	}
+	else
+	{
 
+		// Control
+		if(dist < -d_lim) dist = -d_lim;
+		else if(dist > d_lim) dist = d_lim;
+
+		v = sign(remainLocal) * signVel * sqrtf(fabs(2 * remainLocal * acc[0] * 0.95));
+
+		if(v > vel[0]) v = vel[0];
+		else if(v < -vel[0]) v = -vel[0];
+		if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
+		else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
+
+		float wref = v * signVel * curv;
+
+		if(limitVelByAvel)
+		{
+			if(fabs(wref) > vel[1])
+			{
+				v = wref / (signVel * curv);
+				if(v > vel[0]) v = vel[0];
+				else if(v < -vel[0]) v = -vel[0];
+				if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
+				else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
+			}
+		}
+
+		w += dt * (-dist*k[0] -angle*k[1] -(w - wref)*k[2]);
+
+		if(w > vel[1]) w = vel[1];
+		else if(w < -vel[1]) w = -vel[1];
+		if(w > _w + dt*acc[1]) w = _w + dt*acc[1];
+		else if(w < _w - dt*acc[1]) w = _w - dt*acc[1];
+
+		if(!std::isfinite(v)) v = 0;
+		if(!std::isfinite(w)) w = 0;
+
+		// Too far from given path
+		if(fabs(_dist) > d_stop)
+		{
+			geometry_msgs::Twist cmd_vel;
+			cmd_vel.linear.x = 0;
+			cmd_vel.angular.z = 0;
+			pubVel.publish(cmd_vel);
+			//ROS_WARN("Far from given path");
+			status.status = trajectory_tracker::TrajectoryTrackerStatus::FAR_FROM_PATH;
+			pubStatus.publish(status);
+			return;
+		}
+	}
+
+	geometry_msgs::Twist cmd_vel;
 	if(fabs(status.distance_remains) < stopToleranceDist &&
 			fabs(status.angle_remains) < stopToleranceAng)
 	{
