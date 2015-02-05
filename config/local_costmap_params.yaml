@@ -2,17 +2,17 @@ local_costmap:
   global_frame: /map
   robot_base_frame: base_link
   update_frequency: 3
-  publish_frequency: 1.5
+  publish_frequency: 1
   static_map: false
   rolling_window: true
   width: 5.0
   height: 5.0
-  resolution: 0.05
+  resolution: 0.075
   footprint_padding: 0.1
   plugins:
    - {name: static_layer, type: "costmap_2d::StaticLayer2"}
-   - {name: footprint_layer, type: "costmap_2d::FootprintLayer"}
    - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
+   - {name: footprint_layer, type: "costmap_2d::FootprintLayer"}
    - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
   obstacle_layer:
     observation_sources: laser

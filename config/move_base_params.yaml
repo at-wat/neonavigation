@@ -15,5 +15,5 @@ recovery_behaviors:
 conservative_reset:
   reset_distance: 0.5
 
-controller_frequency: 8
+controller_frequency: 10
 

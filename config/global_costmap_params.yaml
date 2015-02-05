@@ -2,13 +2,14 @@ global_costmap:
   global_frame: /map
   robot_base_frame: base_link
   update_frequency: 0.5
+  publish_frequency: 0
   static_map: false
   footprint_padding: 0.15
   plugins:
    - {name: static_layer, type: "costmap_2d::StaticLayer"}
+   - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
    - {name: footprint_layer, type: "costmap_2d::FootprintLayer"}
    - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
-   - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
   obstacle_layer:
     observation_sources: laser
     combination_method: 1
