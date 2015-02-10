@@ -8,12 +8,12 @@ planner_frequency: 0.1
 shutdown_costmaps: false
 recovery_behavior_enabled: true
 clearing_rotation_allowed: false
-recovery_behaviors:
-  - name: 'conservative_reset'
-    type: 'clear_costmap_recovery/ClearCostmapRecovery'
+#recovery_behaviors:
+#  - name: 'conservative_reset'
+#    type: 'clear_costmap_recovery/ClearCostmapRecovery'
 
 conservative_reset:
   reset_distance: 0.5
 
-controller_frequency: 10
+controller_frequency: 4
 

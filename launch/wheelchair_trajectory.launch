@@ -1,0 +1,16 @@
+<launch>
+	<arg name="vel" default="1.0" />
+	<arg name="enable_control" default="true" />
+	<arg name="map_file" />
+
+	<include file="$(find ypspur_ros_bridge)/launch/wheelchair.launch">
+		<arg name="enable_control" value="$(arg enable_control)" />
+	</include>
+	<include file="$(find trajectory_tracker)/launch/plan_tracking.launch">
+		<arg name="use_move_base" value="false" />
+		<arg name="high_speed" value="true" />
+		<arg name="vel" value="$(arg vel)" />
+	</include>
+	<node pkg="map_server" type="map_server" args="$(arg map_file)" name="map_server" />
+</launch>
+

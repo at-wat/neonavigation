@@ -2,7 +2,7 @@ global_costmap:
   global_frame: /map
   robot_base_frame: base_link
   update_frequency: 0.5
-  publish_frequency: 0
+  publish_frequency: 0.0
   static_map: false
   footprint_padding: 0.15
   plugins:
@@ -15,6 +15,7 @@ global_costmap:
     combination_method: 1
     laser: {topic: scan, data_type: LaserScan, expected_update_rate: 0.5, observation_persistence: 0.0, marking: true, clearing: true}
   static_layer:
-    unknown_cost_value: 254
+    unknown_cost_value: 64
+#254
   inflation_layer:
     inflation_radius: 1.2
