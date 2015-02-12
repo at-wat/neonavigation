@@ -2,6 +2,7 @@
 	<arg name="use_voxel" default="false" />
 	<arg name="use_move_base" default="true" />
 	<arg name="high_speed" default="true" />
+	<arg name="cmd_vel_output" default="/limiter/cmd_vel" />
 	<arg name="vel" default="0.5" />
 
 	<node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen" if="$(arg use_move_base)">
@@ -48,7 +49,7 @@
 		<param name="stop_tolerance_dist" value="0.2" type="double" />
 	</group>
 	<node pkg="trajectory_tracker" type="trajectory_tracker" name="spur" output="screen">
-		<remap from="~/cmd_vel" to="/limiter/cmd_vel" />
+		<remap from="~/cmd_vel" to="$(arg cmd_vel_output)" />
 		<param name="path" value="/move_base/GridPlannerROS/local_plan" type="string" if="$(arg use_move_base)" />
 		<param name="path" value="/plan" type="string" unless="$(arg use_move_base)"/>
 		<param name="path_step" value="1" type="int" />

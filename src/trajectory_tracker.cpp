@@ -2,6 +2,7 @@
 #include <math.h>
 
 #include <geometry_msgs/Twist.h>
+#include <std_msgs/Float32.h>
 #include <trajectory_tracker/TrajectoryTrackerStatus.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
@@ -45,6 +46,7 @@ private:
 
 	ros::Subscriber subPath;
 	ros::Subscriber subOdom;
+	ros::Subscriber subVel;
 	ros::Publisher pubVel;
 	ros::Publisher pubStatus;
 	ros::Publisher pubTracking;
@@ -56,6 +58,7 @@ private:
 
 	void cbPath(const nav_msgs::Path::ConstPtr& msg);
 	void cbOdom(const nav_msgs::Odometry::ConstPtr& msg);
+	void cbSpeed(const std_msgs::Float32::ConstPtr& msg);
 	void control();
 };
 
@@ -119,6 +122,7 @@ tracker::tracker() :
 
 	subPath = nh.subscribe(topicPath, 2, &tracker::cbPath, this);
 	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
+	subVel = nh.subscribe("speed", 20, &tracker::cbSpeed, this);
 	pubVel = nh.advertise<geometry_msgs::Twist>(topicCmdVel, 10);
 	pubStatus = nh.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
 	pubTracking = nh.advertise<geometry_msgs::PoseStamped>("tracking", 10);
@@ -203,6 +207,11 @@ geometry_msgs::Point projection2d(geometry_msgs::Point &a, geometry_msgs::Point 
 	ret.x = b.x*r + a.x*(1-r);
 	ret.y = b.y*r + a.y*(1-r);
 	return ret;
+}
+
+void tracker::cbSpeed(const std_msgs::Float32::ConstPtr& msg)
+{
+	vel[0] = msg->data;
 }
 
 void tracker::cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
