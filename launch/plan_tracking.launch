@@ -1,7 +1,7 @@
 <launch>
 	<arg name="use_voxel" default="false" />
 	<arg name="use_move_base" default="true" />
-	<arg name="high_speed" default="true" />
+	<arg name="high_speed" default="false" />
 	<arg name="cmd_vel_output" default="/limiter/cmd_vel" />
 	<arg name="vel" default="0.5" />
 
