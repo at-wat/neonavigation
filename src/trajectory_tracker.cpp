@@ -44,6 +44,8 @@ private:
     bool allowBackward;
 	bool limitVelByAvel;
 
+	int error_cnt;
+
 	ros::Subscriber subPath;
 	ros::Subscriber subOdom;
 	ros::Subscriber subVel;
@@ -225,7 +227,7 @@ void tracker::cbPath(const nav_msgs::Path::ConstPtr& msg)
 	auto i = path.poses.begin();
 	for(auto j = path.poses.begin(); j != path.poses.end();)
 	{
-		if(i != j && dist2d((*i).pose.position, (*j).pose.position) < 0.001)
+		if(i != j && dist2d((*i).pose.position, (*j).pose.position) < 0.01)
 		{
 			j = path.poses.erase(j);
 			continue;
@@ -270,11 +272,22 @@ void tracker::control()
 	// Transform
 	nav_msgs::Path lpath;
 	lpath.header = path.header;
+	tf::StampedTransform transform;
 	try
 	{
-		tf::StampedTransform transform;
 		ros::Time now = ros::Time(0);
-		tf.waitForTransform(frameRobot, path.header.frame_id, now, ros::Duration(0.1));
+		tf.waitForTransform(frameRobot, path.header.frame_id, now, ros::Duration(0.05));
+		tf.lookupTransform(frameRobot, path.header.frame_id, now, transform);
+		if(fabs((ros::Time::now() - transform.stamp_).toSec()) > 0.1)
+		{
+			if(error_cnt % 16 == 0)
+				ROS_ERROR("Timestamp of the transform is too old %f %f", ros::Time::now().toSec(), transform.stamp_.toSec());
+			error_cnt ++;
+		}
+		else
+		{
+			error_cnt = 0;
+		}
 		
 		for(int i = 0; i < (int)path.poses.size(); i += pathStep)
 		{
@@ -308,8 +321,10 @@ void tracker::control()
 	{
 		if(i < 1) continue;
 		distancePathSearch += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
+		if(dist2d(origin, lpath.poses[i].pose.position) < 0.05 &&
+				i < (int)lpath.poses.size() - 1) continue;
 		float d = dist2d_linestrip(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position, origin);
-		if(fabs(d) < fabs(minDist))
+		if(fabs(d) <= fabs(minDist))
 		{
 			minDist = d;
 			iclose = i;
@@ -327,7 +342,6 @@ void tracker::control()
 		pubStatus.publish(status);
 		return;
 	}
-	if(minDist < 0 && iclose == (int)lpath.poses.size()-1) outOfLineStrip = true;
 	// Signed distance error
 	float dist = dist2d_line(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
 	float _dist = dist;
@@ -341,7 +355,7 @@ void tracker::control()
 	}
 	
 	// Angular error
-	geometry_msgs::Point vec = sub2d(lpath.poses[iclose].pose.position, lpath.poses[iclose-1].pose.position);
+	geometry_msgs::Point vec = sub2d(lpath.poses[iclose].pose.position, lpath.poses[iclose - 1].pose.position);
 	float angle = -atan2(vec.y, vec.x);
 	float anglePose;
     if(allowBackward) anglePose = tf::getYaw(lpath.poses[iclose].pose.orientation);
@@ -356,37 +370,50 @@ void tracker::control()
 	// Curvature
 	average<float> curv;
 	geometry_msgs::Point posLine = projection2d(lpath.poses[iclose-1].pose.position, lpath.poses[iclose].pose.position, origin);
+	int local_goal = lpath.poses.size() - 1;
+	float remainLocal = 0;
+	remainLocal = dist2d(posLine, lpath.poses[iclose].pose.position);
 	for(int i = iclose - 1; i < (int)lpath.poses.size() - 1; i ++)
 	{
-		if(dist2d(lpath.poses[i].pose.position, posLine) > curvForward) break;
 		if(i > 2)
 		{
-			geometry_msgs::Point vec = sub2d(lpath.poses[i-1].pose.position, 
-					lpath.poses[i-2].pose.position);
-			float angle = -atan2(vec.y, vec.x);
+			geometry_msgs::Point vec = sub2d(lpath.poses[i].pose.position, 
+					lpath.poses[i-1].pose.position);
+			float angle = atan2(vec.y, vec.x);
             float anglePose;
-            if(allowBackward) anglePose = tf::getYaw(lpath.poses[i-1].pose.orientation);
-            else anglePose = -angle;
-            float signVelPath = 1.0;
-			if(cos(-angle) * cos(anglePose) + sin(-angle) * sin(anglePose) < 0)
-				signVelPath = -1.0;
-			if(signVel * signVelPath < 0)
+            if(allowBackward) anglePose = tf::getYaw(lpath.poses[i+1].pose.orientation);
+            else anglePose = angle;
+			float signVel_req = cos(angle) * cos(anglePose) + sin(angle) * sin(anglePose);
+			if(signVel * signVel_req < 0)
 			{
 				// Stop read forward if the path switched back
-				curv += 0.0;
+				local_goal = i;
 				break;
 			}
+			if(i > iclose)
+				remainLocal += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
+		}
+	}
+	for(int i = iclose - 1; i < local_goal; i ++)
+	{
+		if(i > 2)
+		{
 			curv += curv3p(lpath.poses[i-2].pose.position, lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
 		}
-		else
-			curv += 0.0;
+		if(dist2d(lpath.poses[i].pose.position, 
+					lpath.poses[local_goal].pose.position) < 0.05) break;
+		if(dist2d(lpath.poses[i].pose.position, posLine) > curvForward) break;
 	}
 	float remain;
-	float remainLocal;
-	remain = remainLocal = dist2d(origin, lpath.poses.back().pose.position);
-	if(outOfLineStrip) remain = remainLocal = -remain;
+	remain = dist2d(origin, lpath.poses.back().pose.position);
+	if(minDist < 0 && iclose == local_goal) outOfLineStrip = true;
+	if(outOfLineStrip)
+	{
+		remain = -remain;
+		remainLocal = -remainLocal;
+	}
 	if(distancePath < noPosCntlDist) remain = remainLocal = 0;
-	//fprintf(stderr,"%d %d   %f  %f %f  %f  %f\n",outOfLineStrip, iclose, distancePath, remain,remainLocal,minDist, angle);
+	//fprintf(stderr,"%d %d   %0.3f  %+0.3f %+0.3f  %f  %f  sv %f\n",outOfLineStrip, iclose, distancePath, remain,remainLocal,minDist, angle, signVel);
 	//printf("d=%.2f, th=%.2f, curv=%.2f\n", dist, angle, (float)curv);
     while(angle < -M_PI) angle += 2.0*M_PI;
     while(angle > M_PI) angle -= 2.0*M_PI;
@@ -415,7 +442,6 @@ void tracker::control()
 	}
 	else
 	{
-
 		// Control
 		if(dist < -d_lim) dist = -d_lim;
 		else if(dist > d_lim) dist = d_lim;
@@ -427,13 +453,13 @@ void tracker::control()
 		if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
 		else if(v < _v - dt*acc[0]) v = _v - dt*acc[0];
 
-		float wref = v * signVel * curv;
+		float wref = fabs(v) * curv;
 
 		if(limitVelByAvel)
 		{
 			if(fabs(wref) > vel[1])
 			{
-				v = wref / (signVel * curv);
+				v = sign(v) * fabs(vel[1] / curv);
 				if(v > vel[0]) v = vel[0];
 				else if(v < -vel[0]) v = -vel[0];
 				if(v > _v + dt*acc[0]) v = _v + dt*acc[0];
@@ -487,7 +513,7 @@ void tracker::control()
 	tracking.header = status.header;
 	tracking.header.frame_id = frameRobot;
 	tracking.pose.position = posLine;
-	tracking.pose.orientation = lpath.poses[iclose].pose.orientation;
+	tracking.pose.orientation = tf::createQuaternionMsgFromYaw(-angle);
 	pubTracking.publish(tracking);
 
 	pathStepDone = iclose;
