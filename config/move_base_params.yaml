@@ -15,5 +15,5 @@ clearing_rotation_allowed: false
 conservative_reset:
   reset_distance: 0.5
 
-controller_frequency: 4
+controller_frequency: 3
 

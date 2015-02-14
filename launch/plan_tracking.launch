@@ -12,6 +12,8 @@
 		<rosparam file="$(find trajectory_tracker)/config/local_costmap_params_with_voxel.yaml" command="load" if="$(arg use_voxel)" />
 		<rosparam file="$(find trajectory_tracker)/config/navfn_params.yaml" command="load" />
 		<remap from="/cmd_vel" to="/trajectory_tracker/cmd_vel" />
+		<remap from="~/GridPlannerROS/vel" to="/spur/speed" />
+		<param name="~/GridPlannerROS/vel" value="$(arg vel)" type="double" />
 	</node>
 
 	<node name="voxel_grid_2_point_cloud" pkg="costmap_2d" type="costmap_2d_cloud" if="$(arg use_voxel)">
@@ -31,9 +33,9 @@
 		
 		<param name="curv_forward" value="0.4" type="double" />
 		<param name="look_forward" value="0.1" type="double" />
-		<param name="k_dist" value="4" type="double" />
+		<param name="k_dist" value="4.5" type="double" />
 		<param name="k_ang" value="4" type="double" />
-		<param name="k_avel" value="5" type="double" />
+		<param name="k_avel" value="4" type="double" />
 		<param name="stop_tolerance_dist" value="0.05" type="double" />
 	</group>
 	<group ns="spur" if="$(arg high_speed)">

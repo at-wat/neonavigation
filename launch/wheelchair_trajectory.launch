@@ -2,6 +2,7 @@
 	<arg name="vel" default="1.0" />
 	<arg name="enable_control" default="true" />
 	<arg name="use_joystick" default="false" />
+	<arg name="use_localization" default="true" />
 	<arg name="map_file" />
 	
 	<arg name="dev" default="/dev/input/js0"/>
@@ -9,6 +10,7 @@
 
 	<include file="$(find ypspur_ros_bridge)/launch/wheelchair.launch">
 		<arg name="enable_control" value="$(arg enable_control)" />
+		<arg name="use_localization" value="$(arg use_localization)" />
 	</include>
 	<include file="$(find trajectory_tracker)/launch/plan_tracking.launch">
 		<arg name="use_move_base" value="false" />
@@ -19,13 +21,13 @@
 	<node pkg="map_server" type="map_server" args="$(arg map_file)" name="map_server" />
 	
 	<!-- JOYSTICK -->
-	<node respawn="true" pkg="joy" type="joy_node" name="nav" >
+	<node respawn="true" pkg="joy" type="joy_node" name="nav" if="$(arg use_joystick)">
 		<param name="dev" type="string" value="$(arg dev)" />
 		<remap from="/joy" to="joystick_teleop/joy" />
 	</node>
 
   <!-- JOYSTICK TELEOP -->
-	<node respawn="true" pkg="joystick_teleop" type="joystick_teleop_node" name = "joystick_teleop">
+	<node respawn="true" pkg="joystick_teleop" type="joystick_teleop_node" name="joystick_teleop" if="$(arg use_joystick)">
 		<param name="activate_button_id" value="8" type="int" />
 		<param name="axis_linear_id" value="1" type="int" />
 		<param name="axis_angular_id" value="0" type="int" />

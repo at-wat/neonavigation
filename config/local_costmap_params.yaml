@@ -1,7 +1,7 @@
 local_costmap:
   global_frame: /map
   robot_base_frame: base_link
-  update_frequency: 4
+  update_frequency: 3
   publish_frequency: 1
   static_map: false
   rolling_window: true
@@ -17,9 +17,9 @@ local_costmap:
   obstacle_layer:
     observation_sources: laser
     combination_method: 1
-    laser: {topic: scan, data_type: LaserScan, expected_update_rate: 4, observation_persistence: 0.0, marking: true, clearing: true}
+    laser: {topic: scan, data_type: LaserScan, expected_update_rate: 3, observation_persistence: 0.0, marking: true, clearing: true}
   static_layer:
-    unknown_cost_value: 255
+    unknown_cost_value: 254
     use_maximum: false
   inflation_layer:
     inflation_radius: 0.9
