@@ -1,0 +1,25 @@
+<launch>
+  <arg name="dev" default="/dev/input/js1"/>
+  <arg name="cmd_vel_out" />
+  <arg name="cmd_vel_in" />
+  <arg name="linear_vel" />
+  <arg name="angular_vel" />
+
+  <node pkg="joy" type="joy_node" name="joystick" >
+    <param name="dev" type="string" value="$(arg dev)" />
+    <remap from="/joy" to="/joystick_interrupt/joy" />
+  </node>
+
+  <node pkg="joystick_interrupt" type="joystick_interrupt" name="joystick_interrupt">
+    <param name="interrupt_button" value="6" type="int" />
+    <param name="linear_axis" value="1" type="int" />
+    <param name="angular_axis" value="0" type="int" />
+    <param name="linear_vel" value="$(arg linear_vel)" type="double" />
+    <param name="angular_vel" value="$(arg angular_vel)" type="double" />
+    <remap from="~/cmd_vel" to="$(arg cmd_vel_out)" />
+    <remap from="~/cmd_vel_input" to="$(arg cmd_vel_in)" />
+    <remap from="/joy" to="/joystick_interrupt/joy" />
+  </node>
+
+</launch>
+
