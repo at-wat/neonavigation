@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <name>neonavigation</name>
+  <version>0.0.0</version>
+  <description>The neonavigation package</description>
+
+  <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
+  <license>FRL</license>
+  <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <run_depend>planner</run_depend>
+  <run_depend>costmap</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>
