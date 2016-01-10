@@ -376,13 +376,15 @@ public:
 
 		auto ts = std::chrono::high_resolution_clock::now();
 
+		vec *better = nullptr;
+		float cost_estim_min = FLT_MAX;
 		while(true)
 		{
 			//printf("search queue %d\n", (int)open.size());
 			if(open.size() < 1)
 			{
 				// No fesible path
-				printf("No fesible path\n");
+				//printf("No fesible path\n");
 				return false;
 			}
 			pq center = open.top();
@@ -396,7 +398,9 @@ public:
 			{
 				std::list<vec> path_tmp;
 				ts = tnow;
-				find_path(s, p, path_tmp);
+				auto goal = p;
+				if(better) goal = *better;
+				find_path(s, goal, path_tmp);
 				cb_progress(path_tmp);
 			}
 
@@ -421,6 +425,11 @@ public:
 					continue;
 				}
 				auto cost_estim = cb_cost_estim(next, e);
+				if(c + cost + cost_estim < cost_estim_min)
+				{
+					cost_estim_min = c + cost + cost_estim;
+					better = &next;
+				}
 				//printf(" - %d, %d, %d  c: %0.2f\n", next[0], next[1], next[2], cost);
 				//printf("  - cost %0.3f, euclid %0.3f\n", cost, cost_estim);
 				//if(cost < 0) exit(1);
@@ -446,7 +455,7 @@ public:
 			}
 			//printf("(parents %d)\n", (int)parents.size());
 		}
-		printf("AStar search finished (parents %d)\n", (int)parents.size());
+		//printf("AStar search finished (parents %d)\n", (int)parents.size());
 
 		return find_path(s, e, path);
 	}
