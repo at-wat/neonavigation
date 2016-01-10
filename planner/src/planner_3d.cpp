@@ -59,6 +59,30 @@ private:
 
 	astar as;
 	astar::gridmap<char, 0x40> cm;
+	astar::gridmap<float> cost_estim_cache;
+	
+	astar::vecf euclid_cost_coef;
+	float euclid_cost(const astar::vec &v, const astar::vecf coef)
+	{
+		auto vc = v;
+		float cost = 0;
+		for(int i = 0; i < noncyclic; i ++)
+		{
+			cost += powf(coef[i] * vc[i], 2.0);
+		}
+		cost = sqrtf(cost);
+		for(int i = noncyclic; i < dim; i ++)
+		{
+			vc.cycle(vc[i], cm.size[i]);
+			cost += fabs(coef[i] * vc[i]);
+		}
+		return cost;
+	}
+	float euclid_cost(const astar::vec &v)
+	{
+		return euclid_cost(v, euclid_cost_coef);
+	}
+
 	class rotation_cache
 	{
 	public:
@@ -109,7 +133,7 @@ private:
 	bool has_map;
 	bool has_goal;
 	std::vector<astar::vec> search_list;
-	std::vector<astar::vec> search_list_min;
+	std::vector<astar::vec> search_list_rough;
 
 	// Cost weights
 	class cost_coeff_
@@ -122,12 +146,31 @@ private:
 	} cc;
 
 	geometry_msgs::PoseStamped goal;
+	astar::vecf ec;
+	astar::vecf ec_rough;
 
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
 		goal = *msg;
 		ROS_INFO("New goal received");
 		has_goal = true;
+		
+		astar::vec e;
+		metric2grid(e[0], e[1], e[2],
+				goal.pose.position.x, goal.pose.position.y, 
+				tf::getYaw(goal.pose.orientation));
+		astar::vec p;
+		for(p[2] = 0; p[2] < cm.size[2]; p[2] ++)
+		{
+			for(p[1] = 0; p[1] < cm.size[1]; p[1] ++)
+			{
+				for(p[0] = 0; p[0] < cm.size[0]; p[0] ++)
+				{
+					cost_estim_cache[p] = euclid_cost(e - p, ec_rough);
+				}
+			}
+		}
+		ROS_INFO("Cost estimation cache generated");
 	}
 	void cb_map(const costmap::CSpace3D::ConstPtr &msg)
 	{
@@ -140,10 +183,14 @@ private:
 				msg->info.origin.position.x,
 				msg->info.origin.position.y,
 				tf::getYaw(msg->info.origin.orientation));
-		float ec[3] = {1.0f / max_vel, 
+
+		float ec_val[3] = {1.0f / max_vel, 
 			1.0f / max_vel, 
 			1.0f * cc.weight_ang_vel / max_ang_vel};
-		as.set_euclid_cost(astar::vecf(ec));
+
+		ec = astar::vecf(ec_val);
+		ec_val[2] = 0;
+		ec_rough = astar::vecf(ec_val);
 
 		if(map_info.linear_resolution != msg->info.linear_resolution ||
 				map_info.angular_resolution != msg->info.angular_resolution)
@@ -163,20 +210,16 @@ private:
 					}
 				}
 			}
-			search_list_min.clear();
+			search_list_rough.clear();
 			for(d[0] = -range; d[0] <= range; d[0] ++)
 			{
-				//if(d[0] % 2 != 0) continue;
+				if(d[0] % 2 != 0 && abs(d[0] > 1)) continue;
 				for(d[1] = -range; d[1] <= range; d[1] ++)
 				{
-					//if(d[1] % 2 != 0) continue;
+					if(d[1] % 2 != 0 && abs(d[1] > 1)) continue;
 					if(hypotf(d[0], d[1]) > range) continue;
-					if(hypotf(d[0], d[1]) < range/2) continue;
-					//for(d[2] = 0; d[2] < (int)msg->info.angle; d[2] ++)
-					{
-						d[2] = 0;
-						search_list_min.push_back(d);
-					}
+					d[2] = 0;
+					search_list_rough.push_back(d);
 				}
 			}
 			ROS_INFO("Search list updated (range: ang %d, lin %d) %d", 
@@ -216,6 +259,7 @@ private:
 		int size[3] = {(int)map_info.width, (int)map_info.height, (int)map_info.angle};
 		as.reset(astar::vec(size));
 		cm.reset(astar::vec(size));
+		cost_estim_cache.reset(size);
 
 		astar::vec p;
 		for(p[2] = 0; p[2] < size[2]; p[2] ++)
@@ -230,6 +274,7 @@ private:
 				}
 			}
 		}
+		ROS_INFO("Map copied");
 
 		has_map = true;
 	}
@@ -329,6 +374,8 @@ private:
 		if(!as.search(s, e, path_grid, 
 				std::bind(&planner_3d::cb_cost, 
 					this, std::placeholders::_1, std::placeholders::_2), 
+				std::bind(&planner_3d::cb_cost_estim, 
+					this, std::placeholders::_1, std::placeholders::_2), 
 				std::bind(&planner_3d::cb_search, 
 					this, std::placeholders::_1,
 					std::placeholders::_2, std::placeholders::_3), 
@@ -360,19 +407,25 @@ private:
 
 		return true;
 	}
+	bool rough;
+	astar::vec v_goal;
 	std::vector<astar::vec> &cb_search(
 			const astar::vec& p,
 			const astar::vec& s, const astar::vec& e)
 	{
+		v_goal = e;
 		auto ds = s - p;
-		auto de = e - p;
 		rot_cache = &rotgm[p[2]];
-		if(ds.sqlen() < 20 * 20 ||
-				de.sqlen() < 3 * 3)
+		
+		if(ds.sqlen() < 10*10)
 		{
+			rough = false;
+			euclid_cost_coef = ec;
 			return search_list;
 		}
-		return search_list_min;
+		rough = true;
+		euclid_cost_coef = ec_rough;
+		return search_list_rough;
 	}
 	bool cb_progress(const std::list<astar::vec>& path_grid)
 	{
@@ -391,31 +444,71 @@ private:
 		if(v[2] > M_PI) v[2] -= 2 * M_PI;
 		else if(v[2] < -M_PI) v[2] += 2 * M_PI;
 	}
-	float cb_cost(const astar::vec &s, const astar::vec &e)
+	float cb_cost_estim(const astar::vec &s, const astar::vec &e)
 	{
-		if(cm[e] > 99) return -1;
-		float cost = 0;
+		if(rough)
+		{
+			return cost_estim_cache[s];
+		}
+		return euclid_cost(e - s);
+	}
+	float cb_cost(const astar::vec &s, astar::vec &e)
+	{
 		auto d = e - s;
+		float cost = euclid_cost(d);
 
-		float diff_val[3] = {
+		if(rough)
+		{
+			// Go-straight
+			float p[3], dp[3], sum = 0;
+			float distf = d.len();
+			int dist = distf;
+			distf /= dist;
+			p[0] = s[0];
+			p[1] = s[1];
+			p[2] = 0;
+			dp[0] = (float)d[0] / dist;
+			dp[1] = (float)d[1] / dist;
+			astar::vec pos(p);
+			for(int i = 0; i < dist; i ++)
+			{
+				pos[0] = lroundf(p[0]);
+				pos[1] = lroundf(p[1]);
+				auto c = cm[pos];
+				if(c > 99) return -1;
+				sum += c;
+				p[0] += dp[0];
+				p[1] += dp[1];
+			}
+			//if(e[0] == v_goal[0] && e[1] == v_goal[1])
+			{
+				e[2] = v_goal[2];
+			}
+			//else
+			{
+			//	e[2] = lroundf(atan2f(d[1], d[0]) / map_info.angular_resolution);
+			}
+			cost += sum * map_info.linear_resolution * distf;
+			return cost;
+		}
+		if(d[0] == 0 && d[1] == 0)
+		{
+			// In-place turn
+			return cc.in_place_turn;
+		}
+
+		/*float diff_val[3] = {
 			d[0] * map_info.linear_resolution, 
 			d[1] * map_info.linear_resolution, 
 			e[2] * map_info.angular_resolution};
 		astar::vecf motion(diff_val);
-		rotate(motion, -s[2] * map_info.angular_resolution);
-		/*auto d2 = d;
+		rotate(motion, -s[2] * map_info.angular_resolution);*/
+		auto d2 = d;
 		d2[0] += range;
 		d2[1] += range;
 		d2[2] = e[2];
-		astar::vecf motion = (*rot_cache)[d2];*/
-/*
-	{
-		printf("rot %d, (%d, %d, %d)\n", s[2], d[0], d[1], e[2]);
-		printf("c %f, %f, %f\n", motion[0], motion[1], motion[2]);
-		printf("  %f, %f, %f\n", motion2[0], motion2[1], motion2[2]);
-	}
-	if(motion[0] != motion2[0] || motion[2] != motion[2]) exit(1);
-*/
+		astar::vecf motion = (*rot_cache)[d2];
+		
 		astar::vecf motion_grid = motion;
 		motion_grid[0] /= map_info.linear_resolution;
 		motion_grid[1] /= map_info.linear_resolution;
@@ -443,7 +536,6 @@ private:
 
 		float cos_v = cosf(motion[2]);
 		float sin_v = sinf(motion[2]);
-		//float tan_v = sin_v / cos_v;
 
 		bool forward(true);
 		if(motion[0] < 0) forward = false;
@@ -451,37 +543,35 @@ private:
 		if(!forward)
 		{
 			cost += cc.weight_backward * dist;
-			//return -1;
 		}
 
-		if(lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) == 0)
-		{
-			// In-place turn
-			cost += cc.in_place_turn;
-			//return -1;
-		}
-		else if(lroundf(motion_grid[2]) == 0)
+		if(lroundf(motion_grid[2]) == 0)
 		{
 			// Go-straight
 			float p[3], dp[3], sum = 0;
-			int dist = d.len();
+			float distf = d.len();
+			int dist = distf;
+			distf /= dist;
 			p[0] = s[0];
 			p[1] = s[1];
-			p[2] = s[2];
+			p[2] = 0;
 			dp[0] = (float)d[0] / dist;
 			dp[1] = (float)d[1] / dist;
+			astar::vec pos(p);
 			for(int i = 0; i < dist; i ++)
 			{
+				pos[0] = lroundf(p[0]);
+				pos[1] = lroundf(p[1]);
+				auto c = cm[pos];
+				if(c > 99) return -1;
+				sum += c;
 				p[0] += dp[0];
 				p[1] += dp[1];
-				if(cm[astar::vec(p)] > 99) return -1;
-				sum += cm[astar::vec(p)];
 			}
-			cost += sum * map_info.linear_resolution;
+			cost += sum * map_info.linear_resolution * distf;
 		}
 		else
 		{
-			//if(dist < map_info.linear_resolution * 3) return -1;
 			// Curve
 			if(motion[0] * motion[1] * motion[2] < 0)
 			{
@@ -493,7 +583,7 @@ private:
 			if((sinf(motion[2]) < 0) ^ (!forward)) r2 = -r2;
 
 			// curveture at the start pose and the end pose must be same
-			if(fabs(r1 - r2) >= map_info.linear_resolution / 2.0)
+			if(fabs(r1 - r2) > map_info.linear_resolution * sqrtf(2.0))
 			{
 				// Drifted
 				return -1;
@@ -515,20 +605,26 @@ private:
 			{
 				// Go-straight
 				float p[3], dp[3], sum = 0;
-				int dist = d.len();
+				float distf = d.len();
+				int dist = distf;
+				distf /= dist;
 				p[0] = s[0];
 				p[1] = s[1];
-				p[2] = s[2];
+				p[2] = 0;
 				dp[0] = (float)d[0] / dist;
 				dp[1] = (float)d[1] / dist;
+				astar::vec pos(p);
 				for(int i = 0; i < dist; i ++)
 				{
+					pos[0] = lroundf(p[0]);
+					pos[1] = lroundf(p[1]);
+					auto c = cm[pos];
+					if(c > 99) return -1;
+					sum += c;
 					p[0] += dp[0];
 					p[1] += dp[1];
-					if(cm[astar::vec(p)] > 99) return -1;
-					sum += cm[astar::vec(p)];
 				}
-				cost += sum * map_info.linear_resolution;
+				cost += sum * map_info.linear_resolution * distf;
 			}
 		}
 

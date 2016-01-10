@@ -221,7 +221,7 @@ public:
 			return this->p > b.p;
 		}
 	};
-	template <class T, int block_width = 0x10>
+	template <class T, int block_width = 0x20>
 		class gridmap
 	{
 	public:
@@ -308,8 +308,6 @@ public:
 	reservable_priority_queue<pq> open;
 	size_t queue_size_limit;
 
-	vecf euclid_cost_coef;
-
 	void reset(const vec size)
 	{
 		g.reset(size);
@@ -330,46 +328,26 @@ public:
 		queue_size_limit = size;
 	}
 
-	void set_euclid_cost(const vecf &ec)
-	{
-		euclid_cost_coef = ec;
-	}
-	float euclid_cost(const vec &v)
-	{
-		auto vc = v;
-		float cost = 0;
-		for(int i = 0; i < noncyclic; i ++)
-		{
-			cost += powf(euclid_cost_coef[i] * vc[i], 2.0);
-		}
-		cost = sqrtf(cost);
-		for(int i = noncyclic; i < dim; i ++)
-		{
-			vc.cycle(vc[i], g.size[i]);
-			cost += euclid_cost_coef[i] * vc[i];
-		}
-		return cost;
-	}
 	bool search(const vec &s, const vec &e, 
 			std::list<vec> &path,
-			std::function<float(const vec&, const vec&)> cb_cost,
+			std::function<float(const vec&, vec&)> cb_cost,
+			std::function<float(const vec&, const vec&)> cb_cost_estim,
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
 			float progress_interval)
 	{
 		return search_impl(g, s, e, path,
-				cb_cost, cb_search, cb_progress,
-				progress_interval,
-				false);
+				cb_cost, cb_cost_estim, cb_search, cb_progress,
+				progress_interval);
 	}
 	bool search_impl(gridmap<float> &g,
 			const vec &st, const vec &en, 
 			std::list<vec> &path,
-			std::function<float(const vec&, const vec&)> cb_cost,
+			std::function<float(const vec&, vec&)> cb_cost,
+			std::function<float(const vec&, const vec&)> cb_cost_estim,
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
-			float progress_interval,
-			bool reverse)
+			float progress_interval)
 	{
 		if(st == en)
 		{
@@ -387,7 +365,7 @@ public:
 		parents.clear();
 
 		g[s] = 0;
-		open.push(pq(euclid_cost(e - s), 0, s));
+		open.push(pq(cb_cost_estim(s, e), 0, s));
 
 		auto ts = std::chrono::high_resolution_clock::now();
 
@@ -404,6 +382,7 @@ public:
 			auto p = center.v;
 			auto c = center.p_raw;
 			open.pop();
+			if(c > g[p]) continue;
 
 			auto tnow = std::chrono::high_resolution_clock::now();
 			if(std::chrono::duration<float>(tnow - ts).count() >= progress_interval)
@@ -423,13 +402,13 @@ public:
 					next.cycle_unsigned(next[i], g.size[i]);
 				}
 
-				auto cost = reverse ? cb_cost(next, p) : cb_cost(p, next);
+				auto cost = cb_cost(p, next);
 
 				if(cost < 0) continue;
-				auto cost_estim = euclid_cost(e - next);
-				cost += euclid_cost(diff);
+				auto cost_estim = cb_cost_estim(next, e);
 				//printf(" - %d, %d, %d  c: %0.2f\n", next[0], next[1], next[2], cost);
 				//printf("  - cost %0.3f, euclid %0.3f\n", cost, cost_estim);
+				//if(cost < 0) exit(1);
 				//printf("  - ok\n");
 
 				if(g[next] > c + cost)
@@ -457,7 +436,7 @@ public:
 		while(true)
 		{
 			path.push_front(n);
-			//printf("p- %d %d %d\n", n[0], n[1], n[2]);
+			//printf("p- %d %d %d   %0.4f\n", n[0], n[1], n[2], g[n]);
 			if(n == s) break;
 			if(parents.find(n) == parents.end())
 			{

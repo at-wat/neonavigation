@@ -21,8 +21,10 @@ else()
 	message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-set(CMAKE_LD_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops -finline-functions")
+
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+#set(CMAKE_LD_FLAGS "${CMAKE_CXX_FLAGS} -pg")
 
 include_directories(${catkin_INCLUDE_DIRS})
 
