@@ -69,12 +69,20 @@ private:
 		}
 
 		pub_costmap.publish(map);
-
-		footprint.header.stamp = ros::Time::now();
-		pub_footprint.publish(footprint);
 	}
 
 public:
+	void spin()
+	{
+		ros::Rate wait(1);
+		while(ros::ok())
+		{
+			wait.sleep();
+			ros::spinOnce();
+			footprint.header.stamp = ros::Time::now();
+			pub_footprint.publish(footprint);
+		}
+	}
 	costmap_3d():
 		nh("~")
 	{
@@ -126,7 +134,7 @@ int main(int argc, char *argv[])
 	ros::init(argc, argv, "costmap_3d");
 	
 	costmap_3d cm;
-	ros::spin();
+	cm.spin();
 
 	return 0;
 }
