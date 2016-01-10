@@ -238,6 +238,13 @@ public:
 				c[i] = zero;
 			}
 		}
+		void clear_positive(const T zero)
+		{
+			for(size_t i = 0; i < ser_size; i ++)
+			{
+				if(c[i] >= 0) c[i] = zero;
+			}
+		}
 		void reset(const vec &size)
 		{
 			this->size = size;
@@ -249,7 +256,6 @@ public:
 
 			block_ser_size = 1;
 			block_num = 1;
-			ser_size = 1;
 			for(int i = 0; i < dim; i ++)
 			{
 				int width;
@@ -266,8 +272,8 @@ public:
 
 				block_ser_size *= width;
 				block_num *= block_size[i];
-				ser_size *= width * block_size[i];
 			}
+			ser_size = block_ser_size * block_num;
 			
 			c.reset(new T[ser_size]);
 		}
@@ -311,6 +317,7 @@ public:
 	void reset(const vec size)
 	{
 		g.reset(size);
+		g.clear(FLT_MAX);
 		parents.reserve(g.ser_size / 16);
 		open.reserve(g.ser_size / 16);
 	}
@@ -394,6 +401,7 @@ public:
 			}
 
 			auto search_list = cb_search(p, s, e);
+			int updates = 0;
 			for(auto &diff: search_list)
 			{
 				auto next = p + diff;
@@ -401,10 +409,17 @@ public:
 				{
 					next.cycle_unsigned(next[i], g.size[i]);
 				}
+				if((unsigned int)next[0] >= (unsigned int)g.size[0] ||
+						(unsigned int)next[1] >= (unsigned int)g.size[1])
+					continue;
+				if(g[next] < 0) continue;
 
 				auto cost = cb_cost(p, next);
 
-				if(cost < 0) continue;
+				if(cost < 0)
+				{
+					continue;
+				}
 				auto cost_estim = cb_cost_estim(next, e);
 				//printf(" - %d, %d, %d  c: %0.2f\n", next[0], next[1], next[2], cost);
 				//printf("  - cost %0.3f, euclid %0.3f\n", cost, cost_estim);
@@ -418,7 +433,12 @@ public:
 					open.push(pq(c + cost + cost_estim, c + cost, next));
 					if(queue_size_limit > 0 &&
 							open.size() > queue_size_limit) open.pop_back();
+					updates ++;
 				}
+			}
+			if(updates == 0)
+			{
+				g[p] = -1;
 			}
 			if(g[e] != FLT_MAX)
 			{
