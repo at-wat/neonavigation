@@ -159,18 +159,13 @@ private:
 	{
 		goal = *msg;
 
-		astar::vec e;
-		metric2grid(e[0], e[1], e[2],
-				goal.pose.position.x, goal.pose.position.y, 
-				tf::getYaw(goal.pose.orientation));
-		ROS_INFO("New goal received (%d, %d, %d)",
-				e[0], e[1], e[2]);
 		has_goal = true;
 		update_goal();
 	}
 	void update_goal()
 	{	
 		if(!has_map) return;
+
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
 				start.pose.position.x, start.pose.position.y, 
@@ -178,6 +173,8 @@ private:
 		metric2grid(e[0], e[1], e[2],
 				goal.pose.position.x, goal.pose.position.y, 
 				tf::getYaw(goal.pose.orientation));
+		ROS_INFO("New goal received (%d, %d, %d)",
+				e[0], e[1], e[2]);
 
 		astar::reservable_priority_queue<astar::pq> open;
 
@@ -420,9 +417,9 @@ public:
 		nh.param_cast("max_ang_vel", max_ang_vel, 0.6f);
 
 		nh.param_cast("weight_decel", cc.weight_decel, 50.0f);
-		nh.param_cast("weight_backward", cc.weight_backward, 100.0f);
-		nh.param_cast("weight_ang_vel", cc.weight_ang_vel, 0.3f);
-		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 50.0f);
+		nh.param_cast("weight_backward", cc.weight_backward, 1.0f);
+		nh.param_cast("weight_ang_vel", cc.weight_ang_vel, 2.0f);
+		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 20.0f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
 		
@@ -482,18 +479,132 @@ private:
 	{
 		path.header = map_header;
 		path.header.stamp = ros::Time::now();
+
+		//static int cnt = 0;
+		//cnt ++;
+		float x_ = 0, y_ = 0, yaw_ = 0;
+		astar::vec p_;
+		bool init = false;
 		for(auto &p: path_grid)
 		{
 			float x, y, yaw;
 			grid2metric(p[0], p[1], p[2], x, y, yaw);
 			geometry_msgs::PoseStamped ps;
 			ps.header = path.header;
-			ps.pose.position.x = x;
-			ps.pose.position.y = y;
-			ps.pose.position.z = 0;
-			ps.pose.orientation =
-				tf::createQuaternionMsgFromYaw(yaw);
-			path.poses.push_back(ps);
+		/*	if(cnt % 2 == 0)
+			{
+				ps.pose.position.x = x;
+				ps.pose.position.y = y;
+				ps.pose.position.z = 0;
+				ps.pose.orientation =
+					tf::createQuaternionMsgFromYaw(yaw);
+				path.poses.push_back(ps);
+				continue;
+			}*/
+
+			//printf("%d %d %d  %f\n", p[0], p[1], p[2], as.g[p]);
+			if(init)
+			{
+				auto ds = v_start - p;
+				auto d = p - p_;
+				float diff_val[3] = {
+					d[0] * map_info.linear_resolution, 
+					d[1] * map_info.linear_resolution, 
+					p[2] * map_info.angular_resolution};
+				astar::vecf motion(diff_val);
+				rotate(motion, -p_[2] * map_info.angular_resolution);
+
+				float inter = 0.1 / d.len();
+
+				float cos_v = cosf(motion[2]);
+				float sin_v = sinf(motion[2]);
+				if(d[0] == 0 && d[1] == 0)
+				{
+					ps.pose.position.x = x;
+					ps.pose.position.y = y;
+					ps.pose.position.z = 0;
+					ps.pose.orientation =
+						tf::createQuaternionMsgFromYaw(yaw);
+					path.poses.push_back(ps);
+				}
+				else if(fabs(sin_v) < 0.001 ||
+						ds.sqlen() > local_range * local_range)
+				{
+					for(float i = 0; i < 1.0; i += inter)
+					{
+						float x2, y2, yaw2;
+						x2 = x_ * (1 - i) + x * i;
+						y2 = y_ * (1 - i) + y * i;
+						yaw2 = yaw_ * (1 - i) + yaw * i;
+						ps.pose.position.x = x2;
+						ps.pose.position.y = y2;
+						ps.pose.position.z = 0;
+						ps.pose.orientation =
+							tf::createQuaternionMsgFromYaw(yaw2);
+						path.poses.push_back(ps);
+					}
+				}
+				else
+				{
+					float r1 = motion[1] + motion[0] * cos_v / sin_v;
+					float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
+					if(motion[0] * sin_v < 0) r2 = -r2;
+
+					float cx, cy, cx_, cy_, dyaw;
+					dyaw = yaw - yaw_;
+					if(dyaw < -M_PI) dyaw += 2 * M_PI;
+					else if(dyaw > M_PI) dyaw -= 2 * M_PI;
+
+					cx = x + r2 * cosf(yaw + M_PI/2);
+					cy = y + r2 * sinf(yaw + M_PI/2);
+					cx_ = x_ + r1 * cosf(yaw_ + M_PI/2);
+					cy_ = y_ + r1 * sinf(yaw_ + M_PI/2);
+						
+					/*ps.pose.position.x = cx;
+					ps.pose.position.y = cy;
+					ps.pose.position.z = 0;
+					ps.pose.orientation =
+						tf::createQuaternionMsgFromYaw(0);
+					path.poses.push_back(ps);*/
+
+					for(float i = 0; i < 1.0; i += inter)
+					{
+						float r = r1 * (1.0 - i) + r2 * i;
+						float cx2 = cx_ * (1.0 - i) + cx * i;
+						float cy2 = cy_ * (1.0 - i) + cy * i;
+						float cyaw = yaw_ + i * dyaw;
+
+						float x2, y2, yaw2;
+						x2 = cx2 - r * cosf(cyaw + M_PI/2);
+						y2 = cy2 - r * sinf(cyaw + M_PI/2);
+						yaw2 = cyaw;
+						ps.pose.position.x = x2;
+						ps.pose.position.y = y2;
+						ps.pose.position.z = 0;
+						ps.pose.orientation =
+							tf::createQuaternionMsgFromYaw(yaw2);
+						path.poses.push_back(ps);
+					}
+					/*ps.pose.position.x = cx_;
+					ps.pose.position.y = cy_;
+					ps.pose.position.z = 0;
+					ps.pose.orientation =
+						tf::createQuaternionMsgFromYaw(0);
+					path.poses.push_back(ps);*/
+					ps.pose.position.x = x;
+					ps.pose.position.y = y;
+					ps.pose.position.z = 0;
+					ps.pose.orientation =
+						tf::createQuaternionMsgFromYaw(yaw);
+					path.poses.push_back(ps);
+				}
+			}
+
+			x_ = x;
+			y_ = y;
+			yaw_ = yaw;
+			p_ = p;
+			init = true;
 		}
 	}
 	void metric2grid(
@@ -547,11 +658,13 @@ private:
 	}
 	bool rough;
 	astar::vec v_goal;
+	astar::vec v_start;
 	std::vector<astar::vec> &cb_search(
 			const astar::vec& p,
 			const astar::vec& s, const astar::vec& e)
 	{
 		v_goal = e;
+		v_start = s;
 		auto ds = s - p;
 		rot_cache = &rotgm[p[2]];
 		
@@ -568,7 +681,9 @@ private:
 	bool cb_progress(const std::list<astar::vec>& path_grid)
 	{
 		nav_msgs::Path path;
-		grid2metric(path_grid, path);
+		path.header = map_header;
+		path.header.stamp = ros::Time::now();
+		//grid2metric(path_grid, path);
 		pub_path.publish(path);
 		ROS_INFO("Search timed out");
 		return true;
@@ -589,7 +704,12 @@ private:
 	{
 		auto s2 = s;
 		s2[2] = 0;
-		return cost_estim_cache[s2];
+		auto cost = cost_estim_cache[s2];
+		if(!rough)
+		{
+			cost += ec_rough[2] * fabs(s[2]);
+		}
+		return cost;
 	}
 	float cb_cost(const astar::vec &s, astar::vec &e)
 	{
@@ -598,6 +718,9 @@ private:
 
 		if(rough)
 		{
+			// Snap
+			if((e - v_goal).sqlen() < range * range) e = v_goal;
+
 			// Go-straight
 			float v[3], dp[3], sum = 0;
 			float distf = d.len();
@@ -682,14 +805,21 @@ private:
 
 		if(!forward)
 		{
-			cost += cc.weight_backward * dist;
+			cost *= 1.0 + cc.weight_backward;
 		}
 
 		if(lroundf(motion_grid[2]) == 0)
 		{
+			float distf = d.len();
+
+			astar::vecf vg(s);
+			float yaw = s[2] * map_info.angular_resolution;
+			vg[0] += cosf(yaw) * distf;
+			vg[1] += sinf(yaw) * distf;
+			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution)) return -1;
+
 			// Go-straight
 			float v[3], dp[3], sum = 0;
-			float distf = d.len();
 			int dist = distf;
 			distf /= dist;
 			v[0] = s[0];
@@ -714,16 +844,17 @@ private:
 		{
 			// Curve
 			if(motion[0] * motion[1] * motion[2] < 0)
-			{
 				return -1;
-			}
+			if(d.sqlen() < 3 * 3) return -1;
+			if(fabs(motion[1]) <= map_info.linear_resolution * 0.5) return -1;
+
 
 			float r1 = motion[1] + motion[0] * cos_v / sin_v;
 			float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
-			if((sinf(motion[2]) < 0) ^ (!forward)) r2 = -r2;
+			if(motion[0] * sin_v < 0) r2 = -r2;
 
 			// curveture at the start pose and the end pose must be same
-			if(fabs(r1 - r2) > map_info.linear_resolution * sqrtf(2.0))
+			if(fabs(r1 - r2) >= map_info.linear_resolution)
 			{
 				// Drifted
 				return -1;

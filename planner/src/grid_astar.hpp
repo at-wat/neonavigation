@@ -141,6 +141,10 @@ public:
 		{
 			for(int i = 0; i < dim; i ++) e[i] = v[i];
 		}
+		vecf(const vec &v)
+		{
+			for(int i = 0; i < dim; i ++) e[i] = v[i];
+		}
 		vecf()
 		{
 		}
@@ -158,6 +162,15 @@ public:
 			for(int i = 0; i < dim; i ++)
 			{
 				out[i] = e[i] * v[i];
+			}
+			return out;
+		}
+		vecf operator -(const vecf& v) const
+		{
+			vecf out = *this;
+			for(int i = 0; i < dim; i ++)
+			{
+				out[i] -= v[i];
 			}
 			return out;
 		}
@@ -391,6 +404,7 @@ public:
 			auto p = center.v;
 			auto c = center.p_raw;
 			open.pop();
+			if(p == e) break;
 			if(c > g[p]) continue;
 
 			auto tnow = std::chrono::high_resolution_clock::now();
@@ -398,7 +412,7 @@ public:
 			{
 				std::list<vec> path_tmp;
 				ts = tnow;
-				auto goal = p;
+				auto goal = s;
 				if(better) goal = *better;
 				find_path(s, goal, path_tmp);
 				cb_progress(path_tmp);
@@ -425,9 +439,9 @@ public:
 					continue;
 				}
 				auto cost_estim = cb_cost_estim(next, e);
-				if(c + cost + cost_estim < cost_estim_min)
+				if(cost_estim < cost_estim_min)
 				{
-					cost_estim_min = c + cost + cost_estim;
+					cost_estim_min = cost_estim;
 					better = &next;
 				}
 				//printf(" - %d, %d, %d  c: %0.2f\n", next[0], next[1], next[2], cost);
@@ -448,10 +462,6 @@ public:
 			if(updates == 0)
 			{
 				g[p] = -1;
-			}
-			if(g[e] != FLT_MAX)
-			{
-				break;
 			}
 			//printf("(parents %d)\n", (int)parents.size());
 		}
