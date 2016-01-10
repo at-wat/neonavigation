@@ -39,7 +39,7 @@ namespace ros
 			param_val = (int)_param_val_d;
 		}
 		NodeHandle_f(const std::string& ns = std::string(), 
-				const M_string& remappings = M_string())
+				const M_string& remappings = M_string()) : NodeHandle(ns, remappings)
 		{
 		}
 	};
@@ -61,6 +61,7 @@ private:
 
 	astar as;
 	astar::gridmap<char, 0x40> cm;
+	astar::gridmap<char, 0x80> cm_rough;
 	astar::gridmap<float> cost_estim_cache;
 	
 	astar::vecf euclid_cost_coef;
@@ -131,6 +132,8 @@ private:
 	float freq;
 	float search_range;
 	int range;
+	int local_range;
+	double local_range_f;
 	int unknown_cost;
 	bool has_map;
 	bool has_goal;
@@ -147,6 +150,7 @@ private:
 		float in_place_turn;
 	} cc;
 
+	geometry_msgs::PoseStamped start;
 	geometry_msgs::PoseStamped goal;
 	astar::vecf ec;
 	astar::vecf ec_rough;
@@ -154,14 +158,23 @@ private:
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
 		goal = *msg;
-		ROS_INFO("New goal received");
+
+		astar::vec e;
+		metric2grid(e[0], e[1], e[2],
+				goal.pose.position.x, goal.pose.position.y, 
+				tf::getYaw(goal.pose.orientation));
+		ROS_INFO("New goal received (%d, %d, %d)",
+				e[0], e[1], e[2]);
 		has_goal = true;
 		update_goal();
 	}
 	void update_goal()
 	{	
 		if(!has_map) return;
-		astar::vec e;
+		astar::vec s, e;
+		metric2grid(s[0], s[1], s[2],
+				start.pose.position.x, start.pose.position.y, 
+				tf::getYaw(start.pose.orientation));
 		metric2grid(e[0], e[1], e[2],
 				goal.pose.position.x, goal.pose.position.y, 
 				tf::getYaw(goal.pose.orientation));
@@ -178,6 +191,8 @@ private:
 				g[p] = FLT_MAX;
 			}
 		}
+
+		auto ts = std::chrono::high_resolution_clock::now();
 		e[2] = 0;
 		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
 		open.push(astar::pq(g[e], g[e], e));
@@ -193,17 +208,22 @@ private:
 			astar::vec d;
 			d[2] = 0;
 
+			int range = 5;
+			int updates = 0;
 			for(d[0] = -range; d[0] <= range; d[0] ++)
 			{
 				for(d[1] = -range; d[1] <= range; d[1] ++)
 				{
-					if(hypotf(d[0], d[1]) > range) continue;
 					if(d[0] == 0 && d[1] == 0) continue;
+					if(d.sqlen() > range * range) continue;
+
 					auto next = p + d;
 					if((unsigned int)next[0] >= (unsigned int)map_info.width ||
 							(unsigned int)next[1] >= (unsigned int)map_info.height)
 						continue;
+					if(g[next] < 0) continue;
 
+					if((next - s).sqlen() > range * range)
 					{
 						float v[3], dp[3];
 						float distf = d.len();
@@ -220,7 +240,7 @@ private:
 						{
 							pos[0] = lroundf(v[0]);
 							pos[1] = lroundf(v[1]);
-							c = cm[pos];
+							c = cm_rough[pos];
 							if(c > 99) break;
 							v[0] += dp[0];
 							v[1] += dp[1];
@@ -234,10 +254,15 @@ private:
 					{
 						g[next] = gp;
 						open.push(astar::pq(gp, gp, next));
+						updates ++;
 					}
 				}
 			}
+			if(updates == 0) g[p] = -1;
 		}
+		auto tnow = std::chrono::high_resolution_clock::now();
+		ROS_INFO("Cost estimation cache generated (%0.3f sec.)",
+				std::chrono::duration<float>(tnow - ts).count());
 		g[e] = 0;
 		sensor_msgs::PointCloud debug;
 		debug.header = map_header;
@@ -249,6 +274,8 @@ private:
 				for(p[0] = 0; p[0] < cm.size[0]; p[0] ++)
 				{
 					p[2] = 0;
+					if(cost_estim_cache[p] < 0)
+						cost_estim_cache[p] = FLT_MAX;
 					if(cost_estim_cache[p] == FLT_MAX) continue;
 					float x, y, yaw;
 					grid2metric(p[0], p[1], p[2], x, y, yaw);
@@ -261,7 +288,6 @@ private:
 			}
 		}
 		pub_debug.publish(debug);
-		ROS_INFO("Cost estimation cache generated");
 	}
 	void cb_map(const costmap::CSpace3D::ConstPtr &msg)
 	{
@@ -294,7 +320,7 @@ private:
 			{
 				for(d[1] = -range; d[1] <= range; d[1] ++)
 				{
-					if(hypotf(d[0], d[1]) > range) continue;
+					if(d.sqlen() > range * range) continue;
 					for(d[2] = 0; d[2] < (int)msg->info.angle; d[2] ++)
 					{
 						search_list.push_back(d);
@@ -306,8 +332,7 @@ private:
 			{
 				for(d[1] = -range; d[1] <= range; d[1] ++)
 				{
-					if(hypotf(d[0], d[1]) > range) continue;
-					if(hypotf(d[0], d[1]) < range/2) continue;
+					if(d.sqlen() > range * range) continue;
 					d[2] = 0;
 					search_list_rough.push_back(d);
 				}
@@ -346,23 +371,31 @@ private:
 		map_info = msg->info;
 		map_header = msg->header;
 
+		local_range = lroundf(local_range_f / map_info.linear_resolution);
+
 		int size[3] = {(int)map_info.width, (int)map_info.height, (int)map_info.angle};
 		as.reset(astar::vec(size));
 		cm.reset(astar::vec(size));
 		size[2] = 1;
 		cost_estim_cache.reset(astar::vec(size));
+		cm_rough.reset(astar::vec(size));
 
 		astar::vec p;
-		for(p[2] = 0; p[2] < size[2]; p[2] ++)
+		for(p[0] = 0; p[0] < size[0]; p[0] ++)
 		{
 			for(p[1] = 0; p[1] < size[1]; p[1] ++)
 			{
-				for(p[0] = 0; p[0] < size[0]; p[0] ++)
+				int cost_min = 256;
+				for(p[2] = 0; p[2] < size[2]; p[2] ++)
 				{
 					size_t addr = ((p[2] * size[1]) + p[1]) * size[0] + p[0];
-					cm[p] = msg->data[addr];
-					if(cm[p] < 0) cm[p] = unknown_cost;
+					char c = msg->data[addr];
+					if(c < 0) c = unknown_cost;
+					cm[p] = c;
+					if(c < cost_min) cost_min = c;
 				}
+				p[2] = 0;
+				cm_rough[p] = cost_min;
 			}
 		}
 		ROS_INFO("Map copied");
@@ -380,7 +413,7 @@ public:
 		pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 
-		nh.param_cast("freq", freq, 0.5f);
+		nh.param_cast("freq", freq, 2.0f);
 		nh.param_cast("search_range", search_range, 0.4f);
 
 		nh.param_cast("max_vel", max_vel, 0.3f);
@@ -392,6 +425,8 @@ public:
 		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 50.0f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
+		
+		nh.param("local_range", local_range_f, 1.5);
 
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
@@ -411,7 +446,6 @@ public:
 			ros::spinOnce();
 			if(has_map && has_goal)
 			{
-				geometry_msgs::PoseStamped start;
 				start.header.frame_id = "base_link";
 				start.header.stamp = ros::Time::now();
 				start.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
@@ -443,6 +477,25 @@ private:
 		gy = y * map_info.linear_resolution + map_info.origin.position.y;
 		gyaw = yaw * map_info.angular_resolution;
 	}
+	void grid2metric(const std::list<astar::vec> &path_grid, 
+			nav_msgs::Path &path)
+	{
+		path.header = map_header;
+		path.header.stamp = ros::Time::now();
+		for(auto &p: path_grid)
+		{
+			float x, y, yaw;
+			grid2metric(p[0], p[1], p[2], x, y, yaw);
+			geometry_msgs::PoseStamped ps;
+			ps.header = path.header;
+			ps.pose.position.x = x;
+			ps.pose.position.y = y;
+			ps.pose.position.z = 0;
+			ps.pose.orientation =
+				tf::createQuaternionMsgFromYaw(yaw);
+			path.poses.push_back(ps);
+		}
+	}
 	void metric2grid(
 			int &x, int &y, int &yaw,
 			const float gx, const float gy, const float gyaw)
@@ -460,10 +513,15 @@ private:
 		metric2grid(e[0], e[1], e[2],
 				ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
 
-		ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
-				s[0], s[1], s[2], e[0], e[1], e[2]);
+		if(cost_estim_cache[s] == FLT_MAX)
+		{
+			ROS_WARN("Goal unreachable");
+		}
+
+		//ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
+		//		s[0], s[1], s[2], e[0], e[1], e[2]);
 		std::list<astar::vec> path_grid;
-		auto ts = std::chrono::high_resolution_clock::now();
+		//auto ts = std::chrono::high_resolution_clock::now();
 		if(!as.search(s, e, path_grid, 
 				std::bind(&planner_3d::cb_cost, 
 					this, std::placeholders::_1, std::placeholders::_2), 
@@ -476,27 +534,14 @@ private:
 					this, std::placeholders::_1), 
 				1.0f / freq))
 		{
-			ROS_INFO("Search failed");
+			ROS_WARN("Path plan failed (goal unreachable)");
 			return false;
 		}
-		auto tnow = std::chrono::high_resolution_clock::now();
-		printf("time: %0.3f\n", std::chrono::duration<float>(tnow - ts).count());
+		//auto tnow = std::chrono::high_resolution_clock::now();
+		//ROS_INFO("Path found (%0.3f sec.)",
+		//		std::chrono::duration<float>(tnow - ts).count());
 
-		path.header = map_header;
-		path.header.stamp = ros::Time::now();
-		for(auto &p: path_grid)
-		{
-			float x, y, yaw;
-			grid2metric(p[0], p[1], p[2], x, y, yaw);
-			geometry_msgs::PoseStamped ps;
-			ps.header = path.header;
-			ps.pose.position.x = x;
-			ps.pose.position.y = y;
-			ps.pose.position.z = 0;
-			ps.pose.orientation =
-				tf::createQuaternionMsgFromYaw(yaw);
-			path.poses.push_back(ps);
-		}
+		grid2metric(path_grid, path);
 
 		return true;
 	}
@@ -510,7 +555,7 @@ private:
 		auto ds = s - p;
 		rot_cache = &rotgm[p[2]];
 		
-		if(ds.sqlen() < 16*16)
+		if(ds.sqlen() < local_range * local_range)
 		{
 			rough = false;
 			euclid_cost_coef = ec;
@@ -522,6 +567,9 @@ private:
 	}
 	bool cb_progress(const std::list<astar::vec>& path_grid)
 	{
+		nav_msgs::Path path;
+		grid2metric(path_grid, path);
+		pub_path.publish(path);
 		ROS_INFO("Search timed out");
 		return true;
 	}
@@ -550,7 +598,6 @@ private:
 
 		if(rough)
 		{
-			if((e - v_goal).len() < range / 2) e = v_goal;
 			// Go-straight
 			float v[3], dp[3], sum = 0;
 			float distf = d.len();
@@ -566,7 +613,7 @@ private:
 			{
 				pos[0] = lroundf(v[0]);
 				pos[1] = lroundf(v[1]);
-				auto c = cm[pos];
+				auto c = cm_rough[pos];
 				if(c > 99) return -1;
 				sum += c;
 				v[0] += dp[0];
@@ -647,7 +694,7 @@ private:
 			distf /= dist;
 			v[0] = s[0];
 			v[1] = s[1];
-			v[2] = 0;
+			v[2] = s[2];
 			dp[0] = (float)d[0] / dist;
 			dp[1] = (float)d[1] / dist;
 			astar::vec pos(v);
@@ -703,19 +750,27 @@ private:
 				distf /= dist;
 				v[0] = s[0];
 				v[1] = s[1];
-				v[2] = 0;
+				v[2] = s[2];
 				dp[0] = (float)d[0] / dist;
 				dp[1] = (float)d[1] / dist;
+				dp[2] = (float)d[2];
+				if(dp[2] < -map_info.angle / 2) dp[2] += map_info.angle;
+				else if(dp[2] >= map_info.angle / 2) dp[2] -= map_info.angle;
+				dp[2] /= dist;
 				astar::vec pos(v);
 				for(int i = 0; i < dist; i ++)
 				{
 					pos[0] = lroundf(v[0]);
 					pos[1] = lroundf(v[1]);
+					pos[2] = lroundf(v[2]);
+					if(pos[2] < 0) pos[2] += map_info.angle;
+					else if(pos[2] >= (int)map_info.angle) pos[2] -= map_info.angle;
 					auto c = cm[pos];
 					if(c > 99) return -1;
 					sum += c;
 					v[0] += dp[0];
 					v[1] += dp[1];
+					v[2] += dp[2];
 				}
 				cost += sum * map_info.linear_resolution * distf;
 			}
