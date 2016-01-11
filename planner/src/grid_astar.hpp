@@ -110,7 +110,7 @@ public:
 				e[i] = init[i];
 			}
 		}
-		int sqlen()
+		int sqlen() const
 		{
 			int out = 0;
 			for(int i = 0; i < noncyclic; i ++)
@@ -119,11 +119,11 @@ public:
 			}
 			return out;
 		}
-		float len()
+		float len() const
 		{
 			return sqrtf(sqlen());
 		}
-		float norm()
+		float norm() const
 		{
 			float out = 0;
 			for(int i = 0; i < dim; i ++)
@@ -156,6 +156,15 @@ public:
 		{
 			return e[x];
 		}
+		vecf operator *(const vecf& v) const
+		{
+			vecf out;
+			for(int i = 0; i < dim; i ++)
+			{
+				out[i] = e[i] * v[i];
+			}
+			return out;
+		}
 		vecf operator *(const vec& v) const
 		{
 			vecf out;
@@ -174,7 +183,7 @@ public:
 			}
 			return out;
 		}
-		float sqlen()
+		float sqlen() const
 		{
 			float out = 0;
 			for(int i = 0; i < noncyclic; i ++)
@@ -183,11 +192,11 @@ public:
 			}
 			return out;
 		}
-		float len()
+		float len() const
 		{
 			return sqrtf(sqlen());
 		}
-		float norm()
+		float norm() const
 		{
 			float out = 0;
 			for(int i = 0; i < dim; i ++)
@@ -403,9 +412,18 @@ public:
 			pq center = open.top();
 			auto p = center.v;
 			auto c = center.p_raw;
+			auto c_estim = center.p;
 			open.pop();
 			if(p == e) break;
-			if(c > g[p]) continue;
+
+			auto &gp = g[p];
+			if(c > gp) continue;
+
+			if(c_estim - c < cost_estim_min)
+			{
+				cost_estim_min = c_estim - c;
+				better = &p;
+			}
 
 			auto tnow = std::chrono::high_resolution_clock::now();
 			if(std::chrono::duration<float>(tnow - ts).count() >= progress_interval)
@@ -434,24 +452,18 @@ public:
 
 				auto cost = cb_cost(p, next);
 
-				if(cost < 0)
-				{
-					continue;
-				}
+				if(cost < 0) continue;
+
 				auto cost_estim = cb_cost_estim(next, e);
-				if(cost_estim < cost_estim_min)
-				{
-					cost_estim_min = cost_estim;
-					better = &next;
-				}
 				//printf(" - %d, %d, %d  c: %0.2f\n", next[0], next[1], next[2], cost);
 				//printf("  - cost %0.3f, euclid %0.3f\n", cost, cost_estim);
 				//if(cost < 0) exit(1);
 				//printf("  - ok\n");
 
-				if(g[next] > c + cost)
+				auto &gnext = g[next];
+				if(gnext > c + cost)
 				{
-					g[next] = c + cost;
+					gnext = c + cost;
 					parents[next] = p;
 					open.push(pq(c + cost + cost_estim, c + cost, next));
 					if(queue_size_limit > 0 &&
@@ -461,7 +473,7 @@ public:
 			}
 			if(updates == 0)
 			{
-				g[p] = -1;
+				gp = -1;
 			}
 			//printf("(parents %d)\n", (int)parents.size());
 		}

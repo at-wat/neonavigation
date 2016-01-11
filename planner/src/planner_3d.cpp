@@ -147,6 +147,7 @@ private:
 		float weight_decel;
 		float weight_backward;
 		float weight_ang_vel;
+		float weight_costmap;
 		float in_place_turn;
 	} cc;
 
@@ -154,6 +155,7 @@ private:
 	geometry_msgs::PoseStamped goal;
 	astar::vecf ec;
 	astar::vecf ec_rough;
+	astar::vecf resolution;
 
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
@@ -189,23 +191,23 @@ private:
 			}
 		}
 
-		auto ts = std::chrono::high_resolution_clock::now();
+		const auto ts = std::chrono::high_resolution_clock::now();
 		e[2] = 0;
 		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
 		open.push(astar::pq(g[e], g[e], e));
 		while(true)
 		{
 			if(open.size() < 1) break;
-			auto center = open.top();
-			auto p = center.v;
-			auto c = center.p_raw;
+			const auto center = open.top();
+			const auto p = center.v;
+			const auto c = center.p_raw;
 			open.pop();
 			if(c > g[p]) continue;
 
 			astar::vec d;
 			d[2] = 0;
 
-			int range = 5;
+			const int range = 5;
 			int updates = 0;
 			for(d[0] = -range; d[0] <= range; d[0] ++)
 			{
@@ -214,17 +216,20 @@ private:
 					if(d[0] == 0 && d[1] == 0) continue;
 					if(d.sqlen() > range * range) continue;
 
-					auto next = p + d;
+					const auto next = p + d;
 					if((unsigned int)next[0] >= (unsigned int)map_info.width ||
 							(unsigned int)next[1] >= (unsigned int)map_info.height)
 						continue;
-					if(g[next] < 0) continue;
+					auto &gnext = g[next];
+					if(gnext < 0) continue;
+
+					float cost = 0;
 
 					if((next - s).sqlen() > range * range)
 					{
-						float v[3], dp[3];
+						float v[3], dp[3], sum = 0;
 						float distf = d.len();
-						int dist = distf;
+						const int dist = distf;
 						distf /= dist;
 						v[0] = p[0];
 						v[1] = p[1];
@@ -239,17 +244,20 @@ private:
 							pos[1] = lroundf(v[1]);
 							c = cm_rough[pos];
 							if(c > 99) break;
+							sum += c;
 							v[0] += dp[0];
 							v[1] += dp[1];
 						}
 						if(c > 99) continue;
+						cost += sum * map_info.linear_resolution
+						   	* distf * cc.weight_costmap / 100.0;
 					}
+					cost += euclid_cost(d, ec_rough);
 
-					float cost = euclid_cost(d, ec_rough);
-					auto gp = c + cost;
-					if(g[next] > gp)
+					const auto gp = c + cost;
+					if(gnext > gp)
 					{
-						g[next] = gp;
+						gnext = gp;
 						open.push(astar::pq(gp, gp, next));
 						updates ++;
 					}
@@ -257,7 +265,7 @@ private:
 			}
 			if(updates == 0) g[p] = -1;
 		}
-		auto tnow = std::chrono::high_resolution_clock::now();
+		const auto tnow = std::chrono::high_resolution_clock::now();
 		ROS_INFO("Cost estimation cache generated (%0.3f sec.)",
 				std::chrono::duration<float>(tnow - ts).count());
 		g[e] = 0;
@@ -340,7 +348,7 @@ private:
 			rotgm.resize(msg->info.angle);
 			for(int i = 0; i < (int)msg->info.angle; i ++)
 			{
-				int size[3] = {range * 2 + 1, range * 2 + 1, (int)msg->info.angle};
+				const int size[3] = {range * 2 + 1, range * 2 + 1, (int)msg->info.angle};
 				auto &r = rotgm[i];
 				r.reset(astar::vec(size));
 
@@ -352,7 +360,7 @@ private:
 					{
 						for(d[2] = 0; d[2] < (int)msg->info.angle; d[2] ++)
 						{
-							float val[3] = {
+							const float val[3] = {
 								(d[0] - range) * msg->info.linear_resolution, 
 								(d[1] - range) * msg->info.linear_resolution, 
 								d[2] * msg->info.angular_resolution};
@@ -367,6 +375,10 @@ private:
 		}
 		map_info = msg->info;
 		map_header = msg->header;
+
+		resolution[0] = 1.0 / map_info.linear_resolution;
+		resolution[1] = 1.0 / map_info.linear_resolution;
+		resolution[2] = 1.0 / map_info.angular_resolution;
 
 		local_range = lroundf(local_range_f / map_info.linear_resolution);
 
@@ -385,7 +397,7 @@ private:
 				int cost_min = 256;
 				for(p[2] = 0; p[2] < size[2]; p[2] ++)
 				{
-					size_t addr = ((p[2] * size[1]) + p[1]) * size[0] + p[0];
+					const size_t addr = ((p[2] * size[1]) + p[1]) * size[0] + p[0];
 					char c = msg->data[addr];
 					if(c < 0) c = unknown_cost;
 					cm[p] = c;
@@ -419,6 +431,7 @@ public:
 		nh.param_cast("weight_decel", cc.weight_decel, 50.0f);
 		nh.param_cast("weight_backward", cc.weight_backward, 1.0f);
 		nh.param_cast("weight_ang_vel", cc.weight_ang_vel, 2.0f);
+		nh.param_cast("weight_costmap", cc.weight_costmap, 15.0f);
 		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 20.0f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
@@ -446,6 +459,9 @@ public:
 				start.header.frame_id = "base_link";
 				start.header.stamp = ros::Time::now();
 				start.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+				start.pose.position.x = 0;
+				start.pose.position.y = 0;
+				start.pose.position.z = 0;
 				try
 				{
 					tfl.waitForTransform("base_link", map_header.frame_id, 
@@ -511,11 +527,12 @@ private:
 					d[0] * map_info.linear_resolution, 
 					d[1] * map_info.linear_resolution, 
 					p[2] * map_info.angular_resolution};
-				astar::vecf motion(diff_val);
-				rotate(motion, -p_[2] * map_info.angular_resolution);
+				astar::vecf motion_(diff_val);
+				rotate(motion_, -p_[2] * map_info.angular_resolution);
 
 				float inter = 0.1 / d.len();
 
+				const astar::vecf motion = motion_;
 				float cos_v = cosf(motion[2]);
 				float sin_v = sinf(motion[2]);
 				if(d[0] == 0 && d[1] == 0)
@@ -627,12 +644,13 @@ private:
 		if(cost_estim_cache[s] == FLT_MAX)
 		{
 			ROS_WARN("Goal unreachable");
+			return false;
 		}
 
 		//ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
 		//		s[0], s[1], s[2], e[0], e[1], e[2]);
 		std::list<astar::vec> path_grid;
-		//auto ts = std::chrono::high_resolution_clock::now();
+		//const auto ts = std::chrono::high_resolution_clock::now();
 		if(!as.search(s, e, path_grid, 
 				std::bind(&planner_3d::cb_cost, 
 					this, std::placeholders::_1, std::placeholders::_2), 
@@ -648,7 +666,7 @@ private:
 			ROS_WARN("Path plan failed (goal unreachable)");
 			return false;
 		}
-		//auto tnow = std::chrono::high_resolution_clock::now();
+		//const auto tnow = std::chrono::high_resolution_clock::now();
 		//ROS_INFO("Path found (%0.3f sec.)",
 		//		std::chrono::duration<float>(tnow - ts).count());
 
@@ -665,7 +683,7 @@ private:
 	{
 		v_goal = e;
 		v_start = s;
-		auto ds = s - p;
+		const auto ds = s - p;
 		rot_cache = &rotgm[p[2]];
 		
 		if(ds.sqlen() < local_range * local_range)
@@ -688,11 +706,11 @@ private:
 		ROS_INFO("Search timed out");
 		return true;
 	}
-	void rotate(astar::vecf &v, const float ang)
+	void rotate(astar::vecf &v, const float &ang)
 	{
-		astar::vecf tmp = v;
-		float cos_v = cosf(ang);
-		float sin_v = sinf(ang);
+		const astar::vecf tmp = v;
+		const float cos_v = cosf(ang);
+		const float sin_v = sinf(ang);
 
 		v[0] = cos_v * tmp[0] - sin_v * tmp[1];
 		v[1] = sin_v * tmp[0] + cos_v * tmp[1];
@@ -713,7 +731,7 @@ private:
 	}
 	float cb_cost(const astar::vec &s, astar::vec &e)
 	{
-		auto d = e - s;
+		const auto d = e - s;
 		float cost = euclid_cost(d);
 
 		if(rough)
@@ -724,7 +742,7 @@ private:
 			// Go-straight
 			float v[3], dp[3], sum = 0;
 			float distf = d.len();
-			int dist = distf;
+			const int dist = distf;
 			distf /= dist;
 			v[0] = s[0];
 			v[1] = s[1];
@@ -736,7 +754,7 @@ private:
 			{
 				pos[0] = lroundf(v[0]);
 				pos[1] = lroundf(v[1]);
-				auto c = cm_rough[pos];
+				const auto c = cm_rough[pos];
 				if(c > 99) return -1;
 				sum += c;
 				v[0] += dp[0];
@@ -751,7 +769,7 @@ private:
 				e[2] = lroundf(atan2f(d[1], d[0]) / map_info.angular_resolution);
 				if(e[2] < 0) e[2] += map_info.angle;
 			}
-			cost += sum * map_info.linear_resolution * distf;
+			cost += sum * map_info.linear_resolution * distf * cc.weight_costmap / 100.0;
 			return cost;
 		}
 		if(d[0] == 0 && d[1] == 0)
@@ -770,12 +788,12 @@ private:
 		d2[0] = d[0] + range;
 		d2[1] = d[1] + range;
 		d2[2] = e[2];
-		astar::vecf motion = (*rot_cache)[d2];
+		const astar::vecf motion = (*rot_cache)[d2];
 		
-		astar::vecf motion_grid = motion;
-		motion_grid[0] /= map_info.linear_resolution;
-		motion_grid[1] /= map_info.linear_resolution;
-		motion_grid[2] /= map_info.angular_resolution;
+		const astar::vecf motion_grid = motion * resolution;
+		//motion_grid[0] /= map_info.linear_resolution;
+		//motion_grid[1] /= map_info.linear_resolution;
+		//motion_grid[2] /= map_info.angular_resolution;
 
 		if(lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
 		{
@@ -795,10 +813,10 @@ private:
 			return -1;
 		}
 
-		float dist = motion.len();
+		const float dist = motion.len();
 
-		float cos_v = cosf(motion[2]);
-		float sin_v = sinf(motion[2]);
+		const float cos_v = cosf(motion[2]);
+		const float sin_v = sinf(motion[2]);
 
 		bool forward(true);
 		if(motion[0] < 0) forward = false;
@@ -813,14 +831,14 @@ private:
 			float distf = d.len();
 
 			astar::vecf vg(s);
-			float yaw = s[2] * map_info.angular_resolution;
+			const float yaw = s[2] * map_info.angular_resolution;
 			vg[0] += cosf(yaw) * distf;
 			vg[1] += sinf(yaw) * distf;
 			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution)) return -1;
 
 			// Go-straight
 			float v[3], dp[3], sum = 0;
-			int dist = distf;
+			const int dist = distf;
 			distf /= dist;
 			v[0] = s[0];
 			v[1] = s[1];
@@ -832,13 +850,13 @@ private:
 			{
 				pos[0] = lroundf(v[0]);
 				pos[1] = lroundf(v[1]);
-				auto c = cm[pos];
+				const auto c = cm[pos];
 				if(c > 99) return -1;
 				sum += c;
 				v[0] += dp[0];
 				v[1] += dp[1];
 			}
-			cost += sum * map_info.linear_resolution * distf;
+			cost += sum * map_info.linear_resolution * distf * cc.weight_costmap / 100.0;
 		}
 		else
 		{
@@ -849,7 +867,7 @@ private:
 			if(fabs(motion[1]) <= map_info.linear_resolution * 0.5) return -1;
 
 
-			float r1 = motion[1] + motion[0] * cos_v / sin_v;
+			const float r1 = motion[1] + motion[0] * cos_v / sin_v;
 			float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
 			if(motion[0] * sin_v < 0) r2 = -r2;
 
@@ -860,7 +878,7 @@ private:
 				return -1;
 			}
 
-			float curv_radius = r1;
+			const float curv_radius = (r1 + r2) / 2;
 
 			float vel = max_vel;
 			float ang_vel = cos_v * vel / (cos_v * motion[0] + sin_v * motion[1]);
@@ -877,7 +895,7 @@ private:
 				// Go-straight
 				float v[3], dp[3], sum = 0;
 				float distf = d.len();
-				int dist = distf;
+				const int dist = distf;
 				distf /= dist;
 				v[0] = s[0];
 				v[1] = s[1];
@@ -896,14 +914,14 @@ private:
 					pos[2] = lroundf(v[2]);
 					if(pos[2] < 0) pos[2] += map_info.angle;
 					else if(pos[2] >= (int)map_info.angle) pos[2] -= map_info.angle;
-					auto c = cm[pos];
+					const auto c = cm[pos];
 					if(c > 99) return -1;
 					sum += c;
 					v[0] += dp[0];
 					v[1] += dp[1];
 					v[2] += dp[2];
 				}
-				cost += sum * map_info.linear_resolution * distf;
+				cost += sum * map_info.linear_resolution * distf * cc.weight_costmap / 100.0;
 			}
 		}
 
