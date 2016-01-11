@@ -4,6 +4,7 @@
 #include <sensor_msgs/PointCloud.h>
 
 #include <costmap/CSpace3D.h>
+#include <costmap/CSpace3DUpdate.h>
 
 namespace ros
 {
@@ -33,6 +34,7 @@ private:
 	ros::NodeHandle_f nh;
 	ros::Subscriber sub_map;
 	ros::Publisher pub_costmap;
+	ros::Publisher pub_costmap_update;
 	ros::Publisher pub_footprint;
 	ros::Publisher pub_debug;
 	geometry_msgs::PolygonStamped footprint;
@@ -162,9 +164,9 @@ private:
 			value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
 	}
 
+	costmap::CSpace3D map;
 	void cb_map(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 	{
-		costmap::CSpace3D map;
 		ROS_INFO("2D occupancy grid map received");
 
 		map.header = msg->header;
@@ -241,7 +243,7 @@ private:
 		}
 		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
-			for(unsigned int i = 0; i < msg->data.size(); i ++)
+			for(unsigned int i = 0; i < map.info.width * map.info.height; i ++)
 			{
 				if(msg->data[i] <= 0) continue;
 
@@ -291,8 +293,44 @@ private:
 	}
 
 public:
+	void update_map(const int &x, const int &y, const int &yaw,
+			const int &width, const int &height, const int &angle)
+	{
+		costmap::CSpace3DUpdate update;
+		update.header = map.header;
+		map.header.stamp = ros::Time::now();
+		update.x = x;
+		update.y = y;
+		update.yaw = yaw;
+		update.width = width;
+		update.height = height;
+		update.angle = angle;
+		update.data.resize(width * height * angle);
+
+		vec p;
+		for(p[0] = 0; p[0] < width; p[0] ++)
+		{
+			for(p[1] = 0; p[1] < height; p[1] ++)
+			{
+				for(p[2] = 0; p[2] < angle; p[2] ++)
+				{
+					int x2 = x + p[0];
+					int y2 = y + p[1];
+					int yaw2 = yaw + p[2];
+
+					auto &m = map.data[
+						(yaw2 * map.info.height + y2) * map.info.width + x2];
+					auto &up = update.data[
+						(p[2] * height + p[1]) * width + p[0]];
+					up = m;
+				}
+			}
+		}
+		pub_costmap_update.publish(update);
+	}
 	void spin()
 	{
+		//int cnt = 0;
 		ros::Rate wait(1);
 		while(ros::ok())
 		{
@@ -300,6 +338,11 @@ public:
 			ros::spinOnce();
 			footprint.header.stamp = ros::Time::now();
 			pub_footprint.publish(footprint);
+
+		//	if(cnt ++ == 20)
+		//	{
+		//		update_map(100, 200, 0, 50, 200, 16);
+		//	}
 		}
 	}
 	costmap_3d():
@@ -351,6 +394,7 @@ public:
 
 		sub_map = nh.subscribe("/map", 1, &costmap_3d::cb_map, this);
 		pub_costmap = nh.advertise<costmap::CSpace3D>("costmap", 1, true);
+		pub_costmap_update = nh.advertise<costmap::CSpace3DUpdate>("costmap_update", 1, true);
 		pub_footprint = nh.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 	}

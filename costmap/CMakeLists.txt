@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_message_files(
-	FILES CSpace3D.msg MapMetaData3D.msg
+	FILES CSpace3D.msg CSpace3DUpdate.msg MapMetaData3D.msg
 )
 generate_messages(
 	DEPENDENCIES std_msgs geometry_msgs

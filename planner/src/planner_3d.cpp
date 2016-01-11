@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <costmap/CSpace3D.h>
+#include <costmap/CSpace3DUpdate.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -53,6 +54,7 @@ class planner_3d
 private:
 	ros::NodeHandle_f nh;
 	ros::Subscriber sub_map;
+	ros::Subscriber sub_map_update;
 	ros::Subscriber sub_goal;
 	ros::Publisher pub_path;
 	ros::Publisher pub_debug;
@@ -164,37 +166,10 @@ private:
 		has_goal = true;
 		update_goal();
 	}
-	void update_goal()
-	{	
-		if(!has_map) return;
-
-		astar::vec s, e;
-		metric2grid(s[0], s[1], s[2],
-				start.pose.position.x, start.pose.position.y, 
-				tf::getYaw(start.pose.orientation));
-		metric2grid(e[0], e[1], e[2],
-				goal.pose.position.x, goal.pose.position.y, 
-				tf::getYaw(goal.pose.orientation));
-		ROS_INFO("New goal received (%d, %d, %d)",
-				e[0], e[1], e[2]);
-
-		astar::reservable_priority_queue<astar::pq> open;
-
-		auto &g = cost_estim_cache;
-		astar::vec p;
-		for(p[1] = 0; p[1] < cm.size[1]; p[1] ++)
-		{
-			for(p[0] = 0; p[0] < cm.size[0]; p[0] ++)
-			{
-				p[2] = 0;
-				g[p] = FLT_MAX;
-			}
-		}
-
-		const auto ts = std::chrono::high_resolution_clock::now();
-		e[2] = 0;
-		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
-		open.push(astar::pq(g[e], g[e], e));
+	void fill_costmap(astar::reservable_priority_queue<astar::pq> &open,
+			astar::gridmap<float> &g,
+			astar::vec &s, astar::vec &e)
+	{
 		while(true)
 		{
 			if(open.size() < 1) break;
@@ -208,7 +183,6 @@ private:
 			d[2] = 0;
 
 			const int range = 5;
-			int updates = 0;
 			for(d[0] = -range; d[0] <= range; d[0] ++)
 			{
 				for(d[1] = -range; d[1] <= range; d[1] ++)
@@ -250,7 +224,7 @@ private:
 						}
 						if(c > 99) continue;
 						cost += sum * map_info.linear_resolution
-						   	* distf * cc.weight_costmap / 100.0;
+							* distf * cc.weight_costmap / 100.0;
 					}
 					cost += euclid_cost(d, ec_rough);
 
@@ -259,24 +233,59 @@ private:
 					{
 						gnext = gp;
 						open.push(astar::pq(gp, gp, next));
-						updates ++;
 					}
 				}
 			}
-			if(updates == 0) g[p] = -1;
 		}
+	}
+	void update_goal()
+	{	
+		if(!has_map) return;
+
+		astar::vec s, e;
+		metric2grid(s[0], s[1], s[2],
+				start.pose.position.x, start.pose.position.y, 
+				tf::getYaw(start.pose.orientation));
+		metric2grid(e[0], e[1], e[2],
+				goal.pose.position.x, goal.pose.position.y, 
+				tf::getYaw(goal.pose.orientation));
+		ROS_INFO("New goal received (%d, %d, %d)",
+				e[0], e[1], e[2]);
+		e[2] = 0;
+
+		const auto ts = std::chrono::high_resolution_clock::now();
+		astar::reservable_priority_queue<astar::pq> open;
+		auto &g = cost_estim_cache;
+
+		astar::vec p;
+		p[2] = 0;
+		for(p[1] = 0; p[1] < g.size[1]; p[1] ++)
+		{
+			for(p[0] = 0; p[0] < g.size[0]; p[0] ++)
+			{
+				g[p] = FLT_MAX;
+			}
+		}
+
+		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
+		open.push(astar::pq(g[e], g[e], e));
+		fill_costmap(open, g, s, e);
 		const auto tnow = std::chrono::high_resolution_clock::now();
 		ROS_INFO("Cost estimation cache generated (%0.3f sec.)",
 				std::chrono::duration<float>(tnow - ts).count());
 		g[e] = 0;
+		publish_costmap();
+	}
+	void publish_costmap()
+	{
 		sensor_msgs::PointCloud debug;
 		debug.header = map_header;
 		debug.header.stamp = ros::Time::now();
 		{
 			astar::vec p;
-			for(p[1] = 0; p[1] < cm.size[1]; p[1] ++)
+			for(p[1] = 0; p[1] < cost_estim_cache.size[1]; p[1] ++)
 			{
-				for(p[0] = 0; p[0] < cm.size[0]; p[0] ++)
+				for(p[0] = 0; p[0] < cost_estim_cache.size[0]; p[0] ++)
 				{
 					p[2] = 0;
 					if(cost_estim_cache[p] < 0)
@@ -293,6 +302,102 @@ private:
 			}
 		}
 		pub_debug.publish(debug);
+	}
+	void cb_map_update(const costmap::CSpace3DUpdate::ConstPtr &msg)
+	{
+		ROS_INFO("Map updated");
+	
+		astar::vec s, e;
+		metric2grid(s[0], s[1], s[2],
+				start.pose.position.x, start.pose.position.y, 
+				tf::getYaw(start.pose.orientation));
+		metric2grid(e[0], e[1], e[2],
+				goal.pose.position.x, goal.pose.position.y, 
+				tf::getYaw(goal.pose.orientation));
+		e[2] = 0;
+
+		{
+			astar::vec p;
+			astar::vec gp;
+			gp[0] = msg->x;
+			gp[1] = msg->y;
+			gp[2] = msg->yaw;
+			astar::vec gp_rough = gp;
+			gp_rough[2] = 0;
+			for(p[0] = 0; p[0] < (int)msg->width; p[0] ++)
+			{
+				for(p[1] = 0; p[1] < (int)msg->height; p[1] ++)
+				{
+					int cost_min = 256;
+					for(p[2] = 0; p[2] < (int)msg->angle; p[2] ++)
+					{
+						const size_t addr = ((p[2] * msg->height) + p[1])
+							* msg->width + p[0];
+						char c = msg->data[addr];
+						if(c < 0) c = unknown_cost;
+						cm[gp + p] = c;
+						if(c < cost_min) cost_min = c;
+					}
+					p[2] = 0;
+					cm_rough[gp_rough + p] = cost_min;
+				}
+			}
+		}
+
+		const auto ts = std::chrono::high_resolution_clock::now();
+		astar::reservable_priority_queue<astar::pq> open;
+		auto &g = cost_estim_cache;
+
+		astar::vec p;
+		p[2] = 0;
+		for(p[1] = (int)msg->y; p[1] < (int)(msg->y + msg->height); p[1] ++)
+		{
+			for(p[0] = (int)msg->x; p[0] < (int)(msg->x + msg->width); p[0] ++)
+			{
+				g[p] = FLT_MAX;
+			}
+		}
+		//publish_costmap();
+		//sleep(1);
+		for(p[1] = (int)msg->y; p[1] < (int)(msg->y + msg->height); p[1] ++)
+		{
+			if((int)msg->x - 1 >= 0)
+			{
+				p[0] = msg->x - 1;
+				auto &gp = g[p];
+				if(gp < FLT_MAX)
+					open.push(astar::pq(gp, gp, p));
+			}
+			if(msg->x + msg->width < map_info.width)
+			{
+				p[0] = msg->x + msg->width;
+				auto &gp = g[p];
+				if(gp < FLT_MAX)
+					open.push(astar::pq(gp, gp, p));
+			}
+		}
+		for(p[0] = (int)msg->x; p[0] < (int)(msg->x + msg->width); p[0] ++)
+		{
+			if((int)msg->y - 1 >= 0)
+			{
+				p[1] = msg->y - 1;
+				auto &gp = g[p];
+				if(gp < FLT_MAX)
+					open.push(astar::pq(gp, gp, p));
+			}
+			if(msg->y + msg->height < map_info.height)
+			{
+				p[1] = msg->y + msg->height;
+				auto &gp = g[p];
+				if(gp < FLT_MAX)
+					open.push(astar::pq(gp, gp, p));
+			}
+		}
+		fill_costmap(open, g, s, e);
+		const auto tnow = std::chrono::high_resolution_clock::now();
+		ROS_INFO("Cost estimation cache updated (%0.3f sec.)",
+				std::chrono::duration<float>(tnow - ts).count());
+		publish_costmap();
 	}
 	void cb_map(const costmap::CSpace3D::ConstPtr &msg)
 	{
@@ -418,21 +523,22 @@ public:
 		nh("~")
 	{
 		sub_map = nh.subscribe("costmap", 1, &planner_3d::cb_map, this);
+		sub_map_update = nh.subscribe("costmap_update", 1, &planner_3d::cb_map_update, this);
 		sub_goal = nh.subscribe("goal", 1, &planner_3d::cb_goal, this);
 		pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 
-		nh.param_cast("freq", freq, 2.0f);
+		nh.param_cast("freq", freq, 3.0f);
 		nh.param_cast("search_range", search_range, 0.4f);
 
 		nh.param_cast("max_vel", max_vel, 0.3f);
 		nh.param_cast("max_ang_vel", max_ang_vel, 0.6f);
 
 		nh.param_cast("weight_decel", cc.weight_decel, 50.0f);
-		nh.param_cast("weight_backward", cc.weight_backward, 1.0f);
-		nh.param_cast("weight_ang_vel", cc.weight_ang_vel, 2.0f);
-		nh.param_cast("weight_costmap", cc.weight_costmap, 15.0f);
-		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 20.0f);
+		nh.param_cast("weight_backward", cc.weight_backward, 0.9f);
+		nh.param_cast("weight_ang_vel", cc.weight_ang_vel, 1.0f);
+		nh.param_cast("weight_costmap", cc.weight_costmap, 50.0f);
+		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 6.0f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
 		
@@ -491,7 +597,7 @@ private:
 		gyaw = yaw * map_info.angular_resolution;
 	}
 	void grid2metric(const std::list<astar::vec> &path_grid, 
-			nav_msgs::Path &path)
+			nav_msgs::Path &path, const astar::vec &v_start)
 	{
 		path.header = map_header;
 		path.header.stamp = ros::Time::now();
@@ -653,7 +759,8 @@ private:
 		//const auto ts = std::chrono::high_resolution_clock::now();
 		if(!as.search(s, e, path_grid, 
 				std::bind(&planner_3d::cb_cost, 
-					this, std::placeholders::_1, std::placeholders::_2), 
+					this, std::placeholders::_1, std::placeholders::_2, 
+					std::placeholders::_3, std::placeholders::_4), 
 				std::bind(&planner_3d::cb_cost_estim, 
 					this, std::placeholders::_1, std::placeholders::_2), 
 				std::bind(&planner_3d::cb_search, 
@@ -670,19 +777,15 @@ private:
 		//ROS_INFO("Path found (%0.3f sec.)",
 		//		std::chrono::duration<float>(tnow - ts).count());
 
-		grid2metric(path_grid, path);
+		grid2metric(path_grid, path, s);
 
 		return true;
 	}
 	bool rough;
-	astar::vec v_goal;
-	astar::vec v_start;
 	std::vector<astar::vec> &cb_search(
 			const astar::vec& p,
 			const astar::vec& s, const astar::vec& e)
 	{
-		v_goal = e;
-		v_start = s;
 		const auto ds = s - p;
 		rot_cache = &rotgm[p[2]];
 		
@@ -729,7 +832,9 @@ private:
 		}
 		return cost;
 	}
-	float cb_cost(const astar::vec &s, astar::vec &e)
+	float cb_cost(const astar::vec &s, astar::vec &e,
+			const astar::vec &v_goal,
+			const astar::vec &v_start)
 	{
 		const auto d = e - s;
 		float cost = euclid_cost(d);

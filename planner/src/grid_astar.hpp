@@ -359,7 +359,7 @@ public:
 
 	bool search(const vec &s, const vec &e, 
 			std::list<vec> &path,
-			std::function<float(const vec&, vec&)> cb_cost,
+			std::function<float(const vec&, vec&, const vec&, const vec&)> cb_cost,
 			std::function<float(const vec&, const vec&)> cb_cost_estim,
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
@@ -372,7 +372,7 @@ public:
 	bool search_impl(gridmap<float> &g,
 			const vec &st, const vec &en, 
 			std::list<vec> &path,
-			std::function<float(const vec&, vec&)> cb_cost,
+			std::function<float(const vec&, vec&, const vec&, const vec&)> cb_cost,
 			std::function<float(const vec&, const vec&)> cb_cost_estim,
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
@@ -450,7 +450,7 @@ public:
 					continue;
 				if(g[next] < 0) continue;
 
-				auto cost = cb_cost(p, next);
+				auto cost = cb_cost(p, next, s, e);
 
 				if(cost < 0) continue;
 
