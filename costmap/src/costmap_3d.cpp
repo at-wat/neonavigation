@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <sensor_msgs/PointCloud.h>
 
 #include <costmap/CSpace3D.h>
 
@@ -33,13 +34,127 @@ private:
 	ros::Subscriber sub_map;
 	ros::Publisher pub_costmap;
 	ros::Publisher pub_footprint;
+	ros::Publisher pub_debug;
 	geometry_msgs::PolygonStamped footprint;
 
 	int ang_resolution;
 	float linear_expand;
-	float angular_expand;
 	float linear_spread;
-	float angular_spread;
+
+	float footprint_radius;
+
+	class cspace3_cache
+	{
+	public:
+		std::unique_ptr<char[]> c;
+		int size[3];
+		int center[3];
+		void reset(const int &x, const int &y, const int &yaw)
+		{
+			size[0] = x * 2 + 1;
+			size[1] = y * 2 + 1;
+			size[2] = yaw;
+			center[0] = x;
+			center[1] = y;
+			center[2] = 0;
+			c.reset(new char[size[0] * size[1] * size[2]]);
+		}
+		char &e(const int &x, const int &y, const int &yaw)
+		{
+			return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
+		}
+	};
+	cspace3_cache cs;
+
+	class vec
+	{
+	public:
+		float c[2];
+		float &operator[](const int &i)
+		{
+			return c[i];
+		}
+		const float &operator[](const int &i) const
+		{
+			return c[i];
+		}
+		vec operator-(const vec &a) const
+		{
+			vec out = *this;
+			out[0] -= a[0];
+			out[1] -= a[1];
+			return out;
+		}
+		float cross(const vec &a) const
+		{
+			return (*this)[0] * a[1] - (*this)[1] * a[0];
+		}
+		float dot(const vec &a) const
+		{
+			return (*this)[0] * a[0] + (*this)[1] * a[1];
+		}
+		float dist(const vec &a) const
+		{
+			return hypotf((*this)[0] - a[0], (*this)[1] - a[1]);
+		}
+		float dist_line(const vec &a, const vec &b) const
+		{
+			return (b - a).cross((*this) - a) / b.dist(a);
+		}
+		float dist_linestrip(const vec &a, const vec &b) const
+		{
+			if((b - a).dot((*this) - a) <= 0) return this->dist(a);
+			if((a - b).dot((*this) - b) <= 0) return this->dist(b);
+			return fabs(this->dist_line(a, b));
+		}
+	};
+	class polygon
+	{
+	public:
+		std::vector<vec> v;
+		void move(const float &x, const float &y, const float &yaw)
+		{
+			float cos_v = cosf(yaw);
+			float sin_v = sinf(yaw);
+			for(auto &p: v)
+			{
+				auto tmp = p;
+				p[0] = cos_v * tmp[0] - sin_v * tmp[1] + x;
+				p[1] = sin_v * tmp[0] + cos_v * tmp[1] + y;
+			}
+		}
+		bool inside(const vec &a)
+		{
+			int cn = 0;
+			for(int i = 0; i < (int)v.size() - 1; i ++)
+			{
+				auto &v1 = v[i];
+				auto &v2 = v[i + 1];
+				if((v1[1] <= a[1] && a[1] < v2[1]) ||
+						(v2[1] <= a[1] && a[1] < v1[1]))
+				{
+					float lx;
+					lx = v1[0] + (v2[0] - v1[0]) * (a[1] - v1[1]) / (v2[1] - v1[1]);
+					if(a[0] < lx) cn ++;
+				}
+			}
+			return ((cn & 1) == 1);
+		}
+		float dist(const vec &a)
+		{
+			float dist = FLT_MAX;
+			for(int i = 0; i < (int)v.size() - 1; i ++)
+			{
+				auto &v1 = v[i];
+				auto &v2 = v[i + 1];
+				auto d = a.dist_linestrip(v1, v2);
+				if(d < dist) dist = d;
+			}
+			return dist;
+		}
+	};
+
+	polygon footprint_p;
 
 	bool XmlRpc_isNumber(XmlRpc::XmlRpcValue &value)
 	{
@@ -50,6 +165,7 @@ private:
 	void cb_map(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 	{
 		costmap::CSpace3D map;
+		ROS_INFO("2D occupancy grid map received");
 
 		map.header = msg->header;
 		map.info.width = msg->info.width;
@@ -58,15 +174,118 @@ private:
 		map.info.linear_resolution = msg->info.resolution;
 		map.info.angular_resolution = 2.0 * M_PI / ang_resolution;
 		map.info.origin = msg->info.origin;
-		map.data.resize(msg->data.size() * ang_resolution);
+		map.data.resize(msg->data.size() * map.info.angle);
 
-		for(unsigned int i = 0; i < msg->data.size(); i ++)
+		int range_max = 
+			ceilf((footprint_radius + linear_expand + linear_spread)
+				   	/ map.info.linear_resolution);
+		cs.reset(range_max, range_max, map.info.angle);
+
+		// C-Space template
+		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
-			for(int j = 0; j < ang_resolution; j ++)
+			for(int y = -range_max; y <= range_max; y ++)
 			{
-				map.data[i + j * msg->data.size()] = msg->data[i];
+				for(int x = -range_max; x <= range_max; x ++)
+				{
+					auto f = footprint_p;
+					f.move(x * map.info.linear_resolution, 
+							y * map.info.linear_resolution, 
+							yaw * map.info.angular_resolution);
+					vec p;
+					p[0] = 0;
+					p[1] = 0;
+					if(f.inside(p))
+					{
+						cs.e(x, y, yaw) = 100;
+					}
+					else
+					{
+						float d = f.dist(p);
+						if(d < linear_expand)
+						{
+							cs.e(x, y, yaw) = 100;
+						}
+						else if(d < linear_expand + linear_spread)
+						{
+							cs.e(x, y, yaw) = 100 - (d - linear_expand) * 100 / linear_spread;
+						}
+						else
+						{
+							cs.e(x, y, yaw) = 0;
+						}
+					}
+				}
 			}
 		}
+		ROS_INFO("C-Space template generated");
+
+		// Map
+		for(unsigned int i = 0; i < msg->data.size() * map.info.angle; i ++)
+		{
+			map.data[i] = 0;
+		}
+		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
+		{
+			for(unsigned int i = 0; i < msg->data.size(); i ++)
+			{
+				if(msg->data[i] < 0)
+				{
+					int gx = i % map.info.width;
+					int gy = i / map.info.width;
+					auto &m = map.data[
+						(yaw * map.info.height + gy) * map.info.width + gx];
+					m = msg->data[i];
+				}
+			}
+		}
+		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
+		{
+			for(unsigned int i = 0; i < msg->data.size(); i ++)
+			{
+				if(msg->data[i] <= 0) continue;
+
+				int gx = i % map.info.width;
+				int gy = i / map.info.width;
+
+				for(int y = -range_max; y <= range_max; y ++)
+				{
+					for(int x = -range_max; x <= range_max; x ++)
+					{
+						int x2 = gx + x;
+						int y2 = gy + y;
+						if((unsigned int)x2 > map.info.width ||
+								(unsigned int)y2 > map.info.height)
+							continue;
+
+						auto &m = map.data[
+							(yaw * map.info.height + y2) * map.info.width + x2];
+						auto c = cs.e(x, y, yaw);
+						if(m >= 0 && m < c) m = c;
+					}
+				}
+			}
+		}
+		ROS_INFO("C-Space costmap generated");
+
+		sensor_msgs::PointCloud pc;
+		pc.header = msg->header;
+		pc.header.stamp = ros::Time::now();
+		for(int yaw = 0; yaw < ang_resolution; yaw ++)
+		{
+			for(unsigned int i = 0; i < msg->data.size(); i ++)
+			{
+				int gx = i % map.info.width;
+				int gy = i / map.info.width;
+				if(map.data[i + yaw * msg->data.size()] < 100) continue;
+				geometry_msgs::Point32 p;
+				p.x = gx * map.info.linear_resolution + map.info.origin.position.x;
+				p.y = gy * map.info.linear_resolution + map.info.origin.position.y;
+				p.z = yaw * 0.1;
+				pc.points.push_back(p);
+			}
+		}
+		pub_debug.publish(pc);
 
 		pub_costmap.publish(map);
 	}
@@ -88,9 +307,7 @@ public:
 	{
 		nh.param("ang_resolution", ang_resolution, 16);
 		nh.param("linear_expand", linear_expand, 0.2f);
-		nh.param("angular_expand", angular_expand, 0.4f);
 		nh.param("linear_spread", linear_spread, 0.5f);
-		nh.param("angular_spread", angular_spread, 1.0f);
 
 		XmlRpc::XmlRpcValue footprint_xml;
 		if(!nh.hasParam("footprint"))
@@ -106,6 +323,7 @@ public:
 		}
 		footprint.polygon.points.clear();
 		footprint.header.frame_id = "base_link";
+		footprint_radius = 0;
 		for(int i = 0; i < (int)footprint_xml.size(); i ++)
 		{
 			if(!XmlRpc_isNumber(footprint_xml[i][0]) || 
@@ -116,16 +334,25 @@ public:
 			}
 
 			geometry_msgs::Point32 point;
-			point.x = (double)footprint_xml[i][0];
-			point.y = (double)footprint_xml[i][1];
+			vec v;
+			v[0] = point.x = (double)footprint_xml[i][0];
+			v[1] = point.y = (double)footprint_xml[i][1];
 			point.z = 0;
 			footprint.polygon.points.push_back(point);
+
+			footprint_p.v.push_back(v);
+
+			auto dist = hypotf(point.x, point.y);
+			if(dist > footprint_radius) footprint_radius = dist;
 		}
+		footprint_p.v.push_back(footprint_p.v.front());
+		ROS_INFO("footprint radius: %0.3f", footprint_radius);
 		footprint.polygon.points.push_back(footprint.polygon.points[0]);
 
 		sub_map = nh.subscribe("/map", 1, &costmap_3d::cb_map, this);
 		pub_costmap = nh.advertise<costmap::CSpace3D>("costmap", 1, true);
 		pub_footprint = nh.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
+		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 	}
 };
 
