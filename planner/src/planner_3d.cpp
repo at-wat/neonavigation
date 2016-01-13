@@ -328,7 +328,7 @@ private:
 			{
 				for(p[1] = 0; p[1] < (int)msg->height; p[1] ++)
 				{
-					int cost_min = 256;
+					int cost_min = 100;
 					for(p[2] = 0; p[2] < (int)msg->angle; p[2] ++)
 					{
 						const size_t addr = ((p[2] * msg->height) + p[1])
@@ -357,8 +357,6 @@ private:
 				g[p] = FLT_MAX;
 			}
 		}
-		//publish_costmap();
-		//sleep(1);
 		for(p[1] = (int)msg->y; p[1] < (int)(msg->y + msg->height); p[1] ++)
 		{
 			if((int)msg->x - 1 >= 0)
@@ -495,12 +493,12 @@ private:
 		cm_rough.reset(astar::vec(size));
 
 		astar::vec p;
-		for(p[0] = 0; p[0] < size[0]; p[0] ++)
+		for(p[0] = 0; p[0] < (int)map_info.width; p[0] ++)
 		{
-			for(p[1] = 0; p[1] < size[1]; p[1] ++)
+			for(p[1] = 0; p[1] < (int)map_info.height; p[1] ++)
 			{
-				int cost_min = 256;
-				for(p[2] = 0; p[2] < size[2]; p[2] ++)
+				int cost_min = 100;
+				for(p[2] = 0; p[2] < (int)map_info.angle; p[2] ++)
 				{
 					const size_t addr = ((p[2] * size[1]) + p[1]) * size[0] + p[0];
 					char c = msg->data[addr];

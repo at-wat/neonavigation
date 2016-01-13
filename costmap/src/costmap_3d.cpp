@@ -33,6 +33,7 @@ class costmap_3d
 private:
 	ros::NodeHandle_f nh;
 	ros::Subscriber sub_map;
+	ros::Subscriber sub_map_overlay;
 	ros::Publisher pub_costmap;
 	ros::Publisher pub_costmap_update;
 	ros::Publisher pub_footprint;
@@ -157,6 +158,7 @@ private:
 	};
 
 	polygon footprint_p;
+	int range_max;
 
 	bool XmlRpc_isNumber(XmlRpc::XmlRpcValue &value)
 	{
@@ -165,9 +167,10 @@ private:
 	}
 
 	costmap::CSpace3D map;
+	costmap::CSpace3D map_overlay;
 	void cb_map(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 	{
-		ROS_INFO("2D occupancy grid map received");
+		ROS_INFO("2D costmap received");
 
 		map.header = msg->header;
 		map.info.width = msg->info.width;
@@ -178,7 +181,7 @@ private:
 		map.info.origin = msg->info.origin;
 		map.data.resize(msg->data.size() * map.info.angle);
 
-		int range_max = 
+		range_max = 
 			ceilf((footprint_radius + linear_expand + linear_spread)
 				   	/ map.info.linear_resolution);
 		cs.reset(range_max, range_max, map.info.angle);
@@ -222,33 +225,66 @@ private:
 		}
 		ROS_INFO("C-Space template generated");
 
-		// Map
-		for(unsigned int i = 0; i < msg->data.size() * map.info.angle; i ++)
+		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
-			map.data[i] = 0;
+			for(unsigned int i = 0; i < msg->data.size(); i ++)
+			{
+				map.data[i + yaw * msg->data.size()] = 0;
+			}
 		}
+		map_copy(map, *msg);
 		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
 			for(unsigned int i = 0; i < msg->data.size(); i ++)
 			{
 				if(msg->data[i] < 0)
 				{
-					int gx = i % map.info.width;
-					int gy = i / map.info.width;
-					auto &m = map.data[
-						(yaw * map.info.height + gy) * map.info.width + gx];
-					m = msg->data[i];
+					map.data[i + yaw * msg->data.size()] = -1;
 				}
 			}
 		}
+		ROS_INFO("C-Space costmap generated");
+
+		pub_costmap.publish(map);
+		publish_debug(map);
+	}
+	void cb_map_overlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+	{
+		ROS_INFO("Overlay 2D costmap received");
+		if(map.header.frame_id != msg->header.frame_id)
+		{
+			ROS_ERROR("map and map_overlay must have same frame_id");
+			return;
+		}
+		map_overlay = map;
+		map_copy(map_overlay, *msg);
+		ROS_INFO("C-Space costmap updated");
+
+		int ox = lroundf((msg->info.origin.position.x
+				   	- map_overlay.info.origin.position.x)
+			   	/ map_overlay.info.linear_resolution);
+		int oy = lroundf((msg->info.origin.position.y
+				   	- map_overlay.info.origin.position.y)
+			   	/ map_overlay.info.linear_resolution);
+		update_map(map_overlay, ox, oy, 0, 
+				msg->info.width, msg->info.height, map_overlay.info.angle);
+		publish_debug(map_overlay);
+	}
+	void map_copy(costmap::CSpace3D &map, const nav_msgs::OccupancyGrid &msg)
+	{
+		int ox = lroundf((msg.info.origin.position.x
+				   	- map.info.origin.position.x) / map.info.linear_resolution);
+		int oy = lroundf((msg.info.origin.position.y
+				   	- map.info.origin.position.y) / map.info.linear_resolution);
+		// Map
 		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
-			for(unsigned int i = 0; i < map.info.width * map.info.height; i ++)
+			for(unsigned int i = 0; i < msg.data.size(); i ++)
 			{
-				if(msg->data[i] <= 0) continue;
+				if(msg.data[i] <= 0) continue;
 
-				int gx = i % map.info.width;
-				int gy = i / map.info.width;
+				int gx = i % msg.info.width + ox;
+				int gy = i / msg.info.width + oy;
 
 				for(int y = -range_max; y <= range_max; y ++)
 				{
@@ -262,24 +298,25 @@ private:
 
 						auto &m = map.data[
 							(yaw * map.info.height + y2) * map.info.width + x2];
-						auto c = cs.e(x, y, yaw);
-						if(m >= 0 && m < c) m = c;
+						auto &c = cs.e(x, y, yaw);
+						if(m < c) m = c;
 					}
 				}
 			}
 		}
-		ROS_INFO("C-Space costmap generated");
-
+	}
+	void publish_debug(costmap::CSpace3D &map)
+	{
 		sensor_msgs::PointCloud pc;
-		pc.header = msg->header;
+		pc.header = map.header;
 		pc.header.stamp = ros::Time::now();
-		for(int yaw = 0; yaw < ang_resolution; yaw ++)
+		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
-			for(unsigned int i = 0; i < msg->data.size(); i ++)
+			for(unsigned int i = 0; i < map.info.width * map.info.height; i ++)
 			{
 				int gx = i % map.info.width;
 				int gy = i / map.info.width;
-				if(map.data[i + yaw * msg->data.size()] < 100) continue;
+				if(map.data[i + yaw * map.info.width * map.info.height] < 100) continue;
 				geometry_msgs::Point32 p;
 				p.x = gx * map.info.linear_resolution + map.info.origin.position.x;
 				p.y = gy * map.info.linear_resolution + map.info.origin.position.y;
@@ -288,40 +325,56 @@ private:
 			}
 		}
 		pub_debug.publish(pc);
-
-		pub_costmap.publish(map);
 	}
 
 public:
-	void update_map(const int &x, const int &y, const int &yaw,
+	void update_map(costmap::CSpace3D &map, const int &x, const int &y, const int &yaw,
 			const int &width, const int &height, const int &angle)
 	{
 		costmap::CSpace3DUpdate update;
 		update.header = map.header;
 		map.header.stamp = ros::Time::now();
-		update.x = x;
-		update.y = y;
+		update.x = x - range_max;
+		update.y = y - range_max;
+		update.width = width + range_max * 2;
+		update.height = height + range_max * 2;
+		if(update.x < 0)
+		{
+			update.width += update.x;
+			update.x = 0;
+		}
+		if(update.y < 0)
+		{
+			update.height += update.y;
+			update.y = 0;
+		}
+		if(update.x + update.width > map.info.width)
+		{
+			update.width = map.info.width - update.x;
+		}
+		if(update.y + update.height > map.info.height)
+		{
+			update.height = map.info.height - update.y;
+		}
 		update.yaw = yaw;
-		update.width = width;
-		update.height = height;
 		update.angle = angle;
-		update.data.resize(width * height * angle);
+		update.data.resize(update.width * update.height * update.angle);
 
 		vec p;
-		for(p[0] = 0; p[0] < width; p[0] ++)
+		for(p[0] = 0; p[0] < update.width; p[0] ++)
 		{
-			for(p[1] = 0; p[1] < height; p[1] ++)
+			for(p[1] = 0; p[1] < update.height; p[1] ++)
 			{
-				for(p[2] = 0; p[2] < angle; p[2] ++)
+				for(p[2] = 0; p[2] < update.angle; p[2] ++)
 				{
-					int x2 = x + p[0];
-					int y2 = y + p[1];
+					int x2 = update.x + p[0];
+					int y2 = update.y + p[1];
 					int yaw2 = yaw + p[2];
 
 					auto &m = map.data[
 						(yaw2 * map.info.height + y2) * map.info.width + x2];
 					auto &up = update.data[
-						(p[2] * height + p[1]) * width + p[0]];
+						(p[2] * update.height + p[1]) * update.width + p[0]];
 					up = m;
 				}
 			}
@@ -330,7 +383,6 @@ public:
 	}
 	void spin()
 	{
-		//int cnt = 0;
 		ros::Rate wait(1);
 		while(ros::ok())
 		{
@@ -338,11 +390,6 @@ public:
 			ros::spinOnce();
 			footprint.header.stamp = ros::Time::now();
 			pub_footprint.publish(footprint);
-
-		//	if(cnt ++ == 20)
-		//	{
-		//		update_map(100, 200, 0, 50, 200, 16);
-		//	}
 		}
 	}
 	costmap_3d():
@@ -393,6 +440,7 @@ public:
 		footprint.polygon.points.push_back(footprint.polygon.points[0]);
 
 		sub_map = nh.subscribe("/map", 1, &costmap_3d::cb_map, this);
+		sub_map_overlay = nh.subscribe("/map_overlay", 1, &costmap_3d::cb_map_overlay, this);
 		pub_costmap = nh.advertise<costmap::CSpace3D>("costmap", 1, true);
 		pub_costmap_update = nh.advertise<costmap::CSpace3DUpdate>("costmap_update", 1, true);
 		pub_footprint = nh.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
