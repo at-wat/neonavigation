@@ -790,35 +790,51 @@ private:
 
 		if(hyst)
 		{
-			const auto ts = std::chrono::high_resolution_clock::now();
+			std::unordered_map<astar::vec, bool, astar::vec_hash> path_points;
 			float max_dist = cc.hysteresis_max_dist / map_info.linear_resolution;
-			astar::vec p;
-			p[2] = 0;
-			for(p[0] = 0; p[0] < (int)map_info.width; p[0] ++)
+			int path_range = range + max_dist + 1;
+			for(auto &p: path_grid)
 			{
-				for(p[1] = 0; p[1] < (int)map_info.height; p[1] ++)
+				astar::vec d;
+				for(d[0] = -path_range; d[0] <= path_range; d[0] ++)
 				{
-					float d_min = FLT_MAX;
-					auto it_prev = path_grid.begin();
-					for(auto it = path_grid.begin(); it != path_grid.end(); it ++)
+					for(d[1] = -path_range; d[1] <= path_range; d[1] ++)
 					{
-						if(it != it_prev)
-						{
-							auto d = p.dist_linestrip(*it_prev, *it);
-							if(d < d_min) d_min = d;
-						}
-						it_prev = it;
+						auto point = p + d;
+						point[2] = 0;
+						if((unsigned int)point[0] >= (unsigned int)map_info.width ||
+								(unsigned int)point[1] >= (unsigned int)map_info.height)
+							continue;
+						path_points[point] = true;
 					}
-					d_min -= 1.0;
-					if(d_min < 0) d_min = 0;
-					if(d_min > max_dist)
-						d_min = max_dist;
-					cm_hyst[p] = d_min * 100.0 / max_dist;
 				}
 			}
-			const auto tnow = std::chrono::high_resolution_clock::now();
-			ROS_INFO("Hysteresis map generated (%0.3f sec.)",
-					std::chrono::duration<float>(tnow - ts).count());
+
+			cm_hyst.clear(100);
+			//const auto ts = std::chrono::high_resolution_clock::now();
+			for(auto &ps: path_points)
+			{
+				auto &p = ps.first;
+				float d_min = FLT_MAX;
+				auto it_prev = path_grid.begin();
+				for(auto it = path_grid.begin(); it != path_grid.end(); it ++)
+				{
+					if(it != it_prev)
+					{
+						auto d = p.dist_linestrip(*it_prev, *it);
+						if(d < d_min) d_min = d;
+					}
+					it_prev = it;
+				}
+				d_min -= 0.5;
+				if(d_min < 0) d_min = 0;
+				if(d_min > max_dist)
+					d_min = max_dist;
+				cm_hyst[p] = d_min * 100.0 / max_dist;
+			}
+			//const auto tnow = std::chrono::high_resolution_clock::now();
+			//ROS_INFO("Hysteresis map generated (%0.3f sec.)",
+			//		std::chrono::duration<float>(tnow - ts).count());
 			publish_costmap();
 		}
 
