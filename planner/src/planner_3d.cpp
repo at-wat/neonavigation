@@ -563,26 +563,26 @@ public:
 		{
 			wait.sleep();
 			ros::spinOnce();
+			start.header.frame_id = "base_link";
+			start.header.stamp = ros::Time::now();
+			start.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+			start.pose.position.x = 0;
+			start.pose.position.y = 0;
+			start.pose.position.z = 0;
+			try
+			{
+				tfl.waitForTransform("base_link", map_header.frame_id, 
+						map_header.stamp, ros::Duration(0.1));
+				tfl.transformPose(map_header.frame_id, start, start);
+			}
+			catch(tf::TransformException &e)
+			{
+				ROS_INFO("Transform failed");
+				continue;
+			}
+
 			if(has_map && has_goal)
 			{
-				start.header.frame_id = "base_link";
-				start.header.stamp = ros::Time::now();
-				start.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
-				start.pose.position.x = 0;
-				start.pose.position.y = 0;
-				start.pose.position.z = 0;
-				try
-				{
-					tfl.waitForTransform("base_link", map_header.frame_id, 
-							map_header.stamp, ros::Duration(0.1));
-					tfl.transformPose(map_header.frame_id, start, start);
-				}
-				catch(tf::TransformException &e)
-				{
-					ROS_INFO("Transform failed");
-					continue;
-				}
-
 				nav_msgs::Path path;
 				make_plan(start.pose, goal.pose, path, true);
 				pub_path.publish(path);
