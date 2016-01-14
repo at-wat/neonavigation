@@ -171,8 +171,10 @@ private:
 	}
 	void fill_costmap(astar::reservable_priority_queue<astar::pq> &open,
 			astar::gridmap<float> &g,
-			astar::vec &s, astar::vec &e)
+			const astar::vec &s, const astar::vec &e)
 	{
+		auto s_rough = s;
+		s_rough[2] = 0;
 		while(true)
 		{
 			if(open.size() < 1) break;
@@ -181,17 +183,18 @@ private:
 			const auto c = center.p_raw;
 			open.pop();
 			if(c > g[p]) continue;
+			if(c - ec_rough[0] * range * 2 > g[s_rough]) continue;
 
 			astar::vec d;
 			d[2] = 0;
 
-			const int range = 5;
-			for(d[0] = -range; d[0] <= range; d[0] ++)
+			const int range_rough = 4;
+			for(d[0] = -range_rough; d[0] <= range_rough; d[0] ++)
 			{
-				for(d[1] = -range; d[1] <= range; d[1] ++)
+				for(d[1] = -range_rough; d[1] <= range_rough; d[1] ++)
 				{
 					if(d[0] == 0 && d[1] == 0) continue;
-					if(d.sqlen() > range * range) continue;
+					if(d.sqlen() > range_rough * range_rough) continue;
 
 					const auto next = p + d;
 					if((unsigned int)next[0] >= (unsigned int)map_info.width ||
@@ -202,7 +205,6 @@ private:
 
 					float cost = 0;
 
-					if((next - s).sqlen() > range * range)
 					{
 						float v[3], dp[3], sum = 0;
 						float distf = d.len();
@@ -260,15 +262,7 @@ private:
 		astar::reservable_priority_queue<astar::pq> open;
 		auto &g = cost_estim_cache;
 
-		astar::vec p;
-		p[2] = 0;
-		for(p[1] = 0; p[1] < g.size[1]; p[1] ++)
-		{
-			for(p[0] = 0; p[0] < g.size[0]; p[0] ++)
-			{
-				g[p] = FLT_MAX;
-			}
-		}
+		g.clear(FLT_MAX);
 
 		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
 		open.push(astar::pq(g[e], g[e], e));
