@@ -790,7 +790,7 @@ private:
 
 		if(hyst)
 		{
-			std::unordered_map<astar::vec, bool, astar::vec_hash> path_points;
+			std::unordered_map<astar::vec, bool, astar::vec> path_points;
 			float max_dist = cc.hysteresis_max_dist / map_info.linear_resolution;
 			int path_range = range + max_dist + 1;
 			for(auto &p: path_grid)

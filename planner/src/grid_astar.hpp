@@ -152,6 +152,20 @@ public:
 			}
 			return sqrtf(out);
 		}
+		// Hash
+	private:
+		size_t rotl(const std::size_t x, const std::size_t n) const
+		{
+			return (x << n) | (x >> ((8 * sizeof(std::size_t)) - n));
+		}
+	public:
+		size_t operator()(const vec& key) const
+		{
+			std::size_t hash = key.e[0];
+			for(int i = 1; i < dim; i ++) 
+				hash ^= rotl(key.e[i], 8 * sizeof(std::size_t) * i / dim);
+			return hash;
+		}
 	};
 	class vecf
 	{
@@ -224,21 +238,6 @@ public:
 				out += powf(e[i], 2.0);
 			}
 			return sqrtf(out);
-		}
-	};
-	struct vec_hash
-	{
-		typedef std::size_t result_type;
-		std::size_t rotl(const std::size_t x, const std::size_t n) const
-		{
-			return (x << n) | (x >> ((8 * sizeof(std::size_t)) - n));
-		}
-		std::size_t operator()(const vec& key) const
-		{
-			std::size_t hash = key.e[0];
-			for(int i = 1; i < dim; i ++) 
-				hash ^= rotl(key.e[i], 8 * sizeof(std::size_t) * i / dim);
-			return hash;
 		}
 	};
 	class pq
@@ -352,7 +351,7 @@ public:
 	};
 
 	gridmap<float> g;
-	std::unordered_map<vec, vec, vec_hash> parents;
+	std::unordered_map<vec, vec, vec> parents;
 	reservable_priority_queue<pq> open;
 	size_t queue_size_limit;
 
