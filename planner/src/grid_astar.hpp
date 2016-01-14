@@ -95,6 +95,26 @@ public:
 			}
 			return out;
 		}
+		int cross(const vec &a) const
+		{
+			return (*this)[0] * a[1] - (*this)[1] * a[0];
+		}
+		int dot(const vec &a) const
+		{
+			return (*this)[0] * a[0] + (*this)[1] * a[1];
+		}
+		float dist_line(const vec &a, const vec &b) const
+		{
+			return (b - a).cross((*this) - a) / (b - a).len();
+		}
+		float dist_linestrip(const vec &a, const vec &b) const
+		{
+			auto to_a = (*this) - a;
+			if((b - a).dot(to_a) <= 0) return to_a.len();
+			auto to_b = (*this) - b;
+			if((a - b).dot(to_b) <= 0) return to_b.len();
+			return fabs(this->dist_line(a, b));
+		}
 		int &operator [](const int& x)
 		{
 			return e[x];

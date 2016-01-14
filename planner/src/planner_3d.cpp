@@ -64,6 +64,7 @@ private:
 	astar as;
 	astar::gridmap<char, 0x40> cm;
 	astar::gridmap<char, 0x80> cm_rough;
+	astar::gridmap<char, 0x80> cm_hyst;
 	astar::gridmap<float> cost_estim_cache;
 	
 	astar::vecf euclid_cost_coef;
@@ -150,7 +151,9 @@ private:
 		float weight_backward;
 		float weight_ang_vel;
 		float weight_costmap;
+		float weight_hysteresis;
 		float in_place_turn;
+		float hysteresis_max_dist;
 	} cc;
 
 	geometry_msgs::PoseStamped start;
@@ -274,6 +277,9 @@ private:
 		ROS_INFO("Cost estimation cache generated (%0.3f sec.)",
 				std::chrono::duration<float>(tnow - ts).count());
 		g[e] = 0;
+		
+		cm_hyst.clear(0);
+
 		publish_costmap();
 	}
 	void publish_costmap()
@@ -296,6 +302,7 @@ private:
 					geometry_msgs::Point32 point;
 					point.x = x;
 					point.y = y;
+					//point.z = cm_hyst[p] * 0.01;
 					point.z = cost_estim_cache[p] / 500;
 					debug.points.push_back(point);
 				}
@@ -491,6 +498,7 @@ private:
 		size[2] = 1;
 		cost_estim_cache.reset(astar::vec(size));
 		cm_rough.reset(astar::vec(size));
+		cm_hyst.reset(astar::vec(size));
 
 		astar::vec p;
 		for(p[0] = 0; p[0] < (int)map_info.width; p[0] ++)
@@ -511,6 +519,7 @@ private:
 			}
 		}
 		ROS_INFO("Map copied");
+		cm_hyst.clear(0);
 
 		has_map = true;
 		update_goal();
@@ -537,6 +546,8 @@ public:
 		nh.param_cast("weight_ang_vel", cc.weight_ang_vel, 1.0f);
 		nh.param_cast("weight_costmap", cc.weight_costmap, 50.0f);
 		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 6.0f);
+		nh.param_cast("hysteresis_max_dist", cc.hysteresis_max_dist, 0.3f);
+		nh.param_cast("weight_hysteresis", cc.weight_hysteresis, 0.5f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
 		
@@ -579,7 +590,7 @@ public:
 				}
 
 				nav_msgs::Path path;
-				make_plan(start.pose, goal.pose, path);
+				make_plan(start.pose, goal.pose, path, true);
 				pub_path.publish(path);
 			}
 		}
@@ -737,7 +748,7 @@ private:
 		yaw = lroundf(gyaw / map_info.angular_resolution);
 	}
 	bool make_plan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge, 
-			nav_msgs::Path &path)
+			nav_msgs::Path &path, bool hyst)
 	{
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
@@ -758,7 +769,7 @@ private:
 		if(!as.search(s, e, path_grid, 
 				std::bind(&planner_3d::cb_cost, 
 					this, std::placeholders::_1, std::placeholders::_2, 
-					std::placeholders::_3, std::placeholders::_4), 
+					std::placeholders::_3, std::placeholders::_4, hyst), 
 				std::bind(&planner_3d::cb_cost_estim, 
 					this, std::placeholders::_1, std::placeholders::_2), 
 				std::bind(&planner_3d::cb_search, 
@@ -776,6 +787,40 @@ private:
 		//		std::chrono::duration<float>(tnow - ts).count());
 
 		grid2metric(path_grid, path, s);
+
+		if(hyst)
+		{
+			const auto ts = std::chrono::high_resolution_clock::now();
+			float max_dist = cc.hysteresis_max_dist / map_info.linear_resolution;
+			astar::vec p;
+			p[2] = 0;
+			for(p[0] = 0; p[0] < (int)map_info.width; p[0] ++)
+			{
+				for(p[1] = 0; p[1] < (int)map_info.height; p[1] ++)
+				{
+					float d_min = FLT_MAX;
+					auto it_prev = path_grid.begin();
+					for(auto it = path_grid.begin(); it != path_grid.end(); it ++)
+					{
+						if(it != it_prev)
+						{
+							auto d = p.dist_linestrip(*it_prev, *it);
+							if(d < d_min) d_min = d;
+						}
+						it_prev = it;
+					}
+					d_min -= 1.0;
+					if(d_min < 0) d_min = 0;
+					if(d_min > max_dist)
+						d_min = max_dist;
+					cm_hyst[p] = d_min * 100.0 / max_dist;
+				}
+			}
+			const auto tnow = std::chrono::high_resolution_clock::now();
+			ROS_INFO("Hysteresis map generated (%0.3f sec.)",
+					std::chrono::duration<float>(tnow - ts).count());
+			publish_costmap();
+		}
 
 		return true;
 	}
@@ -832,7 +877,8 @@ private:
 	}
 	float cb_cost(const astar::vec &s, astar::vec &e,
 			const astar::vec &v_goal,
-			const astar::vec &v_start)
+			const astar::vec &v_start,
+			const bool hyst)
 	{
 		const auto d = e - s;
 		float cost = euclid_cost(d);
@@ -843,7 +889,8 @@ private:
 			if((e - v_goal).sqlen() < range * range) e = v_goal;
 
 			// Go-straight
-			float v[3], dp[3], sum = 0;
+			float v[3], dp[3];
+			int sum = 0, sum_hyst = 0;
 			float distf = d.len();
 			const int dist = distf;
 			distf /= dist;
@@ -860,6 +907,10 @@ private:
 				const auto c = cm_rough[pos];
 				if(c > 99) return -1;
 				sum += c;
+				if(hyst)
+				{
+					sum_hyst += cm_hyst[pos];
+				}
 				v[0] += dp[0];
 				v[1] += dp[1];
 			}
@@ -873,6 +924,7 @@ private:
 				if(e[2] < 0) e[2] += map_info.angle;
 			}
 			cost += sum * map_info.linear_resolution * distf * cc.weight_costmap / 100.0;
+			cost += sum_hyst * map_info.linear_resolution * distf * cc.weight_hysteresis / 100.0;
 			return cost;
 		}
 		if(d[0] == 0 && d[1] == 0)
@@ -940,7 +992,8 @@ private:
 			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution)) return -1;
 
 			// Go-straight
-			float v[3], dp[3], sum = 0;
+			float v[3], dp[3];
+			int sum = 0, sum_hyst = 0;
 			const int dist = distf;
 			distf /= dist;
 			v[0] = s[0];
@@ -955,11 +1008,18 @@ private:
 				pos[1] = lroundf(v[1]);
 				const auto c = cm[pos];
 				if(c > 99) return -1;
+				if(hyst)
+				{
+					auto pos_rough = pos;
+					pos_rough[2] = 0;
+					sum_hyst += cm_hyst[pos_rough];
+				}
 				sum += c;
 				v[0] += dp[0];
 				v[1] += dp[1];
 			}
 			cost += sum * map_info.linear_resolution * distf * cc.weight_costmap / 100.0;
+			cost += sum_hyst * map_info.linear_resolution * distf * cc.weight_hysteresis / 100.0;
 		}
 		else
 		{
@@ -995,8 +1055,8 @@ private:
 			}
 
 			{
-				// Go-straight
-				float v[3], dp[3], sum = 0;
+				float v[3], dp[3];
+				int sum = 0, sum_hyst = 0;
 				float distf = d.len();
 				const int dist = distf;
 				distf /= dist;
@@ -1020,11 +1080,18 @@ private:
 					const auto c = cm[pos];
 					if(c > 99) return -1;
 					sum += c;
+					if(hyst)
+					{
+						auto pos_rough = pos;
+						pos_rough[2] = 0;
+						sum_hyst += cm_hyst[pos_rough];
+					}
 					v[0] += dp[0];
 					v[1] += dp[1];
 					v[2] += dp[2];
 				}
 				cost += sum * map_info.linear_resolution * distf * cc.weight_costmap / 100.0;
+				cost += sum_hyst * map_info.linear_resolution * distf * cc.weight_hysteresis / 100.0;
 			}
 		}
 
