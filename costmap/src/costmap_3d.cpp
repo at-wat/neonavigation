@@ -256,6 +256,8 @@ private:
 			ROS_ERROR("map and map_overlay must have same frame_id");
 			return;
 		}
+		if(map.info.width < 1 ||
+				map.info.height < 1) return;
 		map_overlay = map;
 		map_copy(map_overlay, *msg);
 		ROS_INFO("C-Space costmap updated");
