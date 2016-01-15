@@ -176,6 +176,7 @@ private:
 	{
 		auto s_rough = s;
 		s_rough[2] = 0;
+
 		while(true)
 		{
 			if(open.size() < 1) break;
@@ -246,7 +247,7 @@ private:
 	}
 	void update_goal()
 	{	
-		if(!has_map) return;
+		if(!has_map || !has_goal) return;
 
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
@@ -264,6 +265,11 @@ private:
 		auto &g = cost_estim_cache;
 
 		g.clear(FLT_MAX);
+		if(cm[e] == 100)
+		{
+			ROS_WARN("Goal unreachable");
+			return;
+		}
 
 		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
 		open.push(astar::pq(g[e], g[e], e));
@@ -307,6 +313,7 @@ private:
 	}
 	void cb_map_update(const costmap::CSpace3DUpdate::ConstPtr &msg)
 	{
+		if(!has_map) return;
 		ROS_INFO("Map updated");
 	
 		astar::vec s, e;
@@ -345,54 +352,66 @@ private:
 				}
 			}
 		}
+		if(!has_goal) return;
 
 		const auto ts = std::chrono::high_resolution_clock::now();
-		astar::reservable_priority_queue<astar::pq> open;
 		auto &g = cost_estim_cache;
 
-		astar::vec p;
+		astar::vec p, p_cost_min;
 		p[2] = 0;
+		float cost_min = FLT_MAX;
 		for(p[1] = (int)msg->y; p[1] < (int)(msg->y + msg->height); p[1] ++)
 		{
 			for(p[0] = (int)msg->x; p[0] < (int)(msg->x + msg->width); p[0] ++)
 			{
-				g[p] = FLT_MAX;
+				if(cost_min > g[p])
+				{
+					p_cost_min = p;
+					cost_min = g[p];
+				}
 			}
 		}
-		for(p[1] = (int)msg->y; p[1] < (int)(msg->y + msg->height); p[1] ++)
+
+		astar::reservable_priority_queue<astar::pq> open;
+		astar::reservable_priority_queue<astar::pq> erase;
+		open.reserve(map_info.width * map_info.height / 2);
+		erase.reserve(map_info.width * map_info.height / 2);
+
+		erase.push(astar::pq(cost_min, cost_min, p_cost_min));
+        while(true)
 		{
-			if((int)msg->x - 1 >= 0)
+			if(erase.size() < 1) break;
+			const auto center = erase.top();
+			const auto p = center.v;
+			erase.pop();
+
+			if(g[p] == FLT_MAX) continue;
+			g[p] = FLT_MAX;
+
+			astar::vec d;
+			d[2] = 0;
+			for(d[0] = -1; d[0] <= 1; d[0] ++)
 			{
-				p[0] = msg->x - 1;
-				auto &gp = g[p];
-				if(gp < FLT_MAX)
-					open.push(astar::pq(gp, gp, p));
-			}
-			if(msg->x + msg->width < map_info.width)
-			{
-				p[0] = msg->x + msg->width;
-				auto &gp = g[p];
-				if(gp < FLT_MAX)
-					open.push(astar::pq(gp, gp, p));
+				for(d[1] = -1; d[1] <= 1; d[1] ++)
+				{
+					if(!((d[0] == 0) ^ (d[1] == 0))) continue;
+					const auto next = p + d;
+					if((unsigned int)next[0] >= (unsigned int)map_info.width ||
+							(unsigned int)next[1] >= (unsigned int)map_info.height)
+						continue;
+					auto &gn = g[next];
+					if(gn == FLT_MAX)
+						continue;
+					if(gn < cost_min)
+					{
+						open.push(astar::pq(gn, gn, next));
+						continue;
+					}
+					erase.push(astar::pq(gn, gn, next));
+				}
 			}
 		}
-		for(p[0] = (int)msg->x; p[0] < (int)(msg->x + msg->width); p[0] ++)
-		{
-			if((int)msg->y - 1 >= 0)
-			{
-				p[1] = msg->y - 1;
-				auto &gp = g[p];
-				if(gp < FLT_MAX)
-					open.push(astar::pq(gp, gp, p));
-			}
-			if(msg->y + msg->height < map_info.height)
-			{
-				p[1] = msg->y + msg->height;
-				auto &gp = g[p];
-				if(gp < FLT_MAX)
-					open.push(astar::pq(gp, gp, p));
-			}
-		}
+
 		fill_costmap(open, g, s, e);
 		const auto tnow = std::chrono::high_resolution_clock::now();
 		ROS_INFO("Cost estimation cache updated (%0.3f sec.)",
