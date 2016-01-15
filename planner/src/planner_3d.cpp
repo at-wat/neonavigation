@@ -560,13 +560,13 @@ public:
 		nh.param_cast("weight_backward", cc.weight_backward, 0.9f);
 		nh.param_cast("weight_ang_vel", cc.weight_ang_vel, 1.0f);
 		nh.param_cast("weight_costmap", cc.weight_costmap, 50.0f);
-		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 6.0f);
+		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 30.0f);
 		nh.param_cast("hysteresis_max_dist", cc.hysteresis_max_dist, 0.3f);
 		nh.param_cast("weight_hysteresis", cc.weight_hysteresis, 5.0f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
 		
-		nh.param("local_range", local_range_f, 8.0);
+		nh.param("local_range", local_range_f, 2.5);
 
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
