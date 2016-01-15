@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+  <name>neonavigation_launch</name>
+  <version>0.0.0</version>
+  <description>The neonavigation_launch package</description>
+
+  <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
+  <license>BSD</license>
+  <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>costmap</run_depend>
+  <run_depend>planner</run_depend>
+
+  <export>
+  </export>
+</package>
