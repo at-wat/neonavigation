@@ -382,11 +382,12 @@ public:
 			std::function<float(const vec&, const vec&)> cb_cost_estim,
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
-			float progress_interval)
+			const float cost_leave,
+			const float progress_interval)
 	{
 		return search_impl(g, s, e, path,
 				cb_cost, cb_cost_estim, cb_search, cb_progress,
-				progress_interval);
+				cost_leave, progress_interval);
 	}
 	bool search_impl(gridmap<float> &g,
 			const vec &st, const vec &en, 
@@ -395,7 +396,8 @@ public:
 			std::function<float(const vec&, const vec&)> cb_cost_estim,
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
-			float progress_interval)
+			const float cost_leave,
+			const float progress_interval)
 	{
 		if(st == en)
 		{
@@ -433,7 +435,11 @@ public:
 			auto c = center.p_raw;
 			auto c_estim = center.p;
 			open.pop();
-			if(p == e) break;
+			if(p == e || c_estim - c <= cost_leave)
+			{
+				e = p;
+				break;
+			}
 
 			auto &gp = g[p];
 			if(c > gp) continue;

@@ -133,6 +133,7 @@ private:
 	float max_vel;
 	float max_ang_vel;
 	float freq;
+	float freq_min;
 	float search_range;
 	int range;
 	int local_range;
@@ -183,7 +184,7 @@ private:
 			const auto c = center.p_raw;
 			open.pop();
 			if(c > g[p]) continue;
-			if(c - ec_rough[0] * range * 2 > g[s_rough]) continue;
+			if(c - ec_rough[0] * (range + local_range) > g[s_rough]) continue;
 
 			astar::vec d;
 			d[2] = 0;
@@ -529,7 +530,8 @@ public:
 		pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 
-		nh.param_cast("freq", freq, 3.0f);
+		nh.param_cast("freq", freq, 4.0f);
+		nh.param_cast("freq_min", freq_min, 2.0f);
 		nh.param_cast("search_range", search_range, 0.4f);
 
 		nh.param_cast("max_vel", max_vel, 0.3f);
@@ -541,11 +543,11 @@ public:
 		nh.param_cast("weight_costmap", cc.weight_costmap, 50.0f);
 		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 6.0f);
 		nh.param_cast("hysteresis_max_dist", cc.hysteresis_max_dist, 0.3f);
-		nh.param_cast("weight_hysteresis", cc.weight_hysteresis, 0.5f);
+		nh.param_cast("weight_hysteresis", cc.weight_hysteresis, 5.0f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
 		
-		nh.param("local_range", local_range_f, 1.5);
+		nh.param("local_range", local_range_f, 8.0);
 
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
@@ -750,11 +752,16 @@ private:
 		metric2grid(e[0], e[1], e[2],
 				ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
 
-		if(cost_estim_cache[s] == FLT_MAX)
+		auto s_rough = s;
+		s_rough[2] = 0;
+
+		if(cost_estim_cache[s_rough] == FLT_MAX)
 		{
 			ROS_WARN("Goal unreachable");
 			return false;
 		}
+		auto range_limit = cost_estim_cache[s_rough]
+			- (local_range + range) * ec[0];
 
 		//ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
 		//		s[0], s[1], s[2], e[0], e[1], e[2]);
@@ -770,8 +777,9 @@ private:
 					this, std::placeholders::_1,
 					std::placeholders::_2, std::placeholders::_3), 
 				std::bind(&planner_3d::cb_progress, 
-					this, std::placeholders::_1), 
-				1.0f / freq))
+					this, std::placeholders::_1),
+				range_limit,
+				1.0f / freq_min))
 		{
 			ROS_WARN("Path plan failed (goal unreachable)");
 			return false;
@@ -820,7 +828,6 @@ private:
 					}
 					it_prev = it;
 				}
-				d_min -= 0.5;
 				if(d_min < 0) d_min = 0;
 				if(d_min > max_dist)
 					d_min = max_dist;
