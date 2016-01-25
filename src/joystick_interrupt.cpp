@@ -15,6 +15,8 @@ private:
 	double timeout;
 	int linear_axis;
 	int angular_axis;
+	int linear_axis2;
+	int angular_axis2;
 	int interrupt_button;
 	ros::Time last_joy_msg;
 
@@ -24,10 +26,28 @@ private:
 		{
 			last_joy_msg = ros::Time::now();
 
+			float lin, ang;
+			lin = msg->axes[linear_axis];
+			ang = msg->axes[angular_axis];
+			if(linear_axis2 >= 0)
+			{
+				if(fabs(msg->axes[linear_axis2]) > fabs(lin))
+				{
+					lin = msg->axes[linear_axis2];
+				}
+			}
+			if(angular_axis2 >= 0)
+			{
+				if(fabs(msg->axes[angular_axis2]) > fabs(lin))
+				{
+					ang = msg->axes[angular_axis2];
+				}
+			}
+
 			geometry_msgs::Twist cmd_vel;
-			cmd_vel.linear.x = msg->axes[linear_axis] * linear_vel;
+			cmd_vel.linear.x = lin * linear_vel;
 			cmd_vel.linear.y = cmd_vel.linear.z = 0.0;
-			cmd_vel.angular.z = msg->axes[angular_axis] * angular_vel;
+			cmd_vel.angular.z = ang * angular_vel;
 			cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
 			pub_twist.publish(cmd_vel);
 		}
@@ -52,6 +72,8 @@ public:
 		nh.param("angular_vel", angular_vel, 0.8);
 		nh.param("linear_axis", linear_axis, 1);
 		nh.param("angular_axis", angular_axis, 0);
+		nh.param("linear_axis2", linear_axis2, -1);
+		nh.param("angular_axis2", angular_axis2, -1);
 		nh.param("interrupt_button", interrupt_button, 6);
 		nh.param("timeout", timeout, 0.5);
 		last_joy_msg = ros::Time::now();

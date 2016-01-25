@@ -14,6 +14,8 @@
     <param name="interrupt_button" value="6" type="int" />
     <param name="linear_axis" value="1" type="int" />
     <param name="angular_axis" value="0" type="int" />
+    <param name="linear_axis2" value="10" type="int" />
+    <param name="angular_axis2" value="9" type="int" />
     <param name="linear_vel" value="$(arg linear_vel)" type="double" />
     <param name="angular_vel" value="$(arg angular_vel)" type="double" />
     <remap from="~/cmd_vel" to="$(arg cmd_vel_out)" />
