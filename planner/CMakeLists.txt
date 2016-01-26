@@ -30,4 +30,5 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 add_executable(planner_3d src/planner_3d.cpp src/grid_astar.hpp)
 target_link_libraries(planner_3d ${catkin_LIBRARIES})
+add_dependencies(planner_3d costmap_gencpp)
 
