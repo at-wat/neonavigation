@@ -75,6 +75,8 @@ public:
 		}
 		n.param("points_per_meter_sq", ppmsq, 600.0);
 		n.param("downsample_grid", downsample_grid, 0.05);
+		n.param("offset_x", offset_x, 0.0);
+		n.param("offset_y", offset_y, 0.0);
 
 		auto pc = convert_obj(split(file, ','));
 		pubCloud.publish(pc);
@@ -87,6 +89,8 @@ private:
 	std::string frame_id;
 	double ppmsq;
 	double downsample_grid;
+	double offset_x;
+	double offset_y;
 
 	std::random_device seed_gen;
 	std::default_random_engine engine;
@@ -97,6 +101,8 @@ private:
 		pcl::PolygonMesh::Ptr mesh(new pcl::PolygonMesh());
 		pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
 		pcl::PointCloud<pcl::PointXYZ>::Ptr pc_rs(new pcl::PointCloud<pcl::PointXYZ>());
+
+		pcl::PointXYZ offset((float)offset_x, (float)offset_y, 0.0f);
 
 		for(auto &file: files)
 		{
@@ -143,7 +149,7 @@ private:
 						r0 = 1.0 - r0;
 						r1 = 1.0 - r1;
 					}
-					pcl::PointXYZ p = p0 + (a * r0 + b * r1);
+					pcl::PointXYZ p = p0 + (a * r0 + b * r1) + offset;
 					pc_rs->points.push_back(p);
 				}
 			}
@@ -165,7 +171,7 @@ private:
 		pc_msg.header.stamp = ros::Time::now();
 		ROS_INFO("pointcloud (%d points) has been generated from %d verticles", 
 				(int)pc_ds->size(),
-				file.c_str(), (int)pc->size());
+				(int)pc->size());
 		return pc_msg;
 	}
 
