@@ -412,6 +412,10 @@ private:
 				}
 			}
 		}
+		if(open.size() == 0)
+		{
+			open.push(astar::pq(-ec_rough[0] * 0.5, -ec_rough[0] * 0.5, e));
+		}
 
 		fill_costmap(open, g, s, e);
 		const auto tnow = std::chrono::high_resolution_clock::now();
