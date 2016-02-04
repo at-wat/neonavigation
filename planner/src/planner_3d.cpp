@@ -931,54 +931,25 @@ private:
 		const auto d = e - s;
 		float cost = euclid_cost(d);
 
-		if(rough)
-		{
-			// Snap
-			if((e - v_goal).sqlen() < range * range) e = v_goal;
-
-			// Go-straight
-			float v[3], dp[3];
-			int sum = 0, sum_hyst = 0;
-			float distf = d.len();
-			const int dist = distf;
-			distf /= dist;
-			v[0] = s[0];
-			v[1] = s[1];
-			v[2] = 0;
-			dp[0] = (float)d[0] / dist;
-			dp[1] = (float)d[1] / dist;
-			astar::vec pos(v);
-			for(int i = 0; i < dist; i ++)
-			{
-				pos[0] = lroundf(v[0]);
-				pos[1] = lroundf(v[1]);
-				const auto c = cm_rough[pos];
-				if(c > 99) return -1;
-				sum += c;
-				if(hyst)
-				{
-					sum_hyst += cm_hyst[pos];
-				}
-				v[0] += dp[0];
-				v[1] += dp[1];
-			}
-			if(e[0] == v_goal[0] && e[1] == v_goal[1])
-			{
-				e[2] = v_goal[2];
-			}
-			else
-			{
-				e[2] = lroundf(atan2f(d[1], d[0]) / map_info.angular_resolution);
-				if(e[2] < 0) e[2] += map_info.angle;
-			}
-			cost += sum * map_info.linear_resolution * distf * cc.weight_costmap / 100.0;
-			cost += sum_hyst * map_info.linear_resolution * distf * cc.weight_hysteresis / 100.0;
-			return cost;
-		}
 		if(d[0] == 0 && d[1] == 0)
 		{
 			// In-place turn
-			return cc.in_place_turn;
+			int sum = 0;
+			int dir = 1;
+			if(d[2] > (int)map_info.angle / 2) dir = -1;
+			astar::vec pos = s;
+			for(int i = 0; i < abs(d[2]); i ++)
+			{
+				pos[2] += dir;
+				if(pos[2] < 0) pos[2] += map_info.angle;
+				else if(pos[2] >= (int)map_info.angle) pos[2] -= map_info.angle;
+				const auto c = cm[pos];
+				if(c > 99) return -1;
+				sum += c;
+			}
+
+			float cost = sum * map_info.angular_resolution * ec[2] / ec[0];
+			return cc.in_place_turn + cost;
 		}
 
 		/*float diff_val[3] = {
