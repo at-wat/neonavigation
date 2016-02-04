@@ -276,7 +276,7 @@ private:
 		open.push(astar::pq(g[e], g[e], e));
 		fill_costmap(open, g, s, e);
 		const auto tnow = std::chrono::high_resolution_clock::now();
-		ROS_INFO("Cost estimation cache generated (%0.3f sec.)",
+		ROS_DEBUG("Cost estimation cache generated (%0.3f sec.)",
 				std::chrono::duration<float>(tnow - ts).count());
 		g[e] = 0;
 		
@@ -315,7 +315,7 @@ private:
 	void cb_map_update(const costmap::CSpace3DUpdate::ConstPtr &msg)
 	{
 		if(!has_map) return;
-		ROS_INFO("Map updated");
+		ROS_DEBUG("Map updated");
 
 		{
 			astar::vec p;
@@ -419,7 +419,7 @@ private:
 
 		fill_costmap(open, g, s, e);
 		const auto tnow = std::chrono::high_resolution_clock::now();
-		ROS_INFO("Cost estimation cache updated (%0.3f sec.)",
+		ROS_DEBUG("Cost estimation cache updated (%0.3f sec.)",
 				std::chrono::duration<float>(tnow - ts).count());
 		publish_costmap();
 	}
@@ -471,7 +471,7 @@ private:
 					search_list_rough.push_back(d);
 				}
 			}
-			ROS_INFO("Search list updated (range: ang %d, lin %d) %d", 
+			ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d", 
 					msg->info.angle, range, (int)search_list.size());
 
 			rotgm.resize(msg->info.angle);
@@ -500,7 +500,7 @@ private:
 					}
 				}
 			}
-			ROS_INFO("Rotation cache generated");
+			ROS_DEBUG("Rotation cache generated");
 		}
 		map_info = msg->info;
 		map_header = msg->header;
@@ -537,7 +537,7 @@ private:
 				cm_rough[p] = cost_min;
 			}
 		}
-		ROS_INFO("Map copied");
+		ROS_DEBUG("Map copied");
 		cm_hyst.clear(0);
 
 		has_map = true;
@@ -579,11 +579,12 @@ public:
 
 		has_map = false;
 		has_goal = false;
+		has_start = false;
 	}
 	void spin()
 	{
 		ros::Rate wait(freq);
-		ROS_INFO("Initialized");
+		ROS_DEBUG("Initialized");
 
 		while(ros::ok())
 		{
@@ -897,7 +898,7 @@ private:
 		path.header.stamp = ros::Time::now();
 		//grid2metric(path_grid, path);
 		pub_path.publish(path);
-		ROS_INFO("Search timed out");
+		ROS_WARN("Search timed out");
 		return true;
 	}
 	void rotate(astar::vecf &v, const float &ang)

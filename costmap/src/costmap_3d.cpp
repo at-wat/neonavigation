@@ -170,7 +170,7 @@ private:
 	costmap::CSpace3D map_overlay;
 	void cb_map(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 	{
-		ROS_INFO("2D costmap received");
+		ROS_DEBUG("2D costmap received");
 
 		map.header = msg->header;
 		map.info.width = msg->info.width;
@@ -223,7 +223,7 @@ private:
 				}
 			}
 		}
-		ROS_INFO("C-Space template generated");
+		ROS_DEBUG("C-Space template generated");
 
 		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
@@ -243,14 +243,14 @@ private:
 				}
 			}
 		}
-		ROS_INFO("C-Space costmap generated");
+		ROS_DEBUG("C-Space costmap generated");
 
 		pub_costmap.publish(map);
 		publish_debug(map);
 	}
 	void cb_map_overlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 	{
-		ROS_INFO("Overlay 2D costmap received");
+		ROS_DEBUG("Overlay 2D costmap received");
 		if(map.header.frame_id != msg->header.frame_id)
 		{
 			ROS_ERROR("map and map_overlay must have same frame_id");
@@ -260,7 +260,7 @@ private:
 				map.info.height < 1) return;
 		map_overlay = map;
 		map_copy(map_overlay, *msg);
-		ROS_INFO("C-Space costmap updated");
+		ROS_DEBUG("C-Space costmap updated");
 
 		int ox = lroundf((msg->info.origin.position.x
 				   	- map.info.origin.position.x) / map.info.linear_resolution);
