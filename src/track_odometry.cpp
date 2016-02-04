@@ -60,6 +60,8 @@ private:
 	tf::TransformBroadcaster tf_broadcaster;
 	nav_msgs::Odometry odom_prev;
 
+	std::string base_link_id;
+
 	sensor_msgs::Imu imu;
 	double gyro_zero[3];
 
@@ -95,7 +97,14 @@ private:
 		geometry_msgs::TransformStamped odom_trans;
 
 		odom_trans.header = odom.header;
-		odom_trans.child_frame_id = odom.child_frame_id;
+		if(base_link_id.size() > 0)
+		{
+			odom_trans.child_frame_id = base_link_id;
+		}
+		else
+		{
+			odom_trans.child_frame_id = odom.child_frame_id;
+		}
 		odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
 		odom_trans.transform.rotation = odom.pose.pose.orientation;
 		tf_broadcaster.sendTransform(odom_trans);
@@ -107,6 +116,8 @@ public:
 		sub_odom = nh.subscribe("/odom_raw", 1, &track_odometry::cb_odom, this);
 		sub_imu = nh.subscribe("/imu", 1, &track_odometry::cb_imu, this);
 		pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 2);
+
+		nh.param("base_link_id", base_link_id, std::string(""));
 	}
 };
 
