@@ -141,6 +141,7 @@ private:
 	int unknown_cost;
 	bool has_map;
 	bool has_goal;
+	bool has_start;
 	std::vector<astar::vec> search_list;
 	std::vector<astar::vec> search_list_rough;
 
@@ -247,7 +248,7 @@ private:
 	}
 	void update_goal()
 	{	
-		if(!has_map || !has_goal) return;
+		if(!has_map || !has_goal || !has_start) return;
 
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
@@ -315,15 +316,6 @@ private:
 	{
 		if(!has_map) return;
 		ROS_INFO("Map updated");
-	
-		astar::vec s, e;
-		metric2grid(s[0], s[1], s[2],
-				start.pose.position.x, start.pose.position.y, 
-				tf::getYaw(start.pose.orientation));
-		metric2grid(e[0], e[1], e[2],
-				goal.pose.position.x, goal.pose.position.y, 
-				tf::getYaw(goal.pose.orientation));
-		e[2] = 0;
 
 		{
 			astar::vec p;
@@ -352,7 +344,16 @@ private:
 				}
 			}
 		}
-		if(!has_goal) return;
+		if(!has_goal || !has_start) return;
+	
+		astar::vec s, e;
+		metric2grid(s[0], s[1], s[2],
+				start.pose.position.x, start.pose.position.y, 
+				tf::getYaw(start.pose.orientation));
+		metric2grid(e[0], e[1], e[2],
+				goal.pose.position.x, goal.pose.position.y, 
+				tf::getYaw(goal.pose.orientation));
+		e[2] = 0;
 
 		const auto ts = std::chrono::high_resolution_clock::now();
 		auto &g = cost_estim_cache;
@@ -587,25 +588,29 @@ public:
 			if(has_map)
 			{
 				start.header.frame_id = "base_link";
-				start.header.stamp = ros::Time::now();
-				start.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+				start.header.stamp = ros::Time(0);
+				start.pose.orientation.x = 0.0;
+				start.pose.orientation.y = 0.0;
+				start.pose.orientation.z = 0.0;
+				start.pose.orientation.w = 1.0;
 				start.pose.position.x = 0;
 				start.pose.position.y = 0;
 				start.pose.position.z = 0;
 				try
 				{
-					tfl.waitForTransform("base_link", map_header.frame_id, 
+					tfl.waitForTransform(map_header.frame_id, "base_link",
 							map_header.stamp, ros::Duration(0.1));
 					tfl.transformPose(map_header.frame_id, start, start);
 				}
 				catch(tf::TransformException &e)
 				{
-					ROS_INFO("Transform failed");
+					//ROS_INFO("planner: Transform failed %s", e.what());
 					continue;
 				}
+				has_start = true;
 			}
 
-			if(has_map && has_goal)
+			if(has_map && has_goal && has_start)
 			{
 				nav_msgs::Path path;
 				make_plan(start.pose, goal.pose, path, true);
