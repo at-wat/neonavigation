@@ -295,8 +295,8 @@ private:
 					{
 						int x2 = gx + x;
 						int y2 = gy + y;
-						if((unsigned int)x2 > map.info.width ||
-								(unsigned int)y2 > map.info.height)
+						if((unsigned int)x2 >= map.info.width ||
+								(unsigned int)y2 >= map.info.height)
 							continue;
 
 						auto &m = map.data[
