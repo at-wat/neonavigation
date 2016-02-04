@@ -263,13 +263,12 @@ private:
 		ROS_INFO("C-Space costmap updated");
 
 		int ox = lroundf((msg->info.origin.position.x
-				   	- map_overlay.info.origin.position.x)
-			   	/ map_overlay.info.linear_resolution);
+				   	- map.info.origin.position.x) / map.info.linear_resolution);
 		int oy = lroundf((msg->info.origin.position.y
-				   	- map_overlay.info.origin.position.y)
-			   	/ map_overlay.info.linear_resolution);
-		update_map(map_overlay, ox, oy, 0, 
-				msg->info.width, msg->info.height, map_overlay.info.angle);
+				   	- map.info.origin.position.y) / map.info.linear_resolution);
+		int w = lroundf(msg->info.width * msg->info.resolution / map.info.linear_resolution);
+		int h = lroundf(msg->info.height * msg->info.resolution / map.info.linear_resolution);
+		update_map(map_overlay, ox, oy, 0, w, h, map.info.angle);
 		publish_debug(map_overlay);
 	}
 	void map_copy(costmap::CSpace3D &map, const nav_msgs::OccupancyGrid &msg)
@@ -285,8 +284,10 @@ private:
 			{
 				if(msg.data[i] <= 0) continue;
 
-				int gx = i % msg.info.width + ox;
-				int gy = i / msg.info.width + oy;
+				int gx = lroundf((i % msg.info.width)
+					   	* msg.info.resolution / map.info.linear_resolution) + ox;
+				int gy = lroundf((i / msg.info.width)
+					   	* msg.info.resolution / map.info.linear_resolution) + oy;
 
 				for(int y = -range_max; y <= range_max; y ++)
 				{
