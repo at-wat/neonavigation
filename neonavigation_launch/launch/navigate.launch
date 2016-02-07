@@ -7,6 +7,12 @@
 	<arg name="sim_robot_yaw" default="0.0" />
 	<arg name="cmd_vel_output" default="/cmd_vel" />
 	<arg name="vel" default="0.5" />
+	<arg name="acc" default="0.3" />
+	<arg name="ang_vel" default="0.6" />
+	<arg name="ang_acc" default="1.0" />
+
+	<arg name="linear_expand" default="0.08" />
+	<arg name="linear_spread" default="0.3" />
 	<arg name="output_info" default="screen" />
 
 	<node pkg="costmap" type="costmap_3d" name="costmap_3d" output="$(arg output_info)">
@@ -29,9 +35,9 @@
 	<node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
 		<remap from="~/cmd_vel" to="$(arg cmd_vel_output)" />
 		<param name="max_vel" value="$(arg vel)" />
-		<param name="max_acc" value="0.3" />
-		<param name="max_angvel" value="0.6" />
-		<param name="max_angacc" value="1.0" />
+		<param name="max_acc" value="$(arg acc)" />
+		<param name="max_angvel" value="$(arg ang_vel)" />
+		<param name="max_angacc" value="$(arg ang_acc)" />
 		
 		<param name="curv_forward" value="0.4" />
 		<param name="look_forward" value="0.1" />
