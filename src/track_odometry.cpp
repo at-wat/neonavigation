@@ -4,6 +4,7 @@
 #include <sensor_msgs/Imu.h>
 
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 
 static geometry_msgs::Vector3 operator*(const double &a, const geometry_msgs::Vector3 &vin)
@@ -58,20 +59,89 @@ private:
 	ros::Subscriber sub_imu;
 	ros::Publisher pub_odom;
 	tf::TransformBroadcaster tf_broadcaster;
+	tf::TransformListener tf_listener;
 	nav_msgs::Odometry odom_prev;
 
 	std::string base_link_id;
+	std::string base_link_id_overwrite;
 
 	sensor_msgs::Imu imu;
 	double gyro_zero[3];
 
+	bool has_imu;
+
 	void cb_imu(const sensor_msgs::Imu::Ptr &msg)
 	{
-		imu = *msg;
+		if(base_link_id.size() == 0) return;
+
+		imu.header = msg->header;
+		try
+		{
+			tf_listener.waitForTransform(base_link_id, msg->header.frame_id, 
+					msg->header.stamp, ros::Duration(0.1));
+			
+			geometry_msgs::Vector3Stamped vin, vout;
+			vin.header = imu.header;
+			vin.vector = msg->linear_acceleration;
+			tf_listener.transformVector(base_link_id, vin, vout);
+			imu.linear_acceleration = vout.vector;
+			
+			vin.header = imu.header;
+			vin.vector = msg->angular_velocity;
+			tf_listener.transformVector(base_link_id, vin, vout);
+			imu.angular_velocity = vout.vector;
+
+			tf::StampedTransform trans;
+			tf_listener.lookupTransform(base_link_id, msg->header.frame_id, msg->header.stamp, trans);
+
+			tf::Stamped<tf::Quaternion> qin, qout;
+			geometry_msgs::QuaternionStamped qmin, qmout;
+			qmin.header = imu.header;
+			qmin.quaternion = msg->orientation;
+			tf::quaternionStampedMsgToTF(qmin, qin);
+
+			auto axis = qin.getAxis();
+			auto angle = qin.getAngle();
+			tf::Stamped<tf::Vector3> axis2;
+			tf::Stamped<tf::Vector3> axis1;
+			axis1.setData(axis);
+			axis1.stamp_ = qin.stamp_;
+			axis1.frame_id_ = qin.frame_id_;
+			tf_listener.transformVector(base_link_id, axis1, axis2);
+
+			qout.setData(tf::Quaternion(axis2, angle));
+			qout.stamp_ = qin.stamp_;
+			qout.frame_id_ = base_link_id;
+
+			tf::quaternionStampedTFToMsg(qout, qmout);
+			imu.orientation = qmout.quaternion;
+			//ROS_INFO("%0.3f %s -> %0.3f %s", 
+			//		tf::getYaw(qmin.quaternion), qmin.header.frame_id.c_str(),
+			//		tf::getYaw(qmout.quaternion), qmout.header.frame_id.c_str());
+
+			has_imu = true;
+		}
+		catch(tf::TransformException &e)
+		{
+			if(has_imu)
+				ROS_ERROR("%s", e.what());
+			has_imu = false;
+			return;
+		}
 	}
 	void cb_odom(const nav_msgs::Odometry::Ptr &msg)
 	{
 		nav_msgs::Odometry odom = *msg;
+		if(base_link_id_overwrite.size() > 0)
+		{
+			base_link_id = base_link_id_overwrite;
+		}
+		else
+		{
+			base_link_id = odom.child_frame_id;
+		}
+
+		if(!has_imu) return;
 
 		odom.twist.twist.angular = imu.angular_velocity;
 		odom.pose.pose.orientation = imu.orientation;
@@ -97,14 +167,7 @@ private:
 		geometry_msgs::TransformStamped odom_trans;
 
 		odom_trans.header = odom.header;
-		if(base_link_id.size() > 0)
-		{
-			odom_trans.child_frame_id = base_link_id;
-		}
-		else
-		{
-			odom_trans.child_frame_id = odom.child_frame_id;
-		}
+		odom_trans.child_frame_id = base_link_id;
 		odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
 		odom_trans.transform.rotation = odom.pose.pose.orientation;
 		tf_broadcaster.sendTransform(odom_trans);
@@ -117,7 +180,9 @@ public:
 		sub_imu = nh.subscribe("/imu", 1, &track_odometry::cb_imu, this);
 		pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 2);
 
-		nh.param("base_link_id", base_link_id, std::string(""));
+		nh.param("base_link_id", base_link_id_overwrite, std::string(""));
+
+		has_imu = false;
 	}
 };
 
