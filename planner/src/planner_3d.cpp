@@ -64,6 +64,8 @@ private:
 	astar as;
 	astar::gridmap<char, 0x40> cm;
 	astar::gridmap<char, 0x80> cm_rough;
+	astar::gridmap<char, 0x40> cm_base;
+	astar::gridmap<char, 0x80> cm_rough_base;
 	astar::gridmap<char, 0x80> cm_hyst;
 	astar::gridmap<float> cost_estim_cache;
 	
@@ -142,6 +144,7 @@ private:
 	bool has_map;
 	bool has_goal;
 	bool has_start;
+	bool remember_updates;
 	std::vector<astar::vec> search_list;
 	std::vector<astar::vec> search_list_rough;
 
@@ -316,6 +319,12 @@ private:
 	{
 		if(!has_map) return;
 		ROS_DEBUG("Map updated");
+
+		if(!remember_updates)
+		{
+			cm = cm_base;
+			cm_rough = cm_rough_base;
+		}
 
 		{
 			astar::vec p;
@@ -542,6 +551,9 @@ private:
 
 		has_map = true;
 		update_goal();
+
+		cm_rough_base = cm_rough;
+		cm_base = cm;
 	}
 
 public:
@@ -570,6 +582,7 @@ public:
 		nh.param_cast("weight_hysteresis", cc.weight_hysteresis, 5.0f);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
+		nh.param("remember_updates", remember_updates, false);
 		
 		nh.param("local_range", local_range_f, 2.5);
 

@@ -348,6 +348,13 @@ public:
 			block_addr(pos, baddr, addr);
 			return c[baddr * block_ser_size + addr];
 		}
+		const gridmap<T, block_width> &operator =(const gridmap<T, block_width> &gm)
+		{
+			reset(gm.size);
+			memcpy(c.get(), gm.c.get(), ser_size);
+
+			return *this;
+		}
 	};
 
 	gridmap<float> g;
