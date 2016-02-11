@@ -21,8 +21,6 @@
 		<param name="ang_resolution" value="16"/>
 		<param name="linear_expand" value="0.08"/>
 		<param name="linear_spread" value="0.3"/>
-		<param name="local_range" value="2.0"/>
-		<param name="freq_min" value="1.0"/>
 	</node>
 	<node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" if="$(arg use_map_server)" />
 	
