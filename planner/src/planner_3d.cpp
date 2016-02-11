@@ -387,7 +387,8 @@ private:
 		open.reserve(map_info.width * map_info.height / 2);
 		erase.reserve(map_info.width * map_info.height / 2);
 
-		erase.push(astar::pq(cost_min, cost_min, p_cost_min));
+		if(cost_min != FLT_MAX)
+			erase.push(astar::pq(cost_min, cost_min, p_cost_min));
         while(true)
 		{
 			if(erase.size() < 1) break;
