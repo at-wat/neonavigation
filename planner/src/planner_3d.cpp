@@ -167,6 +167,8 @@ private:
 	astar::vecf ec_rough;
 	astar::vecf resolution;
 
+	float rough_cost_max;
+
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
 		goal = *msg;
@@ -248,6 +250,7 @@ private:
 				}
 			}
 		}
+		rough_cost_max = g[s_rough] + ec_rough[0] * (range + local_range);
 	}
 	void update_goal()
 	{	
@@ -271,8 +274,65 @@ private:
 		g.clear(FLT_MAX);
 		if(cm[e] == 100)
 		{
-			ROS_WARN("Goal unreachable");
-			return;
+			astar::vec d;
+			d[2] = 0;
+			float range_min = FLT_MAX;
+			for(d[0] = -local_range; d[0] <= local_range; d[0] ++)
+			{
+				for(d[1] = -local_range; d[1] <= local_range; d[1] ++)
+				{
+					if(d[0] == 0 && d[1] == 0) continue;
+					if(d.sqlen() > local_range * local_range) continue;
+
+					const auto e2 = e + d;
+					if((unsigned int)e2[0] >= (unsigned int)map_info.width ||
+							(unsigned int)e2[1] >= (unsigned int)map_info.height)
+						continue;
+					if(d.sqlen() < range_min || cm[e2] != 100)
+					{
+						range_min = d.sqlen();
+						e = e2;
+					}
+				}
+			}
+
+			if(range_min == FLT_MAX)
+			{
+				ROS_WARN("Goal unreachable");
+				return;
+			}
+			ROS_WARN("Goal moved");
+		}
+		if(cm[s] == 100)
+		{
+			astar::vec d;
+			d[2] = 0;
+			float range_min = FLT_MAX;
+			for(d[0] = -local_range; d[0] <= local_range; d[0] ++)
+			{
+				for(d[1] = -local_range; d[1] <= local_range; d[1] ++)
+				{
+					if(d[0] == 0 && d[1] == 0) continue;
+					if(d.sqlen() > local_range * local_range) continue;
+
+					const auto s2 = s + d;
+					if((unsigned int)s2[0] >= (unsigned int)map_info.width ||
+							(unsigned int)s2[1] >= (unsigned int)map_info.height)
+						continue;
+					if(d.sqlen() < range_min || cm[s2] != 100)
+					{
+						range_min = d.sqlen();
+						s = s2;
+					}
+				}
+			}
+
+			if(range_min == FLT_MAX)
+			{
+				ROS_WARN("Oops! You are in Rock!");
+				return;
+			}
+			ROS_WARN("Start moved");
 		}
 
 		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
@@ -425,6 +485,22 @@ private:
 		if(open.size() == 0)
 		{
 			open.push(astar::pq(-ec_rough[0] * 0.5, -ec_rough[0] * 0.5, e));
+		}
+		{
+			astar::vec p;
+			auto &g = cost_estim_cache;
+			p[2] = 0;
+			for(p[0] = 0; p[0] < (int)map_info.width; p[0] ++)
+			{
+				for(p[1] = 0; p[1] < (int)map_info.height; p[1] ++)
+				{
+					auto &gp = g[p];
+					if(gp > rough_cost_max)
+					{
+						open.push(astar::pq(gp, gp, p));
+					}
+				}
+			}
 		}
 
 		fill_costmap(open, g, s, e);
