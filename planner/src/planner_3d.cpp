@@ -934,6 +934,7 @@ private:
 		auto cost = cost_estim_cache[s2];
 		if(!rough)
 		{
+			if(s2[2] > (int)map_info.angle / 2) s2[2] -= map_info.angle;
 			cost += ec_rough[2] * fabs(s[2]);
 		}
 		return cost;
