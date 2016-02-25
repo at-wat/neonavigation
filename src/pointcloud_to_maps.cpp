@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <map_organizer/OccupancyGridArray.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <tf/transform_listener.h>
@@ -60,6 +61,7 @@ public:
 		n("~")
 	{
 		subPoints = n.subscribe("map_cloud", 1, &pointcloud_to_maps::cbPoints, this);
+		pubMapArray = n.advertise<map_organizer::OccupancyGridArray>("/maps", 1, true);
 	}
 	void cbPoints(const sensor_msgs::PointCloud2::Ptr &msg)
 	{
@@ -215,6 +217,7 @@ public:
 		}
 		num = -1;
 		int floor_num = 0;
+		map_organizer::OccupancyGridArray map_array;
 		for(auto &map: maps)
 		{
 			num ++;
@@ -222,14 +225,17 @@ public:
 			std::string name = "map" + std::to_string(floor_num);
 			pubMaps[name] = n.advertise<nav_msgs::OccupancyGrid>(name, 1, true);
 			pubMaps[name].publish(map);
+			map_array.maps.push_back(map);
 			ROS_ERROR("floor %d (%5.2fm^2), h = %0.2fm", 
 					floor_num, floorage_ext[num], map.info.origin.position.z);
 			floor_num ++;
 		}
+		pubMapArray.publish(map_array);
 	}
 private:
 	ros::NodeHandle n;
 	std::map<std::string, ros::Publisher> pubMaps;
+	ros::Publisher pubMapArray;
 	ros::Subscriber subPoints;
 };
 

@@ -2,13 +2,16 @@ cmake_minimum_required(VERSION 2.8.3)
 project(map_organizer)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs eigen_conversions pcl_ros tf_conversions)
+find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs nav_msgs eigen_conversions pcl_ros tf_conversions message_generation)
 find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
 
+add_message_files(FILES OccupancyGridArray.msg)
+generate_messages(DEPENDENCIES nav_msgs)
+
 ## Declare a catkin package
 catkin_package(
-    DEPENDS roscpp geometry_msgs tf sensor_msgs eigen eigen_conversions pcl_ros
+    DEPENDS roscpp geometry_msgs tf sensor_msgs nav_msgs eigen eigen_conversions pcl_ros
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
