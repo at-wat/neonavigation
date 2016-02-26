@@ -2,16 +2,22 @@ cmake_minimum_required(VERSION 2.8.3)
 project(map_organizer)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs nav_msgs eigen_conversions pcl_ros tf_conversions message_generation)
+find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs nav_msgs eigen_conversions pcl_ros tf_conversions message_generation map_server)
 find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
+
+find_package(PkgConfig)
+pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
+if(NEW_YAMLCPP_FOUND)
+add_definitions(-DHAVE_NEW_YAMLCPP)
+endif(NEW_YAMLCPP_FOUND)
 
 add_message_files(FILES OccupancyGridArray.msg)
 generate_messages(DEPENDENCIES nav_msgs)
 
 ## Declare a catkin package
 catkin_package(
-    DEPENDS roscpp geometry_msgs tf sensor_msgs nav_msgs eigen eigen_conversions pcl_ros
+    DEPENDS roscpp geometry_msgs tf sensor_msgs nav_msgs eigen eigen_conversions pcl_ros map_server
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -32,4 +38,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
 add_executable(pointcloud_to_maps src/pointcloud_to_maps.cpp)
 target_link_libraries(pointcloud_to_maps ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(tie_maps src/tie_maps.cpp)
+target_link_libraries(tie_maps yaml-cpp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
