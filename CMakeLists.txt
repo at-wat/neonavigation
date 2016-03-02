@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 2.8.3)
 project(joystick_interrupt)
 
 find_package(catkin REQUIRED COMPONENTS
-	roscpp sensor_msgs geometry_msgs
+	roscpp sensor_msgs geometry_msgs topic_tools
 )
 
 catkin_package(
-	CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs
+	CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs topic_tools
 	DEPENDS system_lib
 )
 
@@ -26,4 +26,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 add_executable(joystick_interrupt src/joystick_interrupt.cpp)
 target_link_libraries(joystick_interrupt ${catkin_LIBRARIES})
+
+add_executable(joystick_mux src/joystick_mux.cpp)
+target_link_libraries(joystick_mux ${catkin_LIBRARIES})
 
