@@ -15,8 +15,6 @@ private:
 	ros::Time last_joy_msg;
 	bool advertised;
 	int selected;
-	topic_tools::ShapeShifter buffer[2];
-	bool received_initial;
 
 	void cb_joy(const sensor_msgs::Joy::Ptr msg)
 	{
@@ -32,9 +30,6 @@ private:
 	};
 	void cb_topic(const boost::shared_ptr<topic_tools::ShapeShifter const>& msg, int id)
 	{
-		buffer[id] = *msg;
-		if(id == 0) received_initial = true;
-
 		if(selected == id)
 		{
 			if(!advertised)
@@ -61,7 +56,6 @@ public:
 		last_joy_msg = ros::Time::now();
 
 		advertised = false;
-		received_initial = false;
 		selected = 0;
 	}
 	void spin()
@@ -74,8 +68,6 @@ public:
 			if(ros::Time::now() - last_joy_msg > ros::Duration(timeout))
 			{
 				selected = 0;
-				if(advertised && received_initial)
-					pub_topic.publish(buffer[0]);
 			}
 		}
 	}
