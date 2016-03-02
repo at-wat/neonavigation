@@ -44,3 +44,7 @@ target_link_libraries(tie_maps yaml-cpp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(save_maps src/save_maps.cpp)
 target_link_libraries(save_maps ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(select_map src/select_map.cpp)
+target_link_libraries(select_map ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
