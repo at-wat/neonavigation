@@ -118,7 +118,7 @@ public:
 			rate.sleep();
 			ros::spinOnce();
 
-			if(!has_cloud || !has_twist) continue;
+			if(!has_twist) continue;
 
 			if(ros::Time::now() - cloud.header.stamp > ros::Duration(timeout))
 			{
@@ -128,6 +128,7 @@ public:
 				has_cloud = false;
 				continue;
 			}
+			if(!has_cloud) continue;
 			auto cmd_vel = limit(twist, cloud);
 			pub_twist.publish(cmd_vel);
 		}
