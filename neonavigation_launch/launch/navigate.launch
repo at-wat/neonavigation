@@ -15,6 +15,8 @@
 	<arg name="linear_spread" default="0.3" />
 	<arg name="output_info" default="screen" />
 
+	<arg name="goal_topic" default="/move_base_simple/goal" />
+
 	<node pkg="costmap" type="costmap_3d" name="costmap_3d" output="$(arg output_info)">
 		<!--rosparam param="footprint" if="$(arg simulate)">[[0.12, -0.2], [0.12, 0.2], [-0.35, 0.2], [-0.35, -0.2]]</rosparam-->
 		<rosparam param="footprint" if="$(arg simulate)">[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]</rosparam>
@@ -25,7 +27,7 @@
 	<node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" if="$(arg use_map_server)" />
 	
 	<node pkg="planner" type="planner_3d" name="planner_3d" output="$(arg output_info)">
-		<remap from="~/goal" to="/move_base_simple/goal" />
+		<remap from="~/goal" to="$(arg goal_topic)" />
 		<remap from="~/costmap" to="/costmap_3d/costmap" />
 		<remap from="~/costmap_update" to="/costmap_3d/costmap_update" />
 	</node>
