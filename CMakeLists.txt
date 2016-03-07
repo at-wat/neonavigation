@@ -38,13 +38,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
 add_executable(pointcloud_to_maps src/pointcloud_to_maps.cpp)
 target_link_libraries(pointcloud_to_maps ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_dependencies(pointcloud_to_maps map_organizer_gencpp)
 
 add_executable(tie_maps src/tie_maps.cpp)
 target_link_libraries(tie_maps yaml-cpp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_dependencies(tie_maps map_organizer_gencpp)
 
 add_executable(save_maps src/save_maps.cpp)
 target_link_libraries(save_maps ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_dependencies(save_maps map_organizer_gencpp)
 
 add_executable(select_map src/select_map.cpp)
 target_link_libraries(select_map ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_dependencies(select_map map_organizer_gencpp)
 
