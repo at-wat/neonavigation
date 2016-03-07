@@ -173,8 +173,20 @@ private:
 	{
 		goal = *msg;
 
-		has_goal = true;
-		update_goal();
+		double len2 = 
+			goal.pose.orientation.x * goal.pose.orientation.x +
+			goal.pose.orientation.y * goal.pose.orientation.y +
+			goal.pose.orientation.z * goal.pose.orientation.z +
+			goal.pose.orientation.w * goal.pose.orientation.w;
+		if(fabs(len2 - 1.0) < 0.1)
+		{
+			has_goal = true;
+			update_goal();
+		}
+		else
+		{
+			has_goal = false;
+		}
 	}
 	void fill_costmap(astar::reservable_priority_queue<astar::pq> &open,
 			astar::gridmap<float> &g,
@@ -709,6 +721,13 @@ public:
 			{
 				nav_msgs::Path path;
 				make_plan(start.pose, goal.pose, path, true);
+				pub_path.publish(path);
+			}
+			else if(!has_goal)
+			{
+				nav_msgs::Path path;
+				path.header = map_header;
+				path.header.stamp = ros::Time::now();
 				pub_path.publish(path);
 			}
 		}
