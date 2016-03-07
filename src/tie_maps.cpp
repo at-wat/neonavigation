@@ -41,7 +41,7 @@ public:
 		double origin[3], height;
 		int negate;
 		double occ_th, free_th;
-		bool trinary = true;
+		MapMode mode;
 		std::string frame_id;
 		n.param("map_files", files_str, std::string(""));
 		n.param("frame_id", frame_id, std::string("map"));
@@ -107,13 +107,25 @@ public:
 				return;
 			}
 			try
-			{ 
-				doc["trinary"] >> trinary; 
+			{
+				std::string modeS = "";
+				doc["mode"] >> modeS;
+
+				if(modeS=="trinary")
+					mode = TRINARY;
+				else if(modeS=="scale")
+					mode = SCALE;
+				else if(modeS=="raw")
+					mode = RAW;
+				else{
+					ROS_ERROR("Invalid mode tag \"%s\".", modeS.c_str());
+					exit(-1);
+				}
 			}
 			catch(YAML::Exception)
 			{ 
-				ROS_DEBUG("The map does not contain a trinary tag or it is invalid... assuming true");
-				trinary = true;
+				ROS_DEBUG("The map does not contain a mode tag or it is invalid... assuming trinary");
+				mode = TRINARY;	
 			}
 			try
 			{ 
@@ -164,7 +176,7 @@ public:
 
 			nav_msgs::GetMap::Response map_resp;
 			map_server::loadMapFromFile(&map_resp,
-					mapfname.c_str(), res, negate, occ_th, free_th, origin, trinary);
+					mapfname.c_str(), res, negate, occ_th, free_th, origin, mode);
 			map_resp.map.info.origin.position.z = height;
 			map_resp.map.info.map_load_time = ros::Time::now();
 			map_resp.map.header.frame_id = frame_id;
