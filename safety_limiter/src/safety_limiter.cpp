@@ -122,7 +122,7 @@ public:
 
 			if(ros::Time::now() - cloud.header.stamp > ros::Duration(timeout))
 			{
-				ROS_WARN("Safety Limit: PointCloud timed-out");
+				if(has_cloud) ROS_WARN("Safety Limit: PointCloud timed-out");
 				geometry_msgs::Twist cmd_vel;
 				pub_twist.publish(cmd_vel);
 				has_cloud = false;
