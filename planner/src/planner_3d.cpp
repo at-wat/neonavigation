@@ -1117,8 +1117,10 @@ private:
 
 			astar::vecf vg(s);
 			const float yaw = s[2] * map_info.angular_resolution;
-			vg[0] += cosf(yaw) * distf;
-			vg[1] += sinf(yaw) * distf;
+			float distf_signed = distf;
+			if(motion_grid[0] < 0) distf_signed = -distf;
+			vg[0] += cosf(yaw) * distf_signed;
+			vg[1] += sinf(yaw) * distf_signed;
 			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution)) return -1;
 
 			// Go-straight
