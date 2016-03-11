@@ -2,6 +2,7 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
+#include <std_msgs/Float32.h>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -57,6 +58,7 @@ private:
 	ros::NodeHandle nh;
 	ros::Subscriber sub_odom;
 	ros::Subscriber sub_imu;
+	ros::Subscriber sub_reset_z;
 	ros::Publisher pub_odom;
 	tf::TransformBroadcaster tf_broadcaster;
 	tf::TransformListener tf_listener;
@@ -71,6 +73,10 @@ private:
 
 	bool has_imu;
 
+	void cb_reset_z(const std_msgs::Float32::Ptr &msg)
+	{
+		odom_prev.pose.pose.position.z = msg->data;
+	}
 	void cb_imu(const sensor_msgs::Imu::Ptr &msg)
 	{
 		if(base_link_id.size() == 0) return;
@@ -184,6 +190,7 @@ public:
 	{
 		sub_odom = nh.subscribe("/odom_raw", 1, &track_odometry::cb_odom, this);
 		sub_imu = nh.subscribe("/imu", 1, &track_odometry::cb_imu, this);
+		sub_reset_z = nh.subscribe("reset_z", 1, &track_odometry::cb_reset_z, this);
 		pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 2);
 
 		nh.param("base_link_id", base_link_id_overwrite, std::string(""));
