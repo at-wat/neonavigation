@@ -1,15 +1,23 @@
 #include "ros/ros.h"
 #include <map_organizer/OccupancyGridArray.h>
 #include <std_msgs/Int32.h>
+#include <tf/transform_broadcaster.h>
 
 
 map_organizer::OccupancyGridArray maps;
+std::vector<nav_msgs::MapMetaData> orig_mapinfos;
 int floor_cur = 0;
 
 void cbMaps(const map_organizer::OccupancyGridArray::Ptr &msg)
 {
 	ROS_INFO("Map array received");
 	maps = *msg;
+	orig_mapinfos.clear();
+	for(auto &map: maps.maps)
+	{
+		orig_mapinfos.push_back(map.info);
+		map.info.origin.position.z = 0.0;
+	}
 }
 void cbFloor(const std_msgs::Int32::Ptr &msg)
 {
@@ -25,6 +33,12 @@ int main(int argc, char** argv)
   auto subFloor = nh.subscribe("floor", 1, cbFloor);
   auto pubMap   = nh.advertise<nav_msgs::OccupancyGrid>("/map", 1, true);
 
+  tf::TransformBroadcaster tfb;
+  geometry_msgs::TransformStamped trans;
+  trans.header.frame_id = "map_ground";
+  trans.child_frame_id = "map";
+  trans.transform.rotation = tf::createQuaternionMsgFromYaw(0.0);
+
   ros::Rate wait(10);
   int floor_prev = -1;
   while(ros::ok())
@@ -39,6 +53,7 @@ int main(int argc, char** argv)
 		  if(floor_cur >= 0 && floor_cur < (int)maps.maps.size())
 		  {
 			  pubMap.publish(maps.maps[floor_cur]);
+			  trans.transform.translation.z = orig_mapinfos[floor_cur].origin.position.z;
 		  }
 		  else
 		  {
@@ -46,6 +61,8 @@ int main(int argc, char** argv)
 		  }
 		  floor_prev = floor_cur;
 	  }
+	  trans.header.stamp = ros::Time::now();
+	  tfb.sendTransform(trans);
   }
 
   return 0;
