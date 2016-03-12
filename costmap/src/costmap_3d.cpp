@@ -43,6 +43,7 @@ private:
 	int ang_resolution;
 	float linear_expand;
 	float linear_spread;
+	int unknown_cost;
 
 	float footprint_radius;
 
@@ -282,7 +283,38 @@ private:
 		{
 			for(unsigned int i = 0; i < msg.data.size(); i ++)
 			{
-				if(msg.data[i] <= 0) continue;
+				auto val = msg.data[i];
+				if(val < 0)
+				{
+					bool edge = false;
+					for(int y = -1; y <= 1; y ++)
+					{
+						for(int x = -1; x <= 1; x ++)
+						{
+							if(x == 0 && y == 0) continue;
+							size_t addr = i + y * map.info.width + x;
+							if(addr >= msg.data.size()) continue;
+							auto &m = msg.data[addr];
+							if(m >= 0)
+							{
+								edge = true;
+								break;
+							}
+						}
+					}
+
+					if(edge)
+					{
+						val = unknown_cost;
+					}
+					else
+					{
+						auto &m = map.data[
+							yaw * map.info.height * map.info.width + i];
+						m = unknown_cost;
+					}
+				}
+				if(val <= 0) continue;
 
 				int gx = lroundf((i % msg.info.width)
 					   	* msg.info.resolution / map.info.linear_resolution) + ox;
@@ -301,7 +333,7 @@ private:
 
 						auto &m = map.data[
 							(yaw * map.info.height + y2) * map.info.width + x2];
-						auto &c = cs.e(x, y, yaw);
+						auto c = cs.e(x, y, yaw) * val / 100;
 						if(m < c) m = c;
 					}
 				}
@@ -401,6 +433,7 @@ public:
 		nh.param("ang_resolution", ang_resolution, 16);
 		nh.param("linear_expand", linear_expand, 0.2f);
 		nh.param("linear_spread", linear_spread, 0.5f);
+		nh.param("unknown_cost", unknown_cost, 0);
 
 		XmlRpc::XmlRpcValue footprint_xml;
 		if(!nh.hasParam("footprint"))
