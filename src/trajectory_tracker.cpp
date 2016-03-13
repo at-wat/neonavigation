@@ -278,6 +278,15 @@ void tracker::cbPath(const nav_msgs::Path::ConstPtr& msg)
 		j ++;
 	}
 	pathStepDone = 0;
+	
+	while(path.poses.size() < 3 && path.poses.size() > 0)
+	{
+		float yaw = tf::getYaw(path.poses.back().pose.orientation);
+		auto next = path.poses.back();
+		next.pose.position.x += 0.001 * cos(yaw);
+		next.pose.position.y += 0.001 * sin(yaw);
+		path.poses.push_back(next);
+	}
 }
 
 void tracker::spin()
@@ -300,8 +309,7 @@ void tracker::control()
 	status.distance_remains = 0.0;
 	status.angle_remains = 0.0;
 
-	if(path.header.frame_id.size() == 0 ||
-			path.poses.size() < 3)
+	if(path.header.frame_id.size() == 0)
 	{
 		geometry_msgs::Twist cmd_vel;
 		cmd_vel.linear.x = 0;
