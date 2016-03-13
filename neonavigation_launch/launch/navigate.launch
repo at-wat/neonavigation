@@ -10,6 +10,7 @@
 	<arg name="acc" default="0.3" />
 	<arg name="ang_vel" default="0.6" />
 	<arg name="ang_acc" default="1.0" />
+	<arg name="look_forward" default="0.1" />
 
 	<arg name="linear_expand" default="0.08" />
 	<arg name="linear_spread" default="0.3" />
@@ -40,7 +41,7 @@
 		<param name="max_angacc" value="$(arg ang_acc)" />
 		
 		<param name="curv_forward" value="0.4" />
-		<param name="look_forward" value="0.1" />
+		<param name="look_forward" value="$(arg look_forward)" />
 		<param name="k_dist" value="4.5" />
 		<param name="k_ang" value="4.0" />
 		<param name="k_avel" value="4.0" />
