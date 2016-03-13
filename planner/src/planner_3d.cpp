@@ -140,6 +140,9 @@ private:
 	int range;
 	int local_range;
 	double local_range_f;
+	int esc_range;
+	int esc_angle;
+	double esc_range_f;
 	int unknown_cost;
 	bool has_map;
 	bool has_goal;
@@ -264,6 +267,46 @@ private:
 		}
 		rough_cost_max = g[s_rough] + ec_rough[0] * (range + local_range);
 	}
+	bool search_available_pos(astar::vec &s, const int xy_range, const int angle_range)
+	{
+		astar::vec d;
+		float range_min = FLT_MAX;
+		astar::vec s_out;
+		ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
+		for(d[2] = -angle_range; d[2] <= angle_range; d[2] ++)
+		{
+			for(d[0] = -xy_range; d[0] <= xy_range; d[0] ++)
+			{
+				for(d[1] = -xy_range; d[1] <= xy_range; d[1] ++)
+				{
+					if(d[0] == 0 && d[1] == 0 && d[2] == 0) continue;
+					if(d.sqlen() > xy_range * xy_range) continue;
+
+					auto s2 = s + d;
+					if((unsigned int)s2[0] >= (unsigned int)map_info.width ||
+							(unsigned int)s2[1] >= (unsigned int)map_info.height)
+						continue;
+					if(s2[2] < 0) s2[2] += map_info.angle;
+					else if(s2[2] >= (int)map_info.angle) s2[2] -= map_info.angle;
+					if(cm[s2] == 100) continue;
+					auto cost = cm[s2] * cc.weight_costmap + euclid_cost(d, ec);
+					if(cost < range_min)
+					{
+						range_min = cost;
+						s_out = s2;
+					}
+				}
+			}
+		}
+
+		if(range_min == FLT_MAX)
+		{
+			return false;
+		}
+		s = s_out;
+		ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
+		return true;
+	}
 	void update_goal()
 	{	
 		if(!has_map || !has_goal || !has_start) return;
@@ -277,7 +320,6 @@ private:
 				tf::getYaw(goal.pose.orientation));
 		ROS_INFO("New goal received (%d, %d, %d)",
 				e[0], e[1], e[2]);
-		e[2] = 0;
 
 		const auto ts = std::chrono::high_resolution_clock::now();
 		astar::reservable_priority_queue<astar::pq> open;
@@ -286,60 +328,16 @@ private:
 		g.clear(FLT_MAX);
 		if(cm[e] == 100)
 		{
-			astar::vec d;
-			d[2] = 0;
-			float range_min = FLT_MAX;
-			for(d[0] = -local_range; d[0] <= local_range; d[0] ++)
+			if(!search_available_pos(e, esc_range, esc_angle))
 			{
-				for(d[1] = -local_range; d[1] <= local_range; d[1] ++)
-				{
-					if(d[0] == 0 && d[1] == 0) continue;
-					if(d.sqlen() > local_range * local_range) continue;
-
-					const auto e2 = e + d;
-					if((unsigned int)e2[0] >= (unsigned int)map_info.width ||
-							(unsigned int)e2[1] >= (unsigned int)map_info.height)
-						continue;
-					if(d.sqlen() < range_min || cm[e2] != 100)
-					{
-						range_min = d.sqlen();
-						e = e2;
-					}
-				}
-			}
-
-			if(range_min == FLT_MAX)
-			{
-				ROS_WARN("Goal unreachable");
+				ROS_WARN("Oops! Goal is in Rock!");
 				return;
 			}
 			ROS_WARN("Goal moved");
 		}
 		if(cm[s] == 100)
 		{
-			astar::vec d;
-			d[2] = 0;
-			float range_min = FLT_MAX;
-			for(d[0] = -local_range; d[0] <= local_range; d[0] ++)
-			{
-				for(d[1] = -local_range; d[1] <= local_range; d[1] ++)
-				{
-					if(d[0] == 0 && d[1] == 0) continue;
-					if(d.sqlen() > local_range * local_range) continue;
-
-					const auto s2 = s + d;
-					if((unsigned int)s2[0] >= (unsigned int)map_info.width ||
-							(unsigned int)s2[1] >= (unsigned int)map_info.height)
-						continue;
-					if(d.sqlen() < range_min || cm[s2] != 100)
-					{
-						range_min = d.sqlen();
-						s = s2;
-					}
-				}
-			}
-
-			if(range_min == FLT_MAX)
+			if(!search_available_pos(s, esc_range, esc_angle))
 			{
 				ROS_WARN("Oops! You are in Rock!");
 				return;
@@ -347,6 +345,7 @@ private:
 			ROS_WARN("Start moved");
 		}
 
+		e[2] = 0;
 		g[e] = -ec_rough[0] * 0.5; // Decrement to reduce calculation error
 		open.push(astar::pq(g[e], g[e], e));
 		fill_costmap(open, g, s, e);
@@ -434,6 +433,13 @@ private:
 		metric2grid(e[0], e[1], e[2],
 				goal.pose.position.x, goal.pose.position.y, 
 				tf::getYaw(goal.pose.orientation));
+		
+		if(cm[e] == 100)
+		{
+			update_goal();
+			return;
+		}
+		
 		e[2] = 0;
 
 		const auto ts = std::chrono::high_resolution_clock::now();
@@ -608,6 +614,8 @@ private:
 		resolution[2] = 1.0 / map_info.angular_resolution;
 
 		local_range = lroundf(local_range_f / map_info.linear_resolution);
+		esc_range = lroundf(esc_range_f / map_info.linear_resolution);
+		esc_angle = map_info.angle / 8;
 
 		int size[3] = {(int)map_info.width, (int)map_info.height, (int)map_info.angle};
 		as.reset(astar::vec(size));
@@ -674,6 +682,7 @@ public:
 		nh.param("remember_updates", remember_updates, false);
 		
 		nh.param("local_range", local_range_f, 2.5);
+		nh.param("esc_range", esc_range_f, 0.25);
 
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
@@ -906,10 +915,14 @@ private:
 			return true;
 		}
 
-		if(cost_estim_cache[s_rough] == FLT_MAX)
+		if(cm[s] == 100)
 		{
-			ROS_WARN("Goal unreachable");
-			return false;
+			if(!search_available_pos(s, esc_range, esc_angle))
+			{
+				ROS_WARN("Oops! You are in Rock!");
+				return false;
+			}
+			ROS_WARN("Start moved");
 		}
 		auto range_limit = cost_estim_cache[s_rough]
 			- (local_range + range) * ec[0];
