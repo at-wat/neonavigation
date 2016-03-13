@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 		  }
 		  floor_prev = floor_cur;
 	  }
-	  trans.header.stamp = ros::Time::now();
+	  trans.header.stamp = ros::Time::now() + ros::Duration(0.15);
 	  tfb.sendTransform(trans);
   }
 
