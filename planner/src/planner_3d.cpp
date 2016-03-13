@@ -896,6 +896,16 @@ private:
 		auto s_rough = s;
 		s_rough[2] = 0;
 
+		if(s == e)
+		{
+			path.header = map_header;
+			path.header.stamp = ros::Time::now();
+			path.poses.resize(1);
+			path.poses[0].header = path.header;
+			path.poses[0].pose = ge;
+			return true;
+		}
+
 		if(cost_estim_cache[s_rough] == FLT_MAX)
 		{
 			ROS_WARN("Goal unreachable");
