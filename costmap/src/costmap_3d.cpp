@@ -260,7 +260,7 @@ private:
 		if(map.info.width < 1 ||
 				map.info.height < 1) return;
 		map_overlay = map;
-		map_copy(map_overlay, *msg);
+		map_copy(map_overlay, *msg, true);
 		ROS_DEBUG("C-Space costmap updated");
 
 		int ox = lroundf((msg->info.origin.position.x
@@ -272,7 +272,7 @@ private:
 		update_map(map_overlay, ox, oy, 0, w, h, map.info.angle);
 		publish_debug(map_overlay);
 	}
-	void map_copy(costmap::CSpace3D &map, const nav_msgs::OccupancyGrid &msg)
+	void map_copy(costmap::CSpace3D &map, const nav_msgs::OccupancyGrid &msg, bool ignore_unknown = false)
 	{
 		int ox = lroundf((msg.info.origin.position.x
 				   	- map.info.origin.position.x) / map.info.linear_resolution);
@@ -286,6 +286,7 @@ private:
 				auto val = msg.data[i];
 				if(val < 0)
 				{
+					if(ignore_unknown) continue;
 					bool edge = false;
 					for(int y = -1; y <= 1; y ++)
 					{
