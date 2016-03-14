@@ -44,6 +44,11 @@ private:
 	float linear_expand;
 	float linear_spread;
 	int unknown_cost;
+	enum
+	{
+		OVERWRITE,
+		MAX
+	} overlay_mode;
 
 	float footprint_radius;
 
@@ -278,7 +283,29 @@ private:
 				   	- map.info.origin.position.x) / map.info.linear_resolution);
 		int oy = lroundf((msg.info.origin.position.y
 				   	- map.info.origin.position.y) / map.info.linear_resolution);
-		// Map
+		// Clear travelable area in OVERWRITE mode
+		if(overlay_mode == OVERWRITE)
+		{
+			for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
+			{
+				for(unsigned int i = 0; i < msg.data.size(); i ++)
+				{
+					auto &val = msg.data[i];
+					if(val != 0) continue;
+
+					int x = lroundf((i % msg.info.width)
+							* msg.info.resolution / map.info.linear_resolution);
+					if(x < range_max || (int)msg.info.width - range_max <= x) continue;
+					int y = lroundf((i / msg.info.width)
+							* msg.info.resolution / map.info.linear_resolution);
+					if(y < range_max || (int)msg.info.height - range_max <= y) continue;
+					auto &m = map.data[
+						(yaw * map.info.height + (y + oy)) * map.info.width + (x + ox)];
+					m = 0;
+				}
+			}
+		}
+		// Get max
 		for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 		{
 			for(unsigned int i = 0; i < msg.data.size(); i ++)
@@ -435,6 +462,16 @@ public:
 		nh.param("linear_expand", linear_expand, 0.2f);
 		nh.param("linear_spread", linear_spread, 0.5f);
 		nh.param("unknown_cost", unknown_cost, 0);
+		std::string overlay_mode_str;
+		nh.param("overlay_mode", overlay_mode_str);
+		if(overlay_mode_str.compare("overwrite") == 0)
+		{
+			overlay_mode = OVERWRITE;
+		}
+		else if(overlay_mode_str.compare("max") == 0)
+		{
+			overlay_mode = MAX;
+		}
 
 		XmlRpc::XmlRpcValue footprint_xml;
 		if(!nh.hasParam("footprint"))
