@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/Joy.h>
+#include <std_msgs/Bool.h>
 
 
 class joystick_interrupt
@@ -10,6 +11,7 @@ private:
 	ros::Subscriber sub_twist;
 	ros::Subscriber sub_joy;
 	ros::Publisher pub_twist;
+	ros::Publisher pub_int;
 	double linear_vel;
 	double angular_vel;
 	double timeout;
@@ -54,10 +56,17 @@ private:
 	};
 	void cb_twist(const geometry_msgs::Twist::Ptr msg)
 	{
+		std_msgs::Bool status;
 		if(ros::Time::now() - last_joy_msg > ros::Duration(timeout))
 		{
 			pub_twist.publish(*msg);
+			status.data = true;
 		}
+		else
+		{
+			status.data = false;
+		}
+		pub_int.publish(status);
 	};
 
 public:
@@ -67,6 +76,7 @@ public:
 		sub_joy = nh.subscribe("/joy", 1, &joystick_interrupt::cb_joy, this);
 		sub_twist = nh.subscribe("cmd_vel_input", 1, &joystick_interrupt::cb_twist, this);
 		pub_twist = nh.advertise<geometry_msgs::Twist>("cmd_vel", 2);
+		pub_int = nh.advertise<std_msgs::Bool>("interrupt_status", 2);
 
 		nh.param("linear_vel", linear_vel, 0.5);
 		nh.param("angular_vel", angular_vel, 0.8);
