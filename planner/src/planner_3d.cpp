@@ -170,6 +170,8 @@ private:
 	astar::vecf ec_rough;
 	astar::vecf resolution;
 
+	bool find_best;
+
 	float rough_cost_max;
 
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -684,6 +686,8 @@ public:
 		nh.param("local_range", local_range_f, 2.5);
 		nh.param("esc_range", esc_range_f, 0.25);
 
+		nh.param("find_best", find_best, true);
+
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
 		as.set_queue_size_limit(queue_size_limit);
@@ -943,10 +947,11 @@ private:
 				std::bind(&planner_3d::cb_progress, 
 					this, std::placeholders::_1),
 				range_limit,
-				1.0f / freq_min))
+				1.0f / freq_min,
+				true))
 		{
 			ROS_WARN("Path plan failed (goal unreachable)");
-			return false;
+			if(!find_best) return false;
 		}
 		//const auto tnow = std::chrono::high_resolution_clock::now();
 		//ROS_INFO("Path found (%0.3f sec.)",

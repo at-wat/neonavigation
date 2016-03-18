@@ -390,11 +390,12 @@ public:
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
 			const float cost_leave,
-			const float progress_interval)
+			const float progress_interval,
+			const bool return_best = false)
 	{
 		return search_impl(g, s, e, path,
 				cb_cost, cb_cost_estim, cb_search, cb_progress,
-				cost_leave, progress_interval);
+				cost_leave, progress_interval, return_best);
 	}
 	bool search_impl(gridmap<float> &g,
 			const vec &st, const vec &en, 
@@ -404,7 +405,8 @@ public:
 			std::function<std::vector<vec>&(const vec&, const vec&, const vec&)> cb_search,
 			std::function<bool(const std::list<vec>&)> cb_progress,
 			const float cost_leave,
-			const float progress_interval)
+			const float progress_interval,
+			const bool return_best = false)
 	{
 		if(st == en)
 		{
@@ -435,6 +437,12 @@ public:
 			{
 				// No fesible path
 				//printf("No fesible path\n");
+				if(return_best)
+				{
+					auto goal = s;
+					if(better) goal = *better;
+					find_path(s, goal, path);
+				}
 				return false;
 			}
 			pq center = open.top();
