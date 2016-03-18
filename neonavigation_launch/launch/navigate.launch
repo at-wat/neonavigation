@@ -11,6 +11,7 @@
 	<arg name="ang_vel" default="0.6" />
 	<arg name="ang_acc" default="1.0" />
 	<arg name="look_forward" default="0.1" />
+	<arg name="slow_and_precise" default="true" />
 
 	<arg name="linear_expand" default="0.08" />
 	<arg name="linear_spread" default="0.3" />
@@ -55,7 +56,8 @@
 		<param name="dist_lim" value="0.5" />
 
 		<param name="distance_angle_factor" value="0.2" />
-		<param name="rotate_ang" value="0.4" />
+		<param name="rotate_ang" value="0.2" if="$(arg slow_and_precise)" />
+		<param name="rotate_ang" value="0.4" unless="$(arg slow_and_precise)" />
 	</node>
 
 	<node pkg="tf" type="static_transform_publisher" name="stf1" args="$(arg sim_robot_x) $(arg sim_robot_y) 0 $(arg sim_robot_yaw) 0 0 map base_link 50" if="$(arg simulate)" />
