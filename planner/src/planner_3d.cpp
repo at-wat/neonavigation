@@ -336,7 +336,7 @@ private:
 				ROS_WARN("Oops! Goal is in Rock!");
 				return;
 			}
-			ROS_WARN("Goal moved");
+			ROS_INFO("Goal moved");
 		}
 		if(cm[s] == 100)
 		{
@@ -345,7 +345,7 @@ private:
 				ROS_WARN("Oops! You are in Rock!");
 				return;
 			}
-			ROS_WARN("Start moved");
+			ROS_INFO("Start moved");
 		}
 
 		e[2] = 0;
@@ -936,8 +936,9 @@ private:
 				ROS_WARN("Oops! You are in Rock!");
 				return false;
 			}
-			ROS_WARN("Start moved");
+			ROS_INFO("Start moved");
 		}
+
 		auto range_limit = cost_estim_cache[s_rough]
 			- (local_range + range) * ec[0];
 
