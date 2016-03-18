@@ -171,6 +171,7 @@ private:
 	astar::vecf resolution;
 
 	bool find_best;
+	float sw_wait;
 
 	float rough_cost_max;
 
@@ -686,6 +687,7 @@ public:
 		nh.param("local_range", local_range_f, 2.5);
 		nh.param("esc_range", esc_range_f, 0.25);
 
+		nh.param_cast("sw_wait", sw_wait, 2.0f);
 		nh.param("find_best", find_best, true);
 
 		int queue_size_limit;
@@ -735,6 +737,14 @@ public:
 				nav_msgs::Path path;
 				make_plan(start.pose, goal.pose, path, true);
 				pub_path.publish(path);
+				if(switch_detect(path))
+				{
+					ROS_INFO("Will have switch back");
+					if(sw_wait > 0.0)
+					{
+						ros::Duration(sw_wait).sleep();
+					}
+				}
 			}
 			else if(!has_goal)
 			{
@@ -1061,6 +1071,41 @@ private:
 			cost += ec_rough[2] * fabs(s[2]);
 		}
 		return cost;
+	}
+	bool switch_detect(const nav_msgs::Path &path)
+	{
+		geometry_msgs::Pose p_prev;
+		bool first(true);
+		bool dir_set(false);
+		bool dir_prev(false);
+		for(auto &p: path.poses)
+		{
+			if(!first)
+			{
+				float len = hypotf(
+						p.pose.position.y - p_prev.position.y,
+						p.pose.position.x - p_prev.position.x);
+				if(len > 0.0)
+				{
+					float yaw = tf::getYaw(p.pose.orientation);
+					float vel_yaw = atan2f(
+							p.pose.position.y - p_prev.position.y,
+							p.pose.position.x - p_prev.position.x);
+					bool dir = false;
+					if(cosf(yaw) * cosf(vel_yaw) + sinf(yaw) * sinf(vel_yaw) < 0) dir = true;
+
+					if(dir_set && (dir_prev ^ dir))
+					{
+						return true;
+					}
+					dir_prev = dir;
+					dir_set = true;
+				}
+			}
+			first = false;
+			p_prev = p.pose;
+		}
+		return false;
 	}
 	float cb_cost(const astar::vec &s, astar::vec &e,
 			const astar::vec &v_goal,
