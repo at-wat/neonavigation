@@ -471,7 +471,7 @@ public:
 		nh.param("linear_spread", linear_spread, 0.5f);
 		nh.param("unknown_cost", unknown_cost, 0);
 		std::string overlay_mode_str;
-		nh.param("overlay_mode", overlay_mode_str);
+		nh.param("overlay_mode", overlay_mode_str, std::string(""));
 		if(overlay_mode_str.compare("overwrite") == 0)
 		{
 			overlay_mode = OVERWRITE;
@@ -482,10 +482,11 @@ public:
 		}
 		else
 		{
-			ROS_ERROR("Unknown overlay_mode");
+			ROS_ERROR("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
 			ros::shutdown();
 			return;
 		}
+		ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
 
 		XmlRpc::XmlRpcValue footprint_xml;
 		if(!nh.hasParam("footprint"))
