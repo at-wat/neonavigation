@@ -480,6 +480,12 @@ public:
 		{
 			overlay_mode = MAX;
 		}
+		else
+		{
+			ROS_ERROR("Unknown overlay_mode");
+			ros::shutdown();
+			return;
+		}
 
 		XmlRpc::XmlRpcValue footprint_xml;
 		if(!nh.hasParam("footprint"))
