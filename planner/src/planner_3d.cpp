@@ -937,6 +937,15 @@ private:
 				return false;
 			}
 			ROS_INFO("Start moved");
+			if(s == e)
+			{
+				path.header = map_header;
+				path.header.stamp = ros::Time::now();
+				path.poses.resize(1);
+				path.poses[0].header = path.header;
+				path.poses[0].pose = ge;
+				return true;
+			}
 		}
 
 		auto range_limit = cost_estim_cache[s_rough]
