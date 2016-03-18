@@ -299,9 +299,17 @@ private:
 					int y = lroundf((i / msg.info.width)
 							* msg.info.resolution / map.info.linear_resolution);
 					if(y < range_max || (int)msg.info.height - range_max <= y) continue;
-					auto &m = map.data[
-						(yaw * map.info.height + (y + oy)) * map.info.width + (x + ox)];
-					m = 0;
+
+					int res_up = ceilf(msg.info.resolution / map.info.linear_resolution);
+					for(int yp = 0; yp <= res_up; yp ++)
+					{
+						for(int xp = 0; xp <= res_up; xp ++)
+						{
+							auto &m = map.data[
+								(yaw * map.info.height + (y + oy + yp)) * map.info.width + (x + ox + xp)];
+							m = 0;
+						}
+					}
 				}
 			}
 		}
