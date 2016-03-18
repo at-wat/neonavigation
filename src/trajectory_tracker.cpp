@@ -367,6 +367,7 @@ void tracker::control()
 		distancePath += dist2d(lpath.poses[i-1].pose.position, lpath.poses[i].pose.position);
 	}
 	float distancePathSearch = 0;
+	float signVel_prev = 0;
 	for(int i = pathStepDone; i < (int)lpath.poses.size(); i ++)
 	{
 		if(i < 1) continue;
@@ -380,6 +381,20 @@ void tracker::control()
 			iclose = i;
 		}
 		if(pathStepDone > 0 && distancePathSearch > 1.0) break;
+
+		geometry_msgs::Point vec = sub2d(lpath.poses[i].pose.position, 
+				lpath.poses[i-1].pose.position);
+		float angle = atan2(vec.y, vec.x);
+		float anglePose;
+		if(allowBackward) anglePose = tf::getYaw(lpath.poses[i+1].pose.orientation);
+		else anglePose = angle;
+		float signVel_req = cos(angle) * cos(anglePose) + sin(angle) * sin(anglePose);
+		if(signVel_prev * signVel_req < 0)
+		{
+			// Stop read forward if the path switched back
+			break;
+		}
+		signVel_prev = signVel_req;
 	}
 	if(iclose < 0)
 	{
