@@ -180,6 +180,7 @@ private:
 		tf_broadcaster.sendTransform(odom_trans);
 
 		odom_trans.child_frame_id = base_link_projected_id;
+		odom_trans.transform.translation.z = 0.0;
 		odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(
 				tf::getYaw(odom_trans.transform.rotation));
 		tf_broadcaster.sendTransform(odom_trans);
