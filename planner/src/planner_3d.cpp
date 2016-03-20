@@ -375,8 +375,6 @@ private:
 				for(p[0] = 0; p[0] < cost_estim_cache.size[0]; p[0] ++)
 				{
 					p[2] = 0;
-					if(cost_estim_cache[p] < 0)
-						cost_estim_cache[p] = FLT_MAX;
 					if(cost_estim_cache[p] == FLT_MAX) continue;
 					float x, y, yaw;
 					grid2metric(p[0], p[1], p[2], x, y, yaw);
@@ -1094,6 +1092,7 @@ private:
 		auto s2 = s;
 		s2[2] = 0;
 		auto cost = cost_estim_cache[s2];
+		if(cost == FLT_MAX) return FLT_MAX;
 		if(!rough)
 		{
 			if(s2[2] > (int)map_info.angle / 2) s2[2] -= map_info.angle;

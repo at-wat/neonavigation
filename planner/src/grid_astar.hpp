@@ -486,15 +486,11 @@ public:
 					continue;
 				if(g[next] < 0) continue;
 
-				auto cost = cb_cost(p, next, s, e);
-
-				if(cost < 0) continue;
-
 				auto cost_estim = cb_cost_estim(next, e);
-				//printf(" - %d, %d, %d  c: %0.2f\n", next[0], next[1], next[2], cost);
-				//printf("  - cost %0.3f, euclid %0.3f\n", cost, cost_estim);
-				//if(cost < 0) exit(1);
-				//printf("  - ok\n");
+				if(cost_estim < 0 || cost_estim == FLT_MAX) continue;
+
+				auto cost = cb_cost(p, next, s, e);
+				if(cost < 0 || cost == FLT_MAX) continue;
 
 				auto &gnext = g[next];
 				if(gnext > c + cost)
