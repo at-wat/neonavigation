@@ -741,6 +741,7 @@ public:
 				nav_msgs::Path path;
 				make_plan(start.pose, goal.pose, path, true);
 				pub_path.publish(path);
+
 				if(switch_detect(path))
 				{
 					ROS_INFO("Will have switch back");
@@ -1113,7 +1114,7 @@ private:
 				float len = hypotf(
 						p.pose.position.y - p_prev.position.y,
 						p.pose.position.x - p_prev.position.x);
-				if(len > 0.0)
+				if(len > 0.01)
 				{
 					float yaw = tf::getYaw(p.pose.orientation);
 					float vel_yaw = atan2f(
