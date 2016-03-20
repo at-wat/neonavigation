@@ -428,8 +428,8 @@ public:
 
 		auto ts = std::chrono::high_resolution_clock::now();
 
-		vec *better = nullptr;
-		float cost_estim_min = FLT_MAX;
+		vec better = s;
+		int cost_estim_min = cb_cost_estim(s, e);
 		while(true)
 		{
 			//printf("search queue %d\n", (int)open.size());
@@ -439,9 +439,7 @@ public:
 				//printf("No fesible path\n");
 				if(return_best)
 				{
-					auto goal = s;
-					if(better) goal = *better;
-					find_path(s, goal, path);
+					find_path(s, better, path);
 				}
 				return false;
 			}
@@ -462,7 +460,7 @@ public:
 			if(c_estim - c < cost_estim_min)
 			{
 				cost_estim_min = c_estim - c;
-				better = &p;
+				better = p;
 			}
 
 			auto tnow = std::chrono::high_resolution_clock::now();
@@ -470,9 +468,7 @@ public:
 			{
 				std::list<vec> path_tmp;
 				ts = tnow;
-				auto goal = s;
-				if(better) goal = *better;
-				find_path(s, goal, path_tmp);
+				find_path(s, better, path_tmp);
 				cb_progress(path_tmp);
 			}
 
