@@ -58,6 +58,8 @@ private:
 	ros::Subscriber sub_goal;
 	ros::Publisher pub_path;
 	ros::Publisher pub_debug;
+	ros::Publisher pub_start;
+	ros::Publisher pub_end;
 
 	tf::TransformListener tfl;
 
@@ -665,6 +667,8 @@ public:
 		sub_goal = nh.subscribe("goal", 1, &planner_3d::cb_goal, this);
 		pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+		pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
+		pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
 
 		nh.param_cast("freq", freq, 4.0f);
 		nh.param_cast("freq_min", freq_min, 2.0f);
@@ -928,6 +932,20 @@ private:
 			path.poses[0].pose = ge;
 			return true;
 		}
+
+		geometry_msgs::PoseStamped p;
+		p.header = map_header;
+		float x, y, yaw;
+		grid2metric(s[0], s[1], s[2], x, y, yaw);
+		p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+		p.pose.position.x = x;
+		p.pose.position.y = y;
+		pub_start.publish(p);
+		grid2metric(e[0], e[1], e[2], x, y, yaw);
+		p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+		p.pose.position.x = x;
+		p.pose.position.y = y;
+		pub_end.publish(p);
 
 		if(cm[s] == 100)
 		{
