@@ -1260,7 +1260,7 @@ private:
 			// Curve
 			if(motion[0] * motion[1] * motion[2] < 0)
 				return -1;
-			if(d.sqlen() < 3 * 3) return -1;
+			if(d.sqlen() < 4 * 4) return -1;
 			if(fabs(motion[1]) <= map_info.linear_resolution * 0.5) return -1;
 
 
