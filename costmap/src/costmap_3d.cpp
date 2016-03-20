@@ -174,8 +174,10 @@ private:
 
 	costmap::CSpace3D map;
 	costmap::CSpace3D map_overlay;
+	nav_msgs::OccupancyGrid map_base;
 	void cb_map(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 	{
+		map_base = *msg;
 		ROS_DEBUG("2D costmap received");
 
 		map.header = msg->header;
@@ -264,34 +266,54 @@ private:
 		}
 		if(map.info.width < 1 ||
 				map.info.height < 1) return;
-		map_overlay = map;
-		map_copy(map_overlay, *msg, true);
-		ROS_DEBUG("C-Space costmap updated");
 
 		int ox = lroundf((msg->info.origin.position.x
 				   	- map.info.origin.position.x) / map.info.linear_resolution);
 		int oy = lroundf((msg->info.origin.position.y
 				   	- map.info.origin.position.y) / map.info.linear_resolution);
+		auto omap = *msg;
+		if(overlay_mode == OVERWRITE)
+		{
+			for(unsigned int i = 0; i < msg->data.size(); i ++)
+			{
+				if(omap.data[i] < 0)
+				{
+					int mx = lroundf((i % msg->info.width)
+							* msg->info.resolution / map.info.linear_resolution);
+					if(msg->info.width <= (unsigned int)mx) continue;
+					int my = lroundf((i / msg->info.width)
+							* msg->info.resolution / map.info.linear_resolution);
+					if(msg->info.height <= (unsigned int)my) continue;
+
+					omap.data[i] = map_base.data[
+						(my + oy) * map_base.info.width + (mx + ox)];
+				}
+			}
+		}
+		map_overlay = map;
+		map_copy(map_overlay, omap, true);
+		ROS_DEBUG("C-Space costmap updated");
+
 		int w = lroundf(msg->info.width * msg->info.resolution / map.info.linear_resolution);
 		int h = lroundf(msg->info.height * msg->info.resolution / map.info.linear_resolution);
 		update_map(map_overlay, ox, oy, 0, w, h, map.info.angle);
 		publish_debug(map_overlay);
 	}
-	void map_copy(costmap::CSpace3D &map, const nav_msgs::OccupancyGrid &msg, bool ignore_unknown = false)
+	void map_copy(costmap::CSpace3D &map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
 	{
 		int ox = lroundf((msg.info.origin.position.x
 				   	- map.info.origin.position.x) / map.info.linear_resolution);
 		int oy = lroundf((msg.info.origin.position.y
 				   	- map.info.origin.position.y) / map.info.linear_resolution);
 		// Clear travelable area in OVERWRITE mode
-		if(overlay_mode == OVERWRITE)
+		if(overlay_mode == OVERWRITE && overlay)
 		{
 			for(int yaw = 0; yaw < (int)map.info.angle; yaw ++)
 			{
 				for(unsigned int i = 0; i < msg.data.size(); i ++)
 				{
 					auto &val = msg.data[i];
-					if(val != 0) continue;
+					if(val < 0) continue;
 
 					int x = lroundf((i % msg.info.width)
 							* msg.info.resolution / map.info.linear_resolution);
@@ -301,9 +323,9 @@ private:
 					if(y < range_max || (int)msg.info.height - range_max <= y) continue;
 
 					int res_up = ceilf(msg.info.resolution / map.info.linear_resolution);
-					for(int yp = 0; yp <= res_up; yp ++)
+					for(int yp = 0; yp < res_up; yp ++)
 					{
-						for(int xp = 0; xp <= res_up; xp ++)
+						for(int xp = 0; xp < res_up; xp ++)
 						{
 							auto &m = map.data[
 								(yaw * map.info.height + (y + oy + yp)) * map.info.width + (x + ox + xp)];
@@ -318,44 +340,50 @@ private:
 		{
 			for(unsigned int i = 0; i < msg.data.size(); i ++)
 			{
+				int gx = lroundf((i % msg.info.width)
+					   	* msg.info.resolution / map.info.linear_resolution) + ox;
+				int gy = lroundf((i / msg.info.width)
+					   	* msg.info.resolution / map.info.linear_resolution) + oy;
+				if((unsigned int)gx >= map.info.width ||
+						(unsigned int)gy >= map.info.height)
+					continue;
+
 				auto val = msg.data[i];
 				if(val < 0)
 				{
-					if(ignore_unknown) continue;
+					if(overlay_mode != OVERWRITE && overlay) continue;
 					bool edge = false;
+					int mx = lroundf((i % msg.info.width)
+							* msg.info.resolution / map.info.linear_resolution);
+					if(mx < 1 || (int)msg.info.width - 1 <= mx) continue;
+					int my = lroundf((i / msg.info.width)
+							* msg.info.resolution / map.info.linear_resolution);
+					if(my < 1 || (int)msg.info.height - 1 <= my) continue;
+
 					for(int y = -1; y <= 1; y ++)
 					{
 						for(int x = -1; x <= 1; x ++)
 						{
 							if(x == 0 && y == 0) continue;
+							if((unsigned int)(mx + x) >= map.info.width ||
+									(unsigned int)(my + y) >= map.info.height)
+								continue;
 							size_t addr = i + y * map.info.width + x;
 							if(addr >= msg.data.size()) continue;
-							auto &m = msg.data[addr];
-							if(m >= 0)
+							auto v = msg.data[addr];
+							if(v >= 0)
 							{
 								edge = true;
 								break;
 							}
 						}
 					}
-
 					if(edge)
 					{
 						val = unknown_cost;
 					}
-					else
-					{
-						auto &m = map.data[
-							yaw * map.info.height * map.info.width + i];
-						m = unknown_cost;
-					}
 				}
 				if(val <= 0) continue;
-
-				int gx = lroundf((i % msg.info.width)
-					   	* msg.info.resolution / map.info.linear_resolution) + ox;
-				int gy = lroundf((i / msg.info.width)
-					   	* msg.info.resolution / map.info.linear_resolution) + oy;
 
 				for(int y = -range_max; y <= range_max; y ++)
 				{
