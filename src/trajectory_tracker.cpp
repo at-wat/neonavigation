@@ -493,7 +493,7 @@ void tracker::control()
 	float _w = w;
 	// Stop and rotate
 	if((fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle)) ||
-		fabs(status.distance_remains) < stopToleranceDist)
+		fabs(remainLocal) < stopToleranceDist)
 	{
 		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.9));
 		v = 0;
