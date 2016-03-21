@@ -85,6 +85,7 @@ private:
 	bool outOfLineStrip;
     bool allowBackward;
 	bool limitVelByAvel;
+	bool checkOldPath;
 
 	int error_cnt;
 
@@ -163,6 +164,7 @@ tracker::tracker() :
 	nh.param("no_position_control_dist", noPosCntlDist, 0.0);
 	nh.param("allow_backward", allowBackward, true);
 	nh.param("limit_vel_by_avel", limitVelByAvel, false);
+	nh.param("check_old_path", checkOldPath, false);
 
 	subPath = nh.subscribe(topicPath, 2, &tracker::cbPath, this);
 	subOdom = nh.subscribe(topicOdom, 20, &tracker::cbOdom, this);
@@ -330,7 +332,7 @@ void tracker::control()
 		tf.lookupTransform(frameRobot, path.header.frame_id, now, transform);
 		if(fabs((ros::Time::now() - transform.stamp_).toSec()) > 0.1)
 		{
-			if(error_cnt % 16 == 0)
+			if(error_cnt % 16 == 0 && checkOldPath)
 				ROS_ERROR("Timestamp of the transform is too old %f %f", ros::Time::now().toSec(), transform.stamp_.toSec());
 			error_cnt ++;
 		}
