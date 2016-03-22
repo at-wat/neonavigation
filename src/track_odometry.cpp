@@ -70,6 +70,7 @@ private:
 
 	sensor_msgs::Imu imu;
 	double gyro_zero[3];
+	double z_filter;
 
 	bool has_imu;
 
@@ -166,6 +167,7 @@ private:
 
 		double dt = (odom.header.stamp - odom_prev.header.stamp).toSec();
 		odom.pose.pose.position = odom_prev.pose.pose.position + dt * v;
+		odom.pose.pose.position.z *= z_filter;
 
 		pub_odom.publish(odom);
 		odom_prev = odom;
@@ -196,6 +198,7 @@ public:
 
 		nh.param("base_link_id", base_link_id_overwrite, std::string(""));
 		nh.param("base_link_projected_id", base_link_projected_id, std::string("base_link_projected"));
+		nh.param("z_filter", z_filter, 0.99);
 
 		has_imu = false;
 	}
