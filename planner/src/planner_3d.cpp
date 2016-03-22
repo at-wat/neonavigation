@@ -283,7 +283,8 @@ private:
 		}
 		rough_cost_max = g[s_rough] + ec_rough[0] * (range + local_range);
 	}
-	bool search_available_pos(astar::vec &s, const int xy_range, const int angle_range)
+	bool search_available_pos(astar::vec &s, const int xy_range, const int angle_range, 
+			const int cost_acceptable = 50)
 	{
 		astar::vec d;
 		float range_min = FLT_MAX;
@@ -302,10 +303,9 @@ private:
 					if((unsigned int)s2[0] >= (unsigned int)map_info.width ||
 							(unsigned int)s2[1] >= (unsigned int)map_info.height)
 						continue;
-					if(s2[2] < 0) s2[2] += map_info.angle;
-					else if(s2[2] >= (int)map_info.angle) s2[2] -= map_info.angle;
-					if(cm[s2] == 100) continue;
-					auto cost = cm[s2] * cc.weight_costmap + euclid_cost(d, ec);
+					s2.cycle_unsigned(s2[2], map_info.angle);
+					if(cm[s2] >= cost_acceptable) continue;
+					auto cost = euclid_cost(d, ec);
 					if(cost < range_min)
 					{
 						range_min = cost;
@@ -317,6 +317,10 @@ private:
 
 		if(range_min == FLT_MAX)
 		{
+			if(cost_acceptable != 100)
+			{
+				return search_available_pos(s, xy_range, angle_range, 100);
+			}
 			return false;
 		}
 		s = s_out;
@@ -351,7 +355,13 @@ private:
 				ROS_WARN("Oops! Goal is in Rock!");
 				return;
 			}
-			ROS_INFO("Goal moved");
+			ROS_INFO("Goal moved (%d, %d, %d)",
+					e[0], e[1], e[2]);
+			float x, y, yaw;
+			grid2metric(e[0], e[1], e[2], x, y, yaw);
+			goal.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+			goal.pose.position.x = x;
+			goal.pose.position.y = y;
 		}
 		if(cm[s] == 100)
 		{
