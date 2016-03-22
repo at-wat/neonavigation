@@ -2,8 +2,11 @@ cmake_minimum_required(VERSION 2.8.3)
 project(planner)
 
 find_package(catkin REQUIRED COMPONENTS
-	roscpp sensor_msgs geometry_msgs tf
+	roscpp sensor_msgs geometry_msgs tf message_generation message_runtime
 )
+
+add_message_files(FILES PlannerStatus.msg)
+generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
 	CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs tf
@@ -30,5 +33,5 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 add_executable(planner_3d src/planner_3d.cpp src/grid_astar.hpp)
 target_link_libraries(planner_3d ${catkin_LIBRARIES})
-add_dependencies(planner_3d costmap_gencpp)
+add_dependencies(planner_3d costmap_gencpp planner_gencpp planner_generate_messages_cpp)
 

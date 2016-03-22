@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <costmap/CSpace3D.h>
 #include <costmap/CSpace3DUpdate.h>
+#include <planner/PlannerStatus.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -60,6 +61,7 @@ private:
 	ros::Publisher pub_debug;
 	ros::Publisher pub_start;
 	ros::Publisher pub_end;
+	ros::Publisher pub_status;
 
 	tf::TransformListener tfl;
 
@@ -171,6 +173,13 @@ private:
 	astar::vecf ec;
 	astar::vecf ec_rough;
 	astar::vecf resolution;
+	double goal_tolerance_lin_f;
+	double goal_tolerance_ang_f;
+	double goal_tolerance_ang_finish;
+	int goal_tolerance_lin;
+	int goal_tolerance_ang;
+
+	planner::PlannerStatus status;
 
 	bool find_best;
 	float sw_wait;
@@ -189,6 +198,8 @@ private:
 		if(fabs(len2 - 1.0) < 0.1)
 		{
 			has_goal = true;
+			status.status = planner::PlannerStatus::DOING;
+			pub_status.publish(status);
 			update_goal();
 		}
 		else
@@ -619,6 +630,8 @@ private:
 		local_range = lroundf(local_range_f / map_info.linear_resolution);
 		esc_range = lroundf(esc_range_f / map_info.linear_resolution);
 		esc_angle = map_info.angle / 8;
+		goal_tolerance_lin = lroundf(goal_tolerance_lin_f / map_info.linear_resolution);
+		goal_tolerance_ang = lroundf(goal_tolerance_ang_f / map_info.angular_resolution);
 
 		int size[3] = {(int)map_info.width, (int)map_info.height, (int)map_info.angle};
 		as.reset(astar::vec(size));
@@ -667,6 +680,7 @@ public:
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 		pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
 		pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
+		pub_status = nh.advertise<planner::PlannerStatus>("status", 1, true);
 
 		nh.param_cast("freq", freq, 4.0f);
 		nh.param_cast("freq_min", freq_min, 2.0f);
@@ -682,6 +696,10 @@ public:
 		nh.param_cast("cost_in_place_turn", cc.in_place_turn, 30.0f);
 		nh.param_cast("hysteresis_max_dist", cc.hysteresis_max_dist, 0.3f);
 		nh.param_cast("weight_hysteresis", cc.weight_hysteresis, 5.0f);
+
+		nh.param("goal_tolerance_lin", goal_tolerance_lin_f, 0.05);
+		nh.param("goal_tolerance_ang", goal_tolerance_ang_f, 0.1);
+		nh.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish, 0.05);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
 		nh.param("remember_updates", remember_updates, false);
@@ -696,6 +714,8 @@ public:
 		nh.param("queue_size_limit", queue_size_limit, 0);
 		as.set_queue_size_limit(queue_size_limit);
 
+		status.status = planner::PlannerStatus::DONE;
+
 		has_map = false;
 		has_goal = false;
 		has_start = false;
@@ -709,6 +729,7 @@ public:
 		{
 			wait.sleep();
 			ros::spinOnce();
+
 			if(has_map)
 			{
 				start.header.frame_id = "base_link";
@@ -736,16 +757,33 @@ public:
 
 			if(has_map && has_goal && has_start)
 			{
-				nav_msgs::Path path;
-				make_plan(start.pose, goal.pose, path, true);
-				pub_path.publish(path);
-
-				if(switch_detect(path))
+				if(status.status == planner::PlannerStatus::FINISHING)
 				{
-					ROS_INFO("Will have switch back");
-					if(sw_wait > 0.0)
+					float yaw_s = tf::getYaw(start.pose.orientation);
+					float yaw_g = tf::getYaw(start.pose.orientation);
+					float yaw_diff = yaw_s - yaw_g;
+					if(yaw_diff > M_PI) yaw_diff -= M_PI * 2.0;
+					else if(yaw_diff < -M_PI) yaw_diff += M_PI * 2.0;
+					if(yaw_diff < goal_tolerance_ang_finish)
 					{
-						ros::Duration(sw_wait).sleep();
+						status.status = planner::PlannerStatus::DONE;
+						has_goal = false;
+						ROS_INFO("Path plan finished");
+					}
+				}
+				else
+				{
+					nav_msgs::Path path;
+					make_plan(start.pose, goal.pose, path, true);
+					pub_path.publish(path);
+
+					if(switch_detect(path))
+					{
+						ROS_INFO("Will have switch back");
+						if(sw_wait > 0.0)
+						{
+							ros::Duration(sw_wait).sleep();
+						}
 					}
 				}
 			}
@@ -756,6 +794,7 @@ public:
 				path.header.stamp = ros::Time::now();
 				pub_path.publish(path);
 			}
+			pub_status.publish(status);
 		}
 	}
 
@@ -922,24 +961,9 @@ private:
 		auto s_rough = s;
 		s_rough[2] = 0;
 
-		if(s == e)
-		{
-			path.header = map_header;
-			path.header.stamp = ros::Time::now();
-			path.poses.resize(1);
-			path.poses[0].header = path.header;
-			path.poses[0].pose = ge;
-			return true;
-		}
-
 		geometry_msgs::PoseStamped p;
 		p.header = map_header;
 		float x, y, yaw;
-		grid2metric(s[0], s[1], s[2], x, y, yaw);
-		p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
-		p.pose.position.x = x;
-		p.pose.position.y = y;
-		pub_start.publish(p);
 		grid2metric(e[0], e[1], e[2], x, y, yaw);
 		p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
 		p.pose.position.x = x;
@@ -954,15 +978,27 @@ private:
 				return false;
 			}
 			ROS_INFO("Start moved");
-			if(s == e)
-			{
-				path.header = map_header;
-				path.header.stamp = ros::Time::now();
-				path.poses.resize(1);
-				path.poses[0].header = path.header;
-				path.poses[0].pose = ge;
-				return true;
-			}
+		}
+		grid2metric(s[0], s[1], s[2], x, y, yaw);
+		p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+		p.pose.position.x = x;
+		p.pose.position.y = y;
+		pub_start.publish(p);
+
+		auto diff = s - e;
+		diff.cycle(diff[2], map_info.angle);
+		if(diff.sqlen() <= goal_tolerance_lin * goal_tolerance_lin &&
+				abs(diff[2]) <= goal_tolerance_ang)
+		{
+			path.header = map_header;
+			path.header.stamp = ros::Time::now();
+			path.poses.resize(1);
+			path.poses[0].header = path.header;
+			path.poses[0].pose = ge;
+
+			status.status = planner::PlannerStatus::FINISHING;
+			ROS_INFO("Path plan finishing");
+			return true;
 		}
 
 		auto range_limit = cost_estim_cache[s_rough]
