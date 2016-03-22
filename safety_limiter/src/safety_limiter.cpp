@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
+#include <std_msgs/Bool.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <tf/transform_listener.h>
@@ -55,9 +56,11 @@ public:
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 		sub_twist = nh.subscribe("cmd_vel_in", 1, &safety_limiter::cb_twist, this);
 		sub_cloud = nh.subscribe("cloud", 1, &safety_limiter::cb_cloud, this);
+		sub_disable = nh.subscribe("disable", 1, &safety_limiter::cb_disable, this);
 
 		nh.param("freq", hz, 6.0);
 		nh.param("cloud_timeout", timeout, 0.8);
+		nh.param("disable_timeout", disable_timeout, 0.1);
 		nh.param("lin_vel", vel[0], 0.5);
 		nh.param("lin_acc", acc[0], 1.0);
 		nh.param("ang_vel", vel[1], 0.8);
@@ -111,6 +114,8 @@ public:
 
 		has_cloud = false;
 		has_twist = true;
+
+		last_disable_cmd = ros::Time(0);
 	}
 	void spin()
 	{
@@ -131,7 +136,11 @@ public:
 				continue;
 			}
 			if(!has_cloud) continue;
-			auto cmd_vel = limit(twist, cloud);
+			geometry_msgs::Twist cmd_vel;
+			if(ros::Time::now() - last_disable_cmd > ros::Duration(disable_timeout))
+				cmd_vel = limit(twist, cloud);
+			else
+				cmd_vel = twist;
 			pub_twist.publish(cmd_vel);
 		}
 	}
@@ -269,12 +278,14 @@ private:
 	ros::Publisher pub_debug;
 	ros::Subscriber sub_twist;
 	ros::Subscriber sub_cloud;
+	ros::Subscriber sub_disable;
 	tf::TransformListener tfl;
 
 	geometry_msgs::Twist twist;
 	sensor_msgs::PointCloud2 cloud;
 	double hz;
 	double timeout;
+	double disable_timeout;
 	double vel[2];
 	double acc[2];
 	double tmax;
@@ -284,6 +295,8 @@ private:
 	float footprint_radius;
 	double downsample_grid;
 	std::string frame_id;
+
+	ros::Time last_disable_cmd;
 
 	bool has_cloud;
 	bool has_twist;
@@ -401,6 +414,13 @@ private:
 	{
 		cloud = *msg;
 		has_cloud = true;
+	}
+	void cb_disable(const std_msgs::Bool::Ptr &msg)
+	{
+		if(msg->data)
+		{
+			last_disable_cmd = ros::Time::now();
+		}
 	}
 };
 
