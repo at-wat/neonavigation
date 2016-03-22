@@ -67,12 +67,14 @@ public:
 		nh.param("dt", dt, 0.1);
 		nh.param("t_margin", tmargin, 0.2);
 		nh.param("downsample_grid", downsample_grid, 0.05);
+		nh.param("frame_id", frame_id, std::string("base_link"));
 		tmax = 0.0;
 		for(int i = 0; i < 2; i ++)
 		{
 			auto t = vel[i] / acc[i];
 			if(tmax < t) tmax = t;
 		}
+		tmax += tmargin;
 
 		XmlRpc::XmlRpcValue footprint_xml;
 		if(!nh.hasParam("footprint"))
@@ -141,9 +143,9 @@ public:
 		
 		try
 		{
-			tfl.waitForTransform("base_link", cloud.header.frame_id, cloud.header.stamp,
+			tfl.waitForTransform(frame_id, cloud.header.frame_id, cloud.header.stamp,
 					ros::Duration(0.1));
-			pcl_ros::transformPointCloud("base_link", *pc, *pc, tfl);
+			pcl_ros::transformPointCloud(frame_id, *pc, *pc, tfl);
 		}
 		catch(tf::TransformException &e)
 		{
@@ -159,6 +161,15 @@ public:
 		ds.filter(*pc_ds);
 		*pc = *pc_ds;
 
+		pc->points.erase(std::remove_if(pc->points.begin(), pc->points.end(),
+					[&](pcl::PointXYZ &p)
+					{
+						if(p.z < z_range[0] || z_range[1] < p.z) return true;
+						p.z = 0.0;
+						return false;
+					}), pc->points.end());
+		pc->width = pc->points.size();
+
 		pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 		kdtree.setInputCloud(pc);
 		
@@ -172,10 +183,10 @@ public:
 			* Eigen::AngleAxisf(twist.angular.z * dt, Eigen::Vector3f::UnitZ());
 		move.setIdentity();
 		move_inv.setIdentity();
-		float t_col = FLT_MAX;
+		float t_col = tmax;
 		sensor_msgs::PointCloud col_points;
 		sensor_msgs::PointCloud debug_points;
-		col_points.header.frame_id = "base_link";
+		col_points.header.frame_id = frame_id;
 		col_points.header.stamp = ros::Time::now();
 		debug_points.header = col_points.header;
 		for(float t = 0; t < tmax; t += dt)
@@ -199,7 +210,6 @@ public:
 			for(auto &i: indices)
 			{
 				auto &p = pc->points[i];
-				if(p.z < z_range[0] || z_range[1] < p.z) continue;
 				auto point = pcl::transformPoint(p, move);
 				vec v(point.x, point.y);
 				if(footprint_p.inside(v))
@@ -226,7 +236,7 @@ public:
 		auto out = in;
 		float lin_vel_lim = t_col * acc[0];
 		float ang_vel_lim = t_col * acc[1];
-
+		
 		bool col = false;
 		if(fabs(out.linear.x) > lin_vel_lim)
 		{
@@ -242,9 +252,9 @@ public:
 			out.angular.z *= r;
 			col = true;
 		}
+		pub_cloud.publish(col_points);
 		if(col)
 		{
-			pub_cloud.publish(col_points);
 			ROS_WARN("Safety Limit: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
 					in.linear.x, in.angular.z,
 					out.linear.x, out.angular.z);
@@ -273,6 +283,7 @@ private:
 	double z_range[2];
 	float footprint_radius;
 	double downsample_grid;
+	std::string frame_id;
 
 	bool has_cloud;
 	bool has_twist;
