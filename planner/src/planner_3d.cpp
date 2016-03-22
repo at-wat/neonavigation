@@ -331,9 +331,11 @@ private:
 		metric2grid(s[0], s[1], s[2],
 				start.pose.position.x, start.pose.position.y, 
 				tf::getYaw(start.pose.orientation));
+		s.cycle_unsigned(s[2], map_info.angle);
 		metric2grid(e[0], e[1], e[2],
 				goal.pose.position.x, goal.pose.position.y, 
 				tf::getYaw(goal.pose.orientation));
+		e.cycle_unsigned(e[2], map_info.angle);
 		ROS_INFO("New goal received (%d, %d, %d)",
 				e[0], e[1], e[2]);
 
