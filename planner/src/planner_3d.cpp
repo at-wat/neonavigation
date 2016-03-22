@@ -1151,7 +1151,7 @@ private:
 				float len = hypotf(
 						p.pose.position.y - p_prev.position.y,
 						p.pose.position.x - p_prev.position.x);
-				if(len > 0.01)
+				if(len > 0.001)
 				{
 					float yaw = tf::getYaw(p.pose.orientation);
 					float vel_yaw = atan2f(
