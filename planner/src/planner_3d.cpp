@@ -1274,7 +1274,7 @@ private:
 			if(motion_grid[0] < 0) distf_signed = -distf;
 			vg[0] += cosf(yaw) * distf_signed;
 			vg[1] += sinf(yaw) * distf_signed;
-			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution) * distf) return -1;
+			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution) * distf * 1.5) return -1;
 
 			// Go-straight
 			float v[3], dp[3];
@@ -1320,7 +1320,7 @@ private:
 			if(motion[0] * sin_v < 0) r2 = -r2;
 
 			// curveture at the start pose and the end pose must be same
-			if(fabs(r1 - r2) >= map_info.linear_resolution)
+			if(fabs(r1 - r2) >= map_info.linear_resolution * 1.5)
 			{
 				// Drifted
 				return -1;
