@@ -173,14 +173,13 @@ public:
 		ds.filter(*pc_ds);
 		*pc = *pc_ds;
 
-		pc->points.erase(std::remove_if(pc->points.begin(), pc->points.end(),
+		pc->erase(std::remove_if(pc->points.begin(), pc->points.end(),
 					[&](pcl::PointXYZ &p)
 					{
 						if(p.z < z_range[0] || z_range[1] < p.z) return true;
 						p.z = 0.0;
 						return false;
 					}), pc->points.end());
-		pc->width = pc->points.size();
 
 		pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 		kdtree.setInputCloud(pc);
