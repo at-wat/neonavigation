@@ -126,6 +126,12 @@ public:
 			ros::spinOnce();
 
 			if(!has_twist) continue;
+			
+			if(ros::Time::now() - last_disable_cmd < ros::Duration(disable_timeout))
+			{
+				pub_twist.publish(twist);
+				continue;
+			}
 
 			if(ros::Time::now() - cloud.header.stamp > ros::Duration(timeout))
 			{
@@ -137,10 +143,7 @@ public:
 			}
 			if(!has_cloud) continue;
 			geometry_msgs::Twist cmd_vel;
-			if(ros::Time::now() - last_disable_cmd > ros::Duration(disable_timeout))
-				cmd_vel = limit(twist, cloud);
-			else
-				cmd_vel = twist;
+			cmd_vel = limit(twist, cloud);
 			pub_twist.publish(cmd_vel);
 		}
 	}
