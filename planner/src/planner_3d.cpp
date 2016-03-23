@@ -456,10 +456,12 @@ private:
 		metric2grid(s[0], s[1], s[2],
 				start.pose.position.x, start.pose.position.y, 
 				tf::getYaw(start.pose.orientation));
+		s.cycle_unsigned(s[2], map_info.angle);
 		metric2grid(e[0], e[1], e[2],
 				goal.pose.position.x, goal.pose.position.y, 
 				tf::getYaw(goal.pose.orientation));
-		
+		e.cycle_unsigned(e[2], map_info.angle);
+
 		if(cm[e] == 100)
 		{
 			update_goal();
@@ -967,8 +969,10 @@ private:
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
 				gs.position.x, gs.position.y, tf::getYaw(gs.orientation));
+		s.cycle_unsigned(s[2], map_info.angle);
 		metric2grid(e[0], e[1], e[2],
 				ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
+		e.cycle_unsigned(e[2], map_info.angle);
 
 		auto s_rough = s;
 		s_rough[2] = 0;
