@@ -776,7 +776,7 @@ public:
 					float yaw_diff = yaw_s - yaw_g;
 					if(yaw_diff > M_PI) yaw_diff -= M_PI * 2.0;
 					else if(yaw_diff < -M_PI) yaw_diff += M_PI * 2.0;
-					if(yaw_diff < goal_tolerance_ang_finish)
+					if(fabs(yaw_diff) < goal_tolerance_ang_finish)
 					{
 						status.status = planner::PlannerStatus::DONE;
 						has_goal = false;
