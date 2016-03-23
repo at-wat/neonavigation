@@ -144,6 +144,8 @@ private:
 	int range;
 	int local_range;
 	double local_range_f;
+	int longcut_range;
+	double longcut_range_f;
 	int esc_range;
 	int esc_angle;
 	double esc_range_f;
@@ -222,7 +224,7 @@ private:
 			const auto c = center.p_raw;
 			open.pop();
 			if(c > g[p]) continue;
-			if(c - ec_rough[0] * (range + local_range) > g[s_rough]) continue;
+			if(c - ec_rough[0] * (range + local_range + longcut_range) > g[s_rough]) continue;
 
 			astar::vec d;
 			d[2] = 0;
@@ -642,6 +644,7 @@ private:
 		resolution[2] = 1.0 / map_info.angular_resolution;
 
 		local_range = lroundf(local_range_f / map_info.linear_resolution);
+		longcut_range = lroundf(longcut_range_f / map_info.linear_resolution);
 		esc_range = lroundf(esc_range_f / map_info.linear_resolution);
 		esc_angle = map_info.angle / 8;
 		goal_tolerance_lin = lroundf(goal_tolerance_lin_f / map_info.linear_resolution);
@@ -719,6 +722,7 @@ public:
 		nh.param("remember_updates", remember_updates, false);
 		
 		nh.param("local_range", local_range_f, 2.5);
+		nh.param("longcut_range", longcut_range_f, 0.0);
 		nh.param("esc_range", esc_range_f, 0.25);
 
 		nh.param_cast("sw_wait", sw_wait, 2.0f);
