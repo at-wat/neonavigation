@@ -774,7 +774,7 @@ public:
 				if(status.status == planner::PlannerStatus::FINISHING)
 				{
 					float yaw_s = tf::getYaw(start.pose.orientation);
-					float yaw_g = tf::getYaw(start.pose.orientation);
+					float yaw_g = tf::getYaw(goal.pose.orientation);
 					float yaw_diff = yaw_s - yaw_g;
 					if(yaw_diff > M_PI) yaw_diff -= M_PI * 2.0;
 					else if(yaw_diff < -M_PI) yaw_diff += M_PI * 2.0;
