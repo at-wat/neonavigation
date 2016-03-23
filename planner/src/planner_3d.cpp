@@ -787,6 +787,7 @@ public:
 				}
 				else
 				{
+					status.error = planner::PlannerStatus::GOING_WELL;
 					nav_msgs::Path path;
 					make_plan(start.pose, goal.pose, path, true);
 					pub_path.publish(path);
@@ -991,6 +992,7 @@ private:
 			if(!search_available_pos(s, esc_range, esc_angle))
 			{
 				ROS_WARN("Oops! You are in Rock!");
+				status.error = planner::PlannerStatus::IN_ROCK;
 				return false;
 			}
 			ROS_INFO("Start moved");
@@ -1040,6 +1042,7 @@ private:
 				true))
 		{
 			ROS_WARN("Path plan failed (goal unreachable)");
+			status.error = planner::PlannerStatus::PATH_NOT_FOUND;
 			if(!find_best) return false;
 		}
 		//const auto tnow = std::chrono::high_resolution_clock::now();
