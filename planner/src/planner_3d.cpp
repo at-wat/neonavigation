@@ -373,7 +373,6 @@ private:
 				ROS_WARN("Oops! You are in Rock!");
 				return;
 			}
-			ROS_INFO("Start moved");
 		}
 
 		e[2] = 0;
