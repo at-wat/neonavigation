@@ -330,7 +330,7 @@ private:
 		ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
 		return true;
 	}
-	void update_goal()
+	void update_goal(const bool goal_changed = true)
 	{	
 		if(!has_map || !has_goal || !has_start) return;
 
@@ -385,7 +385,7 @@ private:
 				std::chrono::duration<float>(tnow - ts).count());
 		g[e] = 0;
 		
-		cm_hyst.clear(0);
+		if(goal_changed) cm_hyst.clear(0);
 
 		publish_costmap();
 	}
@@ -467,7 +467,7 @@ private:
 
 		if(cm[e] == 100)
 		{
-			update_goal();
+			update_goal(false);
 			return;
 		}
 		
