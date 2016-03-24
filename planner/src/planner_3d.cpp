@@ -326,6 +326,7 @@ private:
 			return false;
 		}
 		s = s_out;
+		s.cycle_unsigned(s[2], map_info.angle);
 		ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
 		return true;
 	}
@@ -979,9 +980,6 @@ private:
 				ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
 		e.cycle_unsigned(e[2], map_info.angle);
 
-		auto s_rough = s;
-		s_rough[2] = 0;
-
 		geometry_msgs::PoseStamped p;
 		p.header = map_header;
 		float x, y, yaw;
@@ -1001,6 +999,9 @@ private:
 			}
 			ROS_INFO("Start moved");
 		}
+		auto s_rough = s;
+		s_rough[2] = 0;
+
 		grid2metric(s[0], s[1], s[2], x, y, yaw);
 		p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
 		p.pose.position.x = x;
