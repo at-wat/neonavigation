@@ -77,6 +77,7 @@ public:
 			auto t = vel[i] / acc[i];
 			if(tmax < t) tmax = t;
 		}
+		tmax *= 1.5;
 		tmax += tmargin;
 
 		XmlRpc::XmlRpcValue footprint_xml;
