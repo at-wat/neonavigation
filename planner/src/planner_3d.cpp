@@ -173,6 +173,7 @@ private:
 
 	geometry_msgs::PoseStamped start;
 	geometry_msgs::PoseStamped goal;
+	geometry_msgs::PoseStamped goal_raw;
 	astar::vecf ec;
 	astar::vecf ec_rough;
 	astar::vecf resolution;
@@ -189,9 +190,11 @@ private:
 
 	float rough_cost_max;
 
+	bool force_goal_orientation;
+
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
-		goal = *msg;
+		goal_raw = goal = *msg;
 
 		double len2 = 
 			goal.pose.orientation.x * goal.pose.orientation.x +
@@ -735,6 +738,8 @@ public:
 		nh.param_cast("sw_wait", sw_wait, 2.0f);
 		nh.param("find_best", find_best, true);
 		
+		nh.param("force_goal_orientation", force_goal_orientation, true);
+		
 		nh.param("fast_map_update", fast_map_update, false);
 		if(fast_map_update)
 		{
@@ -791,7 +796,12 @@ public:
 				if(status.status == planner::PlannerStatus::FINISHING)
 				{
 					float yaw_s = tf::getYaw(start.pose.orientation);
-					float yaw_g = tf::getYaw(goal.pose.orientation);
+					float yaw_g;
+					if(force_goal_orientation)
+						yaw_g = tf::getYaw(goal_raw.pose.orientation);
+					else
+						yaw_g = tf::getYaw(goal.pose.orientation);
+
 					float yaw_diff = yaw_s - yaw_g;
 					if(yaw_diff > M_PI) yaw_diff -= M_PI * 2.0;
 					else if(yaw_diff < -M_PI) yaw_diff += M_PI * 2.0;
