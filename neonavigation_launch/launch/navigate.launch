@@ -58,6 +58,8 @@
 		<param name="distance_angle_factor" value="0.2" />
 		<param name="rotate_ang" value="0.2" if="$(arg slow_and_precise)" />
 		<param name="rotate_ang" value="0.4" unless="$(arg slow_and_precise)" />
+
+		<param name="no_position_control_dist" value="0.05" />
 	</node>
 
 	<node pkg="tf" type="static_transform_publisher" name="stf1" args="$(arg sim_robot_x) $(arg sim_robot_y) 0 $(arg sim_robot_yaw) 0 0 map base_link 50" if="$(arg simulate)" />
