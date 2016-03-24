@@ -154,6 +154,7 @@ private:
 	bool has_goal;
 	bool has_start;
 	bool remember_updates;
+	bool fast_map_update;
 	std::vector<astar::vec> search_list;
 	std::vector<astar::vec> search_list_rough;
 
@@ -453,6 +454,12 @@ private:
 			}
 		}
 		if(!has_goal || !has_start) return;
+
+		if(!fast_map_update)
+		{
+			update_goal(false);
+			return;
+		}
 	
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
@@ -727,6 +734,12 @@ public:
 
 		nh.param_cast("sw_wait", sw_wait, 2.0f);
 		nh.param("find_best", find_best, true);
+		
+		nh.param("fast_map_update", fast_map_update, false);
+		if(fast_map_update)
+		{
+			ROS_WARN("planner_3d: Experimental fast_map_update is enabled. ");
+		}
 
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
