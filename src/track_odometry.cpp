@@ -71,8 +71,10 @@ private:
 	sensor_msgs::Imu imu;
 	double gyro_zero[3];
 	double z_filter;
+	double tf_tolerance;
 
 	bool has_imu;
+	bool has_odom;
 
 	void cb_reset_z(const std_msgs::Float32::Ptr &msg)
 	{
@@ -140,52 +142,56 @@ private:
 	void cb_odom(const nav_msgs::Odometry::Ptr &msg)
 	{
 		nav_msgs::Odometry odom = *msg;
-		if(base_link_id_overwrite.size() > 0)
+		if(has_odom)
 		{
-			base_link_id = base_link_id_overwrite;
+			if(base_link_id_overwrite.size() > 0)
+			{
+				base_link_id = base_link_id_overwrite;
+			}
+			else
+			{
+				base_link_id = odom.child_frame_id;
+			}
+
+			if(!has_imu) return;
+
+			odom.header.stamp += ros::Duration(tf_tolerance);
+			odom.twist.twist.angular = imu.angular_velocity;
+			odom.pose.pose.orientation = imu.orientation;
+			if(fabs(msg->twist.twist.angular.z) > 0.01)
+			{
+				odom.twist.twist.linear.x =
+					msg->twist.twist.linear.x * imu.angular_velocity.z / msg->twist.twist.angular.z;
+			}
+
+			geometry_msgs::Vector3 v, t;
+			t = 2.0 * cross(odom.pose.pose.orientation, odom.twist.twist.linear);
+			v = odom.twist.twist.linear 
+				+ odom.pose.pose.orientation.w * t 
+				+ cross(odom.pose.pose.orientation, t);
+
+			double dt = (odom.header.stamp - odom_prev.header.stamp).toSec();
+			odom.pose.pose.position = odom_prev.pose.pose.position + dt * v;
+			odom.pose.pose.position.z *= z_filter;
+
+			pub_odom.publish(odom);
+
+			geometry_msgs::TransformStamped odom_trans;
+
+			odom_trans.header = odom.header;
+			odom_trans.child_frame_id = base_link_id;
+			odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
+			odom_trans.transform.rotation = odom.pose.pose.orientation;
+			tf_broadcaster.sendTransform(odom_trans);
+
+			odom_trans.child_frame_id = base_link_projected_id;
+			odom_trans.transform.translation.z = 0.0;
+			odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(
+					tf::getYaw(odom_trans.transform.rotation));
+			tf_broadcaster.sendTransform(odom_trans);
 		}
-		else
-		{
-			base_link_id = odom.child_frame_id;
-		}
-
-		if(!has_imu) return;
-
-		odom.twist.twist.angular = imu.angular_velocity;
-		odom.pose.pose.orientation = imu.orientation;
-		if(fabs(msg->twist.twist.angular.z) > 0.01)
-		{
-			odom.twist.twist.linear.x =
-				msg->twist.twist.linear.x * imu.angular_velocity.z / msg->twist.twist.angular.z;
-		}
-
-		geometry_msgs::Vector3 v, t;
-		t = 2.0 * cross(odom.pose.pose.orientation, odom.twist.twist.linear);
-		v = odom.twist.twist.linear 
-			+ odom.pose.pose.orientation.w * t 
-			+ cross(odom.pose.pose.orientation, t);
-
-		double dt = (odom.header.stamp - odom_prev.header.stamp).toSec();
-		odom.pose.pose.position = odom_prev.pose.pose.position + dt * v;
-		odom.pose.pose.position.z *= z_filter;
-
-		pub_odom.publish(odom);
 		odom_prev = odom;
-
-
-		geometry_msgs::TransformStamped odom_trans;
-
-		odom_trans.header = odom.header;
-		odom_trans.child_frame_id = base_link_id;
-		odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
-		odom_trans.transform.rotation = odom.pose.pose.orientation;
-		tf_broadcaster.sendTransform(odom_trans);
-
-		odom_trans.child_frame_id = base_link_projected_id;
-		odom_trans.transform.translation.z = 0.0;
-		odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(
-				tf::getYaw(odom_trans.transform.rotation));
-		tf_broadcaster.sendTransform(odom_trans);
+		has_odom = true;
 	}
 public:
 	track_odometry():
@@ -199,8 +205,10 @@ public:
 		nh.param("base_link_id", base_link_id_overwrite, std::string(""));
 		nh.param("base_link_projected_id", base_link_projected_id, std::string("base_link_projected"));
 		nh.param("z_filter", z_filter, 0.99);
+		nh.param("tf_tolerance", tf_tolerance, 0.01);
 
 		has_imu = false;
+		has_odom = false;
 	}
 };
 
