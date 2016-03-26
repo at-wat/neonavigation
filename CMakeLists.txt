@@ -52,3 +52,6 @@ add_executable(select_map src/select_map.cpp)
 target_link_libraries(select_map ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(select_map map_organizer_gencpp)
 
+add_executable(pose_transform src/pose_transform.cpp)
+target_link_libraries(pose_transform ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
