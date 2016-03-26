@@ -80,6 +80,7 @@ private:
 	double stopToleranceDist;
 	double stopToleranceAng;
 	double noPosCntlDist;
+	double minTrackPath;
 	int pathStep;
 	int pathStepDone;
 	bool outOfLineStrip;
@@ -162,6 +163,7 @@ tracker::tracker() :
 	nh.param("stop_tolerance_dist", stopToleranceDist, 0.1);
 	nh.param("stop_tolerance_ang", stopToleranceAng, 0.05);
 	nh.param("no_position_control_dist", noPosCntlDist, 0.0);
+	nh.param("min_tracking_path", minTrackPath, noPosCntlDist);
 	nh.param("allow_backward", allowBackward, true);
 	nh.param("limit_vel_by_avel", limitVelByAvel, false);
 	nh.param("check_old_path", checkOldPath, false);
@@ -493,7 +495,8 @@ void tracker::control()
 	float _w = w;
 	// Stop and rotate
 	if((fabs(rotate_ang) < M_PI && cos(rotate_ang) > cos(angle)) ||
-		fabs(remainLocal) < stopToleranceDist)
+		fabs(remainLocal) < stopToleranceDist ||
+		distancePath < minTrackPath)
 	{
 		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.9));
 		v = 0;
@@ -505,7 +508,11 @@ void tracker::control()
 		else if(w < -vel[1]) w = -vel[1];
 		if(w > _w + dt*acc[1]) w = _w + dt*acc[1];
 		else if(w < _w - dt*acc[1]) w = _w - dt*acc[1];
-		//ROS_WARN("Rotate");
+
+		if(distancePath < stopToleranceDist)
+		{
+			status.distance_remains = remain = remainLocal = 0.0;
+		}
 	}
 	else
 	{
