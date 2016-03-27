@@ -500,7 +500,7 @@ void tracker::control()
 	{
 		if(distancePath < minTrackPath || fabs(remainLocal) < stopToleranceDist)
 		{
-			angle = tf::getYaw(lpath.poses.back().pose.orientation);
+			angle = -tf::getYaw(lpath.poses.back().pose.orientation);
 			status.angle_remains = angle;
 		}
 		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.9));
