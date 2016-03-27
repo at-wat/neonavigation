@@ -11,6 +11,7 @@
 	<arg name="ang_vel" default="0.6" />
 	<arg name="ang_acc" default="1.0" />
 	<arg name="look_forward" default="0.1" />
+	<arg name="curv_forward" default="0.2" />
 	<arg name="slow_and_precise" default="true" />
 
 	<arg name="linear_expand" default="0.08" />
@@ -36,15 +37,17 @@
 
 	<node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
 		<remap from="~/cmd_vel" to="$(arg cmd_vel_output)" />
+		<param name="odom" value="/odom" />
+
 		<param name="max_vel" value="$(arg vel)" />
 		<param name="max_acc" value="$(arg acc)" />
 		<param name="max_angvel" value="$(arg ang_vel)" />
 		<param name="max_angacc" value="$(arg ang_acc)" />
 		
-		<param name="curv_forward" value="0.4" />
+		<param name="curv_forward" value="$(arg curv_forward)" />
 		<param name="look_forward" value="$(arg look_forward)" />
 		<param name="k_dist" value="4.5" />
-		<param name="k_ang" value="4.0" />
+		<param name="k_ang" value="3.0" />
 		<param name="k_avel" value="4.0" />
 		
 		<param name="path" value="/planner_3d/path" />
