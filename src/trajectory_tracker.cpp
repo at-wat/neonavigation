@@ -273,6 +273,7 @@ void tracker::cbPath(const nav_msgs::Path::ConstPtr& msg)
 	auto i = path.poses.begin();
 	for(auto j = path.poses.begin(); j != path.poses.end();)
 	{
+		if(j + 1 == path.poses.end()) break;
 		if(i != j && dist2d((*i).pose.position, (*j).pose.position) < 0.01)
 		{
 			j = path.poses.erase(j);
