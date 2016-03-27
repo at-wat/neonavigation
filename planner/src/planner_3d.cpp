@@ -1043,7 +1043,10 @@ private:
 			path.header.stamp = ros::Time::now();
 			path.poses.resize(1);
 			path.poses[0].header = path.header;
-			path.poses[0].pose = ge;
+			if(force_goal_orientation)
+				path.poses[0].pose = goal_raw.pose;
+			else
+				path.poses[0].pose = ge;
 
 			status.status = planner::PlannerStatus::FINISHING;
 			ROS_INFO("Path plan finishing");
