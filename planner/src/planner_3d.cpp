@@ -67,6 +67,7 @@ private:
 
 	astar as;
 	astar::gridmap<char, 0x40> cm;
+	astar::gridmap<char, 0x40> cm_hist;
 	astar::gridmap<char, 0x80> cm_rough;
 	astar::gridmap<char, 0x40> cm_base;
 	astar::gridmap<char, 0x80> cm_rough_base;
@@ -157,6 +158,11 @@ private:
 	bool fast_map_update;
 	std::vector<astar::vec> search_list;
 	std::vector<astar::vec> search_list_rough;
+	int hist_cost;
+	int hist_cnt_max;
+	int hist_cnt_thres;
+	double hist_ignore_range_f;
+	int hist_ignore_range;
 
 	// Cost weights
 	class cost_coeff_
@@ -182,6 +188,13 @@ private:
 	double goal_tolerance_ang_finish;
 	int goal_tolerance_lin;
 	int goal_tolerance_ang;
+
+	enum
+	{
+		DEBUG_HYSTERESIS,
+		DEBUG_HISTORY,
+		DEBUG_COST_ESTIM
+	} debug_out;
 
 	planner::PlannerStatus status;
 
@@ -404,14 +417,25 @@ private:
 				for(p[0] = 0; p[0] < cost_estim_cache.size[0]; p[0] ++)
 				{
 					p[2] = 0;
-					if(cost_estim_cache[p] == FLT_MAX) continue;
 					float x, y, yaw;
 					grid2metric(p[0], p[1], p[2], x, y, yaw);
 					geometry_msgs::Point32 point;
 					point.x = x;
 					point.y = y;
-					//point.z = cm_hyst[p] * 0.01;
-					point.z = cost_estim_cache[p] / 500;
+					switch(debug_out)
+					{
+					case DEBUG_HYSTERESIS:
+						if(cost_estim_cache[p] == FLT_MAX) continue;
+						point.z = cm_hyst[p] * 0.01;
+						break;
+					case DEBUG_HISTORY:
+						point.z = cm_hist[p] * 0.01;
+						break;
+					case DEBUG_COST_ESTIM:
+						if(cost_estim_cache[p] == FLT_MAX) continue;
+						point.z = cost_estim_cache[p] / 500;
+						break;
+					}
 					debug.points.push_back(point);
 				}
 			}
@@ -423,20 +447,31 @@ private:
 		if(!has_map) return;
 		ROS_DEBUG("Map updated");
 
+		cm = cm_base;
+		cm_rough = cm_rough_base;
 		if(!remember_updates)
 		{
-			cm = cm_base;
-			cm_rough = cm_rough_base;
+			for(size_t i = 0; i < cm.ser_size; i ++)
+			{
+				if(cm_hist.c[i] > hist_cnt_thres)
+				{
+					cm.c[i] = hist_cost;
+				}
+			}
 		}
 
 		{
 			astar::vec p;
+			astar::vec center;
+			center[0] = msg->width / 2;
+			center[1] = msg->height / 2;
 			astar::vec gp;
 			gp[0] = msg->x;
 			gp[1] = msg->y;
 			gp[2] = msg->yaw;
 			astar::vec gp_rough = gp;
 			gp_rough[2] = 0;
+			const int hist_ignore_range_sq = hist_ignore_range * hist_ignore_range;
 			for(p[0] = 0; p[0] < (int)msg->width; p[0] ++)
 			{
 				for(p[1] = 0; p[1] < (int)msg->height; p[1] ++)
@@ -447,6 +482,28 @@ private:
 						const size_t addr = ((p[2] * msg->height) + p[1])
 							* msg->width + p[0];
 						char c = msg->data[addr];
+						if(c == 100)
+						{
+							if(cm_base[gp + p] <= 0)
+							{
+								astar::vec p2 = p - center;
+								if(p2.sqlen() > hist_ignore_range_sq)
+								{
+									auto &ch = cm_hist[gp + p];
+									ch ++;
+									if(ch > hist_cnt_max) ch = hist_cnt_max;
+								}
+							}
+						}
+						else if(c == 0)
+						{
+							if(cm_base[gp + p] <= 0)
+							{
+								auto &ch = cm_hist[gp + p];
+								ch --;
+								if(ch < 0) ch = 0;
+							}
+						}
 						if(c < 0) c = unknown_cost;
 						cm[gp + p] = c;
 						if(c < cost_min) cost_min = c;
@@ -653,6 +710,7 @@ private:
 		resolution[1] = 1.0 / map_info.linear_resolution;
 		resolution[2] = 1.0 / map_info.angular_resolution;
 
+		hist_ignore_range = lroundf(hist_ignore_range_f / map_info.linear_resolution);
 		local_range = lroundf(local_range_f / map_info.linear_resolution);
 		longcut_range = lroundf(longcut_range_f / map_info.linear_resolution);
 		esc_range = lroundf(esc_range_f / map_info.linear_resolution);
@@ -694,6 +752,8 @@ private:
 
 		cm_rough_base = cm_rough;
 		cm_base = cm;
+		cm_hist = cm;
+		cm_hist.clear(0);
 	}
 
 public:
@@ -729,6 +789,10 @@ public:
 		nh.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish, 0.05);
 		
 		nh.param("unknown_cost", unknown_cost, 100);
+		nh.param("hist_cnt_max", hist_cnt_max, 20);
+		nh.param("hist_cnt_thres", hist_cnt_thres, 19);
+		nh.param("hist_cost", hist_cost, 90);
+		nh.param("hist_ignore_range", hist_ignore_range_f, 1.0);
 		nh.param("remember_updates", remember_updates, false);
 		
 		nh.param("local_range", local_range_f, 2.5);
@@ -745,6 +809,11 @@ public:
 		{
 			ROS_WARN("planner_3d: Experimental fast_map_update is enabled. ");
 		}
+		std::string debug_mode;
+		nh.param("debug_mode", debug_mode, std::string("cost_estim"));
+		if(debug_mode == "hyst") debug_out = DEBUG_HYSTERESIS;
+		else if(debug_mode == "hist") debug_out = DEBUG_HISTORY;
+		else if(debug_mode == "cost_estim") debug_out = DEBUG_COST_ESTIM;
 
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
