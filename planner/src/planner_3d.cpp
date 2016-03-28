@@ -163,6 +163,7 @@ private:
 	int hist_cnt_thres;
 	double hist_ignore_range_f;
 	int hist_ignore_range;
+	bool temporary_escape;
     
 	double pos_jump;
 	double yaw_jump;
@@ -208,6 +209,8 @@ private:
 
 	bool force_goal_orientation;
 
+	bool escaping;
+
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
 		goal_raw = goal = *msg;
@@ -219,6 +222,7 @@ private:
 			goal.pose.orientation.w * goal.pose.orientation.w;
 		if(fabs(len2 - 1.0) < 0.1)
 		{
+			escaping = false;
 			has_goal = true;
 			status.status = planner::PlannerStatus::DOING;
 			pub_status.publish(status);
@@ -306,7 +310,7 @@ private:
 		rough_cost_max = g[s_rough] + ec_rough[0] * (range + local_range);
 	}
 	bool search_available_pos(astar::vec &s, const int xy_range, const int angle_range, 
-			const int cost_acceptable = 50)
+			const int cost_acceptable = 50, const int min_xy_range = 0)
 	{
 		astar::vec d;
 		float range_min = FLT_MAX;
@@ -320,6 +324,7 @@ private:
 				{
 					if(d[0] == 0 && d[1] == 0 && d[2] == 0) continue;
 					if(d.sqlen() > xy_range * xy_range) continue;
+					if(d.sqlen() < min_xy_range * min_xy_range) continue;
 
 					auto s2 = s + d;
 					if((unsigned int)s2[0] >= (unsigned int)map_info.width ||
@@ -810,6 +815,8 @@ public:
 
 		nh.param("force_goal_orientation", force_goal_orientation, true);
 		
+		nh.param("temporary_escape", temporary_escape, true);
+
 		nh.param("fast_map_update", fast_map_update, false);
 		if(fast_map_update)
 		{
@@ -830,6 +837,8 @@ public:
 		has_map = false;
 		has_goal = false;
 		has_start = false;
+
+		escaping = false;
 	}
 	void spin()
 	{
@@ -908,7 +917,11 @@ public:
 				}
 				else
 				{
-					status.error = planner::PlannerStatus::GOING_WELL;
+					if(escaping)
+						status.error = planner::PlannerStatus::PATH_NOT_FOUND;
+					else
+					   	status.error = planner::PlannerStatus::GOING_WELL;
+
 					nav_msgs::Path path;
 					make_plan(start.pose, goal.pose, path, true);
 					if(force_goal_orientation && path.poses.size() > 0)
@@ -1121,6 +1134,31 @@ private:
 		}
 		auto s_rough = s;
 		s_rough[2] = 0;
+		
+		if(cost_estim_cache[s_rough] == FLT_MAX)
+		{
+			status.error = planner::PlannerStatus::PATH_NOT_FOUND;
+			ROS_WARN("Goal unreachable.");
+			if(!escaping && temporary_escape)
+			{
+				e = s;
+				if(search_available_pos(e, esc_range, esc_angle, 50, esc_range / 2))
+				{
+					escaping = true;
+					ROS_INFO("Temporary goal (%d, %d, %d)",
+							e[0], e[1], e[2]);
+					float x, y, yaw;
+					grid2metric(e[0], e[1], e[2], x, y, yaw);
+					goal.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+					goal.pose.position.x = x;
+					goal.pose.position.y = y;
+
+					update_goal();
+					return false;
+				}
+			}
+			return false;
+		}
 
 		grid2metric(s[0], s[1], s[2], x, y, yaw);
 		p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
@@ -1142,8 +1180,18 @@ private:
 			else
 				path.poses[0].pose = ge;
 
-			status.status = planner::PlannerStatus::FINISHING;
-			ROS_INFO("Path plan finishing");
+			if(escaping)
+			{
+				goal = goal_raw;
+				escaping = false;
+				update_goal();
+				ROS_INFO("Escaped");
+			}
+			else
+			{
+				status.status = planner::PlannerStatus::FINISHING;
+				ROS_INFO("Path plan finishing");
+			}
 			return true;
 		}
 
