@@ -163,6 +163,9 @@ private:
 	int hist_cnt_thres;
 	double hist_ignore_range_f;
 	int hist_ignore_range;
+    
+	double pos_jump;
+	double yaw_jump;
 
 	// Cost weights
 	class cost_coeff_
@@ -801,7 +804,10 @@ public:
 
 		nh.param_cast("sw_wait", sw_wait, 2.0f);
 		nh.param("find_best", find_best, true);
-		
+
+		nh.param("pos_jump", pos_jump, 0.5);
+		nh.param("yaw_jump", yaw_jump, 0.8);
+
 		nh.param("force_goal_orientation", force_goal_orientation, true);
 		
 		nh.param("fast_map_update", fast_map_update, false);
@@ -830,6 +836,9 @@ public:
 		ros::Rate wait(freq);
 		ROS_DEBUG("Initialized");
 
+		geometry_msgs::PoseStamped start_prev;
+		start_prev.pose.orientation.w = 1.0;
+
 		while(ros::ok())
 		{
 			wait.sleep();
@@ -857,6 +866,22 @@ public:
 					//ROS_INFO("planner: Transform failed %s", e.what());
 					continue;
 				}
+				{
+					float x_diff = start.pose.position.x - start_prev.pose.position.x;
+					float y_diff = start.pose.position.y - start_prev.pose.position.y;
+					float yaw_diff = tf::getYaw(start.pose.orientation)
+						- tf::getYaw(start_prev.pose.orientation);
+					if(yaw_diff > M_PI) yaw_diff -= M_PI * 2;
+
+					if(powf(x_diff, 2.0) + powf(y_diff, 2.0) > powf(pos_jump, 2.0) ||
+							fabs(yaw_diff) > yaw_jump)
+					{
+						ROS_ERROR("Position jumped, history cleared");
+						cm_hist.clear(0);
+					}
+					start_prev = start;
+				}
+
 				has_start = true;
 			}
 
