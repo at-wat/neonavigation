@@ -77,6 +77,7 @@ public:
 		n.param("downsample_grid", downsample_grid, 0.05);
 		n.param("offset_x", offset_x, 0.0);
 		n.param("offset_y", offset_y, 0.0);
+		n.param("offset_z", offset_z, 0.0);
 
 		auto pc = convert_obj(split(file, ','));
 		pubCloud.publish(pc);
@@ -91,6 +92,7 @@ private:
 	double downsample_grid;
 	double offset_x;
 	double offset_y;
+	double offset_z;
 
 	std::random_device seed_gen;
 	std::default_random_engine engine;
@@ -102,7 +104,7 @@ private:
 		pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
 		pcl::PointCloud<pcl::PointXYZ>::Ptr pc_rs(new pcl::PointCloud<pcl::PointXYZ>());
 
-		pcl::PointXYZ offset((float)offset_x, (float)offset_y, 0.0f);
+		pcl::PointXYZ offset((float)offset_x, (float)offset_y, (float)offset_z);
 
 		for(auto &file: files)
 		{
