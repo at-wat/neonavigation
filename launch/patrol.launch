@@ -1,0 +1,30 @@
+<launch>
+	<arg name="use_safety" default="true" />
+	<arg name="use_updater" default="true" />
+	<arg name="use_simulator" default="false" />
+	<include file="$(find ypspur_ros_bridge)/launch/icartmini2.launch" unless="$(arg use_simulator)">
+		<arg name="use_safety" value="$(arg use_safety)" />
+	</include>
+	<include file="$(find simple_simulator)/launch/icartmini.launch" if="$(arg use_simulator)">
+	</include>
+	<include file="$(find trajectory_tracker)/launch/plan_tracking.launch">
+		<arg name="use_voxel" value="true" unless="$(arg use_simulator)" />
+		<arg name="vel" value="0.6" />
+		<arg name="cmd_vel_output" value="/driver/cmd_vel" unless="$(arg use_safety)" />
+	</include>
+	<include file="$(find opennidyne)/launch/opennidyne.launch" unless="$(arg use_simulator)">
+		<arg name="qvga" value="true" />
+		<arg name="camera" value="camera3" />
+		<arg name="output_invalid" value="true" />
+		<arg name="invalid_dist" value="3" />
+		<arg name="data_skip" value="5" />
+	</include>
+	<node pkg="map_server" type="map_server" args="/home/atsushi.w/map-autonomous-150128-cropped.yaml" name="map_server">
+		<remap from="/map" to="/map_static" if="$(arg use_updater)"/>
+	</node>
+	<node pkg="map_updater" type="updater" name="update" if="$(arg use_updater)">
+		<remap from="/scan" to="/scan_orig" unless="$(arg use_simulator)" />
+	</node>
+</launch>
+
+

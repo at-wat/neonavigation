@@ -294,6 +294,18 @@ void tracker::cbPath(const nav_msgs::Path::ConstPtr& msg)
 	}
 }
 
+float timeoptimal_control(float angle, const float acc, const float dt)
+{
+	float angle_orig = angle;
+
+	float w = -sign(angle) * sqrtf(fabs(2 * angle * acc * 0.85));
+	angle += w * dt * 1.5;
+	if(angle * angle_orig < 0) angle = 0;
+
+	w = -sign(angle) * sqrtf(fabs(2 * angle * acc * 0.85));
+	return w;
+}
+
 void tracker::spin()
 {
 	ros::Rate loop_rate(hz);
@@ -347,7 +359,7 @@ void tracker::control()
 		for(int i = 0; i < (int)path.poses.size(); i += pathStep)
 		{
 			geometry_msgs::PoseStamped pose;
-			tf.transformPose(frameRobot, now, path.poses[i], path.header.frame_id, pose);
+			tf.transformPose(frameRobot, transform.stamp_, path.poses[i], path.header.frame_id, pose);
 			lpath.poses.push_back(pose);
 		}
 	}
@@ -491,7 +503,7 @@ void tracker::control()
 	status.distance_remains = remain;
 	status.angle_remains = angle;
 
-	float dt = 1/hz;
+	float dt = 1.0/hz;
 	float _v = v;
 	float _w = w;
 	// Stop and rotate
@@ -499,12 +511,16 @@ void tracker::control()
 		fabs(remainLocal) < stopToleranceDist ||
 		distancePath < minTrackPath)
 	{
+		int m = 0;
 		if(distancePath < minTrackPath || fabs(remainLocal) < stopToleranceDist)
 		{
 			angle = -tf::getYaw(lpath.poses.back().pose.orientation);
 			status.angle_remains = angle;
+			m = 1;
 		}
-		w = -sign(angle) * sqrtf(fabs(2 * angle * acc[1] * 0.9));
+		w = timeoptimal_control(angle, acc[1], dt);
+
+		//float wo = w;
 		v = 0;
 		if(v > vel[0]) v = vel[0];
 		else if(v < -vel[0]) v = -vel[0];
@@ -514,6 +530,7 @@ void tracker::control()
 		else if(w < -vel[1]) w = -vel[1];
 		if(w > _w + dt*acc[1]) w = _w + dt*acc[1];
 		else if(w < _w - dt*acc[1]) w = _w - dt*acc[1];
+		//fprintf(stderr, "%0.3f %0.3f %0.3f %d\n", angle, w, wo, m);
 
 		if(distancePath < stopToleranceDist)
 		{
@@ -526,7 +543,7 @@ void tracker::control()
 		if(dist < -d_lim) dist = -d_lim;
 		else if(dist > d_lim) dist = d_lim;
 
-		v = sign(remainLocal) * signVel * sqrtf(fabs(2 * remainLocal * acc[0] * 0.95));
+		v = timeoptimal_control(-remainLocal * signVel, acc[0], dt);
 
 		if(v > vel[0]) v = vel[0];
 		else if(v < -vel[0]) v = -vel[0];
