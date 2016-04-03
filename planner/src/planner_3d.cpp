@@ -810,8 +810,8 @@ public:
 		nh.param_cast("sw_wait", sw_wait, 2.0f);
 		nh.param("find_best", find_best, true);
 
-		nh.param("pos_jump", pos_jump, 0.5);
-		nh.param("yaw_jump", yaw_jump, 0.8);
+		nh.param("pos_jump", pos_jump, 1.0);
+		nh.param("yaw_jump", yaw_jump, 1.5);
 
 		nh.param("force_goal_orientation", force_goal_orientation, true);
 		
@@ -1138,7 +1138,8 @@ private:
 		if(cost_estim_cache[s_rough] == FLT_MAX)
 		{
 			status.error = planner::PlannerStatus::PATH_NOT_FOUND;
-			ROS_WARN("Goal unreachable.");
+			ROS_WARN("Goal unreachable. History cleared.");
+			cm_hist.clear(0);
 			if(!escaping && temporary_escape)
 			{
 				e = s;
