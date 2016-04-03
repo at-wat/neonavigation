@@ -391,7 +391,7 @@ void tracker::control()
 				lpath.poses[i-1].pose.position);
 		float angle = atan2(vec.y, vec.x);
 		float anglePose;
-		if(allowBackward) anglePose = tf::getYaw(lpath.poses[i+1].pose.orientation);
+		if(allowBackward) anglePose = tf::getYaw(lpath.poses[i].pose.orientation);
 		else anglePose = angle;
 		float signVel_req = cos(angle) * cos(anglePose) + sin(angle) * sin(anglePose);
 		if(signVel_prev * signVel_req < 0)
