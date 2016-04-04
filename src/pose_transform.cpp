@@ -16,8 +16,9 @@ void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
 		geometry_msgs::PoseStamped out;
 		geometry_msgs::PoseWithCovarianceStamped out_msg;
 		in.header = msg->header;
+		in.header.stamp = ros::Time(0);
 		in.pose = msg->pose.pose;
-		tfl->waitForTransform(to, msg->header.frame_id, msg->header.stamp, ros::Duration(0.5));
+		tfl->waitForTransform(to, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
 		tfl->transformPose(to, in, out);
 		out_msg = *msg;
 		out_msg.header = out.header;
