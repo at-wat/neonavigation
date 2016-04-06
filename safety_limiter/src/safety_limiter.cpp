@@ -56,7 +56,7 @@ public:
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 		sub_twist = nh.subscribe("cmd_vel_in", 1, &safety_limiter::cb_twist, this);
 		sub_cloud = nh.subscribe("cloud", 1, &safety_limiter::cb_cloud, this);
-		sub_disable = nh.subscribe("disable", 1, &safety_limiter::cb_disable, this);
+		sub_disable = nh.subscribe("disable", 100, &safety_limiter::cb_disable, this);
 
 		nh.param("freq", hz, 6.0);
 		nh.param("cloud_timeout", timeout, 0.8);
