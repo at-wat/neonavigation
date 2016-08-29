@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-	CATKIN_DEPENDS costmap planner
+	CATKIN_DEPENDS costmap_cspace planner_cspace
 )
 
 

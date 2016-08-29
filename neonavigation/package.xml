@@ -5,13 +5,15 @@
   <description>The neonavigation package</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
-  <license>FRL</license>
+  <license>BSD</license>
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   
-  <run_depend>planner</run_depend>
-  <run_depend>costmap</run_depend>
+  <run_depend>planner_cspace</run_depend>
+  <run_depend>costmap_cspace</run_depend>
+  <run_depend>neonavigation_launch</run_depend>
+  <run_depend>safety_limiter</run_depend>
 
   <export>
     <metapackage/>

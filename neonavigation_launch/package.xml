@@ -10,8 +10,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <run_depend>costmap</run_depend>
-  <run_depend>planner</run_depend>
+  <run_depend>costmap_cspace</run_depend>
+  <run_depend>planner_cspace</run_depend>
 
   <export>
   </export>

@@ -1,7 +1,7 @@
 #include <ros/ros.h>
-#include <costmap/CSpace3D.h>
-#include <costmap/CSpace3DUpdate.h>
-#include <planner/PlannerStatus.h>
+#include <costmap_cspace/CSpace3D.h>
+#include <costmap_cspace/CSpace3DUpdate.h>
+#include <planner_cspace/PlannerStatus.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -135,7 +135,7 @@ private:
 	std::vector<rotation_cache> rotgm;
 	rotation_cache *rot_cache;
 
-	costmap::MapMetaData3D map_info;
+	costmap_cspace::MapMetaData3D map_info;
 	std_msgs::Header map_header;
 	float max_vel;
 	float max_ang_vel;
@@ -200,7 +200,7 @@ private:
 		DEBUG_COST_ESTIM
 	} debug_out;
 
-	planner::PlannerStatus status;
+	planner_cspace::PlannerStatus status;
 
 	bool find_best;
 	float sw_wait;
@@ -224,7 +224,7 @@ private:
 		{
 			escaping = false;
 			has_goal = true;
-			status.status = planner::PlannerStatus::DOING;
+			status.status = planner_cspace::PlannerStatus::DOING;
 			pub_status.publish(status);
 			update_goal();
 		}
@@ -450,7 +450,7 @@ private:
 		}
 		pub_debug.publish(debug);
 	}
-	void cb_map_update(const costmap::CSpace3DUpdate::ConstPtr &msg)
+	void cb_map_update(const costmap_cspace::CSpace3DUpdate::ConstPtr &msg)
 	{
 		if(!has_map) return;
 		ROS_DEBUG("Map updated");
@@ -632,7 +632,7 @@ private:
 				std::chrono::duration<float>(tnow - ts).count());
 		publish_costmap();
 	}
-	void cb_map(const costmap::CSpace3D::ConstPtr &msg)
+	void cb_map(const costmap_cspace::CSpace3D::ConstPtr &msg)
 	{
 		ROS_INFO("Map received");
 		ROS_INFO(" linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
@@ -775,7 +775,7 @@ public:
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 		pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
 		pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
-		pub_status = nh.advertise<planner::PlannerStatus>("status", 1, true);
+		pub_status = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
 
 		nh.param_cast("freq", freq, 4.0f);
 		nh.param_cast("freq_min", freq_min, 2.0f);
@@ -832,7 +832,7 @@ public:
 		nh.param("queue_size_limit", queue_size_limit, 0);
 		as.set_queue_size_limit(queue_size_limit);
 
-		status.status = planner::PlannerStatus::DONE;
+		status.status = planner_cspace::PlannerStatus::DONE;
 
 		has_map = false;
 		has_goal = false;
@@ -872,7 +872,7 @@ public:
 				}
 				catch(tf::TransformException &e)
 				{
-					//ROS_INFO("planner: Transform failed %s", e.what());
+					//ROS_INFO("planner_cspace: Transform failed %s", e.what());
 					continue;
 				}
 				{
@@ -896,7 +896,7 @@ public:
 
 			if(has_map && has_goal && has_start)
 			{
-				if(status.status == planner::PlannerStatus::FINISHING)
+				if(status.status == planner_cspace::PlannerStatus::FINISHING)
 				{
 					float yaw_s = tf::getYaw(start.pose.orientation);
 					float yaw_g;
@@ -910,7 +910,7 @@ public:
 					else if(yaw_diff < -M_PI) yaw_diff += M_PI * 2.0;
 					if(fabs(yaw_diff) < goal_tolerance_ang_finish)
 					{
-						status.status = planner::PlannerStatus::DONE;
+						status.status = planner_cspace::PlannerStatus::DONE;
 						has_goal = false;
 						ROS_INFO("Path plan finished");
 					}
@@ -918,9 +918,9 @@ public:
 				else
 				{
 					if(escaping)
-						status.error = planner::PlannerStatus::PATH_NOT_FOUND;
+						status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
 					else
-					   	status.error = planner::PlannerStatus::GOING_WELL;
+					   	status.error = planner_cspace::PlannerStatus::GOING_WELL;
 
 					nav_msgs::Path path;
 					make_plan(start.pose, goal.pose, path, true);
@@ -1127,7 +1127,7 @@ private:
 			if(!search_available_pos(s, esc_range, esc_angle))
 			{
 				ROS_WARN("Oops! You are in Rock!");
-				status.error = planner::PlannerStatus::IN_ROCK;
+				status.error = planner_cspace::PlannerStatus::IN_ROCK;
 				return false;
 			}
 			ROS_INFO("Start moved");
@@ -1137,7 +1137,7 @@ private:
 		
 		if(cost_estim_cache[s_rough] == FLT_MAX)
 		{
-			status.error = planner::PlannerStatus::PATH_NOT_FOUND;
+			status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
 			ROS_WARN("Goal unreachable. History cleared.");
 			cm_hist.clear(0);
 			if(!escaping && temporary_escape)
@@ -1190,7 +1190,7 @@ private:
 			}
 			else
 			{
-				status.status = planner::PlannerStatus::FINISHING;
+				status.status = planner_cspace::PlannerStatus::FINISHING;
 				ROS_INFO("Path plan finishing");
 			}
 			return true;
@@ -1219,7 +1219,7 @@ private:
 				true))
 		{
 			ROS_WARN("Path plan failed (goal unreachable)");
-			status.error = planner::PlannerStatus::PATH_NOT_FOUND;
+			status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
 			if(!find_best) return false;
 		}
 		//const auto tnow = std::chrono::high_resolution_clock::now();

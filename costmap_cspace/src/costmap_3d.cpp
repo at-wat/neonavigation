@@ -3,8 +3,8 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/PointCloud.h>
 
-#include <costmap/CSpace3D.h>
-#include <costmap/CSpace3DUpdate.h>
+#include <costmap_cspace/CSpace3D.h>
+#include <costmap_cspace/CSpace3DUpdate.h>
 
 namespace ros
 {
@@ -172,8 +172,8 @@ private:
 			value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
 	}
 
-	costmap::CSpace3D map;
-	costmap::CSpace3D map_overlay;
+	costmap_cspace::CSpace3D map;
+	costmap_cspace::CSpace3D map_overlay;
 	nav_msgs::OccupancyGrid map_base;
 	void cb_map(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 	{
@@ -299,7 +299,7 @@ private:
 		update_map(map_overlay, ox, oy, 0, w, h, map.info.angle);
 		publish_debug(map_overlay);
 	}
-	void map_copy(costmap::CSpace3D &map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
+	void map_copy(costmap_cspace::CSpace3D &map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
 	{
 		int ox = lroundf((msg.info.origin.position.x
 				   	- map.info.origin.position.x) / map.info.linear_resolution);
@@ -404,7 +404,7 @@ private:
 			}
 		}
 	}
-	void publish_debug(costmap::CSpace3D &map)
+	void publish_debug(costmap_cspace::CSpace3D &map)
 	{
 		sensor_msgs::PointCloud pc;
 		pc.header = map.header;
@@ -427,10 +427,10 @@ private:
 	}
 
 public:
-	void update_map(costmap::CSpace3D &map, const int &x, const int &y, const int &yaw,
+	void update_map(costmap_cspace::CSpace3D &map, const int &x, const int &y, const int &yaw,
 			const int &width, const int &height, const int &angle)
 	{
-		costmap::CSpace3DUpdate update;
+		costmap_cspace::CSpace3DUpdate update;
 		update.header = map.header;
 		map.header.stamp = ros::Time::now();
 		update.x = x - range_max;
@@ -558,8 +558,8 @@ public:
 
 		sub_map = nh.subscribe("/map", 1, &costmap_3d::cb_map, this);
 		sub_map_overlay = nh.subscribe("/map_overlay", 1, &costmap_3d::cb_map_overlay, this);
-		pub_costmap = nh.advertise<costmap::CSpace3D>("costmap", 1, true);
-		pub_costmap_update = nh.advertise<costmap::CSpace3DUpdate>("costmap_update", 1, true);
+		pub_costmap = nh.advertise<costmap_cspace::CSpace3D>("costmap", 1, true);
+		pub_costmap_update = nh.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);
 		pub_footprint = nh.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 	}
