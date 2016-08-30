@@ -47,8 +47,7 @@ namespace ros
 	};
 }
 
-typedef grid_astar astar;
-//typedef grid_astar<3, 2> astar;
+typedef grid_astar<3, 2> astar;
 
 class planner_3d
 {
@@ -79,12 +78,12 @@ private:
 	{
 		auto vc = v;
 		float cost = 0;
-		for(int i = 0; i < noncyclic; i ++)
+		for(int i = 0; i < as.get_noncyclic(); i ++)
 		{
 			cost += powf(coef[i] * vc[i], 2.0);
 		}
 		cost = sqrtf(cost);
-		for(int i = noncyclic; i < dim; i ++)
+		for(int i = as.get_noncyclic(); i < as.get_dim(); i ++)
 		{
 			vc.cycle(vc[i], cm.size[i]);
 			cost += fabs(coef[i] * vc[i]);

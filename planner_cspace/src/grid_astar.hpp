@@ -9,12 +9,18 @@
 #include <unordered_map>
 
 
-//template <int dim = 3, int noncyclic = 2>
-#define dim 3
-#define noncyclic 2
+template <int dim = 3, int noncyclic = 2>
 class grid_astar
 {
 public:
+	const int get_dim()
+	{
+		return dim;
+	}
+	const int get_noncyclic()
+	{
+		return noncyclic;
+	}
 	template <class T>
 		class reservable_priority_queue: public std::priority_queue<T>
 	{
