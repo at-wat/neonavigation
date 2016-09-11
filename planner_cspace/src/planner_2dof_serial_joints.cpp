@@ -161,6 +161,7 @@ private:
 		links[0].current_th = msg->position[id[0]];
 		links[1].current_th = msg->position[id[1]];
 	}
+	std::pair<ros::Duration, std::pair<float, float>> cmd_prev;
 	void cb_trajectory(const trajectory_msgs::JointTrajectory::ConstPtr &msg)
 	{
 		int id[2] = {-1, -1};
@@ -178,16 +179,23 @@ private:
 		{
 			ROS_ERROR("single trajectory point required.");
 		}
-		ROS_INFO("link %s: %0.3f, %0.3f", group.c_str(), 
-				msg->points[0].positions[id[0]],
-				msg->points[0].positions[id[1]]
-				);
+		decltype(cmd_prev) cmd;
+		cmd.first = msg->points[0].time_from_start;
+		cmd.second.first = msg->points[0].positions[id[0]];
+		cmd.second.second = msg->points[0].positions[id[1]];
+		if(cmd_prev == cmd) return;
+		cmd_prev = cmd;
 
 		float st[2] = {links[0].current_th, links[1].current_th};
 		float en[2] = {(float)msg->points[0].positions[id[0]], 
 			(float)msg->points[0].positions[id[1]]};
 		astar::vecf start(st);
 		astar::vecf end(en);
+
+		ROS_INFO("link %s: %0.3f, %0.3f", group.c_str(), 
+				msg->points[0].positions[id[0]],
+				msg->points[0].positions[id[1]]
+				);
 
 		ROS_INFO("Start searching");
 		std::list<astar::vecf> path;
