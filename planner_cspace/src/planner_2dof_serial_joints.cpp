@@ -85,6 +85,7 @@ private:
 	std::vector<astar::vec> search_list;
 	int resolution;
 	float weight_cost;
+	float expand;
 
 	std::string group;
 
@@ -323,6 +324,7 @@ public:
 		nh.param_cast("link1_coef", euclid_cost_coef[1], 1.5f);
 
 		nh.param_cast("weight_cost", weight_cost, 10000.0);
+		nh.param_cast("expand", expand, 0.1);
 
 		ROS_INFO("Resolution: %d", resolution);
 		astar::vec p;
@@ -339,6 +341,29 @@ public:
 				//	cm[p] = 50;
 				else
 					cm[p] = 0;
+			}
+		}
+		for(p[0] = 0; p[0] < resolution * 2; p[0] ++)
+		{
+			for(p[1] = 0; p[1] < resolution * 2; p[1] ++)
+			{
+				if(cm[p] != 100) continue;
+
+				astar::vec d;
+				int range = lroundf( expand * resolution / (2.0 * M_PI));
+				for(d[0] = -range; d[0] <= range; d[0] ++)
+				{
+					for(d[1] = -range; d[1] <= range; d[1] ++)
+					{
+						auto p2 = p + d;
+						if((unsigned int)p2[0] >= (unsigned int)resolution * 2 ||
+								(unsigned int)p2[1] >= (unsigned int)resolution * 2)
+							continue;
+						int dist = std::max(abs(d[0]), abs(d[1]));
+						int c = floorf(100.0 * (range - dist) / range);
+						if(cm[p2] < c) cm[p2] = c;
+					}
+				}
 			}
 		}
 
