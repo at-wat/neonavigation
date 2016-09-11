@@ -86,6 +86,12 @@ private:
 	int resolution;
 	float weight_cost;
 	float expand;
+	enum
+	{
+		VEL_PREV,
+		VEL_NEXT,
+		VEL_AVG
+	} point_vel;
 
 	std::string group;
 
@@ -211,12 +217,9 @@ private:
 				if(it_next != path.end())
 				{
 					float diff[2], diff_max;
-					diff[0] = fabs((*it)[0] - (*it_next)[0]);
-					diff[1] = fabs((*it)[1] - (*it_next)[1]);
-					if(diff[0] > diff[1])
-						diff_max = diff[0];
-					else
-						diff_max = diff[1];
+					diff[0] = fabs((*it_next)[0] - (*it)[0]);
+					diff[1] = fabs((*it_next)[1] - (*it)[1]);
+					diff_max = std::max(diff[0], diff[1]);
 					pos_sum += diff_max;
 				}
 			}
@@ -237,6 +240,8 @@ private:
 				p.positions.resize(2);
 				p.velocities.resize(2);
 
+				auto it_prev = it;
+				it_prev --;
 				auto it_next = it;
 				it_next ++;
 				if(it_next == path.end())
@@ -248,19 +253,34 @@ private:
 				else
 				{
 					float diff[2], diff_max;
-					diff[0] = fabs((*it)[0] - (*it_next)[0]);
-					diff[1] = fabs((*it)[1] - (*it_next)[1]);
-					if(diff[0] > diff[1])
-						diff_max = diff[0];
-					else
-						diff_max = diff[1];
+					float dir[2], dir_max;
+					switch(point_vel)
+					{
+					default:
+					case VEL_PREV:
+						dir[0] = fabs((*it)[0] - (*it_prev)[0]);
+						dir[1] = fabs((*it)[1] - (*it_prev)[1]);
+						break;
+					case VEL_NEXT:
+						dir[0] = fabs((*it_next)[0] - (*it)[0]);
+						dir[1] = fabs((*it_next)[1] - (*it)[1]);
+						break;
+					case VEL_AVG:
+						dir[0] = fabs((*it_next)[0] - (*it_prev)[0]);
+						dir[1] = fabs((*it_next)[1] - (*it_prev)[1]);
+						break;
+					}
+					diff[0] = fabs((*it)[0] - (*it_prev)[0]);
+					diff[1] = fabs((*it)[1] - (*it_prev)[1]);
+					diff_max = std::max(diff[0], diff[1]);
 					pos_sum += diff_max;
 
-					float t = diff_max / avg_vel;
+					dir_max = std::max(dir[0], dir[1]);
+					float t = dir_max / avg_vel;
 
 					p.time_from_start = ros::Duration(pos_sum / avg_vel);
-					p.velocities[0] = diff[0] / t;
-					p.velocities[1] = diff[1] / t;
+					p.velocities[0] = dir[0] / t;
+					p.velocities[1] = dir[1] / t;
 				}
 				p.positions[0] = (*it)[0];
 				p.positions[1] = (*it)[1];
@@ -333,6 +353,14 @@ public:
 
 		nh.param_cast("weight_cost", weight_cost, 10000.0);
 		nh.param_cast("expand", expand, 0.1);
+
+		std::string point_vel_mode;
+		nh.param("point_vel_mode", point_vel_mode, std::string("prev"));
+		std::transform(point_vel_mode.begin(), point_vel_mode.end(),point_vel_mode.begin(), ::tolower);
+		if(point_vel_mode.compare("prev") == 0) point_vel = VEL_PREV;
+		else if(point_vel_mode.compare("next") == 0) point_vel = VEL_NEXT;
+		else if(point_vel_mode.compare("avg") == 0) point_vel = VEL_AVG;
+		else ROS_ERROR("point_vel_mode must be prev/next/avg");
 
 		ROS_INFO("Resolution: %d", resolution);
 		astar::vec p;
