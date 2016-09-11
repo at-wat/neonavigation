@@ -448,6 +448,7 @@ private:
 		bool first = false;
 		astar::vec n_prev = s;
 		path.push_back(sg);
+		int i = 0;
 		for(auto &n: path_grid)
 		{
 			if(!first)
@@ -455,6 +456,7 @@ private:
 				first = true;
 				continue;
 			}
+			if(i == 0) ROS_INFO("  next: %d, %d", n[0], n[1]);
 			astar::vec n_diff = n - n_prev;
 			n_diff.cycle(n_diff[0], resolution);
 			n_diff.cycle(n_diff[1], resolution);
@@ -464,6 +466,7 @@ private:
 			astar::vecf p;
 			grid2metric(n2, p);
 			path.push_back(p);
+			i++;
 		}
 		float prec = 2.0 * M_PI / (float)resolution;
 		astar::vecf egp = eg;
@@ -475,9 +478,9 @@ private:
 		if(debug_aa)
 		{
 			astar::vec p;
-			for(p[0] = 0; p[0] < resolution; p[0] ++)
+			for(p[0] = resolution / 2; p[0] < resolution * 3 / 2; p[0] ++)
 			{
-				for(p[1] = 0; p[1] < resolution; p[1] ++)
+				for(p[1] = resolution / 2; p[1] < resolution * 3 / 2; p[1] ++)
 				{
 					bool found = false;
 					for(auto &g: path_grid)
