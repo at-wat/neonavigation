@@ -409,7 +409,7 @@ public:
 		nh.param_cast("link0_coef", euclid_cost_coef[0], 1.0f);
 		nh.param_cast("link1_coef", euclid_cost_coef[1], 1.5f);
 
-		nh.param_cast("weight_cost", weight_cost, 10000.0);
+		nh.param_cast("weight_cost", weight_cost, 4.0f);
 		nh.param_cast("expand", expand, 0.1);
 
 		std::string point_vel_mode;
