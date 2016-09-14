@@ -520,7 +520,11 @@ private:
 			status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
 			return false;
 		}
-		if(cb_cost(s, e, e, s) >= 0)
+		auto d = e - s;
+		d.cycle(d[0], resolution);
+		d.cycle(d[1], resolution);
+
+		if(cb_cost(s, e, e, s) >= euclid_cost(d))
 		{
 			path.push_back(sg);
 			path.push_back(eg);
