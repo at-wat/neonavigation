@@ -488,6 +488,29 @@ private:
 		metric2grid(e, eg);
 		ROS_INFO("Planning from (%d, %d) to (%d, %d)",
 				s[0], s[1], e[0], e[1]);
+
+		if(cm[s] == 100)
+		{
+			ROS_WARN("Path plan failed (current status is in collision)");
+			status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+			return false;
+		}
+		if(cm[e] == 100)
+		{
+			ROS_WARN("Path plan failed (goal status is in collision)");
+			status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+			return false;
+		}
+		if(cb_cost(s, e, e, s) >= 0)
+		{
+			path.push_back(sg);
+			path.push_back(eg);
+			if(s == e)
+			{
+				replan_prev = ros::Time(0);
+			}
+			return true;
+		}
 		std::list<astar::vec> path_grid;
 		//const auto ts = std::chrono::high_resolution_clock::now();
 		if(!as.search(s, e, path_grid, 
@@ -507,6 +530,7 @@ private:
 		{
 			ROS_WARN("Path plan failed (goal unreachable)");
 			status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+			return false;
 		}
 		//const auto tnow = std::chrono::high_resolution_clock::now();
 		//ROS_INFO("Path found (%0.3f sec.)",
