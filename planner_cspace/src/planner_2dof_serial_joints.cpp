@@ -334,18 +334,18 @@ public:
 		cm.clear(0);
 
 		nh.param("link0_name", links[0].name, std::string("link0"));
-		nh.param_cast("link0_joint_radius", links[0].radius[0], 0.05f);
-		nh.param_cast("link0_end_radius", links[0].radius[1], 0.05f);
-		nh.param_cast("link0_length", links[0].length, 0.15f);
-		nh.param_cast("link0_x", links[0].origin.x, 0.2f);
+		nh.param_cast("link0_joint_radius", links[0].radius[0], 0.07f);
+		nh.param_cast("link0_end_radius", links[0].radius[1], 0.07f);
+		nh.param_cast("link0_length", links[0].length, 0.135);
+		nh.param_cast("link0_x", links[0].origin.x, 0.22f);
 		nh.param_cast("link0_y", links[0].origin.y, 0.0f);
 		nh.param_cast("link0_th", links[0].origin.th, 0.0f);
 		nh.param_cast("link0_gain_th", links[0].gain.th, -1.0f);
 		nh.param("link1_name", links[1].name, std::string("link1"));
-		nh.param_cast("link1_joint_radius", links[1].radius[0], 0.05f);
-		nh.param_cast("link1_end_radius", links[1].radius[1], 0.05f);
-		nh.param_cast("link1_length", links[1].length, 0.25f);
-		nh.param_cast("link1_x", links[1].origin.x, -0.2f);
+		nh.param_cast("link1_joint_radius", links[1].radius[0], 0.07f);
+		nh.param_cast("link1_end_radius", links[1].radius[1], 0.07f);
+		nh.param_cast("link1_length", links[1].length, 0.27f);
+		nh.param_cast("link1_x", links[1].origin.x, -0.22f);
 		nh.param_cast("link1_y", links[1].origin.y, 0.0f);
 		nh.param_cast("link1_th", links[1].origin.th, 0.0f);
 		nh.param_cast("link1_gain_th", links[1].gain.th, 1.0f);
