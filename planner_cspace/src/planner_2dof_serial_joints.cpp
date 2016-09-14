@@ -112,17 +112,24 @@ private:
 				return hypotf(b.x - x, b.y - y);
 			}
 		};
+		link_body()
+		{
+			gain.x = 1.0;
+			gain.y = 1.0;
+			gain.th = 1.0;
+		}
 	public:
 		float radius[2];
 		float length;
 		std::string name;
 		vec3dof origin;
+		vec3dof gain;
 		float current_th;
 		vec3dof end(const float th) const
 		{
 			vec3dof e = origin;
-			e.x += cosf(e.th + th) * length;
-			e.y += sinf(e.th + th) * length;
+			e.x += cosf(e.th + th * gain.th) * length;
+			e.y += sinf(e.th + th * gain.th) * length;
 			e.th += th;
 			return e;
 		}
@@ -333,6 +340,7 @@ public:
 		nh.param_cast("link0_x", links[0].origin.x, 0.2f);
 		nh.param_cast("link0_y", links[0].origin.y, 0.0f);
 		nh.param_cast("link0_th", links[0].origin.th, 0.0f);
+		nh.param_cast("link0_gain_th", links[0].gain.th, -1.0f);
 		nh.param("link1_name", links[1].name, std::string("link1"));
 		nh.param_cast("link1_joint_radius", links[1].radius[0], 0.05f);
 		nh.param_cast("link1_end_radius", links[1].radius[1], 0.05f);
@@ -340,6 +348,7 @@ public:
 		nh.param_cast("link1_x", links[1].origin.x, -0.2f);
 		nh.param_cast("link1_y", links[1].origin.y, 0.0f);
 		nh.param_cast("link1_th", links[1].origin.th, 0.0f);
+		nh.param_cast("link1_gain_th", links[1].gain.th, 1.0f);
 
 		links[0].current_th = 0.0;
 		links[1].current_th = 0.0;
