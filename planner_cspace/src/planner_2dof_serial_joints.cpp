@@ -86,6 +86,7 @@ private:
 	int resolution;
 	float weight_cost;
 	float expand;
+	float avg_vel;
 	enum
 	{
 		VEL_PREV,
@@ -212,6 +213,7 @@ private:
 		if(cmd_prev == cmd) return;
 		cmd_prev = cmd;
 		traj_prev = *msg;
+		avg_vel = -1.0;
 
 		replan();
 	}
@@ -237,31 +239,34 @@ private:
 		{
 			ROS_INFO("Trajectory found");
 
-			float pos_sum = 0;
-			for(auto it = path.begin(); it != path.end(); it ++)
+			if(avg_vel < 0)
 			{
-				auto it_next = it;
-				it_next ++;
-				if(it_next != path.end())
+				float pos_sum = 0;
+				for(auto it = path.begin(); it != path.end(); it ++)
 				{
-					float diff[2], diff_max;
-					diff[0] = fabs((*it_next)[0] - (*it)[0]);
-					diff[1] = fabs((*it_next)[1] - (*it)[1]);
-					diff_max = std::max(diff[0], diff[1]);
-					pos_sum += diff_max;
+					auto it_next = it;
+					it_next ++;
+					if(it_next != path.end())
+					{
+						float diff[2], diff_max;
+						diff[0] = fabs((*it_next)[0] - (*it)[0]);
+						diff[1] = fabs((*it_next)[1] - (*it)[1]);
+						diff_max = std::max(diff[0], diff[1]);
+						pos_sum += diff_max;
+					}
 				}
+				avg_vel = pos_sum / traj_prev.points[0].time_from_start.toSec();
+				if(avg_vel > links[0].vmax) avg_vel = links[0].vmax;
+				if(avg_vel > links[1].vmax) avg_vel = links[1].vmax;
 			}
-			float avg_vel;
-			avg_vel = pos_sum / traj_prev.points[0].time_from_start.toSec();
-			if(avg_vel > links[0].vmax) avg_vel = links[0].vmax;
-			if(avg_vel > links[1].vmax) avg_vel = links[1].vmax;
 
 			trajectory_msgs::JointTrajectory out;
 			out.header = traj_prev.header;
+			out.header.stamp = ros::Time(0);
 			out.joint_names.resize(2);
 			out.joint_names[0] = links[0].name;
 			out.joint_names[1] = links[1].name;
-			pos_sum = 0.0;
+			float pos_sum = 0.0;
 			for(auto it = path.begin(); it != path.end(); it ++)
 			{
 				if(it == path.begin()) continue;
@@ -274,15 +279,20 @@ private:
 				it_prev --;
 				auto it_next = it;
 				it_next ++;
+
+				float diff[2], diff_max;
+				diff[0] = fabs((*it)[0] - (*it_prev)[0]);
+				diff[1] = fabs((*it)[1] - (*it_prev)[1]);
+				diff_max = std::max(diff[0], diff[1]);
+				pos_sum += diff_max;
+
 				if(it_next == path.end())
 				{
-					p.time_from_start = traj_prev.points[0].time_from_start;
 					p.velocities[0] = 0.0;
 					p.velocities[1] = 0.0;
 				}
 				else
 				{
-					float diff[2], diff_max;
 					float dir[2], dir_max;
 					switch(point_vel)
 					{
@@ -300,18 +310,13 @@ private:
 						dir[1] = ((*it_next)[1] - (*it_prev)[1]);
 						break;
 					}
-					diff[0] = fabs((*it)[0] - (*it_prev)[0]);
-					diff[1] = fabs((*it)[1] - (*it_prev)[1]);
-					diff_max = std::max(diff[0], diff[1]);
-					pos_sum += diff_max;
-
 					dir_max = std::max(fabs(dir[0]), fabs(dir[1]));
 					float t = dir_max / avg_vel;
 
-					p.time_from_start = ros::Duration(pos_sum / avg_vel);
 					p.velocities[0] = dir[0] / t;
 					p.velocities[1] = dir[1] / t;
 				}
+				p.time_from_start = ros::Duration(pos_sum / avg_vel);
 				p.positions[0] = (*it)[0];
 				p.positions[1] = (*it)[1];
 				out.points.push_back(p);
@@ -513,6 +518,8 @@ private:
 		}
 		std::list<astar::vec> path_grid;
 		//const auto ts = std::chrono::high_resolution_clock::now();
+		float cancel = FLT_MAX;
+		if(replan_interval >= ros::Duration(0)) cancel = replan_interval.toSec();
 		if(!as.search(s, e, path_grid, 
 				std::bind(&planner_2dof_serial_joints::cb_cost, 
 					this, std::placeholders::_1, std::placeholders::_2, 
@@ -525,7 +532,7 @@ private:
 				std::bind(&planner_2dof_serial_joints::cb_progress, 
 					this, std::placeholders::_1),
 				0,
-				FLT_MAX,
+				cancel,
 				true))
 		{
 			ROS_WARN("Path plan failed (goal unreachable)");
@@ -603,7 +610,7 @@ private:
 	}
 	bool cb_progress(const std::list<astar::vec>& path_grid)
 	{
-		return true;
+		return false;
 	}
 	float cb_cost_estim(const astar::vec &s, const astar::vec &e)
 	{
