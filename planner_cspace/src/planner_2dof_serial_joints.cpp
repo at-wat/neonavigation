@@ -120,6 +120,7 @@ private:
 		}
 	public:
 		float radius[2];
+		float vmax;
 		float length;
 		std::string name;
 		vec3dof origin;
@@ -231,7 +232,9 @@ private:
 				}
 			}
 			float avg_vel;
-			avg_vel = pos_sum / msg->points[0].time_from_start.toSec();
+			avg_vel = pos_sum / traj_prev.points[0].time_from_start.toSec();
+			if(avg_vel > links[0].vmax) avg_vel = links[0].vmax;
+			if(avg_vel > links[1].vmax) avg_vel = links[1].vmax;
 
 			trajectory_msgs::JointTrajectory out;
 			out.header = msg->header;
@@ -341,6 +344,7 @@ public:
 		nh.param_cast("link0_y", links[0].origin.y, 0.0f);
 		nh.param_cast("link0_th", links[0].origin.th, 0.0f);
 		nh.param_cast("link0_gain_th", links[0].gain.th, -1.0f);
+		nh.param_cast("link0_vmax", links[0].vmax, 0.5f);
 		nh.param("link1_name", links[1].name, std::string("link1"));
 		nh.param_cast("link1_joint_radius", links[1].radius[0], 0.07f);
 		nh.param_cast("link1_end_radius", links[1].radius[1], 0.07f);
@@ -349,6 +353,7 @@ public:
 		nh.param_cast("link1_y", links[1].origin.y, 0.0f);
 		nh.param_cast("link1_th", links[1].origin.th, 0.0f);
 		nh.param_cast("link1_gain_th", links[1].gain.th, 1.0f);
+		nh.param_cast("link1_vmax", links[1].vmax, 0.5f);
 
 		links[0].current_th = 0.0;
 		links[1].current_th = 0.0;
