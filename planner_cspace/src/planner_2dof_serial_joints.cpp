@@ -288,16 +288,16 @@ private:
 					{
 					default:
 					case VEL_PREV:
-						dir[0] = fabs((*it)[0] - (*it_prev)[0]);
-						dir[1] = fabs((*it)[1] - (*it_prev)[1]);
+						dir[0] = ((*it)[0] - (*it_prev)[0]);
+						dir[1] = ((*it)[1] - (*it_prev)[1]);
 						break;
 					case VEL_NEXT:
-						dir[0] = fabs((*it_next)[0] - (*it)[0]);
-						dir[1] = fabs((*it_next)[1] - (*it)[1]);
+						dir[0] = ((*it_next)[0] - (*it)[0]);
+						dir[1] = ((*it_next)[1] - (*it)[1]);
 						break;
 					case VEL_AVG:
-						dir[0] = fabs((*it_next)[0] - (*it_prev)[0]);
-						dir[1] = fabs((*it_next)[1] - (*it_prev)[1]);
+						dir[0] = ((*it_next)[0] - (*it_prev)[0]);
+						dir[1] = ((*it_next)[1] - (*it_prev)[1]);
 						break;
 					}
 					diff[0] = fabs((*it)[0] - (*it_prev)[0]);
@@ -305,7 +305,7 @@ private:
 					diff_max = std::max(diff[0], diff[1]);
 					pos_sum += diff_max;
 
-					dir_max = std::max(dir[0], dir[1]);
+					dir_max = std::max(fabs(dir[0]), fabs(dir[1]));
 					float t = dir_max / avg_vel;
 
 					p.time_from_start = ros::Duration(pos_sum / avg_vel);
