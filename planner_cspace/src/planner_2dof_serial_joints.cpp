@@ -158,6 +158,8 @@ private:
     
 	planner_cspace::PlannerStatus status;
 	sensor_msgs::JointState joint;
+	ros::Time replan_prev;
+	ros::Duration replan_interval;
 
 	void cb_joint(const sensor_msgs::JointState::ConstPtr &msg)
 	{
@@ -174,11 +176,21 @@ private:
 		}
 		links[0].current_th = msg->position[id[0]];
 		links[1].current_th = msg->position[id[1]];
+
+		if(replan_prev + replan_interval < ros::Time::now() && 
+			replan_interval > ros::Duration(0) &&
+			replan_prev != ros::Time(0))
+		{
+			replan();
+		}
 	}
 	std::pair<ros::Duration, std::pair<float, float>> cmd_prev;
+	trajectory_msgs::JointTrajectory traj_prev;
+	int id[2];
 	void cb_trajectory(const trajectory_msgs::JointTrajectory::ConstPtr &msg)
 	{
-		int id[2] = {-1, -1};
+		id[0] = -1;
+		id[1] = -1;
 		for(int i = 0; i < (int)msg->joint_names.size(); i ++)
 		{
 			if(msg->joint_names[i].compare(links[0].name) == 0) id[0] = i;
@@ -199,16 +211,24 @@ private:
 		cmd.second.second = msg->points[0].positions[id[1]];
 		if(cmd_prev == cmd) return;
 		cmd_prev = cmd;
+		traj_prev = *msg;
+
+		replan();
+	}
+	void replan()
+	{
+		replan_prev = ros::Time::now();
+		if(id[0] == -1 || id[1] == -1) return;
 
 		float st[2] = {links[0].current_th, links[1].current_th};
-		float en[2] = {(float)msg->points[0].positions[id[0]], 
-			(float)msg->points[0].positions[id[1]]};
+		float en[2] = {(float)traj_prev.points[0].positions[id[0]], 
+			(float)traj_prev.points[0].positions[id[1]]};
 		astar::vecf start(st);
 		astar::vecf end(en);
 
 		ROS_INFO("link %s: %0.3f, %0.3f", group.c_str(), 
-				msg->points[0].positions[id[0]],
-				msg->points[0].positions[id[1]]
+				traj_prev.points[0].positions[id[0]],
+				traj_prev.points[0].positions[id[1]]
 				);
 
 		ROS_INFO("Start searching");
@@ -237,7 +257,7 @@ private:
 			if(avg_vel > links[1].vmax) avg_vel = links[1].vmax;
 
 			trajectory_msgs::JointTrajectory out;
-			out.header = msg->header;
+			out.header = traj_prev.header;
 			out.joint_names.resize(2);
 			out.joint_names[0] = links[0].name;
 			out.joint_names[1] = links[1].name;
@@ -256,7 +276,7 @@ private:
 				it_next ++;
 				if(it_next == path.end())
 				{
-					p.time_from_start = msg->points[0].time_from_start;
+					p.time_from_start = traj_prev.points[0].time_from_start;
 					p.velocities[0] = 0.0;
 					p.velocities[1] = 0.0;
 				}
@@ -321,6 +341,11 @@ public:
 
 		nh.param("resolution", resolution, 128);
 		nh_home.param("debug_aa", debug_aa, false);
+
+		double interval;
+		nh_home.param("replan_interval", interval, 0.2);
+		replan_interval = ros::Duration(interval);
+		replan_prev = ros::Time(0);
 
 		int queue_size_limit;
 		nh.param("queue_size_limit", queue_size_limit, 0);
