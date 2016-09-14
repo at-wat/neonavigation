@@ -325,6 +325,20 @@ private:
 		}
 		else
 		{
+			trajectory_msgs::JointTrajectory out;
+			out.header = traj_prev.header;
+			out.header.stamp = ros::Time(0);
+			out.joint_names.resize(2);
+			out.joint_names[0] = links[0].name;
+			out.joint_names[1] = links[1].name;
+			trajectory_msgs::JointTrajectoryPoint p;
+			p.positions.resize(2);
+			p.positions[0] = links[0].current_th;
+			p.positions[1] = links[1].current_th;
+			p.velocities.resize(2);
+			out.points.push_back(p);
+			pub_trajectory.publish(out);
+
 			ROS_WARN("Trajectory not found");
 		}
 
