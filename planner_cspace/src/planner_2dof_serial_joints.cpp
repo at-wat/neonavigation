@@ -647,7 +647,8 @@ private:
 			const astar::vec &v_goal,
 			const astar::vec &v_start)
 	{
-		if((unsigned int)e[0] >= resolution * 2 || (unsigned int)e[1] >= resolution * 2)
+		if((unsigned int)e[0] >= (unsigned int)resolution * 2 ||
+				(unsigned int)e[1] >= (unsigned int)resolution * 2)
 			return -1;
 		auto d = e - s;
 		d.cycle(d[0], resolution);
