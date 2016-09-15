@@ -255,9 +255,16 @@ private:
 						pos_sum += diff_max;
 					}
 				}
-				avg_vel = pos_sum / traj_prev.points[0].time_from_start.toSec();
-				if(avg_vel > links[0].vmax) avg_vel = links[0].vmax;
-				if(avg_vel > links[1].vmax) avg_vel = links[1].vmax;
+				if(traj_prev.points[0].time_from_start <= ros::Duration(0))
+				{
+					avg_vel = std::min(links[0].vmax, links[1].vmax);
+				}
+				else
+				{
+					avg_vel = pos_sum / traj_prev.points[0].time_from_start.toSec();
+					if(avg_vel > links[0].vmax) avg_vel = links[0].vmax;
+					if(avg_vel > links[1].vmax) avg_vel = links[1].vmax;
+				}
 			}
 
 			trajectory_msgs::JointTrajectory out;
