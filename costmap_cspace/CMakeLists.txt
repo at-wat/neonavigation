@@ -32,5 +32,5 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 add_executable(costmap_3d src/costmap_3d.cpp)
 target_link_libraries(costmap_3d ${catkin_LIBRARIES})
-add_dependencies(costmap_3d costmap_gencpp)
+add_dependencies(costmap_3d costmap_cspace_generate_messages)
 
