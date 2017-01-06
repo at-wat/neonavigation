@@ -35,3 +35,7 @@ add_executable(planner_3d src/planner_3d.cpp src/grid_astar.hpp)
 target_link_libraries(planner_3d ${catkin_LIBRARIES})
 add_dependencies(planner_3d costmap_gencpp planner_gencpp planner_generate_messages_cpp)
 
+add_executable(planner_2dof_serial_joints src/planner_2dof_serial_joints.cpp src/grid_astar.hpp)
+target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES})
+add_dependencies(planner_2dof_serial_joints planner_gencpp planner_generate_messages_cpp)
+
