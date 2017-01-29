@@ -78,6 +78,7 @@ public:
 		n.param("offset_x", offset_x, 0.0);
 		n.param("offset_y", offset_y, 0.0);
 		n.param("offset_z", offset_z, 0.0);
+		n.param("scale", scale, 1.0);
 
 		auto pc = convert_obj(split(file, ','));
 		pubCloud.publish(pc);
@@ -93,6 +94,7 @@ private:
 	double offset_x;
 	double offset_y;
 	double offset_z;
+	double scale;
 
 	std::random_device seed_gen;
 	std::default_random_engine engine;
@@ -117,6 +119,12 @@ private:
 
 			pcl::fromPCLPointCloud2(mesh->cloud, *pc);
 			pc_rs->header = pc->header;
+			for(auto &p: pc->points)
+			{
+				p.x *= scale;
+				p.y *= scale;
+				p.z *= scale;
+			}
 
 			std::uniform_real_distribution<float> ud(0.0, 1.0);
 			for(auto &poly: mesh->polygons)
