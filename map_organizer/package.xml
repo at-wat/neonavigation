@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<package>
+  <name>map_organizer</name>
+  <version>0.1.0</version>
+  <description>map_organizer</description>
+
+  <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
+  <license>FRL</license>
+  <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>eigen_conversions</build_depend>
+  <build_depend>tf_conversions</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>map_server</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>eigen</run_depend>
+  <run_depend>eigen_conversions</run_depend>
+  <run_depend>tf_conversions</run_depend>
+  <run_depend>pcl_ros</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>map_server</run_depend>
+</package>
