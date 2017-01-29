@@ -1,0 +1,19 @@
+#http://wiki.ros.org/move_base?distro=hydro
+
+#base_global_planner: "navfn/NavfnROS"
+base_global_planner: "grid_local_planner/GlobalPlanner"
+base_local_planner: "grid_local_planner/GridPlannerROS"
+
+planner_frequency: 0.1
+shutdown_costmaps: false
+recovery_behavior_enabled: true
+clearing_rotation_allowed: false
+#recovery_behaviors:
+#  - name: 'conservative_reset'
+#    type: 'clear_costmap_recovery/ClearCostmapRecovery'
+
+conservative_reset:
+  reset_distance: 0.5
+
+controller_frequency: 3
+

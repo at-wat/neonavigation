@@ -1,0 +1,11 @@
+NavfnROS:
+  allow_unknown: false
+  visualize_potential: false
+
+GlobalPlanner:
+  allow_unknown: false
+  use_dijkstra: true
+  use_quadratic: true
+  use_grid_path: false
+
+  

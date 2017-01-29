@@ -1,0 +1,48 @@
+<launch>
+	<arg name="vel" default="1.0" />
+	<arg name="enable_control" default="true" />
+	<arg name="use_joystick" default="false" />
+	<arg name="use_localization" default="true" />
+	<arg name="map_file" />
+	
+	<arg name="dev" default="/dev/input/js0"/>
+
+
+	<include file="$(find ypspur_ros_bridge)/launch/wheelchair.launch">
+		<arg name="enable_control" value="$(arg enable_control)" />
+		<arg name="use_localization" value="$(arg use_localization)" />
+	</include>
+	<include file="$(find trajectory_tracker)/launch/plan_tracking.launch">
+		<arg name="use_move_base" value="false" />
+		<arg name="high_speed" value="true" />
+		<arg name="vel" value="$(arg vel)" />
+		<arg name="cmd_vel_output" value="/cmd_vel_mux/path_controller" />
+	</include>
+	<node pkg="map_server" type="map_server" args="$(arg map_file)" name="map_server" />
+	
+	<!-- JOYSTICK -->
+	<node respawn="true" pkg="joy" type="joy_node" name="nav" if="$(arg use_joystick)">
+		<param name="dev" type="string" value="$(arg dev)" />
+		<remap from="/joy" to="joystick_teleop/joy" />
+	</node>
+
+  <!-- JOYSTICK TELEOP -->
+	<node respawn="true" pkg="joystick_teleop" type="joystick_teleop_node" name="joystick_teleop" if="$(arg use_joystick)">
+		<param name="activate_button_id" value="8" type="int" />
+		<param name="axis_linear_id" value="1" type="int" />
+		<param name="axis_angular_id" value="0" type="int" />
+		<param name="max_linear_vel" value="1.0" type="double" />
+		<param name="max_angular_vel" value="0.5" type="double" />
+		<param name="timeout_duration" value="5" type="double" />
+		<remap from="/joystick_teleop/cmd_vel" to="/cmd_vel_mux/joystick_controller" />
+	</node>
+
+	<node pkg="nodelet" type="nodelet" name="base_nodelet_manager" args="manager" />
+
+	<!-- VELOCITY COMMAND MULTIPLEXER -->
+	<node pkg="nodelet" type="nodelet" name="cmd_vel_mux" args="load yocs_cmd_vel_mux/CmdVelMuxNodelet base_nodelet_manager" >
+    	<param name="yaml_cfg_file" value="$(find ypspur_ros_bridge)/config/cmd_mux_config.yaml" />
+    	<remap from="/output" to="/limiter/cmd_vel" />
+  	</node>
+</launch>
+

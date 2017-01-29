@@ -1,0 +1,69 @@
+<launch>
+	<arg name="use_voxel" default="false" />
+	<arg name="use_move_base" default="true" />
+	<arg name="high_speed" default="false" />
+	<arg name="cmd_vel_output" default="/limiter/cmd_vel" />
+	<arg name="vel" default="0.5" />
+
+	<node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen" if="$(arg use_move_base)">
+		<rosparam file="$(find trajectory_tracker)/config/move_base_params.yaml" command="load" />
+		<rosparam file="$(find trajectory_tracker)/config/global_costmap_params.yaml" command="load" />
+		<rosparam file="$(find trajectory_tracker)/config/local_costmap_params.yaml" command="load" />
+		<rosparam file="$(find trajectory_tracker)/config/local_costmap_params_with_voxel.yaml" command="load" if="$(arg use_voxel)" />
+		<rosparam file="$(find trajectory_tracker)/config/navfn_params.yaml" command="load" />
+		<remap from="/cmd_vel" to="/trajectory_tracker/cmd_vel" />
+		<remap from="~/GridPlannerROS/vel" to="/spur/speed" />
+		<param name="~/GridPlannerROS/vel" value="$(arg vel)" type="double" />
+	</node>
+
+	<node name="voxel_grid_2_point_cloud" pkg="costmap_2d" type="costmap_2d_cloud" if="$(arg use_voxel)">
+      <remap from="voxel_grid" to="/move_base/local_costmap/voxel_layer/voxel_grid"/>
+	  <remap from="voxel_marked_cloud" to="/move_base/local_costmap/voxel_layer/marked_cloud"/>
+	  <remap from="voxel_unknown_cloud" to="/move_base/local_costmap/voxel_layer/unknown_cloud"/>
+	</node>
+
+	<node pkg="trajectory_tracker" type="trajectory_server" name="path" unless="$(arg use_move_base)">
+		<remap from="~/path" to="/plan" />
+	</node>
+
+	<group ns="spur" unless="$(arg high_speed)">
+		<param name="max_angvel" value="0.6" type="double" />
+		<param name="max_acc" value="0.3" type="double" />
+		<param name="max_angacc" value="1" type="double" />
+		
+		<param name="curv_forward" value="0.4" type="double" />
+		<param name="look_forward" value="0.1" type="double" />
+		<param name="k_dist" value="4.5" type="double" />
+		<param name="k_ang" value="4" type="double" />
+		<param name="k_avel" value="4" type="double" />
+		<param name="stop_tolerance_dist" value="0.05" type="double" />
+	</group>
+	<group ns="spur" if="$(arg high_speed)">
+		<param name="max_angvel" value="1.2" type="double" />
+		<param name="max_acc" value="0.5" type="double" />
+		<param name="max_angacc" value="1" type="double" />
+		
+		<param name="curv_forward" value="1.5" type="double" />
+		<param name="look_forward" value="0.1" type="double" />
+		<param name="k_dist" value="3.0" type="double" />
+		<param name="k_ang" value="5.5" type="double" />
+		<param name="k_avel" value="5" type="double" />
+		<param name="stop_tolerance_dist" value="0.2" type="double" />
+	</group>
+	<node pkg="trajectory_tracker" type="trajectory_tracker" name="spur" output="screen">
+		<remap from="~/cmd_vel" to="$(arg cmd_vel_output)" />
+		<param name="path" value="/move_base/GridPlannerROS/local_plan" type="string" if="$(arg use_move_base)" />
+		<param name="path" value="/plan" type="string" unless="$(arg use_move_base)"/>
+		<param name="path_step" value="1" type="int" />
+
+		<param name="max_vel" value="$(arg vel)" type="double" />
+		<param name="limit_vel_by_avel" value="true" type="bool" />
+		
+		<param name="hz" value="30" type="double" />
+		<param name="dist_lim" value="0.5" type="double" />
+
+		<param name="distance_angle_factor" value="0.2" type="double" />
+		<param name="no_position_control_dist" value="0.1" type="double" />
+		<param name="rotate_ang" value="0.4" type="double" />
+	</node>
+</launch>

@@ -1,0 +1,20 @@
+local_costmap:
+  plugins:
+   - {name: static_layer, type: "costmap_2d::StaticLayer2"}
+   - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
+   - {name: voxel_layer, type: "costmap_2d::VoxelLayer"}
+   - {name: footprint_layer, type: "costmap_2d::FootprintLayer"}
+   - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
+
+  voxel_layer:
+    observation_sources: points_m points_c laser_c
+    combination_method: 1
+    publish_voxel_map: true
+    z_resolution: 0.075
+    z_voxels: 16
+    origin_z: 0.15
+    clear_corner_cases: true
+    accuracy_multiplier_bits: 16
+    points_c: {topic: /camera2/depth/points, data_type: PointCloud2, expected_update_rate: 1.5, observation_persistence: 0.0, marking: false, clearing: true, min_obstacle_height: -5.0, max_obstacle_height: 5.0, raytrace_range: 100.0, inf_is_valid: true}
+    points_m: {topic: /camera2/depth/points, data_type: PointCloud2, expected_update_rate: 1.5, observation_persistence: 0.0, marking: true, clearing: false, min_obstacle_height: 0.15, max_obstacle_height: 0.6, inf_is_valid: true}
+    laser_c: {topic: scan, data_type: LaserScan, expected_update_rate: 0.5, observation_persistence: 0.0, marking: false, clearing: true}
