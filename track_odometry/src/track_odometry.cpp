@@ -7,6 +7,7 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
+#include <limits>
 
 static geometry_msgs::Vector3 operator*(const double &a, const geometry_msgs::Vector3 &vin)
 {
@@ -73,6 +74,46 @@ private:
 	double z_filter;
 	double tf_tolerance;
 
+	bool use_kf;
+
+	class kalman_filter1
+	{
+	public:
+		float x;
+		float sigma;
+
+		void set(const float x0 = 0.0,
+				const float sigma0 = std::numeric_limits<float>::infinity())
+		{
+			x = x0;
+			sigma = sigma0;
+		}
+		kalman_filter1(const float x0 = 0.0,
+				const float sigma0 = std::numeric_limits<float>::infinity())
+		{
+			set(x0, sigma0);
+		}
+		void predict()
+		{
+			sigma *= 1.01;
+			x = (x - 1.0) * 0.95 + 1.0;
+		}
+		void measure(const float x_in, const float sigma_in)
+		{
+			if(std::isinf(sigma_in)) return;
+			if(std::isinf(sigma))
+			{
+				if(std::isinf(x_in)) x = 0;
+				else x = x_in;
+				sigma = sigma_in;
+				return;
+			}
+			float kt = sigma * sigma / (sigma * sigma + sigma_in * sigma_in);
+			x = x + kt * (x_in - x);
+			sigma = (1.0 - kt) * sigma;
+		}
+	} slip;
+
 	bool has_imu;
 	bool has_odom;
 
@@ -82,7 +123,11 @@ private:
 	}
 	void cb_imu(const sensor_msgs::Imu::Ptr &msg)
 	{
-		if(base_link_id.size() == 0) return;
+		if(base_link_id.size() == 0)
+		{
+			ROS_ERROR("base_link id is not specified.");
+			return;
+		}
 
 		imu.header = msg->header;
 		try
@@ -133,8 +178,7 @@ private:
 		}
 		catch(tf::TransformException &e)
 		{
-			if(has_imu)
-				ROS_ERROR("%s", e.what());
+			ROS_ERROR("%s", e.what());
 			has_imu = false;
 			return;
 		}
@@ -153,16 +197,35 @@ private:
 				base_link_id = odom.child_frame_id;
 			}
 
-			if(!has_imu) return;
+			if(!has_imu)
+			{
+				ROS_ERROR("IMU data not received");
+				return;
+			}
 
+			float slip_ratio = 1.0;
 			odom.header.stamp += ros::Duration(tf_tolerance);
 			odom.twist.twist.angular = imu.angular_velocity;
 			odom.pose.pose.orientation = imu.orientation;
-			if(fabs(msg->twist.twist.angular.z) > 0.01)
+			slip.predict();
+			if(fabs(msg->twist.twist.angular.z) > 0.1)
 			{
-				odom.twist.twist.linear.x =
-					msg->twist.twist.linear.x * imu.angular_velocity.z / msg->twist.twist.angular.z;
+				slip_ratio = imu.angular_velocity.z / msg->twist.twist.angular.z;
 			}
+			slip.measure(imu.angular_velocity.z / msg->twist.twist.angular.z,
+					0.1 / fabs(msg->twist.twist.angular.z));
+			if(use_kf)
+				odom.twist.twist.linear.x *= slip.x;
+			else
+				odom.twist.twist.linear.x *= slip_ratio;
+
+		/*	printf("%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f %0.3f\n", 
+					imu.angular_velocity.z, 
+					msg->twist.twist.angular.z, 
+					slip_ratio,
+					slip.x, slip.sigma,
+					imu.angular_velocity.z / msg->twist.twist.angular.z,
+					0.1 / fabs(imu.angular_velocity.z));*/
 
 			geometry_msgs::Vector3 v, t;
 			t = 2.0 * cross(odom.pose.pose.orientation, odom.twist.twist.linear);
@@ -206,9 +269,12 @@ public:
 		nh.param("base_link_projected_id", base_link_projected_id, std::string("base_link_projected"));
 		nh.param("z_filter", z_filter, 0.99);
 		nh.param("tf_tolerance", tf_tolerance, 0.01);
+		nh.param("use_kf", use_kf, true);
 
 		has_imu = false;
 		has_odom = false;
+
+		slip.set(1.0, 0.1);
 	}
 };
 
