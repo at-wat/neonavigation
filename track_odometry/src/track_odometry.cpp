@@ -133,21 +133,20 @@ private:
 		try
 		{
 			tf_listener.waitForTransform(base_link_id, msg->header.frame_id, 
-					msg->header.stamp, ros::Duration(0.1));
+					ros::Time(0), ros::Duration(0.1));
 			
 			geometry_msgs::Vector3Stamped vin, vout;
 			vin.header = imu.header;
+			vin.header.stamp = ros::Time(0);
 			vin.vector = msg->linear_acceleration;
 			tf_listener.transformVector(base_link_id, vin, vout);
 			imu.linear_acceleration = vout.vector;
 			
 			vin.header = imu.header;
+			vin.header.stamp = ros::Time(0);
 			vin.vector = msg->angular_velocity;
 			tf_listener.transformVector(base_link_id, vin, vout);
 			imu.angular_velocity = vout.vector;
-
-			tf::StampedTransform trans;
-			tf_listener.lookupTransform(base_link_id, msg->header.frame_id, msg->header.stamp, trans);
 
 			tf::Stamped<tf::Quaternion> qin, qout;
 			geometry_msgs::QuaternionStamped qmin, qmout;
@@ -160,7 +159,7 @@ private:
 			tf::Stamped<tf::Vector3> axis2;
 			tf::Stamped<tf::Vector3> axis1;
 			axis1.setData(axis);
-			axis1.stamp_ = qin.stamp_;
+			axis1.stamp_ = ros::Time(0);
 			axis1.frame_id_ = qin.frame_id_;
 			tf_listener.transformVector(base_link_id, axis1, axis2);
 
