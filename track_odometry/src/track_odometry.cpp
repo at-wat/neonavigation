@@ -94,10 +94,10 @@ private:
 		{
 			set(x0, sigma0);
 		}
-		void predict()
+		void predict(const float x_plus, const float sigma_plus)
 		{
-			sigma *= 1.01;
-			x = (x - 1.0) * 0.95 + 1.0;
+			x += x_plus;
+			sigma += sigma_plus;
 		}
 		void measure(const float x_in, const float sigma_in)
 		{
@@ -183,8 +183,12 @@ private:
 			return;
 		}
 	}
+	double k_conv;
+	double sigma_predict;
 	void cb_odom(const nav_msgs::Odometry::Ptr &msg)
 	{
+		k_conv = 1.0 / 0.5;
+		sigma_predict = 0.01;
 		nav_msgs::Odometry odom = *msg;
 		if(has_odom)
 		{
@@ -208,7 +212,7 @@ private:
 			odom.header.stamp += ros::Duration(tf_tolerance);
 			odom.twist.twist.angular = imu.angular_velocity;
 			odom.pose.pose.orientation = imu.orientation;
-			slip.predict();
+			slip.predict(-dt * k_conv * (slip.x - 1.0), dt * sigma_predict);
 			if(fabs(msg->twist.twist.angular.z) > 0.1)
 			{
 				slip_ratio = imu.angular_velocity.z / msg->twist.twist.angular.z;
@@ -220,13 +224,14 @@ private:
 			else
 				odom.twist.twist.linear.x *= slip_ratio;
 
-		/*	printf("%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f %0.3f\n", 
+			/*printf("%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f %0.3f  %0.3f\n", 
 					imu.angular_velocity.z, 
 					msg->twist.twist.angular.z, 
 					slip_ratio,
 					slip.x, slip.sigma,
 					imu.angular_velocity.z / msg->twist.twist.angular.z,
-					0.1 / fabs(imu.angular_velocity.z));*/
+					0.1 / fabs(imu.angular_velocity.z),
+					odom.twist.twist.linear.x);*/
 
 			geometry_msgs::Vector3 v, t;
 			t = 2.0 * cross(odom.pose.pose.orientation, odom.twist.twist.linear);
@@ -236,7 +241,6 @@ private:
 
 			odom.pose.pose.position = odom_prev.pose.pose.position + dt * v;
 			odom.pose.pose.position.z *= z_filter;
-
 			pub_odom.publish(odom);
 
 			geometry_msgs::TransformStamped odom_trans;
