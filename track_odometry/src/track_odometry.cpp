@@ -76,6 +76,8 @@ private:
 	double tf_tolerance;
 
 	bool use_kf;
+	double sigma_predict;
+	double sigma_odom;
 
 	class kalman_filter1
 	{
@@ -183,12 +185,8 @@ private:
 			return;
 		}
 	}
-	double k_conv;
-	double sigma_predict;
 	void cb_odom(const nav_msgs::Odometry::Ptr &msg)
 	{
-		k_conv = 1.0 / 0.5;
-		sigma_predict = 0.01;
 		nav_msgs::Odometry odom = *msg;
 		if(has_odom)
 		{
@@ -212,25 +210,39 @@ private:
 			odom.header.stamp += ros::Duration(tf_tolerance);
 			odom.twist.twist.angular = imu.angular_velocity;
 			odom.pose.pose.orientation = imu.orientation;
-			slip.predict(-dt * k_conv * (slip.x - 1.0), dt * sigma_predict);
-			if(fabs(msg->twist.twist.angular.z) > 0.1)
+			slip.predict(0.0, dt * sigma_predict);
+			if(fabs(msg->twist.twist.angular.z) > sigma_odom * 3)
 			{
+				// non-kf mode: calculate slip_ratio if angular vel < 3*sigma
 				slip_ratio = imu.angular_velocity.z / msg->twist.twist.angular.z;
 			}
-			slip.measure(imu.angular_velocity.z / msg->twist.twist.angular.z,
-					0.1 / fabs(msg->twist.twist.angular.z));
+
+			const float slip_ratio_per_angvel = 
+				(msg->twist.twist.angular.z - imu.angular_velocity.z)
+				 / (msg->twist.twist.angular.z * fabs(msg->twist.twist.angular.z));
+			float slip_ratio_per_angvel_sigma = 
+				fabs(
+						2 * msg->twist.twist.angular.z * sigma_odom 
+						/ powf(msg->twist.twist.angular.z * msg->twist.twist.angular.z
+							                        -sigma_odom * sigma_odom, 2.0)
+					);
+			if(fabs(msg->twist.twist.angular.z) < sigma_odom)
+				slip_ratio_per_angvel_sigma = std::numeric_limits<float>::infinity();
+
+			slip.measure(slip_ratio_per_angvel, slip_ratio_per_angvel_sigma);
+	//		printf("%0.5f %0.5f %0.5f   %0.5f %0.5f  %0.5f\n",
+	//				slip_ratio_per_angvel, slip_ratio_sigma, slip_ratio_per_angvel_sigma,
+	//				slip.x, slip.sigma, msg->twist.twist.angular.z);
 			if(use_kf)
-				odom.twist.twist.linear.x *= slip.x;
+				odom.twist.twist.linear.x *= 1.0 - slip.x * fabs(msg->twist.twist.angular.z);
 			else
 				odom.twist.twist.linear.x *= slip_ratio;
 
-			/*printf("%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f %0.3f  %0.3f\n", 
+			/*printf("%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f\n", 
 					imu.angular_velocity.z, 
 					msg->twist.twist.angular.z, 
 					slip_ratio,
 					slip.x, slip.sigma,
-					imu.angular_velocity.z / msg->twist.twist.angular.z,
-					0.1 / fabs(imu.angular_velocity.z),
 					odom.twist.twist.linear.x);*/
 
 			geometry_msgs::Vector3 v, t;
@@ -275,6 +287,10 @@ public:
 		nh.param("z_filter", z_filter, 0.99);
 		nh.param("tf_tolerance", tf_tolerance, 0.01);
 		nh.param("use_kf", use_kf, true);
+		nh.param("sigma_odom", sigma_odom, 0.005);
+	   	// sigma_odom: standard deviation of odometry angular vel on straight running
+		nh.param("sigma_predict", sigma_predict, 0.5); // sigma/second
+		sigma_predict = 0.5;
 
 		has_imu = false;
 		has_odom = false;
