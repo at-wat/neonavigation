@@ -63,6 +63,7 @@ private:
 	tf::TransformBroadcaster tf_broadcaster;
 	tf::TransformListener tf_listener;
 	nav_msgs::Odometry odom_prev;
+	nav_msgs::Odometry odomraw_prev;
 
 	std::string base_link_id;
 	std::string base_link_projected_id;
@@ -143,6 +144,7 @@ private:
 		nav_msgs::Odometry odom = *msg;
 		if(has_odom)
 		{
+			double dt = (odom.header.stamp - odomraw_prev.header.stamp).toSec();
 			if(base_link_id_overwrite.size() > 0)
 			{
 				base_link_id = base_link_id_overwrite;
@@ -169,7 +171,6 @@ private:
 				+ odom.pose.pose.orientation.w * t 
 				+ cross(odom.pose.pose.orientation, t);
 
-			double dt = (odom.header.stamp - odom_prev.header.stamp).toSec();
 			odom.pose.pose.position = odom_prev.pose.pose.position + dt * v;
 			odom.pose.pose.position.z *= z_filter;
 
@@ -189,6 +190,7 @@ private:
 					tf::getYaw(odom_trans.transform.rotation));
 			tf_broadcaster.sendTransform(odom_trans);
 		}
+		odomraw_prev = *msg;
 		odom_prev = odom;
 		has_odom = true;
 	}
@@ -196,10 +198,10 @@ public:
 	track_odometry():
 		nh("~")
 	{
-		sub_odom = nh.subscribe("/odom_raw", 1, &track_odometry::cb_odom, this);
-		sub_imu = nh.subscribe("/imu", 1, &track_odometry::cb_imu, this);
+		sub_odom = nh.subscribe("/odom_raw", 64, &track_odometry::cb_odom, this);
+		sub_imu = nh.subscribe("/imu", 64, &track_odometry::cb_imu, this);
 		sub_reset_z = nh.subscribe("reset_z", 1, &track_odometry::cb_reset_z, this);
-		pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 2);
+		pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 8);
 
 		nh.param("base_link_id", base_link_id_overwrite, std::string(""));
 		nh.param("base_link_projected_id", base_link_projected_id, std::string("base_link_projected"));
