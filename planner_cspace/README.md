@@ -12,17 +12,18 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 
 ### Subscribed topics
 
-* costmap (costmap_cspace::CSpace3D)
-* costmap_update (costmap_cspace::CSpace3DUpdate)
-* goal (geometry_msgs::PoseStamped)
+* ~/costmap (costmap_cspace::CSpace3D)
+* ~/costmap_update (costmap_cspace::CSpace3DUpdate)
+* ~/goal (geometry_msgs::PoseStamped)
+* /tf
 
 ### Published topics
 
-* path (nav_msgs::Path)
-* debug (sensor_msgs::PointCloud)
-* path_start (geometry_msgs::PoseStamped)
-* path_end (geometry_msgs::PoseStamped)
-* status (planner_cspace::PlannerStatus)
+* ~/path (nav_msgs::Path)
+* ~/debug (sensor_msgs::PointCloud)
+* ~/path_start (geometry_msgs::PoseStamped)
+* ~/path_end (geometry_msgs::PoseStamped)
+* ~/status (planner_cspace::PlannerStatus)
 
 ### Services
 
@@ -66,13 +67,14 @@ planner_2dof_serial_joints provides collision avoidance for 2-DOF serial joint (
 
 ### Subscribed topics
 
-* trajectory_in (trajectory_msgs::JointTrajectory)
-* joint (sensor_msgs::JointState)
+* ~/trajectory_in (trajectory_msgs::JointTrajectory)
+* ~/joint (sensor_msgs::JointState)
+* /tf
 
 ### Published topics
 
-* trajectory_out (trajectory_msgs::JointTrajectory)
-* status (planner_cspace::PlannerStatus)
+* ~/trajectory_out (trajectory_msgs::JointTrajectory)
+* ~/status (planner_cspace::PlannerStatus)
 
 ### Services
 
