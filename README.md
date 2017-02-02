@@ -2,7 +2,7 @@
 
 ROS meta-package for autonomous vehicle navigation.
 
-## packages
+## Packages
 
 ### [costmap_cspace](costmap_cspace/README.md)
 
