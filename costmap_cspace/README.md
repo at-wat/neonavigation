@@ -16,10 +16,10 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 
 ### Published topics
 
-* costmap (costmap_cspace::CSpace3D)
-* costmap_update (costmap_cspace::CSpace3DUpdate)
-* footprint (geometry_msgs::PolygonStamped)
-* debug (sensor_msgs::PointCloud)
+* ~/costmap (costmap_cspace::CSpace3D)
+* ~/costmap_update (costmap_cspace::CSpace3DUpdate)
+* ~/footprint (geometry_msgs::PolygonStamped)
+* ~/debug (sensor_msgs::PointCloud)
 
 ### Services
 
