@@ -11,15 +11,16 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 
 ### Subscribed topics
 
-* XXXXZ ()
-* XXXXZ ()
-* speed (std_msgs::Float32)
+* ~/path (nav_msgs::Path)
+* ~/odom (nav_msgs::Odometry)
+* ~/speed (std_msgs::Float32)
+* /tf
 
 ### Published topics
 
-* geometry_msgs::Twist (XXXXZ)
-* status (trajectory_tracker::TrajectoryTrackerStatus)
-* tracking (geometry_msgs::PoseStamped)
+* ~/cmd_vel (geometry_msgs::Twist)
+* ~/status (trajectory_tracker::TrajectoryTrackerStatus)
+* ~/tracking (geometry_msgs::PoseStamped)
 
 ### Services
 
@@ -72,10 +73,11 @@ trajectory_recorder node generates Path message from TF.
 
 ### Subscribed topics
 
+* /tf
 
 ### Published topics
 
-* recpath (nav_msgs::Path)
+* ~/recpath (nav_msgs::Path)
 
 ### Services
 
@@ -103,7 +105,8 @@ trajectory_saver node saves Path message to file.
 
 ### Subscribed topics
 
-* recpath (nav_msgs::Path)
+* ~/recpath (nav_msgs::Path)
+* /tf
 
 ### Published topics
 
@@ -132,15 +135,16 @@ trajectory_server node loads Path from file and publishes it.
 
 ### Subscribed topics
 
+* /tf
 
 ### Published topics
 
-* path (nav_msgs::Path)
-* status (trajectory_tracker::TrajectoryServerStatus)
+* ~/path (nav_msgs::Path)
+* ~/status (trajectory_tracker::TrajectoryServerStatus)
 
 ### Services
 
-* ChangePath (trajectory_tracker::ChangePath)
+* ~/ChangePath (trajectory_tracker::ChangePath)
 
 ### Called services
 
