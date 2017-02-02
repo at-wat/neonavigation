@@ -11,7 +11,7 @@ pointcloud_to_maps node detects floors from given pointcloud and publishes layer
 
 ### Subscribed topics
 
-* map_cloud (sensor_msgs::PointCloud2)
+* ~/map_cloud (sensor_msgs::PointCloud2)
 
 ### Published topics
 
@@ -68,7 +68,7 @@ save_maps saves layered OccupancyGrid to map files.
 
 ### Subscribed topics
 
-* maps (map_organizer::OccupancyGridArray)
+* ~/maps (map_organizer::OccupancyGridArray)
 
 ### Published topics
 
@@ -95,11 +95,12 @@ select_map node publishes the desired layer from layered OccupancyGrid.
 ### Subscribed topics
 
 * /maps (map_organizer::OccupancyGridArray)
-* floor (std_msgs::Int32)
+* ~/floor (std_msgs::Int32)
 
 ### Published topics
 
 * /map (nav_msgs::OccupancyGrid)
+* /tf
 
 ### Services
 
@@ -123,11 +124,12 @@ This node is useful to convert rviz initialpose output to desired map frame.
 
 ### Subscribed topics
 
-* pose_in (geometry_msgs::PoseWithCovarianceStamped)
+* ~/pose_in (geometry_msgs::PoseWithCovarianceStamped)
+* /tf
 
 ### Published topics
 
-* pose_out (geometry_msgs::PoseWithCovarianceStamped)
+* ~/pose_out (geometry_msgs::PoseWithCovarianceStamped)
 
 ### Services
 
