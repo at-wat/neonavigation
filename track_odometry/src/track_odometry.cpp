@@ -195,11 +195,7 @@ private:
 		if(has_odom)
 		{
 			double dt = (odom.header.stamp - odomraw_prev.header.stamp).toSec();
-			if(base_link_id_overwrite.size() > 0)
-			{
-				base_link_id = base_link_id_overwrite;
-			}
-			else
+			if(base_link_id_overwrite.size() == 0)
 			{
 				base_link_id = odom.child_frame_id;
 			}
@@ -300,7 +296,12 @@ public:
 		nh.param("enable_negative_slip", negative_slip, false);
 		nh.param("debug", debug, false);
 
-	   	// sigma_odom [rad/s]: standard deviation of odometry angular vel on straight running
+		if(base_link_id_overwrite.size() > 0)
+		{
+			base_link_id = base_link_id_overwrite;
+		}
+
+		// sigma_odom [rad/s]: standard deviation of odometry angular vel on straight running
 		nh.param("sigma_odom", sigma_odom, 0.005);
 		// sigma_predict [sigma/second]: prediction sigma of kalman filter 
 		nh.param("sigma_predict", sigma_predict, 0.5);
