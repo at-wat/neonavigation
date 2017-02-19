@@ -1,0 +1,23 @@
+sudo: required
+services: docker
+
+cache:
+  directories:
+    - /home/travis/docker/
+env:
+  global:
+    - DOCKER_CACHE_FILE=/home/travis/docker/cache.tar.lz4
+branches:
+  only:
+    - master
+    - travis
+
+before_install:
+  - .travis.scripts/load_cache.sh
+
+install: true
+
+script:
+  - docker build -t docker-neonavigation:latest --pull=true ${TRAVIS_BUILD_DIR}
+  - .travis.scripts/save_cache.sh
+
