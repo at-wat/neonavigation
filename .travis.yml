@@ -10,7 +10,6 @@ env:
 branches:
   only:
     - master
-    - travis
 
 before_install:
   - .travis.scripts/load_cache.sh
