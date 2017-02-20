@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-	CATKIN_DEPENDS roscpp tf sensor_msgs std_msgs nav_msgs trajectory_msgs geometry_msgs
+	CATKIN_DEPENDS roscpp tf sensor_msgs std_msgs nav_msgs trajectory_msgs geometry_msgs rostest
 	DEPENDS system_lib
 )
 
