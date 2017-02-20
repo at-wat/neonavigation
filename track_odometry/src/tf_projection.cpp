@@ -13,6 +13,7 @@ private:
 	tf::TransformListener tf_listener;
 
 	double rate;
+	bool flat;
 
 public:
 	tf_projection_node() :
@@ -24,6 +25,7 @@ public:
 		nh.param("frame", frames["frame"], std::string("base_link_projected"));
 
 		nh.param("hz", rate, 10.0);
+		nh.param("flat", flat, false);
 	}
 	void process()
 	{
@@ -45,6 +47,11 @@ public:
 
 			geometry_msgs::TransformStamped trans_out;
 			tf::transformStampedTFToMsg(result, trans_out);
+			if(flat)
+			{
+				const float yaw = tf::getYaw(trans_out.transform.rotation);
+				trans_out.transform.rotation = tf::createQuaternionMsgFromYaw(yaw);
+			}
 
 			tf_broadcaster.sendTransform(trans_out);
 		}
