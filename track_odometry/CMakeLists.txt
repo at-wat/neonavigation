@@ -29,3 +29,11 @@ target_link_libraries(track_odometry ${catkin_LIBRARIES})
 
 add_executable(tf_projection src/tf_projection.cpp)
 target_link_libraries(tf_projection ${catkin_LIBRARIES})
+
+if(CATKIN_ENABLE_TESTING)
+	find_package(catkin REQUIRED COMPONENTS roscpp tf rostest)
+
+	catkin_add_gtest(tf_projection_test src/tf_projection_test.cpp)
+	target_link_libraries(tf_projection_test ${catkin_LIBRARIES})
+endif()
+

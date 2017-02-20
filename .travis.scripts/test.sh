@@ -13,6 +13,10 @@ rosdep install --from-paths src/neonavigation --ignore-src --rosdistro=${ROS_DIS
 apt-get clean && rm -rf /var/lib/apt/lists/*
 
 catkin_make
+catkin_make tests
+catkin_make run_tests
+
+catkin_test_results
 
 cd ..
 rm -rf /catkin_ws || true
