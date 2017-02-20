@@ -55,6 +55,7 @@ private:
 	std::string frameGlobal;
 	double dist_interval;
 	double ang_interval;
+	bool store_time;
 
 	ros::NodeHandle nh;
 	ros::Publisher pubPath;
@@ -71,6 +72,7 @@ recorder::recorder():
 	nh.param("path", topicPath, std::string("recpath"));
 	nh.param("dist_interval", dist_interval, 0.3);
 	nh.param("ang_interval", ang_interval, 1.0);
+	nh.param("store_time", store_time, false);
 
 	pubPath = nh.advertise<nav_msgs::Path>(topicPath, 10, true);
 }
@@ -92,6 +94,7 @@ void recorder::spin()
 	while(ros::ok())
 	{
 		ros::Time now = ros::Time(0);
+		if(store_time) now = ros::Time::now();
 		tf::StampedTransform transform;
 		try
 		{
