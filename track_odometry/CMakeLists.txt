@@ -26,3 +26,6 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 add_executable(track_odometry src/track_odometry.cpp)
 target_link_libraries(track_odometry ${catkin_LIBRARIES})
+
+add_executable(tf_projection src/tf_projection.cpp)
+target_link_libraries(tf_projection ${catkin_LIBRARIES})

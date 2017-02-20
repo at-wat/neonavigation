@@ -67,7 +67,6 @@ private:
 	nav_msgs::Odometry odomraw_prev;
 
 	std::string base_link_id;
-	std::string base_link_projected_id;
 	std::string base_link_id_overwrite;
 
 	sensor_msgs::Imu imu;
@@ -268,12 +267,6 @@ private:
 			odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
 			odom_trans.transform.rotation = odom.pose.pose.orientation;
 			tf_broadcaster.sendTransform(odom_trans);
-
-			odom_trans.child_frame_id = base_link_projected_id;
-			odom_trans.transform.translation.z = 0.0;
-			odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(
-					tf::getYaw(odom_trans.transform.rotation));
-			tf_broadcaster.sendTransform(odom_trans);
 		}
 		odomraw_prev = *msg;
 		odom_prev = odom;
@@ -289,7 +282,6 @@ public:
 		pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 8);
 
 		nh.param("base_link_id", base_link_id_overwrite, std::string(""));
-		nh.param("base_link_projected_id", base_link_projected_id, std::string("base_link_projected"));
 		nh.param("z_filter", z_filter, 0.99);
 		nh.param("tf_tolerance", tf_tolerance, 0.01);
 		nh.param("use_kf", use_kf, true);
