@@ -65,7 +65,6 @@ TEST(tf_projection_test, projection_test)
 int main(int argc, char **argv)
 {
 	::testing::InitGoogleTest(&argc, argv);
-	ros::init(argc, argv, "tf_projection_test");
 
 	return RUN_ALL_TESTS();
 }
