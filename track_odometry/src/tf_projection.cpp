@@ -13,6 +13,7 @@ private:
 	tf::TransformListener tf_listener;
 
 	double rate;
+	double tf_time_offset;
 	bool flat;
 
 public:
@@ -25,6 +26,7 @@ public:
 		nh.param("frame", frames["frame"], std::string("base_link_projected"));
 
 		nh.param("hz", rate, 10.0);
+		nh.param("tf_time_offset", tf_time_offset, 0.1);
 		nh.param("flat", flat, false);
 	}
 	void process()
@@ -52,6 +54,7 @@ public:
 				const float yaw = tf::getYaw(trans_out.transform.rotation);
 				trans_out.transform.rotation = tf::createQuaternionMsgFromYaw(yaw);
 			}
+			trans_out.header.stamp = trans.stamp_ + ros::Duration(tf_time_offset);
 
 			tf_broadcaster.sendTransform(trans_out);
 		}
