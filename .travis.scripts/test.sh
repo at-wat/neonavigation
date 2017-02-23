@@ -12,9 +12,9 @@ apt-get -qq update && \
 rosdep install --from-paths src/neonavigation --ignore-src --rosdistro=${ROS_DISTRO} -y && \
 apt-get clean && rm -rf /var/lib/apt/lists/*
 
-catkin_make
-catkin_make tests
-catkin_make run_tests
+sync
+
+catkin_make && catkin_make tests && catkin_make run_tests
 
 catkin_test_results
 
