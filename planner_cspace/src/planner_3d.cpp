@@ -1444,9 +1444,10 @@ private:
 		{
 			float distf = d.len();
 
-			if(motion_grid[0] == 0) return -1; // side
+			if(motion_grid[0] == 0) return -1; // side slip
 			float aspect = motion[0] / motion[1];
-			if(fabs(aspect) < angle_resolution_aspect * 2.0) return -1; // y offset is large
+			if(fabs(aspect) < angle_resolution_aspect * 2.0)
+				return -1; // large y offset
 
 			// Go-straight
 			float v[3], dp[3];
