@@ -191,6 +191,7 @@ private:
 	double goal_tolerance_ang_finish;
 	int goal_tolerance_lin;
 	int goal_tolerance_ang;
+	float angle_resolution_aspect;
 
 	enum
 	{
@@ -1193,6 +1194,7 @@ private:
 
 		auto range_limit = cost_estim_cache[s_rough]
 			- (local_range + range) * ec[0];
+		angle_resolution_aspect = 1.0 / tanf(map_info.angular_resolution);
 
 		//ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
 		//		s[0], s[1], s[2], e[0], e[1], e[2]);
@@ -1413,11 +1415,6 @@ private:
 			// Not non-holonomic
 			return -1;
 		}
-		if(lroundf(motion_grid[2]) == 0 && lroundf(motion_grid[1]) != 0)
-		{
-			// Drifted
-			return -1;
-		}
 
 		if(fabs(motion[2]) >= 2.0 * M_PI / 4.0)
 		{
@@ -1443,13 +1440,10 @@ private:
 		{
 			float distf = d.len();
 
-			astar::vecf vg(s);
-			const float yaw = s[2] * map_info.angular_resolution;
-			float distf_signed = distf;
-			if(motion_grid[0] < 0) distf_signed = -distf;
-			vg[0] += cosf(yaw) * distf_signed;
-			vg[1] += sinf(yaw) * distf_signed;
-			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution) * distf * 1.5) return -1;
+			if(motion_grid[0] == 0) return -1; // side slip
+			float aspect = motion[0] / motion[1];
+			if(fabs(aspect) < angle_resolution_aspect * 2.0)
+				return -1; // large y offset
 
 			// Go-straight
 			float v[3], dp[3];
