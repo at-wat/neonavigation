@@ -924,10 +924,6 @@ public:
 
 					nav_msgs::Path path;
 					make_plan(start.pose, goal.pose, path, true);
-					if(force_goal_orientation && path.poses.size() > 0)
-					{
-						path.poses.back().pose.orientation = goal_raw.pose.orientation;
-					}
 					pub_path.publish(path);
 
 					if(switch_detect(path))
