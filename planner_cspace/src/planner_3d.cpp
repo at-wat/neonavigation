@@ -470,24 +470,28 @@ private:
 		if(remember_updates)
 		{
 			sensor_msgs::PointCloud pc;
-			pc.header = msg->header;
-			for(size_t i = 0; i < cm.ser_size; i ++)
+			pc.header = map_header;
+			pc.header.stamp = ros::Time::now();
+			
+			astar::vec p;
+			p[2] = 0;
+			for(p[1] = 0; p[1] < cm_hist.size[1]; p[1] ++)
 			{
-				if(cm_hist.c[i] > hist_cnt_thres &&
-						cm.c[i] < hist_cost)
+				for(p[0] = 0; p[0] < cm_hist.size[0]; p[0] ++)
 				{
-					cm.c[i] = hist_cost;
+					if(cm_hist[p] > hist_cnt_thres &&
+							cm[p] < hist_cost)
+					{
+						cm[p] = hist_cost;
 
-					const size_t xg = i % msg->width;
-					const size_t yg = i / msg->height;
-
-					float x, y, yaw;
-					grid2metric(xg, yg, 0, x, y, yaw);
-					geometry_msgs::Point32 point;
-					point.x = x;
-					point.y = y;
-					point.z = 0.0;
-					pc.points.push_back(point);
+						float x, y, yaw;
+						grid2metric(p[0], p[1], 0, x, y, yaw);
+						geometry_msgs::Point32 point;
+						point.x = x;
+						point.y = y;
+						point.z = 0.0;
+						pc.points.push_back(point);
+					}
 				}
 			}
 			pub_hist.publish(pc);
