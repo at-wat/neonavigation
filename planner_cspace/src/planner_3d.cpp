@@ -59,6 +59,7 @@ private:
 	ros::Subscriber sub_goal;
 	ros::Publisher pub_path;
 	ros::Publisher pub_debug;
+	ros::Publisher pub_hist;
 	ros::Publisher pub_start;
 	ros::Publisher pub_end;
 	ros::Publisher pub_status;
@@ -468,13 +469,28 @@ private:
 		cm_rough = cm_rough_base;
 		if(remember_updates)
 		{
+			sensor_msgs::PointCloud pc;
+			pc.header = msg->header;
 			for(size_t i = 0; i < cm.ser_size; i ++)
 			{
-				if(cm_hist.c[i] > hist_cnt_thres)
+				if(cm_hist.c[i] > hist_cnt_thres &&
+						cm.c[i] < hist_cost)
 				{
 					cm.c[i] = hist_cost;
+
+					const size_t xg = i % msg->width;
+					const size_t yg = i / msg->height;
+
+					float x, y, yaw;
+					grid2metric(xg, yg, 0, x, y, yaw);
+					geometry_msgs::Point32 point;
+					point.x = x;
+					point.y = y;
+					point.z = 0.0;
+					pc.points.push_back(point);
 				}
 			}
+			pub_hist.publish(pc);
 		}
 
 		{
@@ -782,6 +798,7 @@ public:
 		sub_goal = nh.subscribe("goal", 1, &planner_3d::cb_goal, this);
 		pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+		pub_hist = nh.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
 		pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
 		pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
 		pub_status = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
