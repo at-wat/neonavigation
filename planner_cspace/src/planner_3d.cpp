@@ -457,7 +457,7 @@ private:
 
 		cm = cm_base;
 		cm_rough = cm_rough_base;
-		if(!remember_updates)
+		if(remember_updates)
 		{
 			for(size_t i = 0; i < cm.ser_size; i ++)
 			{
