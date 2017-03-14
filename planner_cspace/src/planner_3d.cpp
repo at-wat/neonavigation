@@ -216,7 +216,7 @@ private:
 	bool cb_forget(planner_cspace::ForgetRequest &req,
 			planner_cspace::ForgetResponse &res)
 	{
-		cm_hyst.clear(0);
+		cm_hist.clear(0);
 
 		return true;
 	}
