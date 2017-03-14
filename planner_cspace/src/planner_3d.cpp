@@ -2,6 +2,7 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 #include <planner_cspace/PlannerStatus.h>
+#include <planner_cspace/Forget.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -61,6 +62,7 @@ private:
 	ros::Publisher pub_start;
 	ros::Publisher pub_end;
 	ros::Publisher pub_status;
+	ros::ServiceServer srs_forget;
 
 	tf::TransformListener tfl;
 
@@ -211,6 +213,13 @@ private:
 
 	bool escaping;
 
+	bool cb_forget(planner_cspace::ForgetRequest &req,
+			planner_cspace::ForgetResponse &res)
+	{
+		cm_hyst.clear(0);
+
+		return true;
+	}
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
 		goal_raw = goal = *msg;
@@ -457,7 +466,7 @@ private:
 
 		cm = cm_base;
 		cm_rough = cm_rough_base;
-		if(!remember_updates)
+		if(remember_updates)
 		{
 			for(size_t i = 0; i < cm.ser_size; i ++)
 			{
@@ -776,6 +785,7 @@ public:
 		pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
 		pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
 		pub_status = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
+		srs_forget = nh.advertiseService("forget", &planner_3d::cb_forget, this);
 
 		nh.param_cast("freq", freq, 4.0f);
 		nh.param_cast("freq_min", freq_min, 2.0f);

@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_message_files(FILES PlannerStatus.msg)
+add_service_files(FILES Forget.srv)
 generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
