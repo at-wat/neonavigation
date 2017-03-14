@@ -217,6 +217,7 @@ private:
 	bool cb_forget(planner_cspace::ForgetRequest &req,
 			planner_cspace::ForgetResponse &res)
 	{
+		ROS_WARN("Forgetting remembered costmap.");
 		cm_hist.clear(0);
 
 		return true;
