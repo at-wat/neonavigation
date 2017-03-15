@@ -218,7 +218,7 @@ private:
 			std_srvs::EmptyResponse &res)
 	{
 		ROS_WARN("Forgetting remembered costmap.");
-		cm_hist.clear(0);
+		if(has_map) cm_hist.clear(0);
 
 		return true;
 	}
@@ -773,6 +773,7 @@ private:
 		cost_estim_cache.reset(astar::vec(size));
 		cm_rough.reset(astar::vec(size));
 		cm_hyst.reset(astar::vec(size));
+		cm_hist.reset(astar::vec(size));
 
 		astar::vec p;
 		for(p[0] = 0; p[0] < (int)map_info.width; p[0] ++)
@@ -800,7 +801,6 @@ private:
 
 		cm_rough_base = cm_rough;
 		cm_base = cm;
-		cm_hist = cm;
 		cm_hist.clear(0);
 	}
 
