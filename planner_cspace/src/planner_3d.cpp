@@ -490,7 +490,7 @@ private:
 					{
 						astar::vec p2;
 						p2 = p;
-						for(p2[2] = 0; p2[2] < map_info.angle; p2[2] ++)
+						for(p2[2] = 0; p2[2] < (int)map_info.angle; p2[2] ++)
 						{
 							if(cm[p2] < hist_cost) cm[p2] = hist_cost;
 						}
