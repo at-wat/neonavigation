@@ -165,6 +165,8 @@ private:
 	int hist_cnt_thres;
 	double hist_ignore_range_f;
 	int hist_ignore_range;
+	double hist_ignore_range_max_f;
+	int hist_ignore_range_max;
 	bool temporary_escape;
     
 	double pos_jump;
@@ -520,6 +522,8 @@ private:
 			astar::vec gp_rough = gp;
 			gp_rough[2] = 0;
 			const int hist_ignore_range_sq = hist_ignore_range * hist_ignore_range;
+			const int hist_ignore_range_max_sq = 
+				hist_ignore_range_max * hist_ignore_range_max;
 			for(p[0] = 0; p[0] < (int)msg->width; p[0] ++)
 			{
 				for(p[1] = 0; p[1] < (int)msg->height; p[1] ++)
@@ -531,8 +535,6 @@ private:
 						const size_t addr = ((p[2] * msg->height) + p[1])
 							* msg->width + p[0];
 						char c = msg->data[addr];
-						if(c < 0) c = unknown_cost;
-						cm[gp + p] = c;
 						if(c < cost_min) cost_min = c;
 						if(c > cost_max) cost_max = c;
 					}
@@ -544,7 +546,9 @@ private:
 					if(cost_min == 100)
 					{
 						astar::vec p2 = p - center;
-						if(p2.sqlen() > hist_ignore_range_sq)
+						float sqlen = p2.sqlen();
+						if(sqlen > hist_ignore_range_sq &&
+								sqlen < hist_ignore_range_max_sq)
 						{
 							auto &ch = cm_hist[pos];
 							ch ++;
@@ -553,11 +557,24 @@ private:
 					}
 					else if(cost_max == 0)
 					{
-						auto &ch = cm_hist[pos];
-						ch --;
-						if(ch < 0) ch = 0;
+						astar::vec p2 = p - center;
+						float sqlen = p2.sqlen();
+						if(sqlen < hist_ignore_range_max_sq)
+						{
+							auto &ch = cm_hist[pos];
+							ch --;
+							if(ch < 0) ch = 0;
+						}
 					}
 
+					for(p[2] = 0; p[2] < (int)msg->angle; p[2] ++)
+					{
+						const size_t addr = ((p[2] * msg->height) + p[1])
+							* msg->width + p[0];
+						char c = msg->data[addr];
+						if(c < 0) c = unknown_cost;
+						cm[gp + p] = c;
+					}
 				}
 			}
 		}
@@ -759,6 +776,7 @@ private:
 		resolution[2] = 1.0 / map_info.angular_resolution;
 
 		hist_ignore_range = lroundf(hist_ignore_range_f / map_info.linear_resolution);
+		hist_ignore_range_max = lroundf(hist_ignore_range_max_f / map_info.linear_resolution);
 		local_range = lroundf(local_range_f / map_info.linear_resolution);
 		longcut_range = lroundf(longcut_range_f / map_info.linear_resolution);
 		esc_range = lroundf(esc_range_f / map_info.linear_resolution);
@@ -842,7 +860,8 @@ public:
 		nh.param("hist_cnt_max", hist_cnt_max, 20);
 		nh.param("hist_cnt_thres", hist_cnt_thres, 19);
 		nh.param("hist_cost", hist_cost, 90);
-		nh.param("hist_ignore_range", hist_ignore_range_f, 1.0);
+		nh.param("hist_ignore_range", hist_ignore_range_f, 0.6);
+		nh.param("hist_ignore_range_max", hist_ignore_range_max_f, 1.25);
 		nh.param("remember_updates", remember_updates, false);
 		
 		nh.param("local_range", local_range_f, 2.5);
