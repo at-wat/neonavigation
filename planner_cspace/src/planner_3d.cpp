@@ -2,7 +2,7 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 #include <planner_cspace/PlannerStatus.h>
-#include <planner_cspace/Forget.h>
+#include <std_srvs/Empty.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -214,8 +214,8 @@ private:
 
 	bool escaping;
 
-	bool cb_forget(planner_cspace::ForgetRequest &req,
-			planner_cspace::ForgetResponse &res)
+	bool cb_forget(std_srvs::EmptyRequest &req,
+			std_srvs::EmptyResponse &res)
 	{
 		ROS_WARN("Forgetting remembered costmap.");
 		cm_hist.clear(0);
