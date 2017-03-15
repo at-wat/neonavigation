@@ -2,6 +2,7 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 #include <planner_cspace/PlannerStatus.h>
+#include <std_srvs/Empty.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -58,9 +59,11 @@ private:
 	ros::Subscriber sub_goal;
 	ros::Publisher pub_path;
 	ros::Publisher pub_debug;
+	ros::Publisher pub_hist;
 	ros::Publisher pub_start;
 	ros::Publisher pub_end;
 	ros::Publisher pub_status;
+	ros::ServiceServer srs_forget;
 
 	tf::TransformListener tfl;
 
@@ -211,6 +214,14 @@ private:
 
 	bool escaping;
 
+	bool cb_forget(std_srvs::EmptyRequest &req,
+			std_srvs::EmptyResponse &res)
+	{
+		ROS_WARN("Forgetting remembered costmap.");
+		cm_hist.clear(0);
+
+		return true;
+	}
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
 		goal_raw = goal = *msg;
@@ -357,7 +368,12 @@ private:
 	}
 	void update_goal(const bool goal_changed = true)
 	{	
-		if(!has_map || !has_goal || !has_start) return;
+		if(!has_map || !has_goal || !has_start)
+		{
+			ROS_ERROR("Goal received, however map/goal/start are not ready. (%d/%d/%d)",
+					(int)has_map, (int)has_goal, (int)has_start);
+			return;
+		}
 
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
@@ -437,7 +453,8 @@ private:
 						point.z = cm_hyst[p] * 0.01;
 						break;
 					case DEBUG_HISTORY:
-						point.z = cm_hist[p] * 0.01;
+						if(cm_rough_base[p] != 0) continue;
+						point.z = cm_hist[p]  * 0.01;
 						break;
 					case DEBUG_COST_ESTIM:
 						if(cost_estim_cache[p] == FLT_MAX) continue;
@@ -459,13 +476,36 @@ private:
 		cm_rough = cm_rough_base;
 		if(remember_updates)
 		{
-			for(size_t i = 0; i < cm.ser_size; i ++)
+			sensor_msgs::PointCloud pc;
+			pc.header = map_header;
+			pc.header.stamp = ros::Time::now();
+			
+			astar::vec p;
+			for(p[1] = 0; p[1] < cm_hist.size[1]; p[1] ++)
 			{
-				if(cm_hist.c[i] > hist_cnt_thres)
+				for(p[0] = 0; p[0] < cm_hist.size[0]; p[0] ++)
 				{
-					cm.c[i] = hist_cost;
+					p[2] = 0;
+					if(cm_hist[p] > hist_cnt_thres)
+					{
+						astar::vec p2;
+						p2 = p;
+						for(p2[2] = 0; p2[2] < (int)map_info.angle; p2[2] ++)
+						{
+							if(cm[p2] < hist_cost) cm[p2] = hist_cost;
+						}
+
+						float x, y, yaw;
+						grid2metric(p[0], p[1], p[2], x, y, yaw);
+						geometry_msgs::Point32 point;
+						point.x = x;
+						point.y = y;
+						point.z = 0.0;
+						pc.points.push_back(point);
+					}
 				}
 			}
+			pub_hist.publish(pc);
 		}
 
 		{
@@ -485,39 +525,39 @@ private:
 				for(p[1] = 0; p[1] < (int)msg->height; p[1] ++)
 				{
 					int cost_min = 100;
+					int cost_max = 0;
 					for(p[2] = 0; p[2] < (int)msg->angle; p[2] ++)
 					{
 						const size_t addr = ((p[2] * msg->height) + p[1])
 							* msg->width + p[0];
 						char c = msg->data[addr];
-						if(c == 100)
-						{
-							if(cm_base[gp + p] <= 0)
-							{
-								astar::vec p2 = p - center;
-								if(p2.sqlen() > hist_ignore_range_sq)
-								{
-									auto &ch = cm_hist[gp + p];
-									ch ++;
-									if(ch > hist_cnt_max) ch = hist_cnt_max;
-								}
-							}
-						}
-						else if(c == 0)
-						{
-							if(cm_base[gp + p] <= 0)
-							{
-								auto &ch = cm_hist[gp + p];
-								ch --;
-								if(ch < 0) ch = 0;
-							}
-						}
 						if(c < 0) c = unknown_cost;
 						cm[gp + p] = c;
 						if(c < cost_min) cost_min = c;
+						if(c > cost_max) cost_max = c;
 					}
 					p[2] = 0;
 					cm_rough[gp_rough + p] = cost_min;
+					
+					astar::vec pos = gp + p;
+					pos[2] = 0;
+					if(cost_min == 100)
+					{
+						astar::vec p2 = p - center;
+						if(p2.sqlen() > hist_ignore_range_sq)
+						{
+							auto &ch = cm_hist[pos];
+							ch ++;
+							if(ch > hist_cnt_max) ch = hist_cnt_max;
+						}
+					}
+					else if(cost_max == 0)
+					{
+						auto &ch = cm_hist[pos];
+						ch --;
+						if(ch < 0) ch = 0;
+					}
+
 				}
 			}
 		}
@@ -773,9 +813,11 @@ public:
 		sub_goal = nh.subscribe("goal", 1, &planner_3d::cb_goal, this);
 		pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+		pub_hist = nh.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
 		pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
 		pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
 		pub_status = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
+		srs_forget = nh.advertiseService("forget", &planner_3d::cb_forget, this);
 
 		nh.param_cast("freq", freq, 4.0f);
 		nh.param_cast("freq_min", freq_min, 2.0f);
