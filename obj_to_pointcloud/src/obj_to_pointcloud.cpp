@@ -108,59 +108,82 @@ private:
 
 		pcl::PointXYZ offset((float)offset_x, (float)offset_y, (float)offset_z);
 
+		pc_rs->points.reserve(500000);
 		for(auto &file: files)
 		{
-			if(pcl::io::loadPolygonFileOBJ(file, *mesh) == -1)
-			{
-				ROS_ERROR("Failed to load OBJ file");
-				ros::shutdown();
-				return pc_msg;
-			}
+			auto ext = file.substr(file.find_last_of(".") + 1);
 
-			pcl::fromPCLPointCloud2(mesh->cloud, *pc);
-			pc_rs->header = pc->header;
-			for(auto &p: pc->points)
+			if(ext == "pcd")
 			{
-				p.x *= scale;
-				p.y *= scale;
-				p.z *= scale;
-			}
-
-			std::uniform_real_distribution<float> ud(0.0, 1.0);
-			for(auto &poly: mesh->polygons)
-			{
-				if(poly.vertices.size() != 3)
+				if(pcl::io::loadPCDFile(file, *pc) == -1)
 				{
-					ROS_ERROR("Input mesh mush be triangle");
+					ROS_ERROR("Failed to load PCD file");
 					ros::shutdown();
 					return pc_msg;
 				}
-				auto &p0 = pc->points[poly.vertices[0]];
-				auto &p1 = pc->points[poly.vertices[1]];
-				auto &p2 = pc->points[poly.vertices[2]];
-
-				auto a = p1 - p0;
-				auto b = p2 - p0;
-
-				float s = 0.5 * sqrtf(
-						powf(a.y * b.z - a.z * b.y, 2.0) + 
-						powf(a.z * b.x - a.x * b.z, 2.0) + 
-						powf(a.x * b.y - a.y * b.x, 2.0)
-						);
-				float numf = ppmsq * s;
-				int num = numf;
-				if(numf - num > ud(engine)) num ++;
-				for(int i = 0; i < num; i ++)
+				for(auto &p: pc->points)
 				{
-					float r0 = ud(engine);
-					float r1 = ud(engine);
-					if(r0 + r1 > 1.0)
-					{
-						r0 = 1.0 - r0;
-						r1 = 1.0 - r1;
-					}
-					pcl::PointXYZ p = p0 + (a * r0 + b * r1) + offset;
+					p.x *= scale;
+					p.y *= scale;
+					p.z *= scale;
+					p = p + offset;
 					pc_rs->points.push_back(p);
+				}
+			}
+			else if(ext == "obj")
+			{
+				if(pcl::io::loadPolygonFileOBJ(file, *mesh) == -1)
+				{
+					ROS_ERROR("Failed to load OBJ file");
+					ros::shutdown();
+					return pc_msg;
+				}
+
+				pcl::fromPCLPointCloud2(mesh->cloud, *pc);
+				pc_rs->header = pc->header;
+				for(auto &p: pc->points)
+				{
+					p.x *= scale;
+					p.y *= scale;
+					p.z *= scale;
+				}
+
+				std::uniform_real_distribution<float> ud(0.0, 1.0);
+				for(auto &poly: mesh->polygons)
+				{
+					if(poly.vertices.size() != 3)
+					{
+						ROS_ERROR("Input mesh mush be triangle");
+						ros::shutdown();
+						return pc_msg;
+					}
+					auto &p0 = pc->points[poly.vertices[0]];
+					auto &p1 = pc->points[poly.vertices[1]];
+					auto &p2 = pc->points[poly.vertices[2]];
+
+					auto a = p1 - p0;
+					auto b = p2 - p0;
+
+					float s = 0.5 * sqrtf(
+							powf(a.y * b.z - a.z * b.y, 2.0) + 
+							powf(a.z * b.x - a.x * b.z, 2.0) + 
+							powf(a.x * b.y - a.y * b.x, 2.0)
+							);
+					float numf = ppmsq * s;
+					int num = numf;
+					if(numf - num > ud(engine)) num ++;
+					for(int i = 0; i < num; i ++)
+					{
+						float r0 = ud(engine);
+						float r1 = ud(engine);
+						if(r0 + r1 > 1.0)
+						{
+							r0 = 1.0 - r0;
+							r1 = 1.0 - r1;
+						}
+						pcl::PointXYZ p = p0 + (a * r0 + b * r1) + offset;
+						pc_rs->points.push_back(p);
+					}
 				}
 			}
 		}
