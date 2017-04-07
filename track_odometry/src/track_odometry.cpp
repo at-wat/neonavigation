@@ -68,6 +68,7 @@ private:
 
 	std::string base_link_id;
 	std::string base_link_id_overwrite;
+	std::string odom_id;
 
 	sensor_msgs::Imu imu;
 	double gyro_zero[3];
@@ -284,7 +285,15 @@ public:
 		sub_reset_z = nh.subscribe("reset_z", 1, &track_odometry::cb_reset_z, this);
 		pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 8);
 
-		nh.param("base_link_id", base_link_id_overwrite, std::string(""));
+		if(!without_odom)
+		{
+			nh.param("base_link_id", base_link_id_overwrite, std::string(""));
+		}
+		else
+		{
+			nh.param("base_link_id", base_link_id, std::string("base_link"));
+			nh.param("odom_id", odom_id, std::string("odom"));
+		}
 		nh.param("z_filter", z_filter, 0.99);
 		nh.param("tf_tolerance", tf_tolerance, 0.01);
 		nh.param("use_kf", use_kf, true);
@@ -325,8 +334,8 @@ public:
 
 				nav_msgs::Odometry::Ptr odom(new nav_msgs::Odometry);
 				odom->header.stamp = ros::Time::now();
-				odom->header.frame_id = "odom";
-				odom->child_frame_id = "base_link";
+				odom->header.frame_id = odom_id;
+				odom->child_frame_id = base_link_id;
 				odom->pose.pose.orientation.w = 1.0;
 				cb_odom(odom);
 			}
