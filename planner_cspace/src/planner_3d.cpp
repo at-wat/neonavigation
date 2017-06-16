@@ -2,6 +2,7 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 #include <planner_cspace/PlannerStatus.h>
+#include <std_srvs/Empty.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -58,9 +59,11 @@ private:
 	ros::Subscriber sub_goal;
 	ros::Publisher pub_path;
 	ros::Publisher pub_debug;
+	ros::Publisher pub_hist;
 	ros::Publisher pub_start;
 	ros::Publisher pub_end;
 	ros::Publisher pub_status;
+	ros::ServiceServer srs_forget;
 
 	tf::TransformListener tfl;
 
@@ -162,6 +165,8 @@ private:
 	int hist_cnt_thres;
 	double hist_ignore_range_f;
 	int hist_ignore_range;
+	double hist_ignore_range_max_f;
+	int hist_ignore_range_max;
 	bool temporary_escape;
     
 	double pos_jump;
@@ -191,6 +196,7 @@ private:
 	double goal_tolerance_ang_finish;
 	int goal_tolerance_lin;
 	int goal_tolerance_ang;
+	float angle_resolution_aspect;
 
 	enum
 	{
@@ -210,6 +216,14 @@ private:
 
 	bool escaping;
 
+	bool cb_forget(std_srvs::EmptyRequest &req,
+			std_srvs::EmptyResponse &res)
+	{
+		ROS_WARN("Forgetting remembered costmap.");
+		if(has_map) cm_hist.clear(0);
+
+		return true;
+	}
 	void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	{
 		goal_raw = goal = *msg;
@@ -356,7 +370,12 @@ private:
 	}
 	void update_goal(const bool goal_changed = true)
 	{	
-		if(!has_map || !has_goal || !has_start) return;
+		if(!has_map || !has_goal || !has_start)
+		{
+			ROS_ERROR("Goal received, however map/goal/start are not ready. (%d/%d/%d)",
+					(int)has_map, (int)has_goal, (int)has_start);
+			return;
+		}
 
 		astar::vec s, e;
 		metric2grid(s[0], s[1], s[2],
@@ -436,7 +455,8 @@ private:
 						point.z = cm_hyst[p] * 0.01;
 						break;
 					case DEBUG_HISTORY:
-						point.z = cm_hist[p] * 0.01;
+						if(cm_rough_base[p] != 0) continue;
+						point.z = cm_hist[p]  * 0.01;
 						break;
 					case DEBUG_COST_ESTIM:
 						if(cost_estim_cache[p] == FLT_MAX) continue;
@@ -456,15 +476,38 @@ private:
 
 		cm = cm_base;
 		cm_rough = cm_rough_base;
-		if(!remember_updates)
+		if(remember_updates)
 		{
-			for(size_t i = 0; i < cm.ser_size; i ++)
+			sensor_msgs::PointCloud pc;
+			pc.header = map_header;
+			pc.header.stamp = ros::Time::now();
+			
+			astar::vec p;
+			for(p[1] = 0; p[1] < cm_hist.size[1]; p[1] ++)
 			{
-				if(cm_hist.c[i] > hist_cnt_thres)
+				for(p[0] = 0; p[0] < cm_hist.size[0]; p[0] ++)
 				{
-					cm.c[i] = hist_cost;
+					p[2] = 0;
+					if(cm_hist[p] > hist_cnt_thres)
+					{
+						astar::vec p2;
+						p2 = p;
+						for(p2[2] = 0; p2[2] < (int)map_info.angle; p2[2] ++)
+						{
+							if(cm[p2] < hist_cost) cm[p2] = hist_cost;
+						}
+
+						float x, y, yaw;
+						grid2metric(p[0], p[1], p[2], x, y, yaw);
+						geometry_msgs::Point32 point;
+						point.x = x;
+						point.y = y;
+						point.z = 0.0;
+						pc.points.push_back(point);
+					}
 				}
 			}
+			pub_hist.publish(pc);
 		}
 
 		{
@@ -479,44 +522,59 @@ private:
 			astar::vec gp_rough = gp;
 			gp_rough[2] = 0;
 			const int hist_ignore_range_sq = hist_ignore_range * hist_ignore_range;
+			const int hist_ignore_range_max_sq = 
+				hist_ignore_range_max * hist_ignore_range_max;
 			for(p[0] = 0; p[0] < (int)msg->width; p[0] ++)
 			{
 				for(p[1] = 0; p[1] < (int)msg->height; p[1] ++)
 				{
 					int cost_min = 100;
+					int cost_max = 0;
 					for(p[2] = 0; p[2] < (int)msg->angle; p[2] ++)
 					{
 						const size_t addr = ((p[2] * msg->height) + p[1])
 							* msg->width + p[0];
 						char c = msg->data[addr];
-						if(c == 100)
-						{
-							if(cm_base[gp + p] <= 0)
-							{
-								astar::vec p2 = p - center;
-								if(p2.sqlen() > hist_ignore_range_sq)
-								{
-									auto &ch = cm_hist[gp + p];
-									ch ++;
-									if(ch > hist_cnt_max) ch = hist_cnt_max;
-								}
-							}
-						}
-						else if(c == 0)
-						{
-							if(cm_base[gp + p] <= 0)
-							{
-								auto &ch = cm_hist[gp + p];
-								ch --;
-								if(ch < 0) ch = 0;
-							}
-						}
-						if(c < 0) c = unknown_cost;
-						cm[gp + p] = c;
 						if(c < cost_min) cost_min = c;
+						if(c > cost_max) cost_max = c;
 					}
 					p[2] = 0;
 					cm_rough[gp_rough + p] = cost_min;
+					
+					astar::vec pos = gp + p;
+					pos[2] = 0;
+					if(cost_min == 100)
+					{
+						astar::vec p2 = p - center;
+						float sqlen = p2.sqlen();
+						if(sqlen > hist_ignore_range_sq &&
+								sqlen < hist_ignore_range_max_sq)
+						{
+							auto &ch = cm_hist[pos];
+							ch ++;
+							if(ch > hist_cnt_max) ch = hist_cnt_max;
+						}
+					}
+					else if(cost_max == 0)
+					{
+						astar::vec p2 = p - center;
+						float sqlen = p2.sqlen();
+						if(sqlen < hist_ignore_range_max_sq)
+						{
+							auto &ch = cm_hist[pos];
+							ch --;
+							if(ch < 0) ch = 0;
+						}
+					}
+
+					for(p[2] = 0; p[2] < (int)msg->angle; p[2] ++)
+					{
+						const size_t addr = ((p[2] * msg->height) + p[1])
+							* msg->width + p[0];
+						char c = msg->data[addr];
+						if(c < 0) c = unknown_cost;
+						cm[gp + p] = c;
+					}
 				}
 			}
 		}
@@ -718,6 +776,7 @@ private:
 		resolution[2] = 1.0 / map_info.angular_resolution;
 
 		hist_ignore_range = lroundf(hist_ignore_range_f / map_info.linear_resolution);
+		hist_ignore_range_max = lroundf(hist_ignore_range_max_f / map_info.linear_resolution);
 		local_range = lroundf(local_range_f / map_info.linear_resolution);
 		longcut_range = lroundf(longcut_range_f / map_info.linear_resolution);
 		esc_range = lroundf(esc_range_f / map_info.linear_resolution);
@@ -732,6 +791,7 @@ private:
 		cost_estim_cache.reset(astar::vec(size));
 		cm_rough.reset(astar::vec(size));
 		cm_hyst.reset(astar::vec(size));
+		cm_hist.reset(astar::vec(size));
 
 		astar::vec p;
 		for(p[0] = 0; p[0] < (int)map_info.width; p[0] ++)
@@ -759,7 +819,6 @@ private:
 
 		cm_rough_base = cm_rough;
 		cm_base = cm;
-		cm_hist = cm;
 		cm_hist.clear(0);
 	}
 
@@ -772,9 +831,11 @@ public:
 		sub_goal = nh.subscribe("goal", 1, &planner_3d::cb_goal, this);
 		pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
 		pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+		pub_hist = nh.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
 		pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
 		pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
 		pub_status = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
+		srs_forget = nh.advertiseService("forget", &planner_3d::cb_forget, this);
 
 		nh.param_cast("freq", freq, 4.0f);
 		nh.param_cast("freq_min", freq_min, 2.0f);
@@ -799,7 +860,8 @@ public:
 		nh.param("hist_cnt_max", hist_cnt_max, 20);
 		nh.param("hist_cnt_thres", hist_cnt_thres, 19);
 		nh.param("hist_cost", hist_cost, 90);
-		nh.param("hist_ignore_range", hist_ignore_range_f, 1.0);
+		nh.param("hist_ignore_range", hist_ignore_range_f, 0.6);
+		nh.param("hist_ignore_range_max", hist_ignore_range_max_f, 1.25);
 		nh.param("remember_updates", remember_updates, false);
 		
 		nh.param("local_range", local_range_f, 2.5);
@@ -923,10 +985,6 @@ public:
 
 					nav_msgs::Path path;
 					make_plan(start.pose, goal.pose, path, true);
-					if(force_goal_orientation && path.poses.size() > 0)
-					{
-						path.poses.back().pose.orientation = goal_raw.pose.orientation;
-					}
 					pub_path.publish(path);
 
 					if(switch_detect(path))
@@ -1197,6 +1255,7 @@ private:
 
 		auto range_limit = cost_estim_cache[s_rough]
 			- (local_range + range) * ec[0];
+		angle_resolution_aspect = 1.0 / tanf(map_info.angular_resolution);
 
 		//ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
 		//		s[0], s[1], s[2], e[0], e[1], e[2]);
@@ -1417,11 +1476,6 @@ private:
 			// Not non-holonomic
 			return -1;
 		}
-		if(lroundf(motion_grid[2]) == 0 && lroundf(motion_grid[1]) != 0)
-		{
-			// Drifted
-			return -1;
-		}
 
 		if(fabs(motion[2]) >= 2.0 * M_PI / 4.0)
 		{
@@ -1447,13 +1501,10 @@ private:
 		{
 			float distf = d.len();
 
-			astar::vecf vg(s);
-			const float yaw = s[2] * map_info.angular_resolution;
-			float distf_signed = distf;
-			if(motion_grid[0] < 0) distf_signed = -distf;
-			vg[0] += cosf(yaw) * distf_signed;
-			vg[1] += sinf(yaw) * distf_signed;
-			if((vg - astar::vecf(e)).len() >= sinf(map_info.angular_resolution) * distf * 1.5) return -1;
+			if(motion_grid[0] == 0) return -1; // side slip
+			float aspect = motion[0] / motion[1];
+			if(fabs(aspect) < angle_resolution_aspect * 2.0)
+				return -1; // large y offset
 
 			// Go-straight
 			float v[3], dp[3];
