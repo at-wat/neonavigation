@@ -113,14 +113,12 @@ private:
 			ROS_WARN("%s", e.what());
 		}
 
-		for(auto &p: cloud.points)
+		for(auto &p: cloud_global.points)
 		{
 			unsigned int x = lroundf(
-					(p.x - map.info.origin.position.x) / map.info.resolution
-					+ map.info.width / 2.0);
+					(p.x - map.info.origin.position.x) / map.info.resolution);
 			unsigned int y = lroundf(
-					(p.y - map.info.origin.position.y) / map.info.resolution
-					+ map.info.height / 2.0);
+					(p.y - map.info.origin.position.y) / map.info.resolution);
 			if(x >= map.info.width || y >= map.info.height) continue;
 			map.data[x + y * map.info.width] = 100;
 		}
