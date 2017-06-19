@@ -28,7 +28,7 @@ else()
 endif()
 
 
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} include)
 
 add_executable(costmap_3d src/costmap_3d.cpp)
 target_link_libraries(costmap_3d ${catkin_LIBRARIES})
