@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(costmap_cspace)
 
 find_package(catkin REQUIRED COMPONENTS
-	roscpp sensor_msgs geometry_msgs message_generation laser_geometry tf
+	roscpp sensor_msgs geometry_msgs message_generation laser_geometry tf tf2_sensor_msgs
 )
 
 add_message_files(
@@ -12,7 +12,7 @@ generate_messages(
 	DEPENDENCIES std_msgs geometry_msgs
 )
 catkin_package(
-	CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs message_runtime laser_geometry tf
+  CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs message_runtime laser_geometry tf tf2_sensor_msgs
 	DEPENDS system_lib
 )
 
@@ -36,4 +36,7 @@ add_dependencies(costmap_3d costmap_cspace_generate_messages)
 
 add_executable(laserscan_to_map src/laserscan_to_map.cpp)
 target_link_libraries(laserscan_to_map ${catkin_LIBRARIES})
+
+add_executable(pointcloud2_to_map src/pointcloud2_to_map.cpp)
+target_link_libraries(pointcloud2_to_map ${catkin_LIBRARIES})
 
