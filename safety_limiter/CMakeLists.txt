@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(safety_limiter)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs pcl_ros tf_conversions)
+find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs pcl_ros tf_conversions rostest roslint)
 find_package(PCL REQUIRED)
 
 ## Declare a catkin package
@@ -28,4 +28,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
 add_executable(safety_limiter src/safety_limiter.cpp)
 target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+
+roslint_cpp()
+
+if(CATKIN_ENABLE_TESTING)
+  roslint_add_test()
+endif()
+
 

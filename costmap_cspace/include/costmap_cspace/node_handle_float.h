@@ -27,52 +27,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#ifndef COSTMAP_CSPACE_NODE_HANDLE_FLOAT_H
+#define COSTMAP_CSPACE_NODE_HANDLE_FLOAT_H
 
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <tf/transform_listener.h>
+#include <ros/ros.h>
 
 #include <string>
 
-std::string to;
-std::shared_ptr<tf::TransformListener> tfl;
-
-ros::Publisher pubPose;
-
-void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
+namespace ros
 {
-  try
-  {
-    geometry_msgs::PoseStamped in;
-    geometry_msgs::PoseStamped out;
-    geometry_msgs::PoseWithCovarianceStamped out_msg;
-    in.header = msg->header;
-    in.header.stamp = ros::Time(0);
-    in.pose = msg->pose.pose;
-    tfl->waitForTransform(to, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
-    tfl->transformPose(to, in, out);
-    out_msg = *msg;
-    out_msg.header = out.header;
-    out_msg.pose.pose = out.pose;
-    pubPose.publish(out_msg);
-  }
-  catch (tf::TransformException &e)
-  {
-    ROS_WARN("pose_transform: %s", e.what());
-  }
-}
-
-int main(int argc, char **argv)
+class NodeHandle_f : public NodeHandle
 {
-  ros::init(argc, argv, "pose_transform");
-  ros::NodeHandle nh("~");
+public:
+  void param_cast(const std::string &param_name,
+                  float &param_val, const float &default_val) const
+  {
+    double _default_val_d = default_val;
+    double _param_val_d;
 
-  auto subPose = nh.subscribe("pose_in", 1, cbPose);
-  pubPose = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_out", 1, false);
-  nh.param("to_frame", to, std::string("map"));
+    param<double>(param_name, _param_val_d, _default_val_d);
+    param_val = _param_val_d;
+  }
+  void param_cast(const std::string &param_name,
+                  size_t &param_val, const size_t &default_val) const
+  {
+    int _default_val_d = default_val;
+    int _param_val_d;
 
-  tfl.reset(new tf::TransformListener);
-  ros::spin();
+    param<int>(param_name, _param_val_d, _default_val_d);
+    param_val = _param_val_d;
+  }
+  NodeHandle_f(const std::string &ns = std::string(),
+               const M_string &remappings = M_string())
+    : NodeHandle(ns, remappings)
+  {
+  }
+};
 
-  return 0;
-}
+}  // namespace ros
+
+#endif  // COSTMAP_CSPACE_NODE_HANDLE_FLOAT_H

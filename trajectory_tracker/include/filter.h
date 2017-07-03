@@ -27,52 +27,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#ifndef FILTER_H
+#define FILTER_H
 
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <tf/transform_listener.h>
-
-#include <string>
-
-std::string to;
-std::shared_ptr<tf::TransformListener> tfl;
-
-ros::Publisher pubPose;
-
-void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
+enum type_t
 {
-  try
-  {
-    geometry_msgs::PoseStamped in;
-    geometry_msgs::PoseStamped out;
-    geometry_msgs::PoseWithCovarianceStamped out_msg;
-    in.header = msg->header;
-    in.header.stamp = ros::Time(0);
-    in.pose = msg->pose.pose;
-    tfl->waitForTransform(to, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
-    tfl->transformPose(to, in, out);
-    out_msg = *msg;
-    out_msg.header = out.header;
-    out_msg.pose.pose = out.pose;
-    pubPose.publish(out_msg);
-  }
-  catch (tf::TransformException &e)
-  {
-    ROS_WARN("pose_transform: %s", e.what());
-  }
-}
+  FILTER_HPF,
+  FILTER_LPF
+};
 
-int main(int argc, char **argv)
+class filter
 {
-  ros::init(argc, argv, "pose_transform");
-  ros::NodeHandle nh("~");
+private:
+  enum type_t type;
+  double time_const;
+  double x;
+  double k[4];
 
-  auto subPose = nh.subscribe("pose_in", 1, cbPose);
-  pubPose = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_out", 1, false);
-  nh.param("to_frame", to, std::string("map"));
+public:
+  filter(enum type_t type, double tc, double out0);
+  double in(double i);
+};
 
-  tfl.reset(new tf::TransformListener);
-  ros::spin();
-
-  return 0;
-}
+#endif  // FILTER_H

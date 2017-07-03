@@ -27,52 +27,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#ifndef KALMAN_FILTER1_H
+#define KALMAN_FILTER1_H
 
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <tf/transform_listener.h>
+#include <limits>
 
-#include <string>
-
-std::string to;
-std::shared_ptr<tf::TransformListener> tfl;
-
-ros::Publisher pubPose;
-
-void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
+class kalman_filter1
 {
-  try
+public:
+  float x;
+  float sigma;
+
+  void set(const float x0 = 0.0,
+           const float sigma0 = std::numeric_limits<float>::infinity())
   {
-    geometry_msgs::PoseStamped in;
-    geometry_msgs::PoseStamped out;
-    geometry_msgs::PoseWithCovarianceStamped out_msg;
-    in.header = msg->header;
-    in.header.stamp = ros::Time(0);
-    in.pose = msg->pose.pose;
-    tfl->waitForTransform(to, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
-    tfl->transformPose(to, in, out);
-    out_msg = *msg;
-    out_msg.header = out.header;
-    out_msg.pose.pose = out.pose;
-    pubPose.publish(out_msg);
+    x = x0;
+    sigma = sigma0;
   }
-  catch (tf::TransformException &e)
+  kalman_filter1(const float x0 = 0.0,
+                 const float sigma0 = std::numeric_limits<float>::infinity())
   {
-    ROS_WARN("pose_transform: %s", e.what());
+    set(x0, sigma0);
   }
-}
+  void predict(const float x_plus, const float sigma_plus)
+  {
+    x += x_plus;
+    sigma += sigma_plus;
+  }
+  void measure(const float x_in, const float sigma_in)
+  {
+    if (std::isinf(sigma_in))
+      return;
+    if (std::isinf(sigma))
+    {
+      if (std::isinf(x_in))
+        x = 0;
+      else
+        x = x_in;
+      sigma = sigma_in;
+      return;
+    }
+    float kt = sigma * sigma / (sigma * sigma + sigma_in * sigma_in);
+    x = x + kt * (x_in - x);
+    sigma = (1.0 - kt) * sigma;
+  }
+};
 
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "pose_transform");
-  ros::NodeHandle nh("~");
-
-  auto subPose = nh.subscribe("pose_in", 1, cbPose);
-  pubPose = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_out", 1, false);
-  nh.param("to_frame", to, std::string("map"));
-
-  tfl.reset(new tf::TransformListener);
-  ros::spin();
-
-  return 0;
-}
+#endif  // KALMAN_FILTER1_H

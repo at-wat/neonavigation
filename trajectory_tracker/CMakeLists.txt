@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(trajectory_tracker)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy message_generation nav_msgs geometry_msgs tf interactive_markers)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy message_generation nav_msgs geometry_msgs tf interactive_markers rostest roslint)
 
 add_service_files(FILES ChangePath.srv)
 add_message_files(FILES TrajectoryTrackerStatus.msg TrajectoryServerStatus.msg)
@@ -14,7 +14,7 @@ catkin_package(
 )
 
 ## Build 
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} include)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -42,4 +42,11 @@ target_link_libraries(trajectory_saver ${catkin_LIBRARIES})
 add_executable(trajectory_server src/trajectory_server.cpp src/filter.cpp)
 target_link_libraries(trajectory_server ${catkin_LIBRARIES})
 add_dependencies(trajectory_server trajectory_tracker_gencpp)
+
+roslint_cpp()
+
+if(CATKIN_ENABLE_TESTING)
+  roslint_add_test()
+endif()
+
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(track_odometry)
 
 find_package(catkin REQUIRED COMPONENTS
-	roscpp tf sensor_msgs std_msgs nav_msgs trajectory_msgs geometry_msgs
+	roscpp tf sensor_msgs std_msgs nav_msgs trajectory_msgs geometry_msgs rostest roslint
 )
 
 catkin_package(
@@ -22,7 +22,7 @@ else()
 endif()
 
 
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} include)
 
 add_executable(track_odometry src/track_odometry.cpp)
 target_link_libraries(track_odometry ${catkin_LIBRARIES})
@@ -30,10 +30,15 @@ target_link_libraries(track_odometry ${catkin_LIBRARIES})
 add_executable(tf_projection src/tf_projection.cpp)
 target_link_libraries(tf_projection ${catkin_LIBRARIES})
 
+
+roslint_cpp()
+
 if(CATKIN_ENABLE_TESTING)
 	find_package(rostest REQUIRED)
 
-	catkin_add_gtest(tf_projection_test src/tf_projection_test.cpp)
+	catkin_add_gtest(tf_projection_test test/tf_projection_test.cpp)
 	target_link_libraries(tf_projection_test ${catkin_LIBRARIES})
+
+  roslint_add_test()
 endif()
 
