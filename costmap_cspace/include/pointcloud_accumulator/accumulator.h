@@ -1,7 +1,38 @@
-#ifndef __POINTCLOUD_ACCUMURATOR_H__
-#define __POINTCLOUD_ACCUMURATOR_H__
+/*
+ * Copyright (c) 2014-2017, the neonavigation authors
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the copyright holder nor the names of its 
+ *       contributors may be used to endorse or promote products derived from 
+ *       this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#define POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
 
 #include <ros/ros.h>
+
+#include <list>
 
 template <typename T>
 class PointcloudAccumurator
@@ -12,8 +43,8 @@ public:
   public:
     ros::Time stamp_;
 
-    Points(const T &points, const ros::Time &stamp) :
-      T(points), stamp_(stamp)
+    Points(const T &points, const ros::Time &stamp)
+      : T(points), stamp_(stamp)
     {
     }
   };
@@ -22,7 +53,7 @@ public:
   {
   }
 
-  PointcloudAccumurator(const ros::Duration &duration)
+  explicit PointcloudAccumurator(const ros::Duration &duration)
   {
     reset(duration);
   }
@@ -40,9 +71,9 @@ public:
 
   void push(const Points &points)
   {
-    for(auto it = points_.begin(); it != points_.end(); ++it)
+    for (auto it = points_.begin(); it != points_.end(); ++it)
     {
-      if(it->stamp_ + time_to_hold_ < points.stamp_)
+      if (it->stamp_ + time_to_hold_ < points.stamp_)
       {
         it = points_.erase(it);
         continue;
@@ -64,10 +95,6 @@ public:
 protected:
   ros::Duration time_to_hold_;
   std::list<Points> points_;
-
 };
 
-
-
-
-#endif
+#endif  // POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
