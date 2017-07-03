@@ -57,8 +57,8 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
 class pointcloud_to_maps
 {
 public:
-	pointcloud_to_maps():
-		n("~")
+	pointcloud_to_maps()
+		: n("~")
 	{
 		subPoints = n.subscribe("map_cloud", 1, &pointcloud_to_maps::cbPoints, this);
 		pubMapArray = n.advertise<map_organizer::OccupancyGridArray>("/maps", 1, true);
@@ -68,31 +68,45 @@ public:
 		pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
 		pcl::fromROSMsg(*msg, *pc);
 
-		const float grid = 0.05;
-		const int min_points = 500;
-		const int robot_width = 4;
-		const int robot_height = 10;
-		const float min_floorage = 5.0;
-		const float floorage_filter = 0.5;
+		double grid;
+		int min_points;
+		int robot_width;
+		int robot_height;
+		double min_floorage;
+		double floorage_filter;
+
+		n.param("grid", grid, 0.05);
+		n.param("min_points", min_points, 5000);
+		n.param("robot_width", robot_width, 4);
+		n.param("robot_height", robot_height, 20);
+		n.param("min_floor_area", min_floorage, 100.0);
+		n.param("floor_area_filter", floorage_filter, 300.0);
 
 		std::map<int, int> hist;
 		int x_min = INT_MAX, x_max = 0;
 		int y_min = INT_MAX, y_max = 0;
 		int h_min = INT_MAX, h_max = 0;
 
-		for(auto &p: pc->points)
+		for(auto &p : pc->points)
 		{
 			int h = (p.z / grid);
 			int x = (p.x / grid);
 			int y = (p.y / grid);
-			if(x_min > x) x_min = x;
-			if(y_min > y) y_min = y;
-			if(h_min > h) h_min = h;
-			if(x_max < x) x_max = x;
-			if(y_max < y) y_max = y;
-			if(h_max < h) h_max = h;
-			if(hist.find(h) == hist.end()) hist[h] = 0;
-			hist[h] ++;
+			if(x_min > x)
+				x_min = x;
+			if(y_min > y)
+				y_min = y;
+			if(h_min > h)
+				h_min = h;
+			if(x_max < x)
+				x_max = x;
+			if(y_max < y)
+				y_max = y;
+			if(h_max < h)
+				h_max = h;
+			if(hist.find(h) == hist.end())
+				hist[h] = 0;
+			hist[h]++;
 		}
 		int max_height = h_max;
 		float floorage[max_height];
@@ -108,36 +122,37 @@ public:
 		std::vector<nav_msgs::OccupancyGrid> maps;
 
 		int map_num = 0;
-		for(int i = 0; i < max_height; i ++)
+		for(int i = 0; i < max_height; i++)
 		{
 			if(hist[i] > min_points)
 			{
 				std::map<std::pair<int, int>, char> floor;
-				for(auto &p: pc->points)
+				for(auto &p : pc->points)
 				{
 					int x = (p.x / grid);
 					int y = (p.y / grid);
 					int z = (p.z / grid);
 					auto v = std::pair<int, int>(x, y);
 
-					if(i == z)
+					if(abs(i - z) <= 1)
 					{
 						if(floor.find(v) == floor.end())
 						{
 							floor[v] = 0;
 						}
 					}
-					else if(i < z && z <= i + robot_height)
+					else if(i + 3 < z && z <= i + robot_height)
 					{
 						floor[v] = 1;
 					}
 				}
 				int cnt = 0;
-				for(auto &m: floor)
+				for(auto &m : floor)
 				{
-					if(m.second == 0) cnt ++;
+					if(m.second == 0)
+						cnt++;
 				}
-				floorage[i] = cnt * (grid*grid);
+				floorage[i] = cnt * (grid * grid);
 				if(floorage[i] < floorage_filter)
 				{
 					floorage[i] = 0;
@@ -149,19 +164,21 @@ public:
 					map.info.origin.position.z = i * grid;
 					map.header = msg->header;
 					map.data.resize(mmd.width * mmd.height);
-					for(auto &c: map.data) c = -1;
-					for(auto &m: floor)
+					for(auto &c : map.data)
+						c = -1;
+					for(auto &m : floor)
 					{
 						int addr = (m.first.first - x_min) + (m.first.second - y_min) * mmd.width;
 						if(m.second == 0)
 						{
 							map.data[addr] = 0;
 						}
-						else if(m.second == 1) map.data[addr] = 100;
+						else if(m.second == 1)
+							map.data[addr] = 100;
 					}
 
 					maps.push_back(map);
-					map_num ++;
+					map_num++;
 				}
 			}
 			else
@@ -169,13 +186,14 @@ public:
 				floorage[i] = 0;
 			}
 		}
+		ROS_INFO("Floor candidates: %d", map_num);
 		auto it_prev = maps.rbegin();
-		for(auto it = maps.rbegin() + 1; it != maps.rend(); it ++)
+		for(auto it = maps.rbegin() + 1; it != maps.rend(); it++)
 		{
 			if(fabs(it_prev->info.origin.position.z - it->info.origin.position.z) < grid * 1.5)
 			{
 				// merge slopes
-				for(unsigned int i = 0; i < it->data.size(); i ++)
+				for(unsigned int i = 0; i < it->data.size(); i++)
 				{
 					if(it->data[i] == 100 && it_prev->data[i] == 0)
 					{
@@ -188,22 +206,25 @@ public:
 		}
 		float floorage_ext[map_num];
 		int num = 0;
-		for(auto &map: maps)
+		for(auto &map : maps)
 		{
 			auto map_exp = map.data;
-			for(unsigned int i = 0; i < map_exp.size(); i ++)
+			for(unsigned int i = 0; i < map_exp.size(); i++)
 			{
 				if(map.data[i] != 0)
 				{
-					for(int xp = -robot_width; xp <= robot_width; xp ++)
+					for(int xp = -robot_width; xp <= robot_width; xp++)
 					{
-						for(int yp = -robot_width; yp <= robot_width; yp ++)
+						for(int yp = -robot_width; yp <= robot_width; yp++)
 						{
-							if(xp * xp + yp * yp > robot_width * robot_width) continue;
+							if(xp * xp + yp * yp > robot_width * robot_width)
+								continue;
 							unsigned int x = i % mmd.width + xp;
 							unsigned int y = i / mmd.width + yp;
-							if(x >= mmd.width) continue;
-							if(y >= mmd.height) continue;
+							if(x >= mmd.width)
+								continue;
+							if(y >= mmd.height)
+								continue;
 							int addr = x + y * mmd.width;
 							map_exp[addr] = map.data[i];
 						}
@@ -211,27 +232,30 @@ public:
 				}
 			}
 			int cnt = 0;
-			for(auto &c: map_exp) if(c == 0) cnt ++;
+			for(auto &c : map_exp)
+				if(c == 0)
+					cnt++;
 			floorage_ext[num] = cnt * grid * grid;
-			num ++;
+			num++;
 		}
 		num = -1;
 		int floor_num = 0;
 		map_organizer::OccupancyGridArray map_array;
-		for(auto &map: maps)
+		for(auto &map : maps)
 		{
-			num ++;
-			if(floorage_ext[num] < min_floorage) continue;
+			num++;
+			if(floorage_ext[num] < min_floorage)
+				continue;
 			std::string name = "map" + std::to_string(floor_num);
 			pubMaps[name] = n.advertise<nav_msgs::OccupancyGrid>(name, 1, true);
 			pubMaps[name].publish(map);
 			map_array.maps.push_back(map);
-			ROS_ERROR("floor %d (%5.2fm^2), h = %0.2fm", 
-					floor_num, floorage_ext[num], map.info.origin.position.z);
-			floor_num ++;
+			ROS_ERROR("floor %d (%5.2fm^2), h = %0.2fm", floor_num, floorage_ext[num], map.info.origin.position.z);
+			floor_num++;
 		}
 		pubMapArray.publish(map_array);
 	}
+
 private:
 	ros::NodeHandle n;
 	std::map<std::string, ros::Publisher> pubMaps;
@@ -248,4 +272,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
