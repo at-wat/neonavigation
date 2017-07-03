@@ -36,6 +36,7 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <string>
+#include <vector>
 
 #include <pointcloud_accumulator/accumulator.h>
 
