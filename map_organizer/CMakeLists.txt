@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(map_organizer)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs nav_msgs eigen_conversions pcl_ros tf_conversions message_generation map_server)
+find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs nav_msgs eigen_conversions pcl_ros tf_conversions message_generation map_server rostest roslint)
 find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
 
@@ -54,4 +54,12 @@ add_dependencies(select_map map_organizer_gencpp)
 
 add_executable(pose_transform src/pose_transform.cpp)
 target_link_libraries(pose_transform ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+
+roslint_cpp()
+
+if(CATKIN_ENABLE_TESTING)
+  roslint_add_test()
+endif()
+
 
