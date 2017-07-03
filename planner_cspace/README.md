@@ -8,7 +8,7 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 ### Sources
 
 * src/planner_3d.cpp
-* src/grid_astar.hpp
+* include/grid_astar.h
 
 ### Subscribed topics
 
@@ -63,7 +63,7 @@ planner_2dof_serial_joints provides collision avoidance for 2-DOF serial joint (
 ### Sources
 
 * src/planner_2dof_serial_joints.cpp
-* src/grid_astar.hpp
+* include/grid_astar.h
 
 ### Subscribed topics
 
