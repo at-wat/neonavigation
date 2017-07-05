@@ -100,12 +100,19 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::fromROSMsg(*msg, *pc);
 
-    const float grid = 0.05;
-    const int min_points = 500;
-    const int robot_width = 4;
-    const int robot_height = 10;
-    const float min_floorage = 5.0;
-    const float floorage_filter = 0.5;
+    double grid;
+    int min_points;
+    int robot_width;
+    int robot_height;
+    double min_floorage;
+    double floorage_filter;
+
+    n.param("grid", grid, 0.05);
+    n.param("min_points", min_points, 5000);
+    n.param("robot_width", robot_width, 4);
+    n.param("robot_height", robot_height, 20);
+    n.param("min_floor_area", min_floorage, 100.0);
+    n.param("floor_area_filter", floorage_filter, 300.0);
 
     std::map<int, int> hist;
     int x_min = INT_MAX, x_max = 0;
@@ -159,14 +166,14 @@ public:
           int z = (p.z / grid);
           auto v = std::pair<int, int>(x, y);
 
-          if (i == z)
+          if (abs(i - z) <= 1)
           {
             if (floor.find(v) == floor.end())
             {
               floor[v] = 0;
             }
           }
-          else if (i < z && z <= i + robot_height)
+          else if (i + 3 < z && z <= i + robot_height)
           {
             floor[v] = 1;
           }
@@ -211,6 +218,7 @@ public:
         floorage[i] = 0;
       }
     }
+    ROS_INFO("Floor candidates: %d", map_num);
     auto it_prev = maps.rbegin();
     for (auto it = maps.rbegin() + 1; it != maps.rend(); it++)
     {
