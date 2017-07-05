@@ -28,22 +28,26 @@
  */
 
 #include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <tf/transform_listener.h>
+
 #include <tf/transform_datatypes.h>
+#include <tf/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <sensor_msgs/PointCloud2.h>
 
 #include <string>
+#include <vector>
 
 #include <pointcloud_accumulator/accumulator.h>
 
 class pointcloud2_to_map
 {
 private:
-  ros::NodeHandle n;
+  ros::NodeHandle nh;
+  ros::NodeHandle pnh;
   ros::Publisher pub_map;
   ros::Subscriber sub_cloud;
+  ros::Subscriber sub_cloud_single;
 
   nav_msgs::OccupancyGrid map;
   tf::TransformListener tfl;
@@ -59,43 +63,49 @@ private:
   float origin_x;
   float origin_y;
 
-  PointcloudAccumurator<sensor_msgs::PointCloud2> accum;
+  std::vector<PointcloudAccumurator<sensor_msgs::PointCloud2>> accums;
 
 public:
   pointcloud2_to_map()
-    : n("~")
+    : nh(), pnh("~"), accums(2)
   {
-    n.param("z_min", z_min, 0.1);
-    n.param("z_max", z_max, 1.0);
-    n.param("global_frame", global_frame, std::string("map"));
-    n.param("robot_frame", robot_frame, std::string("base_link"));
+    pnh.param("z_min", z_min, 0.1);
+    pnh.param("z_max", z_max, 1.0);
+    pnh.param("global_frame", global_frame, std::string("map"));
+    pnh.param("robot_frame", robot_frame, std::string("base_link"));
 
     double accum_duration;
-    n.param("accum_duration", accum_duration, 1.0);
-    accum.reset(ros::Duration(accum_duration));
+    pnh.param("accum_duration", accum_duration, 1.0);
+    accums[0].reset(ros::Duration(accum_duration));
+    accums[1].reset(ros::Duration(0.0));
 
-    pub_map = n.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
-    sub_cloud = n.subscribe("/cloud", 100, &pointcloud2_to_map::cb_cloud, this);
+    pub_map = pnh.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+    sub_cloud = nh.subscribe<sensor_msgs::PointCloud2>(
+        "cloud", 100,
+        boost::bind(&pointcloud2_to_map::cb_cloud, this, _1, false));
+    sub_cloud_single = nh.subscribe<sensor_msgs::PointCloud2>(
+        "cloud_singleshot", 100,
+        boost::bind(&pointcloud2_to_map::cb_cloud, this, _1, true));
 
     int width_param;
-    n.param("width", width_param, 30);
+    pnh.param("width", width_param, 30);
     height = width = width_param;
     map.header.frame_id = global_frame;
 
     double resolution;
-    n.param("resolution", resolution, 0.1);
+    pnh.param("resolution", resolution, 0.1);
     map.info.resolution = resolution;
     map.info.width = width;
     map.info.height = height;
     map.data.resize(map.info.width * map.info.height);
 
     double hz;
-    n.param("hz", hz, 1.0);
+    pnh.param("hz", hz, 1.0);
     publish_interval = ros::Duration(1.0 / hz);
   }
 
 private:
-  void cb_cloud(const sensor_msgs::PointCloud2::ConstPtr &cloud)
+  void cb_cloud(const sensor_msgs::PointCloud2::ConstPtr &cloud, const bool singleshot)
   {
     sensor_msgs::PointCloud2 cloud_global;
     geometry_msgs::TransformStamped trans;
@@ -115,7 +125,8 @@ private:
     }
     tf2::doTransform(*cloud, cloud_global, trans);
 
-    accum.push(PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
+    const int buffer = singleshot ? 1 : 0;
+    accums[buffer].push(PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
     ros::Time now = cloud->header.stamp;
@@ -146,22 +157,25 @@ private:
     for (auto &cell : map.data)
       cell = 0;
 
-    for (auto &pc : accum)
+    for (auto &accum : accums)
     {
-      sensor_msgs::PointCloud2Iterator<float> iter_x(pc, "x");
-      sensor_msgs::PointCloud2Iterator<float> iter_y(pc, "y");
-      sensor_msgs::PointCloud2Iterator<float> iter_z(pc, "z");
-      for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
+      for (auto &pc : accum)
       {
-        if (*iter_z < z_min || z_max < *iter_z)
-          continue;
-        unsigned int x = int(
-            (*iter_x - map.info.origin.position.x) / map.info.resolution);
-        unsigned int y = int(
-            (*iter_y - map.info.origin.position.y) / map.info.resolution);
-        if (x >= map.info.width || y >= map.info.height)
-          continue;
-        map.data[x + y * map.info.width] = 100;
+        sensor_msgs::PointCloud2Iterator<float> iter_x(pc, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_y(pc, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_z(pc, "z");
+        for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
+        {
+          if (*iter_z < z_min || z_max < *iter_z)
+            continue;
+          unsigned int x = int(
+              (*iter_x - map.info.origin.position.x) / map.info.resolution);
+          unsigned int y = int(
+              (*iter_y - map.info.origin.position.y) / map.info.resolution);
+          if (x >= map.info.width || y >= map.info.height)
+            continue;
+          map.data[x + y * map.info.width] = 100;
+        }
       }
     }
 
