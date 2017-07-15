@@ -42,13 +42,21 @@ add_executable(pointcloud2_to_map src/pointcloud2_to_map.cpp)
 target_link_libraries(pointcloud2_to_map ${catkin_LIBRARIES})
 
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
-
 roslint_cpp()
 
 if(CATKIN_ENABLE_TESTING)
   roslint_add_test()
 endif()
 
+install(TARGETS
+    costmap_3d
+    laserscan_to_map
+    pointcloud2_to_map
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
 

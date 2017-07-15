@@ -49,4 +49,13 @@ if(CATKIN_ENABLE_TESTING)
   roslint_add_test()
 endif()
 
+install(TARGETS
+    trajectory_tracker
+    trajectory_recorder
+    trajectory_saver
+    trajectory_server
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
