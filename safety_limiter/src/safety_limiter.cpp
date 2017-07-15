@@ -77,6 +77,39 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
 
 class safety_limiter
 {
+private:
+  ros::NodeHandle nh;
+  ros::Publisher pub_twist;
+  ros::Publisher pub_cloud;
+  ros::Publisher pub_debug;
+  ros::Subscriber sub_twist;
+  ros::Subscriber sub_cloud;
+  ros::Subscriber sub_disable;
+  tf::TransformListener tfl;
+
+  geometry_msgs::Twist twist;
+  sensor_msgs::PointCloud2 cloud;
+  double hz;
+  double timeout;
+  double disable_timeout;
+  double vel[2];
+  double acc[2];
+  double tmax;
+  double dt;
+  double tmargin;
+  double t_col;
+  double z_range[2];
+  float footprint_radius;
+  double downsample_grid;
+  std::string frame_id;
+
+  ros::Time last_disable_cmd;
+  ros::Duration hold;
+  ros::Time hold_off;
+
+  bool has_cloud;
+  bool has_twist;
+
 public:
   safety_limiter()
     : nh("~")
@@ -101,6 +134,10 @@ public:
     nh.param("t_margin", tmargin, 0.2);
     nh.param("downsample_grid", downsample_grid, 0.05);
     nh.param("frame_id", frame_id, std::string("base_link"));
+    double hold_d;
+    nh.param("hold", hold_d, 0.0);
+    hold = ros::Duration(hold_d);
+
     tmax = 0.0;
     for (int i = 0; i < 2; i++)
     {
@@ -178,13 +215,31 @@ public:
       }
       if (!has_cloud)
         continue;
-      geometry_msgs::Twist cmd_vel;
-      cmd_vel = limit(twist, cloud);
-      pub_twist.publish(cmd_vel);
+
+      ros::Time now = ros::Time::now();
+      const double t_col_current = predict(twist, cloud);
+
+      if (t_col_current != DBL_MAX)
+      {
+        if (t_col_current < t_col)
+          t_col = t_col_current;
+
+        hold_off = now + hold;
+      }
+
+      if (now <= hold_off)
+      {
+        geometry_msgs::Twist cmd_vel = limit(twist);
+        pub_twist.publish(cmd_vel);
+      }
+      else
+      {
+        pub_twist.publish(twist);
+      }
     }
   }
-  geometry_msgs::Twist limit(const geometry_msgs::Twist &in,
-                             const sensor_msgs::PointCloud2 &cloud)
+  double predict(const geometry_msgs::Twist &in,
+                 const sensor_msgs::PointCloud2 &cloud)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::fromROSMsg(cloud, *pc);
@@ -199,7 +254,7 @@ public:
     {
       ROS_WARN("Safety Limit: Transform failed");
       geometry_msgs::Twist cmd_vel;
-      return cmd_vel;
+      return 0.0;
     }
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc_ds(new pcl::PointCloud<pcl::PointXYZ>);
@@ -232,12 +287,13 @@ public:
         Eigen::AngleAxisf(twist.angular.z * dt, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
-    float t_col = tmax;
+    double t_col_estim = DBL_MAX;
     sensor_msgs::PointCloud col_points;
     sensor_msgs::PointCloud debug_points;
     col_points.header.frame_id = frame_id;
     col_points.header.stamp = ros::Time::now();
     debug_points.header = col_points.header;
+
     for (float t = 0; t < tmax; t += dt)
     {
       move = move * motion;
@@ -275,18 +331,25 @@ public:
       }
       if (col)
       {
-        t_col = t;
+        t_col_estim = t;
         break;
       }
     }
     pub_debug.publish(debug_points);
+    pub_cloud.publish(col_points);
 
-    t_col -= tmargin;
-    if (t_col < 0)
-      t_col = 0;
+    t_col_estim -= tmargin;
+    if (t_col_estim < 0)
+      t_col_estim = 0;
+
+    return t_col_estim;
+  }
+
+  geometry_msgs::Twist limit(const geometry_msgs::Twist &in)
+  {
     auto out = in;
-    float lin_vel_lim = t_col * acc[0];
-    float ang_vel_lim = t_col * acc[1];
+    const float lin_vel_lim = t_col * acc[0];
+    const float ang_vel_lim = t_col * acc[1];
 
     bool col = false;
     if (fabs(out.linear.x) > lin_vel_lim)
@@ -298,12 +361,11 @@ public:
     }
     if (fabs(out.angular.z) > ang_vel_lim)
     {
-      float r = ang_vel_lim / fabs(out.angular.z);
+      const float r = ang_vel_lim / fabs(out.angular.z);
       out.linear.x *= r;
       out.angular.z *= r;
       col = true;
     }
-    pub_cloud.publish(col_points);
     if (col)
     {
       ROS_WARN("Safety Limit: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
@@ -314,35 +376,6 @@ public:
   }
 
 private:
-  ros::NodeHandle nh;
-  ros::Publisher pub_twist;
-  ros::Publisher pub_cloud;
-  ros::Publisher pub_debug;
-  ros::Subscriber sub_twist;
-  ros::Subscriber sub_cloud;
-  ros::Subscriber sub_disable;
-  tf::TransformListener tfl;
-
-  geometry_msgs::Twist twist;
-  sensor_msgs::PointCloud2 cloud;
-  double hz;
-  double timeout;
-  double disable_timeout;
-  double vel[2];
-  double acc[2];
-  double tmax;
-  double dt;
-  double tmargin;
-  double z_range[2];
-  float footprint_radius;
-  double downsample_grid;
-  std::string frame_id;
-
-  ros::Time last_disable_cmd;
-
-  bool has_cloud;
-  bool has_twist;
-
   bool XmlRpc_isNumber(XmlRpc::XmlRpcValue &value)
   {
     return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
