@@ -30,3 +30,14 @@ target_link_libraries(joystick_interrupt ${catkin_LIBRARIES})
 add_executable(joystick_mux src/joystick_mux.cpp)
 target_link_libraries(joystick_mux ${catkin_LIBRARIES})
 
+install(TARGETS
+    joystick_interrupt
+    joystick_mux
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)
+
