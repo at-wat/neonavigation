@@ -8,6 +8,7 @@ catkin_package(
 	CATKIN_DEPENDS costmap_cspace planner_cspace
 )
 
-
-
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)
 
