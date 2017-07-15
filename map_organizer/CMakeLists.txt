@@ -63,3 +63,14 @@ if(CATKIN_ENABLE_TESTING)
 endif()
 
 
+install(TARGETS
+    pointcloud_to_maps
+    tie_maps
+    save_maps
+    select_map
+    pose_transform
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
