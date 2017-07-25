@@ -55,6 +55,6 @@ public:
     return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
   }
 };
-}
+}  // namespace costmap_cspace
 
 #endif  // CSPACE3_CACHE_H

@@ -30,6 +30,8 @@
 #ifndef POLYGON_H
 #define POLYGON_H
 
+#include <vector>
+
 namespace costmap_cspace
 {
 class Vec
@@ -123,6 +125,6 @@ public:
     return dist;
   }
 };
-}
+}  // namespace costmap_cspace
 
 #endif  // POLYGON_H
