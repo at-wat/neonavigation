@@ -45,7 +45,6 @@ target_link_libraries(pointcloud2_to_map ${catkin_LIBRARIES})
 roslint_cpp()
 
 if(CATKIN_ENABLE_TESTING)
-  add_subdirectory(test)
   roslint_add_test()
 endif()
 
