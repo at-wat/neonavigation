@@ -34,11 +34,12 @@ namespace costmap_cspace
 {
 class CSpace3Cache
 {
-public:
+protected:
   std::unique_ptr<char[]> c;
   int size[3];
   int center[3];
 
+public:
   void reset(const int &x, const int &y, const int &yaw)
   {
     size[0] = x * 2 + 1;
@@ -53,6 +54,16 @@ public:
   char &e(const int &x, const int &y, const int &yaw)
   {
     return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
+  }
+  const char &e(const int &x, const int &y, const int &yaw) const
+  {
+    return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
+  }
+  void getSize(int &x, int &y, int &a) const
+  {
+    x = size[0];
+    y = size[1];
+    a = size[2];
   }
 };
 }  // namespace costmap_cspace

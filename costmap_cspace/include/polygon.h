@@ -93,7 +93,7 @@ public:
       p[1] = sin_v * tmp[0] + cos_v * tmp[1] + y;
     }
   }
-  bool inside(const Vec &a)
+  bool inside(const Vec &a) const
   {
     int cn = 0;
     for (size_t i = 0; i < v.size() - 1; i++)
@@ -111,7 +111,7 @@ public:
     }
     return ((cn & 1) == 1);
   }
-  float dist(const Vec &a)
+  float dist(const Vec &a) const
   {
     float dist = FLT_MAX;
     for (size_t i = 0; i < v.size() - 1; i++)

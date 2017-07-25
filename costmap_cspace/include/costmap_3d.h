@@ -35,6 +35,8 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
+#include <XmlRpcValue.h>
+
 #include <cspace3_cache.h>
 #include <polygon.h>
 
@@ -51,16 +53,18 @@ namespace costmap_cspace
 {
 class Costmap3DOF
 {
-protected:
-  int ang_resolution_;
-  float linear_expand_;
-  float linear_spread_;
-  int unknown_cost_;
+public:
   enum map_overlay_mode
   {
     OVERWRITE,
     MAX
   };
+
+protected:
+  int ang_resolution_;
+  float linear_expand_;
+  float linear_spread_;
+  int unknown_cost_;
   map_overlay_mode overlay_mode_;
 
   float footprint_radius_;
@@ -75,9 +79,34 @@ protected:
   nav_msgs::OccupancyGrid map_base_;
 
 public:
-  void setFootprint(const XmlRpc::XmlRpcValue footprint_xml_const)
+  Costmap3DOF()
+    : ang_resolution_(-1)
+    , linear_expand_(0.0)
+    , linear_spread_(0.0)
+    , unknown_cost_(0.0)
+    , overlay_mode_(map_overlay_mode::MAX)
+  {
+  }
+  void setCSpaceConfig(
+      const int ang_resolution,
+      const float linear_expand,
+      const float linear_spread,
+      const int unknown_cost,
+      const map_overlay_mode overlay_mode)
+  {
+    ang_resolution_ = ang_resolution;
+    linear_expand_ = linear_expand;
+    linear_spread_ = linear_spread;
+    overlay_mode_ = overlay_mode;
+  }
+  bool setFootprint(const XmlRpc::XmlRpcValue footprint_xml_const)
   {
     XmlRpc::XmlRpcValue footprint_xml = footprint_xml_const;
+    if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
+    {
+      return false;
+    }
+
     footprint_.polygon.points.clear();
     footprint_.header.frame_id = "base_link";
     footprint_radius_ = 0;
@@ -86,8 +115,7 @@ public:
       if (!XmlRpc::isNumber(footprint_xml[i][0]) ||
           !XmlRpc::isNumber(footprint_xml[i][1]))
       {
-        ROS_FATAL("Invalid footprint value");
-        throw std::runtime_error("Invalid footprint value");
+        return false;
       }
 
       geometry_msgs::Point32 point;
@@ -104,37 +132,27 @@ public:
         footprint_radius_ = dist;
     }
     footprint_p_.v.push_back(footprint_p_.v.front());
-    ROS_INFO("footprint radius: %0.3f", footprint_radius_);
     footprint_.polygon.points.push_back(footprint_.polygon.points[0]);
+
+    return true;
   }
-  void processMap()
+  void generateCSpaceTemplate(const costmap_cspace::MapMetaData3D &info)
   {
-    ROS_DEBUG("2D costmap received");
-
-    map_.header = map_base_.header;
-    map_.info.width = map_base_.info.width;
-    map_.info.height = map_base_.info.height;
-    map_.info.angle = ang_resolution_;
-    map_.info.linear_resolution = map_base_.info.resolution;
-    map_.info.angular_resolution = 2.0 * M_PI / ang_resolution_;
-    map_.info.origin = map_base_.info.origin;
-    map_.data.resize(map_base_.data.size() * map_.info.angle);
-
     range_max_ =
-        ceilf((footprint_radius_ + linear_expand_ + linear_spread_) / map_.info.linear_resolution);
-    cs_.reset(range_max_, range_max_, map_.info.angle);
+        ceilf((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
+    cs_.reset(range_max_, range_max_, info.angle);
 
     // C-Space template
-    for (size_t yaw = 0; yaw < map_.info.angle; yaw++)
+    for (size_t yaw = 0; yaw < info.angle; yaw++)
     {
       for (int y = -range_max_; y <= range_max_; y++)
       {
         for (int x = -range_max_; x <= range_max_; x++)
         {
           auto f = footprint_p_;
-          f.move(x * map_.info.linear_resolution,
-                 y * map_.info.linear_resolution,
-                 yaw * map_.info.angular_resolution);
+          f.move(x * info.linear_resolution,
+                 y * info.linear_resolution,
+                 yaw * info.angular_resolution);
           costmap_cspace::Vec p;
           p[0] = 0;
           p[1] = 0;
@@ -161,7 +179,23 @@ public:
         }
       }
     }
-    ROS_DEBUG("C-Space template generated");
+  }
+  void setBaseMap(const nav_msgs::OccupancyGrid &map)
+  {
+    map_base_ = map;
+  }
+  void processMap()
+  {
+    map_.header = map_base_.header;
+    map_.info.width = map_base_.info.width;
+    map_.info.height = map_base_.info.height;
+    map_.info.angle = ang_resolution_;
+    map_.info.linear_resolution = map_base_.info.resolution;
+    map_.info.angular_resolution = 2.0 * M_PI / ang_resolution_;
+    map_.info.origin = map_base_.info.origin;
+    map_.data.resize(map_base_.data.size() * map_.info.angle);
+
+    generateCSpaceTemplate(map_.info);
 
     for (size_t yaw = 0; yaw < map_.info.angle; yaw++)
     {
@@ -181,24 +215,23 @@ public:
         }
       }
     }
-    ROS_DEBUG("C-Space costmap generated");
   }
-  costmap_cspace::CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+  costmap_cspace::CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid &msg)
   {
-    int ox = lroundf((msg->info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
-    int oy = lroundf((msg->info.origin.position.y - map_.info.origin.position.y) / map_.info.linear_resolution);
-    auto omap = *msg;
+    int ox = lroundf((msg.info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
+    int oy = lroundf((msg.info.origin.position.y - map_.info.origin.position.y) / map_.info.linear_resolution);
+    auto omap = msg;
     if (overlay_mode_ == OVERWRITE)
     {
-      for (unsigned int i = 0; i < msg->data.size(); i++)
+      for (unsigned int i = 0; i < msg.data.size(); i++)
       {
         if (omap.data[i] < 0)
         {
-          int mx = lroundf((i % msg->info.width) * msg->info.resolution / map_.info.linear_resolution);
-          if (msg->info.width <= (unsigned int)mx)
+          int mx = lroundf((i % msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
+          if (msg.info.width <= (unsigned int)mx)
             continue;
-          int my = lroundf((i / msg->info.width) * msg->info.resolution / map_.info.linear_resolution);
-          if (msg->info.height <= (unsigned int)my)
+          int my = lroundf((i / msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
+          if (msg.info.height <= (unsigned int)my)
             continue;
 
           omap.data[i] = map_base_.data[(my + oy) * map_base_.info.width + (mx + ox)];
@@ -207,10 +240,9 @@ public:
     }
     map_overlay_ = map_;
     mapCopy(map_overlay_, omap, true);
-    ROS_DEBUG("C-Space costmap updated");
 
-    int w = lroundf(msg->info.width * msg->info.resolution / map_.info.linear_resolution);
-    int h = lroundf(msg->info.height * msg->info.resolution / map_.info.linear_resolution);
+    int w = lroundf(msg.info.width * msg.info.resolution / map_.info.linear_resolution);
+    int h = lroundf(msg.info.height * msg.info.resolution / map_.info.linear_resolution);
     return updateMap(map_overlay_, ox, oy, 0, w, h, map_.info.angle);
   }
 
