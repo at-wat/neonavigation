@@ -182,6 +182,7 @@ public:
   }
   void setBaseMap(const nav_msgs::OccupancyGrid &map)
   {
+    assert(map.data.size() >= map.info.width * map.info.height);
     map_base_ = map;
   }
   void processMap()
@@ -253,16 +254,36 @@ public:
   {
     return footprint_p_;
   }
-  int getRangeMax()
+  int getRangeMax() const
   {
     return range_max_;
   }
-  float getFootprintRadius()
+  float getFootprintRadius() const
   {
     return footprint_radius_;
   }
+  int getAngularGrid() const
+  {
+    return map_.info.angle;
+  }
+  int8_t getCost(const int &x, const int &y, const int &yaw) const
+  {
+    assert(0 <= yaw && yaw < map_.info.angle);
+    assert(0 <= x && x < map_.info.width);
+    assert(0 <= y && y < map_.info.height);
+
+    return map_.data[(yaw * map_.info.height + y) * map_.info.width + x];
+  }
 
 protected:
+  int8_t &getCostRef(const int &x, const int &y, const int &yaw)
+  {
+    assert(0 <= yaw && yaw < map_.info.angle);
+    assert(0 <= x && x < map_.info.width);
+    assert(0 <= y && y < map_.info.height);
+
+    return map_.data[(yaw * map_.info.height + y) * map_.info.width + x];
+  }
   void mapCopy(costmap_cspace::CSpace3D &map_, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
   {
     int ox = lroundf((msg.info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
@@ -290,7 +311,7 @@ protected:
           {
             for (int xp = 0; xp < res_up; xp++)
             {
-              auto &m = map_.data[(yaw * map_.info.height + (y + oy + yp)) * map_.info.width + (x + ox + xp)];
+              auto &m = getCostRef(x + ox + xp, y + oy + yp, yaw);
               m = 0;
             }
           }
@@ -359,7 +380,7 @@ protected:
                 (unsigned int)y2 >= map_.info.height)
               continue;
 
-            auto &m = map_.data[(yaw * map_.info.height + y2) * map_.info.width + x2];
+            auto &m = getCostRef(x2, y2, yaw);
             auto c = cs_.e(x, y, yaw) * val / 100;
             if (m < c)
               m = c;
@@ -412,7 +433,7 @@ protected:
           int y2 = update.y + p[1];
           int yaw2 = yaw + p[2];
 
-          auto &m = map_.data[(yaw2 * map_.info.height + y2) * map_.info.width + x2];
+          auto &m = getCostRef(x2, y2, yaw2);
           auto &up = update.data[(p[2] * update.height + p[1]) * update.width + p[0]];
           up = m;
         }
