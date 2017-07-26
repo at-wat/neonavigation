@@ -245,6 +245,22 @@ public:
     int h = lroundf(msg.info.height * msg.info.resolution / map_.info.linear_resolution);
     return updateMap(map_overlay_, ox, oy, 0, w, h, map_.info.angle);
   }
+  CSpace3Cache &getTemplate()
+  {
+    return cs_;
+  }
+  Polygon &getFootprint()
+  {
+    return footprint_p_;
+  }
+  int getRangeMax()
+  {
+    return range_max_;
+  }
+  float getFootprintRadius()
+  {
+    return footprint_radius_;
+  }
 
 protected:
   void mapCopy(costmap_cspace::CSpace3D &map_, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
