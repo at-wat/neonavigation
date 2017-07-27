@@ -420,8 +420,8 @@ protected:
       const ros::Time &stamp)
   {
     costmap_cspace::CSpace3DUpdate update;
-    update.header = map_.header;
-    map_.header.stamp = stamp;
+    update.header = map.header;
+    map.header.stamp = stamp;
     int update_x = x - range_max_;
     int update_y = y - range_max_;
     int update_width = width + range_max_ * 2;
@@ -436,13 +436,13 @@ protected:
       update_height += update_y;
       update_y = 0;
     }
-    if (update_x + update_width > map_.info.width)
+    if (update_x + update_width > map.info.width)
     {
-      update_width = map_.info.width - update_x;
+      update_width = map.info.width - update_x;
     }
-    if (update_y + update_height > map_.info.height)
+    if (update_y + update_height > map.info.height)
     {
-      update_height = map_.info.height - update_y;
+      update_height = map.info.height - update_y;
     }
     update.x = update_x;
     update.y = update_y;
