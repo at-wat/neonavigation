@@ -55,7 +55,7 @@ protected:
 
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
-    if (ang_resolution_ <= 0)
+    if (getAngularGrid() <= 0)
     {
       ROS_ERROR("ang_resolution is not set.");
       std::runtime_error("ang_resolution is not set.");
