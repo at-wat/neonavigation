@@ -138,6 +138,8 @@ public:
   }
   void generateCSpaceTemplate(const costmap_cspace::MapMetaData3D &info)
   {
+    assert(footprint_p_.v.size() > 2);
+
     range_max_ =
         ceilf((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
     cs_.reset(range_max_, range_max_, info.angle);
@@ -311,7 +313,13 @@ protected:
           {
             for (int xp = 0; xp < res_up; xp++)
             {
-              auto &m = getCostRef(x + ox + xp, y + oy + yp, yaw);
+              const int x2 = x + ox + xp;
+              const int y2 = y + oy + yp;
+              if (static_cast<unsigned int>(x2) >= map_.info.width ||
+                  static_cast<unsigned int>(y2) >= map_.info.height)
+                continue;
+
+              auto &m = getCostRef(x2, y2, yaw);
               m = 0;
             }
           }
@@ -348,8 +356,8 @@ protected:
             {
               if (x == 0 && y == 0)
                 continue;
-              if ((unsigned int)(mx + x) >= map_.info.width ||
-                  (unsigned int)(my + y) >= map_.info.height)
+              if (static_cast<unsigned int>(mx + x) >= map_.info.width ||
+                  static_cast<unsigned int>(my + y) >= map_.info.height)
                 continue;
               const size_t addr = i + y * map_.info.width + x;
               if (addr >= msg.data.size())
@@ -376,8 +384,8 @@ protected:
           {
             const int x2 = gx + x;
             const int y2 = gy + y;
-            if ((unsigned int)x2 >= map_.info.width ||
-                (unsigned int)y2 >= map_.info.height)
+            if (static_cast<unsigned int>(x2) >= map_.info.width ||
+                static_cast<unsigned int>(y2) >= map_.info.height)
               continue;
 
             auto &m = getCostRef(x2, y2, yaw);
