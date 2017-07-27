@@ -40,10 +40,12 @@ public:
   float c[2];
   float &operator[](const int &i)
   {
+    assert(i < 2);
     return c[i];
   }
   const float &operator[](const int &i) const
   {
+    assert(i < 2);
     return c[i];
   }
   Vec operator-(const Vec &a) const
