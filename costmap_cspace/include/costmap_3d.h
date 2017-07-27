@@ -448,20 +448,19 @@ protected:
     update.angle = angle;
     update.data.resize(update.width * update.height * update.angle);
 
-    for (int i = 0; i < update.width; i++)
+    costmap_cspace::Vec p;
+    for (p[0] = 0; p[0] < update.width; p[0]++)
     {
-      for (int j = 0; j < update.height; j++)
+      for (p[1] = 0; p[1] < update.height; p[1]++)
       {
-        for (int k = 0; k < update.angle; k++)
+        for (p[2] = 0; p[2] < update.angle; p[2]++)
         {
-          const int x2 = update.x + i;
-          const int y2 = update.y + j;
-          const int yaw2 = yaw + k;
+          const int x2 = update.x + p[0];
+          const int y2 = update.y + p[1];
+          const int yaw2 = yaw + p[2];
 
           const auto &m = getCostRef(x2, y2, yaw2, map);
-          const size_t addr = (k * update.height + j) * update.width + i;
-          assert(addr < update.data.size());
-          auto &up = update.data[addr];
+          auto &up = update.data[(p[2] * update.height + p[1]) * update.width + p[0]];
           up = m;
         }
       }
