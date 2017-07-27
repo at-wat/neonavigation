@@ -29,6 +29,7 @@
 
 #include <cstddef>
 #include <string>
+#include <algorithm>
 
 #include <gtest/gtest.h>
 
@@ -135,11 +136,11 @@ TEST(Costmap3DOFTest, testCSpaceTemplate)
         {
           ASSERT_EQ(temp.e(i, j, k), 0);
         }
-        //std::cout << std::setfill(' ') << std::setw(3) << static_cast<int>(temp.e(i, j, k)) << " ";
+        // std::cout << std::setfill(' ') << std::setw(3) << static_cast<int>(temp.e(i, j, k)) << " ";
       }
-      //std::cout << std::endl;
+      // std::cout << std::endl;
     }
-    //std::cout << "----" << std::endl;
+    // std::cout << "----" << std::endl;
   }
 }
 
@@ -177,14 +178,14 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
         const int cost = cm.getCost(i, j, k);
         // All grid must be 0
         ASSERT_EQ(cost, 0);
-        //std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      //std::cout << std::endl;
+      // std::cout << std::endl;
     }
-    //std::cout << "----" << std::endl;
+    // std::cout << "----" << std::endl;
   }
 
-  //std::cout << "========" << std::endl;
+  // std::cout << "========" << std::endl;
   for (auto &g : map.data)
   {
     g = 100;
@@ -200,11 +201,11 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
         const int cost = cm.getCost(i, j, k);
         // All grid must be 100
         ASSERT_EQ(cost, 100);
-        //std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      //std::cout << std::endl;
+      // std::cout << std::endl;
     }
-    //std::cout << "----" << std::endl;
+    // std::cout << "----" << std::endl;
   }
 
   // C shape wall in the map
@@ -248,11 +249,11 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
         {
           ASSERT_EQ(cost, 0);
         }
-        //std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      //std::cout << std::endl;
+      // std::cout << std::endl;
     }
-    //std::cout << "----" << std::endl;
+    // std::cout << "----" << std::endl;
   }
 }
 
@@ -317,15 +318,15 @@ TEST(Costmap3DOFTest, testCSpaceExpandSpread)
           // tolerance of test (+1) is needed.
           EXPECT_EQ(cost, 0);
         }
-        //std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      //std::cout << std::endl;
+      // std::cout << std::endl;
     }
-    //std::cout << "----" << std::endl;
+    // std::cout << "----" << std::endl;
   }
 }
 
-TEST(Costmap3DOFTest, testOverwrite)
+TEST(Costmap3DOFTest, testCSpaceOverwrite)
 {
   costmap_cspace::Costmap3DOF cm;
   costmap_cspace::Costmap3DOF cm_ref;
@@ -411,7 +412,7 @@ TEST(Costmap3DOFTest, testOverwrite)
 
         ASSERT_EQ(cost, cost_ref);
 
-        //std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
       /*std::cout << "  |  ";
       for (int i = cm.getRangeMax(); i < map.info.width - cm.getRangeMax(); ++i)
@@ -422,7 +423,7 @@ TEST(Costmap3DOFTest, testOverwrite)
       std::cout << std::endl;
       */
     }
-    //std::cout << "----" << std::endl;
+    // std::cout << "----" << std::endl;
   }
 
   // Set MAX mode and check
@@ -444,7 +445,7 @@ TEST(Costmap3DOFTest, testOverwrite)
 
         ASSERT_EQ(cost, cost_max);
 
-        //std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
       /*
       std::cout << "  |  ";
@@ -462,7 +463,82 @@ TEST(Costmap3DOFTest, testOverwrite)
       std::cout << std::endl;
       */
     }
-    //std::cout << "----" << std::endl;
+    // std::cout << "----" << std::endl;
+  }
+}
+
+TEST(Costmap3DOFTest, testCSpaceOverlayMove)
+{
+  costmap_cspace::Costmap3DOF cm;
+
+  // Set example footprint
+  int footprint_offset = 0;
+  XmlRpc::XmlRpcValue footprint;
+  footprint.fromXml(footprint_str, &footprint_offset);
+  cm.setFootprint(footprint);
+
+  // Settings: 4 angular grids, no expand/spread, unknown cost is 0
+  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::MAX);
+
+  // Generate sample map
+  nav_msgs::OccupancyGrid map;
+  map.info.width = 5;
+  map.info.height = 5;
+  map.info.resolution = 1.0;
+  map.info.origin.orientation.w = 1.0;
+  map.data.resize(map.info.width * map.info.height);
+
+  const int max_cost = 100;
+  map.data[map.info.width / 2 + (map.info.height / 2) * map.info.width] = max_cost;
+  cm.setBaseMap(map);
+  cm.processMap();
+
+  // Generate local sample map
+  nav_msgs::OccupancyGrid map2 = map;
+
+  for (int xp = -1; xp <= 1; ++xp)
+  {
+    for (int yp = -1; yp <= 1; ++yp)
+    {
+      map2.info.origin.position.x = map2.info.resolution * xp;
+      map2.info.origin.position.y = map2.info.resolution * yp;
+      /*
+      std::cout << "=== origin: ("
+                << map2.info.origin.position.x << ", " << map2.info.origin.position.y
+                << ")" << std::endl;
+      */
+      cm.processMapOverlay(map2);
+      for (int k = 0; k < cm.getAngularGrid(); ++k)
+      {
+        const int i_center = map.info.width / 2;
+        const int j_center = map.info.height / 2;
+        const int i_center2 = map.info.width / 2 + temp_dir[k][0];
+        const int j_center2 = map.info.height / 2 + temp_dir[k][1];
+
+        for (int j = 0; j < map.info.height; ++j)
+        {
+          for (int i = 0; i < map.info.width; ++i)
+          {
+            const int cost = cm.getCost(i, j, k);
+
+            if ((i == i_center && j == j_center) ||
+                (i == i_center2 && j == j_center2) ||
+                (i == i_center + xp && j == j_center + yp) ||
+                (i == i_center2 + xp && j == j_center2 + yp))
+            {
+              ASSERT_EQ(cost, max_cost);
+            }
+            else
+            {
+              ASSERT_EQ(cost, 0);
+            }
+            // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+          }
+          // std::cout << std::endl;
+        }
+        // std::cout << "----" << std::endl;
+      }
+    }
   }
 }
 
