@@ -244,7 +244,7 @@ public:
 
     int w = lroundf(msg.info.width * msg.info.resolution / map_.info.linear_resolution);
     int h = lroundf(msg.info.height * msg.info.resolution / map_.info.linear_resolution);
-    return updateMap(map_overlay_, ox, oy, 0, w, h, map_.info.angle);
+    return updateMap(map_overlay_, ox, oy, 0, w, h, map_.info.angle, msg.header.stamp);
   }
   CSpace3Cache &getTemplate()
   {
@@ -391,11 +391,12 @@ protected:
   }
   costmap_cspace::CSpace3DUpdate updateMap(
       costmap_cspace::CSpace3D &map_, const int &x, const int &y, const int &yaw,
-      const int &width, const int &height, const int &angle)
+      const int &width, const int &height, const int &angle,
+      const ros::Time &stamp)
   {
     costmap_cspace::CSpace3DUpdate update;
     update.header = map_.header;
-    map_.header.stamp = ros::Time::now();
+    map_.header.stamp = stamp;
     update.x = x - range_max_;
     update.y = y - range_max_;
     update.width = width + range_max_ * 2;
