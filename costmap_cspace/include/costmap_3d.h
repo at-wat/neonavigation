@@ -238,7 +238,9 @@ public:
           if (msg.info.height <= (unsigned int)my)
             continue;
 
-          omap.data[i] = map_base_.data[(my + oy) * map_base_.info.width + (mx + ox)];
+          const size_t addr = (my + oy) * map_base_.info.width + (mx + ox);
+          assert(addr < map_base_.data.size());
+          omap.data[i] = map_base_.data[addr];
         }
       }
     }
@@ -279,7 +281,10 @@ public:
     assert(0 <= x && x < map.info.width);
     assert(0 <= y && y < map.info.height);
 
-    return map.data[(yaw * map.info.height + y) * map.info.width + x];
+    const size_t addr = (yaw * map.info.height + y) * map.info.width + x;
+    assert(addr < map.data.size());
+
+    return map.data[addr];
   }
   int8_t &getCostRef(const int &x, const int &y, const int &yaw)
   {
@@ -291,7 +296,10 @@ public:
     assert(0 <= x && x < map.info.width);
     assert(0 <= y && y < map.info.height);
 
-    return map.data[(yaw * map.info.height + y) * map.info.width + x];
+    const size_t addr = (yaw * map.info.height + y) * map.info.width + x;
+    assert(addr < map.data.size());
+
+    return map.data[addr];
   }
 
 protected:
