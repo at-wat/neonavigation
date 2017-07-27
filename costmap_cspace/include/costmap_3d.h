@@ -61,7 +61,7 @@ public:
   };
 
 protected:
-  int ang_resolution_;
+  int ang_grid_;
   float linear_expand_;
   float linear_spread_;
   int unknown_cost_;
@@ -80,7 +80,7 @@ protected:
 
 public:
   Costmap3DOF()
-    : ang_resolution_(-1)
+    : ang_grid_(-1)
     , linear_expand_(0.0)
     , linear_spread_(0.0)
     , unknown_cost_(0.0)
@@ -94,7 +94,7 @@ public:
       const int unknown_cost,
       const map_overlay_mode overlay_mode)
   {
-    ang_resolution_ = ang_resolution;
+    ang_grid_ = ang_resolution;
     linear_expand_ = linear_expand;
     linear_spread_ = linear_spread;
     overlay_mode_ = overlay_mode;
@@ -190,9 +190,9 @@ public:
     map_.header = map_base_.header;
     map_.info.width = map_base_.info.width;
     map_.info.height = map_base_.info.height;
-    map_.info.angle = ang_resolution_;
+    map_.info.angle = ang_grid_;
     map_.info.linear_resolution = map_base_.info.resolution;
-    map_.info.angular_resolution = 2.0 * M_PI / ang_resolution_;
+    map_.info.angular_resolution = 2.0 * M_PI / ang_grid_;
     map_.info.origin = map_base_.info.origin;
     map_.data.resize(map_base_.data.size() * map_.info.angle);
 
@@ -205,7 +205,7 @@ public:
         map_.data[i + yaw * map_base_.data.size()] = 0;
       }
     }
-    mapCopy(map_, map_base_);
+    gemerateCSpace(map_, map_base_);
     for (size_t yaw = 0; yaw < map_.info.angle; yaw++)
     {
       for (unsigned int i = 0; i < map_base_.data.size(); i++)
@@ -240,7 +240,7 @@ public:
       }
     }
     map_overlay_ = map_;
-    mapCopy(map_overlay_, omap, true);
+    gemerateCSpace(map_overlay_, omap, true);
 
     int w = lroundf(msg.info.width * msg.info.resolution / map_.info.linear_resolution);
     int h = lroundf(msg.info.height * msg.info.resolution / map_.info.linear_resolution);
@@ -274,8 +274,6 @@ public:
 
     return map_.data[(yaw * map_.info.height + y) * map_.info.width + x];
   }
-
-protected:
   int8_t &getCostRef(const int &x, const int &y, const int &yaw)
   {
     assert(0 <= yaw && yaw < map_.info.angle);
@@ -284,7 +282,9 @@ protected:
 
     return map_.data[(yaw * map_.info.height + y) * map_.info.width + x];
   }
-  void mapCopy(costmap_cspace::CSpace3D &map_, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
+
+protected:
+  void gemerateCSpace(costmap_cspace::CSpace3D &map_, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
   {
     int ox = lroundf((msg.info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
     int oy = lroundf((msg.info.origin.position.y - map_.info.origin.position.y) / map_.info.linear_resolution);
