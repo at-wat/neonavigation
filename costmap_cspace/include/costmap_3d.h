@@ -420,34 +420,30 @@ protected:
       const ros::Time &stamp)
   {
     costmap_cspace::CSpace3DUpdate update;
-    update.header = map.header;
-    map.header.stamp = stamp;
-    int update_x = x - range_max_;
-    int update_y = y - range_max_;
-    int update_width = width + range_max_ * 2;
-    int update_height = height + range_max_ * 2;
-    if (update_x < 0)
+    update.header = map_.header;
+    map_.header.stamp = stamp;
+    update.x = x - range_max_;
+    update.y = y - range_max_;
+    update.width = width + range_max_ * 2;
+    update.height = height + range_max_ * 2;
+    if (update.x < 0)
     {
-      update_width += update_x;
-      update_x = 0;
+      update.width += update.x;
+      update.x = 0;
     }
-    if (update_y < 0)
+    if (update.y < 0)
     {
-      update_height += update_y;
-      update_y = 0;
+      update.height += update.y;
+      update.y = 0;
     }
-    if (update_x + update_width > map.info.width)
+    if (update.x + update.width > map_.info.width)
     {
-      update_width = map.info.width - update_x;
+      update.width = map_.info.width - update.x;
     }
-    if (update_y + update_height > map.info.height)
+    if (update.y + update.height > map_.info.height)
     {
-      update_height = map.info.height - update_y;
+      update.height = map_.info.height - update.y;
     }
-    update.x = update_x;
-    update.y = update_y;
-    update.width = update_width;
-    update.height = update_height;
     update.yaw = yaw;
     update.angle = angle;
     update.data.resize(update.width * update.height * update.angle);
