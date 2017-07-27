@@ -127,7 +127,7 @@ public:
 
       footprint_p_.v.push_back(v);
 
-      auto dist = hypotf(point.x, point.y);
+      const auto dist = hypotf(point.x, point.y);
       if (dist > footprint_radius_)
         footprint_radius_ = dist;
     }
@@ -162,7 +162,7 @@ public:
           }
           else
           {
-            float d = f.dist(p);
+            const float d = f.dist(p);
             if (d < linear_expand_)
             {
               cs_.e(x, y, yaw) = 100;
@@ -219,8 +219,8 @@ public:
   }
   costmap_cspace::CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid &msg)
   {
-    int ox = lroundf((msg.info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
-    int oy = lroundf((msg.info.origin.position.y - map_.info.origin.position.y) / map_.info.linear_resolution);
+    const int ox = lroundf((msg.info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
+    const int oy = lroundf((msg.info.origin.position.y - map_.info.origin.position.y) / map_.info.linear_resolution);
     auto omap = msg;
     if (overlay_mode_ == OVERWRITE)
     {
@@ -242,8 +242,8 @@ public:
     map_overlay_ = map_;
     gemerateCSpace(map_overlay_, omap, true);
 
-    int w = lroundf(msg.info.width * msg.info.resolution / map_.info.linear_resolution);
-    int h = lroundf(msg.info.height * msg.info.resolution / map_.info.linear_resolution);
+    const int w = lroundf(msg.info.width * msg.info.resolution / map_.info.linear_resolution);
+    const int h = lroundf(msg.info.height * msg.info.resolution / map_.info.linear_resolution);
     return updateMap(map_overlay_, ox, oy, 0, w, h, map_.info.angle, msg.header.stamp);
   }
   CSpace3Cache &getTemplate()
@@ -286,8 +286,8 @@ public:
 protected:
   void gemerateCSpace(costmap_cspace::CSpace3D &map_, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
   {
-    int ox = lroundf((msg.info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
-    int oy = lroundf((msg.info.origin.position.y - map_.info.origin.position.y) / map_.info.linear_resolution);
+    const int ox = lroundf((msg.info.origin.position.x - map_.info.origin.position.x) / map_.info.linear_resolution);
+    const int oy = lroundf((msg.info.origin.position.y - map_.info.origin.position.y) / map_.info.linear_resolution);
     // Clear travelable area in OVERWRITE mode
     if (overlay_mode_ == OVERWRITE && overlay)
     {
@@ -295,18 +295,18 @@ protected:
       {
         for (unsigned int i = 0; i < msg.data.size(); i++)
         {
-          auto &val = msg.data[i];
+          const auto &val = msg.data[i];
           if (val < 0)
             continue;
 
-          int x = lroundf((i % msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
+          const int x = lroundf((i % msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
           if (x < range_max_ || static_cast<int>(msg.info.width) - range_max_ <= x)
             continue;
-          int y = lroundf((i / msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
+          const int y = lroundf((i / msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
           if (y < range_max_ || static_cast<int>(msg.info.height) - range_max_ <= y)
             continue;
 
-          int res_up = ceilf(msg.info.resolution / map_.info.linear_resolution);
+          const int res_up = ceilf(msg.info.resolution / map_.info.linear_resolution);
           for (int yp = 0; yp < res_up; yp++)
           {
             for (int xp = 0; xp < res_up; xp++)
@@ -323,8 +323,8 @@ protected:
     {
       for (unsigned int i = 0; i < msg.data.size(); i++)
       {
-        int gx = lroundf((i % msg.info.width) * msg.info.resolution / map_.info.linear_resolution) + ox;
-        int gy = lroundf((i / msg.info.width) * msg.info.resolution / map_.info.linear_resolution) + oy;
+        const int gx = lroundf((i % msg.info.width) * msg.info.resolution / map_.info.linear_resolution) + ox;
+        const int gy = lroundf((i / msg.info.width) * msg.info.resolution / map_.info.linear_resolution) + oy;
         if ((unsigned int)gx >= map_.info.width ||
             (unsigned int)gy >= map_.info.height)
           continue;
@@ -335,10 +335,10 @@ protected:
           if (overlay_mode_ != OVERWRITE && overlay)
             continue;
           bool edge = false;
-          int mx = lroundf((i % msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
+          const int mx = lroundf((i % msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
           if (mx < 1 || static_cast<int>(msg.info.width) - 1 <= mx)
             continue;
-          int my = lroundf((i / msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
+          const int my = lroundf((i / msg.info.width) * msg.info.resolution / map_.info.linear_resolution);
           if (my < 1 || static_cast<int>(msg.info.height) - 1 <= my)
             continue;
 
@@ -351,10 +351,10 @@ protected:
               if ((unsigned int)(mx + x) >= map_.info.width ||
                   (unsigned int)(my + y) >= map_.info.height)
                 continue;
-              size_t addr = i + y * map_.info.width + x;
+              const size_t addr = i + y * map_.info.width + x;
               if (addr >= msg.data.size())
                 continue;
-              auto v = msg.data[addr];
+              const auto v = msg.data[addr];
               if (v >= 0)
               {
                 edge = true;
@@ -374,14 +374,14 @@ protected:
         {
           for (int x = -range_max_; x <= range_max_; x++)
           {
-            int x2 = gx + x;
-            int y2 = gy + y;
+            const int x2 = gx + x;
+            const int y2 = gy + y;
             if ((unsigned int)x2 >= map_.info.width ||
                 (unsigned int)y2 >= map_.info.height)
               continue;
 
             auto &m = getCostRef(x2, y2, yaw);
-            auto c = cs_.e(x, y, yaw) * val / 100;
+            const auto c = cs_.e(x, y, yaw) * val / 100;
             if (m < c)
               m = c;
           }
@@ -430,11 +430,11 @@ protected:
       {
         for (p[2] = 0; p[2] < update.angle; p[2]++)
         {
-          int x2 = update.x + p[0];
-          int y2 = update.y + p[1];
-          int yaw2 = yaw + p[2];
+          const int x2 = update.x + p[0];
+          const int y2 = update.y + p[1];
+          const int yaw2 = yaw + p[2];
 
-          auto &m = getCostRef(x2, y2, yaw2);
+          const auto &m = getCostRef(x2, y2, yaw2);
           auto &up = update.data[(p[2] * update.height + p[1]) * update.width + p[0]];
           up = m;
         }
