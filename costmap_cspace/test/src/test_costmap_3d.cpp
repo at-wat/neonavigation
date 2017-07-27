@@ -407,7 +407,9 @@ TEST(Costmap3DOFTest, testCSpaceOverwrite)
     {
       for (int i = cm.getRangeMax(); i < map.info.width - cm.getRangeMax(); ++i)
       {
-        const int cost = updated.data[((k * map.info.height + j) * map.info.width) + i];
+        const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
+        assert(addr < updated.data.size());
+        const int cost = updated.data[addr];
         const int cost_ref = cm_ref.getCost(i, j, k);
 
         ASSERT_EQ(cost, cost_ref);
@@ -438,7 +440,9 @@ TEST(Costmap3DOFTest, testCSpaceOverwrite)
     {
       for (int i = cm.getRangeMax(); i < map.info.width - cm.getRangeMax(); ++i)
       {
-        const int cost = updated_max.data[((k * map.info.height + j) * map.info.width) + i];
+        const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
+        assert(addr < updated_max.data.size());
+        const int cost = updated_max.data[addr];
         const int cost_ref = cm_ref.getCost(i, j, k);
         const int cost_base = cm_base.getCost(i, j, k);
         const int cost_max = std::max(cost_ref, cost_base);
