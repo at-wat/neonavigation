@@ -14,7 +14,6 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs message_runtime laser_geometry tf tf2_sensor_msgs
-	DEPENDS system_lib
 )
 
 include(CheckCXXCompilerFlag)
