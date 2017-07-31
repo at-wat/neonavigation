@@ -10,7 +10,6 @@ generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
 	CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs tf costmap_cspace
-	DEPENDS system_lib
 )
 
 include(CheckCXXCompilerFlag)
