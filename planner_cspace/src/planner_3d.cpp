@@ -866,11 +866,12 @@ private:
     cm_hyst.clear(0);
 
     has_map = true;
-    update_goal();
 
     cm_rough_base = cm_rough;
     cm_base = cm;
     cm_hist.clear(0);
+
+    update_goal();
   }
 
 public:
