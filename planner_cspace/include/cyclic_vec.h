@@ -57,57 +57,66 @@ public:
   CyclicVecBase()
   {
   }
-  bool operator==(const CyclicVecBase &v) const
+  template <typename C>
+  bool operator==(const C &v) const
   {
     for (int i = 0; i < DIM; i++)
       if (v.e[i] != this->e[i])
         return false;
     return true;
   }
-  bool operator!=(const CyclicVecBase &v) const
+  template <typename C>
+  bool operator!=(const C &v) const
   {
     return !(*this == v);
   }
-  CyclicVecBase operator+(const CyclicVecBase &v) const
+  template <typename C>
+  C operator+(const C &v) const
   {
-    CyclicVecBase out = *this;
+    C out(*this);
     for (int i = 0; i < DIM; i++)
     {
       out[i] += v[i];
     }
     return out;
   }
-  CyclicVecBase operator-(const CyclicVecBase &v) const
+  template <typename C>
+  C operator-(const C &v) const
   {
-    CyclicVecBase out = *this;
+    C out(*this);
     for (int i = 0; i < DIM; i++)
     {
       out[i] -= v[i];
     }
     return out;
   }
-  CyclicVecBase operator*(const CyclicVecBase &v) const
+  template <typename C>
+  C operator*(const C &v) const
   {
-    CyclicVecBase out;
+    C out;
     for (int i = 0; i < DIM; i++)
     {
       out[i] = e[i] * v[i];
     }
     return out;
   }
-  int cross(const CyclicVecBase &a) const
+  template <typename C>
+  int cross(const C &a) const
   {
     return (*this)[0] * a[1] - (*this)[1] * a[0];
   }
-  int dot(const CyclicVecBase &a) const
+  template <typename C>
+  int dot(const C &a) const
   {
     return (*this)[0] * a[0] + (*this)[1] * a[1];
   }
-  float dist_line(const CyclicVecBase &a, const CyclicVecBase &b) const
+  template <typename C>
+  float dist_line(const C &a, const C &b) const
   {
     return (b - a).cross((*this) - a) / (b - a).len();
   }
-  float dist_linestrip(const CyclicVecBase &a, const CyclicVecBase &b) const
+  template <typename C>
+  float dist_linestrip(const C &a, const C &b) const
   {
     auto to_a = (*this) - a;
     if ((b - a).dot(to_a) <= 0)
