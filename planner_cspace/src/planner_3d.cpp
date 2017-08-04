@@ -84,7 +84,7 @@ private:
   astar::vecf euclid_cost_coef;
   float euclid_cost(const astar::vec &v, const astar::vecf coef)
   {
-    auto vc = v;
+    astar::vec vc = v;
     float cost = 0;
     for (int i = 0; i < as.get_noncyclic(); i++)
     {
@@ -258,7 +258,7 @@ private:
                     astar::gridmap<float> &g,
                     const astar::vec &s, const astar::vec &e)
   {
-    auto s_rough = s;
+    astar::vec s_rough = s;
     s_rough[2] = 0;
 
     while (true)
@@ -266,7 +266,7 @@ private:
       if (open.size() < 1)
         break;
       const auto center = open.top();
-      const auto p = center.v;
+      const astar::vec p = center.v;
       const auto c = center.p_raw;
       open.pop();
       if (c > g[p])
@@ -287,7 +287,7 @@ private:
           if (d.sqlen() > range_rough * range_rough)
             continue;
 
-          const auto next = p + d;
+          const astar::vec next = p + d;
           if ((unsigned int)next[0] >= (unsigned int)map_info.width ||
               (unsigned int)next[1] >= (unsigned int)map_info.height)
             continue;
@@ -357,7 +357,7 @@ private:
           if (d.sqlen() < min_xy_range * min_xy_range)
             continue;
 
-          auto s2 = s + d;
+          astar::vec s2 = s + d;
           if ((unsigned int)s2[0] >= (unsigned int)map_info.width ||
               (unsigned int)s2[1] >= (unsigned int)map_info.height)
             continue;
@@ -662,8 +662,8 @@ private:
     {
       if (erase.size() < 1)
         break;
-      const auto center = erase.top();
-      const auto p = center.v;
+      const astar::pq center = erase.top();
+      const astar::vec p = center.v;
       erase.pop();
 
       if (g[p] == FLT_MAX)
@@ -678,11 +678,11 @@ private:
         {
           if (!((d[0] == 0) ^ (d[1] == 0)))
             continue;
-          const auto next = p + d;
+          const astar::vec next = p + d;
           if ((unsigned int)next[0] >= (unsigned int)map_info.width ||
               (unsigned int)next[1] >= (unsigned int)map_info.height)
             continue;
-          auto &gn = g[next];
+          float &gn = g[next];
           if (gn == FLT_MAX)
             continue;
           if (gn < cost_min)
@@ -1337,7 +1337,7 @@ private:
         {
           for (d[1] = -path_range; d[1] <= path_range; d[1]++)
           {
-            auto point = p + d;
+            astar::vec point = p + d;
             point[2] = 0;
             if ((unsigned int)point[0] >= (unsigned int)map_info.width ||
                 (unsigned int)point[1] >= (unsigned int)map_info.height)
@@ -1476,7 +1476,7 @@ private:
                 const astar::vec &v_start,
                 const bool hyst)
   {
-    const auto d = e - s;
+    const astar::vec d = e - s;
     float cost = euclid_cost(d);
 
     if (d[0] == 0 && d[1] == 0)

@@ -488,7 +488,7 @@ public:
         {
           for (d[1] = -range; d[1] <= range; d[1]++)
           {
-            auto p2 = p + d;
+            astar::vec p2 = p + d;
             if ((unsigned int)p2[0] >= (unsigned int)resolution * 2 ||
                 (unsigned int)p2[1] >= (unsigned int)resolution * 2)
               continue;
@@ -560,7 +560,7 @@ private:
       status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
-    auto d = e - s;
+    astar::vec d = e - s;
     d.cycle(d[0], resolution);
     d.cycle(d[1], resolution);
 
@@ -676,9 +676,8 @@ private:
   }
   float cb_cost_estim(const astar::vec &s, const astar::vec &e)
   {
-    const auto d = e - s;
-    auto cost = euclid_cost(d);
-    return cost;
+    const astar::vec d = e - s;
+    return euclid_cost(d);
   }
   float cb_cost(const astar::vec &s, astar::vec &e,
                 const astar::vec &v_goal,
@@ -687,7 +686,7 @@ private:
     if ((unsigned int)e[0] >= (unsigned int)resolution * 2 ||
         (unsigned int)e[1] >= (unsigned int)resolution * 2)
       return -1;
-    auto d = e - s;
+    astar::vec d = e - s;
     d.cycle(d[0], resolution);
     d.cycle(d[1], resolution);
 
