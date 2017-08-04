@@ -269,7 +269,7 @@ public:
   }
   int getAngularGrid() const
   {
-    return map_.info.angle;
+    return ang_grid_;
   }
   int8_t getCost(const int &x, const int &y, const int &yaw) const
   {
