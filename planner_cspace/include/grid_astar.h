@@ -42,6 +42,8 @@
 #include <boost/chrono.hpp>
 
 #include <reservable_priority_queue.h>
+#include <cyclic_vec.h>
+#include <blockmem_gridmap.h>
 
 template <int DIM = 3, int NONCYCLIC = 2>
 class grid_astar
@@ -55,217 +57,16 @@ public:
   {
     return NONCYCLIC;
   }
-  class vec
-  {
-  public:
-    int e[DIM];
 
-    explicit vec(const int *v)
-    {
-      for (int i = 0; i < DIM; i++)
-        e[i] = v[i];
-    }
-    explicit vec(const float *v)
-    {
-      for (int i = 0; i < DIM; i++)
-        e[i] = lroundf(v[i]);
-    }
-    vec()
-    {
-    }
-    void cycle(int &v, const int c)
-    {
-      v = v % c;
-      if (v < 0)
-        v += c;
-      if (v > c / 2)
-        v -= c;
-    }
-    void cycle_unsigned(int &v, const int c)
-    {
-      v = v % c;
-      if (v < 0)
-        v += c;
-    }
-    bool operator==(const vec &v) const
-    {
-      for (int i = 0; i < DIM; i++)
-        if (v.e[i] != this->e[i])
-          return false;
-      return true;
-    }
-    bool operator!=(const vec &v) const
-    {
-      return !(*this == v);
-    }
-    vec operator+(const vec &v) const
-    {
-      vec out = *this;
-      for (int i = 0; i < DIM; i++)
-      {
-        out[i] += v[i];
-      }
-      return out;
-    }
-    vec operator-(const vec &v) const
-    {
-      vec out = *this;
-      for (int i = 0; i < DIM; i++)
-      {
-        out[i] -= v[i];
-      }
-      return out;
-    }
-    int cross(const vec &a) const
-    {
-      return (*this)[0] * a[1] - (*this)[1] * a[0];
-    }
-    int dot(const vec &a) const
-    {
-      return (*this)[0] * a[0] + (*this)[1] * a[1];
-    }
-    float dist_line(const vec &a, const vec &b) const
-    {
-      return (b - a).cross((*this) - a) / (b - a).len();
-    }
-    float dist_linestrip(const vec &a, const vec &b) const
-    {
-      auto to_a = (*this) - a;
-      if ((b - a).dot(to_a) <= 0)
-        return to_a.len();
-      auto to_b = (*this) - b;
-      if ((a - b).dot(to_b) <= 0)
-        return to_b.len();
-      return fabs(this->dist_line(a, b));
-    }
-    int &operator[](const int &x)
-    {
-      return e[x];
-    }
-    const int &operator[](const int &x) const
-    {
-      return e[x];
-    }
-    void set(const int *init)
-    {
-      for (int i = 0; i < DIM; i++)
-      {
-        e[i] = init[i];
-      }
-    }
-    int sqlen() const
-    {
-      int out = 0;
-      for (int i = 0; i < NONCYCLIC; i++)
-      {
-        out += e[i] * e[i];
-      }
-      return out;
-    }
-    float len() const
-    {
-      return sqrtf(sqlen());
-    }
-    float norm() const
-    {
-      float out = 0;
-      for (int i = 0; i < DIM; i++)
-      {
-        out += powf(e[i], 2.0);
-      }
-      return sqrtf(out);
-    }
-    // Hash
-  private:
-    size_t rotl(const std::size_t x, const std::size_t n) const
-    {
-      return (x << n) | (x >> ((8 * sizeof(std::size_t)) - n));
-    }
+  using vec = CyclicVecInt<DIM, NONCYCLIC>;
+  using vecf = CyclicVecFloat<DIM, NONCYCLIC>;
 
-  public:
-    size_t operator()(const vec &key) const
-    {
-      std::size_t hash = key.e[0];
-      for (int i = 1; i < DIM; i++)
-        hash ^= rotl(key.e[i], 8 * sizeof(std::size_t) * i / DIM);
-      return hash;
-    }
-  };
-  class vecf
+  template <class T, int block_width = 0x20>
+  class gridmap : public BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
   {
-  public:
-    float e[DIM];
-    explicit vecf(const float *v)
-    {
-      for (int i = 0; i < DIM; i++)
-        e[i] = v[i];
-    }
-    explicit vecf(const vec &v)
-    {
-      for (int i = 0; i < DIM; i++)
-        e[i] = v[i];
-    }
-    vecf()
-    {
-    }
-    float &operator[](const int &x)
-    {
-      return e[x];
-    }
-    const float &operator[](const int &x) const
-    {
-      return e[x];
-    }
-    vecf operator*(const vecf &v) const
-    {
-      vecf out;
-      for (int i = 0; i < DIM; i++)
-      {
-        out[i] = e[i] * v[i];
-      }
-      return out;
-    }
-    vecf operator*(const vec &v) const
-    {
-      vecf out;
-      for (int i = 0; i < DIM; i++)
-      {
-        out[i] = e[i] * v[i];
-      }
-      return out;
-    }
-    vecf operator-(const vecf &v) const
-    {
-      vecf out = *this;
-      for (int i = 0; i < DIM; i++)
-      {
-        out[i] -= v[i];
-      }
-      return out;
-    }
-    float sqlen() const
-    {
-      float out = 0;
-      for (int i = 0; i < NONCYCLIC; i++)
-      {
-        out += e[i] * e[i];
-      }
-      return out;
-    }
-    float len() const
-    {
-      return sqrtf(sqlen());
-    }
-    float norm() const
-    {
-      float out = 0;
-      for (int i = 0; i < DIM; i++)
-      {
-        out += powf(e[i], 2.0);
-      }
-      return sqrtf(out);
-    }
+    using BlockMemGridmap<T, DIM, NONCYCLIC, block_width>::BlockMemGridmap;
   };
+
   class pq
   {
   public:
@@ -286,102 +87,6 @@ public:
     {
       // smaller first
       return this->p > b.p;
-    }
-  };
-  template <class T, int block_width = 0x20>
-  class gridmap
-  {
-  public:
-    std::unique_ptr<T[]> c;
-    vec size;
-    vec block_size;
-    size_t ser_size;
-    size_t block_ser_size;
-    size_t block_num;
-    void clear(const T zero)
-    {
-      for (size_t i = 0; i < ser_size; i++)
-      {
-        c[i] = zero;
-      }
-    }
-    void clear_positive(const T zero)
-    {
-      for (size_t i = 0; i < ser_size; i++)
-      {
-        if (c[i] >= 0)
-          c[i] = zero;
-      }
-    }
-    void reset(const vec &size)
-    {
-      this->size = size;
-
-      for (int i = 0; i < NONCYCLIC; i++)
-      {
-        if (this->size[i] < static_cast<int>(block_width))
-          this->size[i] = block_width;
-      }
-
-      block_ser_size = 1;
-      block_num = 1;
-      for (int i = 0; i < DIM; i++)
-      {
-        int width;
-        if (i < NONCYCLIC)
-        {
-          width = block_width;
-          block_size[i] = (this->size[i] + width - 1) / width;
-        }
-        else
-        {
-          width = this->size[i];
-          block_size[i] = 1;
-        }
-
-        block_ser_size *= width;
-        block_num *= block_size[i];
-      }
-      ser_size = block_ser_size * block_num;
-
-      c.reset(new T[ser_size]);
-    }
-    explicit gridmap(const vec &size)
-    {
-      reset(size);
-    }
-    gridmap()
-    {
-    }
-    void block_addr(const vec &pos, size_t &baddr, size_t &addr)
-    {
-      addr = 0;
-      baddr = 0;
-      for (int i = 0; i < NONCYCLIC; i++)
-      {
-        addr *= block_width;
-        addr += pos[i] % block_width;
-        baddr *= block_size[i];
-        baddr += pos[i] / block_width;
-      }
-      for (int i = NONCYCLIC; i < DIM; i++)
-      {
-        addr *= size[i];
-        addr += pos[i];
-      }
-    }
-    T &operator[](const vec &pos)
-    {
-      size_t baddr, addr;
-      block_addr(pos, baddr, addr);
-      return c[baddr * block_ser_size + addr];
-    }
-    const gridmap<T, block_width> &operator=(const gridmap<T, block_width> &gm)
-    {
-      reset(gm.size);
-      memcpy(c.get(), gm.c.get(), ser_size);
-
-      return *this;
     }
   };
 
@@ -440,8 +145,8 @@ public:
     {
       return false;
     }
-    auto s = st;
-    auto e = en;
+    vec s = st;
+    vec e = en;
     for (int i = NONCYCLIC; i < DIM; i++)
     {
       s.cycle_unsigned(s[i], g.size[i]);
@@ -472,9 +177,9 @@ public:
         return false;
       }
       pq center = open.top();
-      auto p = center.v;
-      auto c = center.p_raw;
-      auto c_estim = center.p;
+      vec p = center.v;
+      float c = center.p_raw;
+      float c_estim = center.p;
       open.pop();
       if (p == e || c_estim - c <= cost_leave)
       {
@@ -482,7 +187,7 @@ public:
         break;
       }
 
-      auto &gp = g[p];
+      float &gp = g[p];
       if (c > gp)
         continue;
 
@@ -501,11 +206,11 @@ public:
         cb_progress(path_tmp);
       }
 
-      auto search_list = cb_search(p, s, e);
+      std::vector<vec> search_list = cb_search(p, s, e);
       int updates = 0;
       for (auto &diff : search_list)
       {
-        auto next = p + diff;
+        vec next = p + diff;
         for (int i = NONCYCLIC; i < DIM; i++)
         {
           next.cycle_unsigned(next[i], g.size[i]);
@@ -516,15 +221,15 @@ public:
         if (g[next] < 0)
           continue;
 
-        auto cost_estim = cb_cost_estim(next, e);
+        float cost_estim = cb_cost_estim(next, e);
         if (cost_estim < 0 || cost_estim == FLT_MAX)
           continue;
 
-        auto cost = cb_cost(p, next, s, e);
+        float cost = cb_cost(p, next, s, e);
         if (cost < 0 || cost == FLT_MAX)
           continue;
 
-        auto &gnext = g[next];
+        float &gnext = g[next];
         if (gnext > c + cost)
         {
           gnext = c + cost;
