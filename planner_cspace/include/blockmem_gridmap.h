@@ -120,7 +120,8 @@ public:
     block_addr(pos, baddr, addr);
     return c[baddr * block_ser_size + addr];
   }
-  const BlockMemGridmap<T, DIM, NONCYCLIC, block_width> &operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, block_width> &gm)
+  const BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
+      &operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, block_width> &gm)
   {
     reset(gm.size);
     memcpy(c.get(), gm.c.get(), ser_size);

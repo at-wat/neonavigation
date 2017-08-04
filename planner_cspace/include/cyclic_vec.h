@@ -200,7 +200,7 @@ public:
     for (int i = 0; i < DIM; i++)
       this->e[i] = lroundf(v[i]);
   }
-  CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int> &c)
+  explicit CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int> &c)
   {
     for (int i = 0; i < DIM; i++)
       this->e[i] = c.e[i];
@@ -217,7 +217,7 @@ public:
   CyclicVecFloat()
   {
   }
-  CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, float> &c)
+  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, float> &c)
   {
     for (int i = 0; i < DIM; i++)
       this->e[i] = c.e[i];
