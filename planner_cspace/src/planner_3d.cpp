@@ -161,6 +161,7 @@ private:
   bool has_map;
   bool has_goal;
   bool has_start;
+  bool goal_updated;
   bool remember_updates;
   bool fast_map_update;
   std::vector<astar::vec> search_list;
@@ -450,6 +451,8 @@ private:
       cm_hyst.clear(0);
 
     publish_costmap();
+
+    goal_updated = true;
   }
   void publish_costmap()
   {
@@ -866,11 +869,12 @@ private:
     cm_hyst.clear(0);
 
     has_map = true;
-    update_goal();
 
     cm_rough_base = cm_rough;
     cm_base = cm;
     cm_hist.clear(0);
+
+    update_goal();
   }
 
 public:
@@ -952,6 +956,7 @@ public:
     has_map = false;
     has_goal = false;
     has_start = false;
+    goal_updated = false;
 
     escaping = false;
   }
@@ -1007,6 +1012,8 @@ public:
         }
 
         has_start = true;
+        if (!goal_updated && has_goal)
+          update_goal();
       }
 
       if (has_map && has_goal && has_start)
