@@ -133,7 +133,7 @@ public:
                       cb_cost, cb_cost_estim, cb_search, cb_progress,
                       cost_leave, progress_interval, return_best);
   }
-  bool searchImpl(Gridmap<float> &g_,
+  bool searchImpl(Gridmap<float> &g,
                   const Vec &st, const Vec &en,
                   std::list<Vec> &path,
                   std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
@@ -152,14 +152,14 @@ public:
     Vec e = en;
     for (int i = NONCYCLIC; i < DIM; i++)
     {
-      s.cycle_unsigned(s[i], g_.size[i]);
-      e.cycle_unsigned(e[i], g_.size[i]);
+      s.cycle_unsigned(s[i], g.size[i]);
+      e.cycle_unsigned(e[i], g.size[i]);
     }
-    g_.clear(FLT_MAX);
+    g.clear(FLT_MAX);
     open_.clear();
     parents_.clear();
 
-    g_[s] = 0;
+    g[s] = 0;
     open_.push(PriorityVec(cb_cost_estim(s, e), 0, s));
 
     auto ts = boost::chrono::high_resolution_clock::now();
@@ -190,7 +190,7 @@ public:
         break;
       }
 
-      float &gp = g_[p];
+      float &gp = g[p];
       if (c > gp)
         continue;
 
@@ -216,12 +216,12 @@ public:
         Vec next = p + diff;
         for (int i = NONCYCLIC; i < DIM; i++)
         {
-          next.cycle_unsigned(next[i], g_.size[i]);
+          next.cycle_unsigned(next[i], g.size[i]);
         }
-        if ((unsigned int)next[0] >= (unsigned int)g_.size[0] ||
-            (unsigned int)next[1] >= (unsigned int)g_.size[1])
+        if ((unsigned int)next[0] >= (unsigned int)g.size[0] ||
+            (unsigned int)next[1] >= (unsigned int)g.size[1])
           continue;
-        if (g_[next] < 0)
+        if (g[next] < 0)
           continue;
 
         float cost_estim = cb_cost_estim(next, e);
@@ -232,7 +232,7 @@ public:
         if (cost < 0 || cost == FLT_MAX)
           continue;
 
-        float &gnext = g_[next];
+        float &gnext = g[next];
         if (gnext > c + cost)
         {
           gnext = c + cost;
@@ -248,9 +248,9 @@ public:
       {
         gp = -1;
       }
-      // printf("(parents_ %d)\n", (int)parents_.size());
+      // printf("(parents %d)\n", (int)parents_.size());
     }
-    // printf("AStar search finished (parents_ %d)\n", (int)parents_.size());
+    // printf("AStar search finished (parents %d)\n", (int)parents_.size());
 
     return findPath(s, e, path);
   }

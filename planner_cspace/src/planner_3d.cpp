@@ -223,13 +223,14 @@ private:
   float sw_wait_;
 
   float rough_cost_max_;
+  bool rough_;
 
   bool force_goal_orientation_;
 
   bool escaping_;
 
-  bool cb_forget(std_srvs::EmptyRequest &req,
-                 std_srvs::EmptyResponse &res)
+  bool cbForget(std_srvs::EmptyRequest &req,
+                std_srvs::EmptyResponse &res)
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
@@ -237,7 +238,7 @@ private:
 
     return true;
   }
-  void cb_goal(const geometry_msgs::PoseStamped::ConstPtr &msg)
+  void cbGoal(const geometry_msgs::PoseStamped::ConstPtr &msg)
   {
     goal_raw_ = goal_ = *msg;
 
@@ -252,16 +253,16 @@ private:
       has_goal_ = true;
       status_.status = planner_cspace::PlannerStatus::DOING;
       pub_status_.publish(status_);
-      update_goal();
+      updateGoal();
     }
     else
     {
       has_goal_ = false;
     }
   }
-  void fill_costmap(reservable_priority_queue<Astar::PriorityVec> &open,
-                    Astar::Gridmap<float> &g,
-                    const Astar::Vec &s, const Astar::Vec &e)
+  void fillCostmap(reservable_priority_queue<Astar::PriorityVec> &open,
+                   Astar::Gridmap<float> &g,
+                   const Astar::Vec &s, const Astar::Vec &e)
   {
     Astar::Vec s_rough = s;
     s_rough[2] = 0;
@@ -342,8 +343,8 @@ private:
     }
     rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
   }
-  bool search_available_pos(Astar::Vec &s, const int xy_range, const int angle_range,
-                            const int cost_acceptable = 50, const int min_xy_range = 0)
+  bool searchAvailablePos(Astar::Vec &s, const int xy_range, const int angle_range,
+                          const int cost_acceptable = 50, const int min_xy_range = 0)
   {
     Astar::Vec d;
     float range_min = FLT_MAX;
@@ -383,7 +384,7 @@ private:
     {
       if (cost_acceptable != 100)
       {
-        return search_available_pos(s, xy_range, angle_range, 100);
+        return searchAvailablePos(s, xy_range, angle_range, 100);
       }
       return false;
     }
@@ -392,7 +393,7 @@ private:
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
-  void update_goal(const bool goal_changed = true)
+  void updateGoal(const bool goal_changed = true)
   {
     if (!has_map_ || !has_goal_ || !has_start_)
     {
@@ -402,11 +403,11 @@ private:
     }
 
     Astar::Vec s, e;
-    metric2grid(s[0], s[1], s[2],
+    metric2Grid(s[0], s[1], s[2],
                 start_.pose.position.x, start_.pose.position.y,
                 tf::getYaw(start_.pose.orientation));
     s.cycle_unsigned(s[2], map_info_.angle);
-    metric2grid(e[0], e[1], e[2],
+    metric2Grid(e[0], e[1], e[2],
                 goal_.pose.position.x, goal_.pose.position.y,
                 tf::getYaw(goal_.pose.orientation));
     e.cycle_unsigned(e[2], map_info_.angle);
@@ -420,7 +421,7 @@ private:
     g.clear(FLT_MAX);
     if (cm_[e] == 100)
     {
-      if (!search_available_pos(e, esc_range_, esc_angle_))
+      if (!searchAvailablePos(e, esc_range_, esc_angle_))
       {
         ROS_WARN("Oops! Goal is in Rock!");
         return;
@@ -428,14 +429,14 @@ private:
       ROS_INFO("Goal moved (%d, %d, %d)",
                e[0], e[1], e[2]);
       float x, y, yaw;
-      grid2metric(e[0], e[1], e[2], x, y, yaw);
+      grid2Metric(e[0], e[1], e[2], x, y, yaw);
       goal_.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
       goal_.pose.position.x = x;
       goal_.pose.position.y = y;
     }
     if (cm_[s] == 100)
     {
-      if (!search_available_pos(s, esc_range_, esc_angle_))
+      if (!searchAvailablePos(s, esc_range_, esc_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
         return;
@@ -445,7 +446,7 @@ private:
     e[2] = 0;
     g[e] = -ec_rough_[0] * 0.5;  // Decrement to reduce calculation error
     open.push(Astar::PriorityVec(g[e], g[e], e));
-    fill_costmap(open, g, s, e);
+    fillCostmap(open, g, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.3f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
@@ -454,11 +455,11 @@ private:
     if (goal_changed)
       cm_hyst_.clear(0);
 
-    publish_costmap();
+    publishCostmap();
 
     goal_updated_ = true;
   }
-  void publish_costmap()
+  void publishCostmap()
   {
     sensor_msgs::PointCloud debug;
     debug.header = map_header_;
@@ -471,7 +472,7 @@ private:
         {
           p[2] = 0;
           float x, y, yaw;
-          grid2metric(p[0], p[1], p[2], x, y, yaw);
+          grid2Metric(p[0], p[1], p[2], x, y, yaw);
           geometry_msgs::Point32 point;
           point.x = x;
           point.y = y;
@@ -499,7 +500,7 @@ private:
     }
     pubDebug.publish(debug);
   }
-  void cb_map_update(const costmap_cspace::CSpace3DUpdate::ConstPtr &msg)
+  void cbMapUpdate(const costmap_cspace::CSpace3DUpdate::ConstPtr &msg)
   {
     if (!has_map_)
       return;
@@ -530,7 +531,7 @@ private:
             }
 
             float x, y, yaw;
-            grid2metric(p[0], p[1], p[2], x, y, yaw);
+            grid2Metric(p[0], p[1], p[2], x, y, yaw);
             geometry_msgs::Point32 point;
             point.x = x;
             point.y = y;
@@ -618,23 +619,23 @@ private:
 
     if (!fast_map_update_)
     {
-      update_goal(false);
+      updateGoal(false);
       return;
     }
 
     Astar::Vec s, e;
-    metric2grid(s[0], s[1], s[2],
+    metric2Grid(s[0], s[1], s[2],
                 start_.pose.position.x, start_.pose.position.y,
                 tf::getYaw(start_.pose.orientation));
     s.cycle_unsigned(s[2], map_info_.angle);
-    metric2grid(e[0], e[1], e[2],
+    metric2Grid(e[0], e[1], e[2],
                 goal_.pose.position.x, goal_.pose.position.y,
                 tf::getYaw(goal_.pose.orientation));
     e.cycle_unsigned(e[2], map_info_.angle);
 
     if (cm_[e] == 100)
     {
-      update_goal(false);
+      updateGoal(false);
       return;
     }
 
@@ -722,13 +723,13 @@ private:
       }
     }
 
-    fill_costmap(open, g, s, e);
+    fillCostmap(open, g, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache updated (%0.3f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
-    publish_costmap();
+    publishCostmap();
   }
-  void cb_map(const costmap_cspace::CSpace3D::ConstPtr &msg)
+  void cbMap(const costmap_cspace::CSpace3D::ConstPtr &msg)
   {
     ROS_INFO("Map received");
     ROS_INFO(" linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
@@ -781,7 +782,7 @@ private:
           search_list_rough_.push_back(d);
         }
       }
-      ROS_DEBUG("Search list updated (range_: ang %d, lin %d) %d",
+      ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d",
                 msg->info.angle, range_, static_cast<int>(search_list_.size()));
 
       rotgm_.resize(msg->info.angle);
@@ -878,23 +879,23 @@ private:
     cm_base_ = cm_;
     cm_hist_.clear(0);
 
-    update_goal();
+    updateGoal();
   }
 
 public:
   Planner3d()
     : nh_("~")
   {
-    subMap = nh_.subscribe("costmap", 1, &Planner3d::cb_map, this);
-    subMapUpdate = nh_.subscribe("costmap_update", 1, &Planner3d::cb_map_update, this);
-    subGoal = nh_.subscribe("goal", 1, &Planner3d::cb_goal, this);
+    subMap = nh_.subscribe("costmap", 1, &Planner3d::cbMap, this);
+    subMapUpdate = nh_.subscribe("costmap_update", 1, &Planner3d::cbMapUpdate, this);
+    subGoal = nh_.subscribe("goal", 1, &Planner3d::cbGoal, this);
     pubPath = nh_.advertise<nav_msgs::Path>("path", 1, true);
     pubDebug = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
     pubHist = nh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
     pubStart = nh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status_ = nh_.advertise<planner_cspace::PlannerStatus>("status", 1, true);
-    srs_forget_ = nh_.advertiseService("forget", &Planner3d::cb_forget, this);
+    srs_forget_ = nh_.advertiseService("forget", &Planner3d::cbForget, this);
 
     nh_.param_cast("freq", freq_, 4.0f);
     nh_.param_cast("freq_min", freq_min_, 2.0f);
@@ -1017,7 +1018,7 @@ public:
 
         has_start_ = true;
         if (!goal_updated_ && has_goal_)
-          update_goal();
+          updateGoal();
       }
 
       if (has_map_ && has_goal_ && has_start_)
@@ -1051,10 +1052,10 @@ public:
             status_.error = planner_cspace::PlannerStatus::GOING_WELL;
 
           nav_msgs::Path path;
-          make_plan(start_.pose, goal_.pose, path, true);
+          makePlan(start_.pose, goal_.pose, path, true);
           pubPath.publish(path);
 
-          if (switch_detect(path))
+          if (switchDetect(path))
           {
             ROS_INFO("Will have switch back");
             if (sw_wait_ > 0.0)
@@ -1076,7 +1077,7 @@ public:
   }
 
 private:
-  void grid2metric(
+  void grid2Metric(
       const int x, const int y, const int yaw,
       float &gx, float &gy, float &gyaw)
   {
@@ -1084,7 +1085,7 @@ private:
     gy = y * map_info_.linear_resolution + map_info_.origin.position.y;
     gyaw = yaw * map_info_.angular_resolution;
   }
-  void grid2metric(const std::list<Astar::Vec> &path_grid,
+  void grid2Metric(const std::list<Astar::Vec> &path_grid,
                    nav_msgs::Path &path, const Astar::Vec &v_start)
   {
     path.header = map_header_;
@@ -1098,7 +1099,7 @@ private:
     for (auto &p : path_grid)
     {
       float x, y, yaw;
-      grid2metric(p[0], p[1], p[2], x, y, yaw);
+      grid2Metric(p[0], p[1], p[2], x, y, yaw);
       geometry_msgs::PoseStamped ps;
       ps.header = path.header;
 
@@ -1200,7 +1201,7 @@ private:
       init = true;
     }
   }
-  void metric2grid(
+  void metric2Grid(
       int &x, int &y, int &yaw,
       const float gx, const float gy, const float gyaw)
   {
@@ -1208,21 +1209,21 @@ private:
     y = lroundf((gy - map_info_.origin.position.y) / map_info_.linear_resolution);
     yaw = lroundf(gyaw / map_info_.angular_resolution);
   }
-  bool make_plan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge,
-                 nav_msgs::Path &path, bool hyst)
+  bool makePlan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge,
+                nav_msgs::Path &path, bool hyst)
   {
     Astar::Vec s, e;
-    metric2grid(s[0], s[1], s[2],
+    metric2Grid(s[0], s[1], s[2],
                 gs.position.x, gs.position.y, tf::getYaw(gs.orientation));
     s.cycle_unsigned(s[2], map_info_.angle);
-    metric2grid(e[0], e[1], e[2],
+    metric2Grid(e[0], e[1], e[2],
                 ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
     e.cycle_unsigned(e[2], map_info_.angle);
 
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
     float x, y, yaw;
-    grid2metric(e[0], e[1], e[2], x, y, yaw);
+    grid2Metric(e[0], e[1], e[2], x, y, yaw);
     p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
     p.pose.position.x = x;
     p.pose.position.y = y;
@@ -1230,7 +1231,7 @@ private:
 
     if (cm_[s] == 100)
     {
-      if (!search_available_pos(s, esc_range_, esc_angle_))
+      if (!searchAvailablePos(s, esc_range_, esc_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
         status_.error = planner_cspace::PlannerStatus::IN_ROCK;
@@ -1249,25 +1250,25 @@ private:
       if (!escaping_ && temporary_escape_)
       {
         e = s;
-        if (search_available_pos(e, esc_range_, esc_angle_, 50, esc_range_ / 2))
+        if (searchAvailablePos(e, esc_range_, esc_angle_, 50, esc_range_ / 2))
         {
           escaping_ = true;
           ROS_INFO("Temporary goal (%d, %d, %d)",
                    e[0], e[1], e[2]);
           float x, y, yaw;
-          grid2metric(e[0], e[1], e[2], x, y, yaw);
+          grid2Metric(e[0], e[1], e[2], x, y, yaw);
           goal_.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
           goal_.pose.position.x = x;
           goal_.pose.position.y = y;
 
-          update_goal();
+          updateGoal();
           return false;
         }
       }
       return false;
     }
 
-    grid2metric(s[0], s[1], s[2], x, y, yaw);
+    grid2Metric(s[0], s[1], s[2], x, y, yaw);
     p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
     p.pose.position.x = x;
     p.pose.position.y = y;
@@ -1291,7 +1292,7 @@ private:
       {
         goal_ = goal_raw_;
         escaping_ = false;
-        update_goal();
+        updateGoal();
         ROS_INFO("Escaped");
       }
       else
@@ -1310,15 +1311,15 @@ private:
     std::list<Astar::Vec> path_grid;
     // const auto ts = boost::chrono::high_resolution_clock::now();
     if (!as_.search(s, e, path_grid,
-                    std::bind(&Planner3d::cb_cost,
+                    std::bind(&Planner3d::cbCost,
                               this, std::placeholders::_1, std::placeholders::_2,
                               std::placeholders::_3, std::placeholders::_4, hyst),
-                    std::bind(&Planner3d::cb_cost_estim,
+                    std::bind(&Planner3d::cbCostEstim,
                               this, std::placeholders::_1, std::placeholders::_2),
-                    std::bind(&Planner3d::cb_search,
+                    std::bind(&Planner3d::cbSearch,
                               this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3),
-                    std::bind(&Planner3d::cb_progress,
+                    std::bind(&Planner3d::cbProgress,
                               this, std::placeholders::_1),
                     range_limit,
                     1.0f / freq_min_,
@@ -1333,7 +1334,7 @@ private:
     // ROS_INFO("Path found (%0.3f sec.)",
     //   boost::chrono::duration<float>(tnow - ts).count());
 
-    grid2metric(path_grid, path, s);
+    grid2Metric(path_grid, path, s);
 
     if (hyst)
     {
@@ -1383,13 +1384,12 @@ private:
       // const auto tnow = boost::chrono::high_resolution_clock::now();
       // ROS_INFO("Hysteresis map generated (%0.3f sec.)",
       //   boost::chrono::duration<float>(tnow - ts).count());
-      publish_costmap();
+      publishCostmap();
     }
 
     return true;
   }
-  bool rough;
-  std::vector<Astar::Vec> &cb_search(
+  std::vector<Astar::Vec> &cbSearch(
       const Astar::Vec &p,
       const Astar::Vec &s, const Astar::Vec &e)
   {
@@ -1398,20 +1398,20 @@ private:
 
     if (ds.sqlen() < local_range_ * local_range_)
     {
-      rough = false;
+      rough_ = false;
       euclid_cost_coef_ = ec_;
       return search_list_;
     }
-    rough = true;
+    rough_ = true;
     euclid_cost_coef_ = ec_rough_;
     return search_list_rough_;
   }
-  bool cb_progress(const std::list<Astar::Vec> &path_grid)
+  bool cbProgress(const std::list<Astar::Vec> &path_grid)
   {
     nav_msgs::Path path;
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
-    // grid2metric(path_grid, path);
+    // grid2Metric(path_grid, path);
     pubPath.publish(path);
     ROS_WARN("Search timed out");
     return true;
@@ -1430,14 +1430,14 @@ private:
     else if (v[2] < -M_PI)
       v[2] += 2 * M_PI;
   }
-  float cb_cost_estim(const Astar::Vec &s, const Astar::Vec &e)
+  float cbCostEstim(const Astar::Vec &s, const Astar::Vec &e)
   {
     auto s2 = s;
     s2[2] = 0;
     auto cost = cost_estim_cache_[s2];
     if (cost == FLT_MAX)
       return FLT_MAX;
-    if (!rough)
+    if (!rough_)
     {
       if (s2[2] > static_cast<int>(map_info_.angle) / 2)
         s2[2] -= map_info_.angle;
@@ -1445,7 +1445,7 @@ private:
     }
     return cost;
   }
-  bool switch_detect(const nav_msgs::Path &path)
+  bool switchDetect(const nav_msgs::Path &path)
   {
     geometry_msgs::Pose p_prev;
     bool first(true);
@@ -1481,10 +1481,10 @@ private:
     }
     return false;
   }
-  float cb_cost(const Astar::Vec &s, Astar::Vec &e,
-                const Astar::Vec &v_goal,
-                const Astar::Vec &v_start,
-                const bool hyst)
+  float cbCost(const Astar::Vec &s, Astar::Vec &e,
+               const Astar::Vec &v_goal,
+               const Astar::Vec &v_start,
+               const bool hyst)
   {
     const Astar::Vec d = e - s;
     float cost = euclidCost(d);
@@ -1680,7 +1680,7 @@ private:
 
 int main(int argc, char *argv[])
 {
-  ros::init(argc, argv, "Planner3d");
+  ros::init(argc, argv, "planner_3d");
 
   Planner3d jy;
   jy.spin();
