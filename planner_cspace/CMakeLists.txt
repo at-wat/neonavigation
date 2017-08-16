@@ -1,15 +1,31 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(planner_cspace)
 
-find_package(catkin REQUIRED COMPONENTS
-	roscpp sensor_msgs geometry_msgs tf message_generation message_runtime costmap_cspace rostest roslint
+find_package(catkin REQUIRED
+  COMPONENTS
+    roscpp
+    actionlib
+    sensor_msgs
+    geometry_msgs
+    move_base_msgs
+    tf
+    message_generation
+    costmap_cspace
+    rostest
+    roslint
 )
 
 add_message_files(FILES PlannerStatus.msg)
 generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
-	CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs tf costmap_cspace
+	CATKIN_DEPENDS
+    roscpp
+    sensor_msgs
+    geometry_msgs
+    move_base_msgs
+    tf
+    costmap_cspace
 )
 
 include(CheckCXXCompilerFlag)
