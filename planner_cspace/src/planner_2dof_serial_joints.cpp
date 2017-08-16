@@ -438,7 +438,7 @@ public:
     links_[0].current_th_ = 0.0;
     links_[1].current_th_ = 0.0;
 
-    ROS_INFO("link group_: %s", group_.c_str());
+    ROS_INFO("link group: %s", group_.c_str());
     ROS_INFO(" - link0: %s", links_[0].name_.c_str());
     ROS_INFO(" - link1: %s", links_[1].name_.c_str());
 
@@ -448,17 +448,17 @@ public:
     nh.param_cast("weight_cost", weight_cost_, 4.0f);
     nh.param_cast("expand", expand_, 0.1);
 
-    std::string PointVelMode;
-    nh.param("PointVelMode", PointVelMode, std::string("prev"));
-    std::transform(PointVelMode.begin(), PointVelMode.end(), PointVelMode.begin(), ::tolower);
-    if (PointVelMode.compare("prev") == 0)
+    std::string point_vel_mode;
+    nh.param("point_vel_mode", point_vel_mode, std::string("prev"));
+    std::transform(point_vel_mode.begin(), point_vel_mode.end(), point_vel_mode.begin(), ::tolower);
+    if (point_vel_mode.compare("prev") == 0)
       point_vel_ = VEL_PREV;
-    else if (PointVelMode.compare("next") == 0)
+    else if (point_vel_mode.compare("next") == 0)
       point_vel_ = VEL_NEXT;
-    else if (PointVelMode.compare("avg") == 0)
+    else if (point_vel_mode.compare("avg") == 0)
       point_vel_ = VEL_AVG;
     else
-      ROS_ERROR("PointVelMode must be prev/next/avg");
+      ROS_ERROR("point_vel_mode must be prev/next/avg");
 
     ROS_INFO("Resolution: %d", resolution_);
     Astar::Vec p;

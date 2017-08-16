@@ -943,13 +943,13 @@ public:
     {
       ROS_WARN("Planner3d: Experimental fast_map_update is enabled. ");
     }
-    std::string DebugMode;
-    nh_.param("DebugMode", DebugMode, std::string("cost_estim"));
-    if (DebugMode == "hyst")
+    std::string debug_mode;
+    nh_.param("debug_mode", debug_mode, std::string("cost_estim"));
+    if (debug_mode == "hyst")
       debug_out_ = DEBUG_HYSTERESIS;
-    else if (DebugMode == "hist")
+    else if (debug_mode == "hist")
       debug_out_ = DEBUG_HISTORY;
-    else if (DebugMode == "cost_estim")
+    else if (debug_mode == "cost_estim")
       debug_out_ = DEBUG_COST_ESTIM;
 
     int queue_size_limit;
