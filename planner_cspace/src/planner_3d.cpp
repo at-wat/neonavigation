@@ -918,7 +918,7 @@ public:
     srs_forget_ = nh_.advertiseService("forget", &Planner3d::cbForget, this);
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(),
-                                         "planner_3d",
+                                         "planner_3d/action",
                                          boost::bind(&Planner3d::cbAction, this, _1), false));
 
     nh_.param_cast("freq", freq_, 4.0f);
