@@ -896,10 +896,10 @@ protected:
 
     updateGoal();
   }
-  void cbAction(const move_base_msgs::MoveBaseGoalConstPtr &action_goal)
+  void cbAction()
   {
-    setGoal(action_goal->target_pose);
-    act_->acceptNewGoal();
+    move_base_msgs::MoveBaseGoalConstPtr goal = act_->acceptNewGoal();
+    setGoal(goal->target_pose);
   }
 
 public:
@@ -917,9 +917,8 @@ public:
     pub_status_ = nh_.advertise<planner_cspace::PlannerStatus>("status", 1, true);
     srs_forget_ = nh_.advertiseService("forget", &Planner3d::cbForget, this);
 
-    act_.reset(new Planner3DActionServer(ros::NodeHandle(),
-                                         "planner_3d/action",
-                                         boost::bind(&Planner3d::cbAction, this, _1), false));
+    act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
+    act_->registerGoalCallback(boost::bind(&Planner3d::cbAction, this));
 
     nh_.param_cast("freq", freq_, 4.0f);
     nh_.param_cast("freq_min", freq_min_, 2.0f);
