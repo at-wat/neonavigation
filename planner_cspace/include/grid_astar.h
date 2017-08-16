@@ -49,15 +49,6 @@ template <int DIM = 3, int NONCYCLIC = 2>
 class GridAstar
 {
 public:
-  const int getDim()
-  {
-    return DIM;
-  }
-  const int getNoncyclic()
-  {
-    return NONCYCLIC;
-  }
-
   using Vec = CyclicVecInt<DIM, NONCYCLIC>;
   using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
 
@@ -90,30 +81,41 @@ public:
     }
   };
 
-  Gridmap<float> g;
-  std::unordered_map<Vec, Vec, Vec> parents;
-  reservable_priority_queue<pq> open;
-  size_t queue_size_limit;
+protected:
+  Gridmap<float> g_;
+  std::unordered_map<Vec, Vec, Vec> parents_;
+  reservable_priority_queue<pq> open_;
+  size_t queue_size_limit_;
+
+public:
+  const int getDim()
+  {
+    return DIM;
+  }
+  const int getNoncyclic()
+  {
+    return NONCYCLIC;
+  }
 
   void reset(const Vec size)
   {
-    g.reset(size);
-    g.clear(FLT_MAX);
-    parents.reserve(g.ser_size / 16);
-    open.reserve(g.ser_size / 16);
+    g_.reset(size);
+    g_.clear(FLT_MAX);
+    parents_.reserve(g_.ser_size / 16);
+    open_.reserve(g_.ser_size / 16);
   }
   GridAstar()
   {
-    queue_size_limit = 0;
+    queue_size_limit_ = 0;
   }
   explicit GridAstar(const Vec size)
   {
     reset(size);
-    queue_size_limit = 0;
+    queue_size_limit_ = 0;
   }
   void setQueueSizeLimit(const size_t size)
   {
-    queue_size_limit = size;
+    queue_size_limit_ = size;
   }
 
   bool search(const Vec &s, const Vec &e,
@@ -126,11 +128,11 @@ public:
               const float progress_interval,
               const bool return_best = false)
   {
-    return searchImpl(g, s, e, path,
+    return searchImpl(g_, s, e, path,
                       cb_cost, cb_cost_estim, cb_search, cb_progress,
                       cost_leave, progress_interval, return_best);
   }
-  bool searchImpl(Gridmap<float> &g,
+  bool searchImpl(Gridmap<float> &g_,
                   const Vec &st, const Vec &en,
                   std::list<Vec> &path,
                   std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
@@ -149,15 +151,15 @@ public:
     Vec e = en;
     for (int i = NONCYCLIC; i < DIM; i++)
     {
-      s.cycle_unsigned(s[i], g.size[i]);
-      e.cycle_unsigned(e[i], g.size[i]);
+      s.cycle_unsigned(s[i], g_.size[i]);
+      e.cycle_unsigned(e[i], g_.size[i]);
     }
-    g.clear(FLT_MAX);
-    open.clear();
-    parents.clear();
+    g_.clear(FLT_MAX);
+    open_.clear();
+    parents_.clear();
 
-    g[s] = 0;
-    open.push(pq(cb_cost_estim(s, e), 0, s));
+    g_[s] = 0;
+    open_.push(pq(cb_cost_estim(s, e), 0, s));
 
     auto ts = boost::chrono::high_resolution_clock::now();
 
@@ -165,8 +167,8 @@ public:
     int cost_estim_min = cb_cost_estim(s, e);
     while (true)
     {
-      // printf("search queue %d\n", (int)open.size());
-      if (open.size() < 1)
+      // printf("search queue %d\n", (int)open_.size());
+      if (open_.size() < 1)
       {
         // No fesible path
         // printf("No fesible path\n");
@@ -176,18 +178,18 @@ public:
         }
         return false;
       }
-      pq center = open.top();
+      pq center = open_.top();
       Vec p = center.v;
       float c = center.p_raw;
       float c_estim = center.p;
-      open.pop();
+      open_.pop();
       if (p == e || c_estim - c <= cost_leave)
       {
         e = p;
         break;
       }
 
-      float &gp = g[p];
+      float &gp = g_[p];
       if (c > gp)
         continue;
 
@@ -213,12 +215,12 @@ public:
         Vec next = p + diff;
         for (int i = NONCYCLIC; i < DIM; i++)
         {
-          next.cycle_unsigned(next[i], g.size[i]);
+          next.cycle_unsigned(next[i], g_.size[i]);
         }
-        if ((unsigned int)next[0] >= (unsigned int)g.size[0] ||
-            (unsigned int)next[1] >= (unsigned int)g.size[1])
+        if ((unsigned int)next[0] >= (unsigned int)g_.size[0] ||
+            (unsigned int)next[1] >= (unsigned int)g_.size[1])
           continue;
-        if (g[next] < 0)
+        if (g_[next] < 0)
           continue;
 
         float cost_estim = cb_cost_estim(next, e);
@@ -229,15 +231,15 @@ public:
         if (cost < 0 || cost == FLT_MAX)
           continue;
 
-        float &gnext = g[next];
+        float &gnext = g_[next];
         if (gnext > c + cost)
         {
           gnext = c + cost;
-          parents[next] = p;
-          open.push(pq(c + cost + cost_estim, c + cost, next));
-          if (queue_size_limit > 0 &&
-              open.size() > queue_size_limit)
-            open.pop_back();
+          parents_[next] = p;
+          open_.push(pq(c + cost + cost_estim, c + cost, next));
+          if (queue_size_limit_ > 0 &&
+              open_.size() > queue_size_limit_)
+            open_.pop_back();
           updates++;
         }
       }
@@ -245,9 +247,9 @@ public:
       {
         gp = -1;
       }
-      // printf("(parents %d)\n", (int)parents.size());
+      // printf("(parents_ %d)\n", (int)parents_.size());
     }
-    // printf("AStar search finished (parents %d)\n", (int)parents.size());
+    // printf("AStar search finished (parents_ %d)\n", (int)parents_.size());
 
     return findPath(s, e, path);
   }
@@ -257,16 +259,16 @@ public:
     while (true)
     {
       path.push_front(n);
-      // printf("p- %d %d %d   %0.4f\n", n[0], n[1], n[2], g[n]);
+      // printf("p- %d %d %d   %0.4f\n", n[0], n[1], n[2], g_[n]);
       if (n == s)
         break;
-      if (parents.find(n) == parents.end())
+      if (parents_.find(n) == parents_.end())
       {
-        n = parents[n];
+        n = parents_[n];
         // printf("px %d %d %d\n", n[0], n[1], n[2]);
         return false;
       }
-      n = parents[n];
+      n = parents_[n];
     }
     return true;
   }
