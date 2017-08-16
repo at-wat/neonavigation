@@ -37,6 +37,9 @@
 #include <tf/transform_listener.h>
 #include <sensor_msgs/PointCloud.h>
 
+#include <actionlib/server/simple_action_server.h>
+#include <move_base_msgs/MoveBaseAction.h>
+
 #include <string>
 #include <list>
 #include <vector>
@@ -58,7 +61,9 @@ class Planner3d
 public:
   using Astar = GridAstar<3, 2>;
 
-private:
+protected:
+  using Planner3DActionServer = actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction>;
+
   ros::NodeHandle_f nh_;
   ros::Subscriber subMap;
   ros::Subscriber subMapUpdate;
@@ -71,6 +76,7 @@ private:
   ros::Publisher pub_status_;
   ros::ServiceServer srs_forget_;
 
+  std::shared_ptr<Planner3DActionServer> act_;
   tf::TransformListener tfl_;
 
   Astar as_;
@@ -240,7 +246,16 @@ private:
   }
   void cbGoal(const geometry_msgs::PoseStamped::ConstPtr &msg)
   {
-    goal_raw_ = goal_ = *msg;
+    if (act_->isActive())
+    {
+      ROS_ERROR("Setting new goal is ignored since planner_3d is proceeding the action.");
+      return;
+    }
+    setGoal(*msg);
+  }
+  void setGoal(const geometry_msgs::PoseStamped &msg)
+  {
+    goal_raw_ = goal_ = msg;
 
     double len2 =
         goal_.pose.orientation.x * goal_.pose.orientation.x +
@@ -881,6 +896,11 @@ private:
 
     updateGoal();
   }
+  void cbAction()
+  {
+    move_base_msgs::MoveBaseGoalConstPtr goal = act_->acceptNewGoal();
+    setGoal(goal->target_pose);
+  }
 
 public:
   Planner3d()
@@ -896,6 +916,9 @@ public:
     pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status_ = nh_.advertise<planner_cspace::PlannerStatus>("status", 1, true);
     srs_forget_ = nh_.advertiseService("forget", &Planner3d::cbForget, this);
+
+    act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
+    act_->registerGoalCallback(boost::bind(&Planner3d::cbAction, this));
 
     nh_.param_cast("freq", freq_, 4.0f);
     nh_.param_cast("freq_min", freq_min_, 2.0f);
@@ -964,6 +987,8 @@ public:
     goal_updated_ = false;
 
     escaping_ = false;
+
+    act_->start();
   }
   void spin()
   {
@@ -1023,6 +1048,13 @@ public:
 
       if (has_map_ && has_goal_ && has_start_)
       {
+        if (act_->isActive())
+        {
+          move_base_msgs::MoveBaseFeedback feedback;
+          feedback.base_position = start_;
+          act_->publishFeedback(feedback);
+        }
+
         if (status_.status == planner_cspace::PlannerStatus::FINISHING)
         {
           float yaw_s = tf::getYaw(start_.pose.orientation);
@@ -1042,6 +1074,7 @@ public:
             status_.status = planner_cspace::PlannerStatus::DONE;
             has_goal_ = false;
             ROS_INFO("Path plan finished");
+            act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           }
         }
         else
@@ -1076,7 +1109,7 @@ public:
     }
   }
 
-private:
+protected:
   void grid2Metric(
       const int x, const int y, const int yaw,
       float &gx, float &gy, float &gyaw)
