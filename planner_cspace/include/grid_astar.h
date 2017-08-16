@@ -46,23 +46,23 @@
 #include <blockmem_gridmap.h>
 
 template <int DIM = 3, int NONCYCLIC = 2>
-class grid_astar
+class GridAstar
 {
 public:
-  const int get_dim()
+  const int getDim()
   {
     return DIM;
   }
-  const int get_noncyclic()
+  const int getNoncyclic()
   {
     return NONCYCLIC;
   }
 
-  using vec = CyclicVecInt<DIM, NONCYCLIC>;
-  using vecf = CyclicVecFloat<DIM, NONCYCLIC>;
+  using Vec = CyclicVecInt<DIM, NONCYCLIC>;
+  using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
 
   template <class T, int block_width = 0x20>
-  class gridmap : public BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
+  class Gridmap : public BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
   {
     using BlockMemGridmap<T, DIM, NONCYCLIC, block_width>::BlockMemGridmap;
   };
@@ -72,12 +72,12 @@ public:
   public:
     float p;
     float p_raw;
-    vec v;
+    Vec v;
     pq()
     {
       p = 0;
     }
-    pq(const float &p, const float &p_raw, const vec &v)
+    pq(const float &p, const float &p_raw, const Vec &v)
     {
       this->p = p;
       this->p_raw = p_raw;
@@ -90,63 +90,63 @@ public:
     }
   };
 
-  gridmap<float> g;
-  std::unordered_map<vec, vec, vec> parents;
+  Gridmap<float> g;
+  std::unordered_map<Vec, Vec, Vec> parents;
   reservable_priority_queue<pq> open;
   size_t queue_size_limit;
 
-  void reset(const vec size)
+  void reset(const Vec size)
   {
     g.reset(size);
     g.clear(FLT_MAX);
     parents.reserve(g.ser_size / 16);
     open.reserve(g.ser_size / 16);
   }
-  grid_astar()
+  GridAstar()
   {
     queue_size_limit = 0;
   }
-  explicit grid_astar(const vec size)
+  explicit GridAstar(const Vec size)
   {
     reset(size);
     queue_size_limit = 0;
   }
-  void set_queue_size_limit(const size_t size)
+  void setQueueSizeLimit(const size_t size)
   {
     queue_size_limit = size;
   }
 
-  bool search(const vec &s, const vec &e,
-              std::list<vec> &path,
-              std::function<float(const vec &, vec &, const vec &, const vec &)> cb_cost,
-              std::function<float(const vec &, const vec &)> cb_cost_estim,
-              std::function<std::vector<vec> &(const vec &, const vec &, const vec &)> cb_search,
-              std::function<bool(const std::list<vec> &)> cb_progress,
+  bool search(const Vec &s, const Vec &e,
+              std::list<Vec> &path,
+              std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
+              std::function<float(const Vec &, const Vec &)> cb_cost_estim,
+              std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
+              std::function<bool(const std::list<Vec> &)> cb_progress,
               const float cost_leave,
               const float progress_interval,
               const bool return_best = false)
   {
-    return search_impl(g, s, e, path,
-                       cb_cost, cb_cost_estim, cb_search, cb_progress,
-                       cost_leave, progress_interval, return_best);
+    return searchImpl(g, s, e, path,
+                      cb_cost, cb_cost_estim, cb_search, cb_progress,
+                      cost_leave, progress_interval, return_best);
   }
-  bool search_impl(gridmap<float> &g,
-                   const vec &st, const vec &en,
-                   std::list<vec> &path,
-                   std::function<float(const vec &, vec &, const vec &, const vec &)> cb_cost,
-                   std::function<float(const vec &, const vec &)> cb_cost_estim,
-                   std::function<std::vector<vec> &(const vec &, const vec &, const vec &)> cb_search,
-                   std::function<bool(const std::list<vec> &)> cb_progress,
-                   const float cost_leave,
-                   const float progress_interval,
-                   const bool return_best = false)
+  bool searchImpl(Gridmap<float> &g,
+                  const Vec &st, const Vec &en,
+                  std::list<Vec> &path,
+                  std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
+                  std::function<float(const Vec &, const Vec &)> cb_cost_estim,
+                  std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
+                  std::function<bool(const std::list<Vec> &)> cb_progress,
+                  const float cost_leave,
+                  const float progress_interval,
+                  const bool return_best = false)
   {
     if (st == en)
     {
       return false;
     }
-    vec s = st;
-    vec e = en;
+    Vec s = st;
+    Vec e = en;
     for (int i = NONCYCLIC; i < DIM; i++)
     {
       s.cycle_unsigned(s[i], g.size[i]);
@@ -161,7 +161,7 @@ public:
 
     auto ts = boost::chrono::high_resolution_clock::now();
 
-    vec better = s;
+    Vec better = s;
     int cost_estim_min = cb_cost_estim(s, e);
     while (true)
     {
@@ -172,12 +172,12 @@ public:
         // printf("No fesible path\n");
         if (return_best)
         {
-          find_path(s, better, path);
+          findPath(s, better, path);
         }
         return false;
       }
       pq center = open.top();
-      vec p = center.v;
+      Vec p = center.v;
       float c = center.p_raw;
       float c_estim = center.p;
       open.pop();
@@ -200,17 +200,17 @@ public:
       auto tnow = boost::chrono::high_resolution_clock::now();
       if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
       {
-        std::list<vec> path_tmp;
+        std::list<Vec> path_tmp;
         ts = tnow;
-        find_path(s, better, path_tmp);
+        findPath(s, better, path_tmp);
         cb_progress(path_tmp);
       }
 
-      std::vector<vec> search_list = cb_search(p, s, e);
+      std::vector<Vec> search_list = cb_search(p, s, e);
       int updates = 0;
       for (auto &diff : search_list)
       {
-        vec next = p + diff;
+        Vec next = p + diff;
         for (int i = NONCYCLIC; i < DIM; i++)
         {
           next.cycle_unsigned(next[i], g.size[i]);
@@ -249,11 +249,11 @@ public:
     }
     // printf("AStar search finished (parents %d)\n", (int)parents.size());
 
-    return find_path(s, e, path);
+    return findPath(s, e, path);
   }
-  bool find_path(const vec &s, const vec &e, std::list<vec> &path)
+  bool findPath(const Vec &s, const Vec &e, std::list<Vec> &path)
   {
-    vec n = e;
+    Vec n = e;
     while (true)
     {
       path.push_front(n);

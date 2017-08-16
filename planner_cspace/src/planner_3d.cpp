@@ -53,10 +53,11 @@ float signf(float a)
   return 0;
 }
 
-typedef grid_astar<3, 2> astar;
-
-class planner_3d
+class Planner3d
 {
+public:
+  using Astar = GridAstar<3, 2>;
+
 private:
   ros::NodeHandle_f nh;
   ros::Subscriber sub_map;
@@ -72,33 +73,33 @@ private:
 
   tf::TransformListener tfl;
 
-  astar as;
-  astar::gridmap<char, 0x40> cm;
-  astar::gridmap<char, 0x40> cm_hist;
-  astar::gridmap<char, 0x80> cm_rough;
-  astar::gridmap<char, 0x40> cm_base;
-  astar::gridmap<char, 0x80> cm_rough_base;
-  astar::gridmap<char, 0x80> cm_hyst;
-  astar::gridmap<float> cost_estim_cache;
+  Astar as;
+  Astar::Gridmap<char, 0x40> cm;
+  Astar::Gridmap<char, 0x40> cm_hist;
+  Astar::Gridmap<char, 0x80> cm_rough;
+  Astar::Gridmap<char, 0x40> cm_base;
+  Astar::Gridmap<char, 0x80> cm_rough_base;
+  Astar::Gridmap<char, 0x80> cm_hyst;
+  Astar::Gridmap<float> cost_estim_cache;
 
-  astar::vecf euclid_cost_coef;
-  float euclid_cost(const astar::vec &v, const astar::vecf coef)
+  Astar::Vecf euclid_cost_coef;
+  float euclid_cost(const Astar::Vec &v, const Astar::Vecf coef)
   {
-    astar::vec vc = v;
+    Astar::Vec vc = v;
     float cost = 0;
-    for (int i = 0; i < as.get_noncyclic(); i++)
+    for (int i = 0; i < as.getNoncyclic(); i++)
     {
       cost += powf(coef[i] * vc[i], 2.0);
     }
     cost = sqrtf(cost);
-    for (int i = as.get_noncyclic(); i < as.get_dim(); i++)
+    for (int i = as.getNoncyclic(); i < as.getDim(); i++)
     {
       vc.cycle(vc[i], cm.size[i]);
       cost += fabs(coef[i] * vc[i]);
     }
     return cost;
   }
-  float euclid_cost(const astar::vec &v)
+  float euclid_cost(const Astar::Vec &v)
   {
     return euclid_cost(v, euclid_cost_coef);
   }
@@ -106,10 +107,10 @@ private:
   class rotation_cache
   {
   public:
-    std::unique_ptr<astar::vecf[]> c;
-    astar::vec size;
+    std::unique_ptr<Astar::Vecf[]> c;
+    Astar::Vec size;
     int ser_size;
-    void reset(const astar::vec &size)
+    void reset(const Astar::Vec &size)
     {
       size_t ser_size = 1;
       for (int i = 0; i < 3; i++)
@@ -119,16 +120,16 @@ private:
       this->size = size;
       this->ser_size = ser_size;
 
-      c.reset(new astar::vecf[ser_size]);
+      c.reset(new Astar::Vecf[ser_size]);
     }
-    explicit rotation_cache(const astar::vec &size)
+    explicit rotation_cache(const Astar::Vec &size)
     {
       reset(size);
     }
     rotation_cache()
     {
     }
-    astar::vecf &operator[](const astar::vec &pos)
+    Astar::Vecf &operator[](const Astar::Vec &pos)
     {
       size_t addr = pos[2];
       for (int i = 1; i >= 0; i--)
@@ -164,8 +165,8 @@ private:
   bool goal_updated;
   bool remember_updates;
   bool fast_map_update;
-  std::vector<astar::vec> search_list;
-  std::vector<astar::vec> search_list_rough;
+  std::vector<Astar::Vec> search_list;
+  std::vector<Astar::Vec> search_list_rough;
   int hist_cost;
   int hist_cnt_max;
   int hist_cnt_thres;
@@ -195,9 +196,9 @@ private:
   geometry_msgs::PoseStamped start;
   geometry_msgs::PoseStamped goal;
   geometry_msgs::PoseStamped goal_raw;
-  astar::vecf ec;
-  astar::vecf ec_rough;
-  astar::vecf resolution;
+  Astar::Vecf ec;
+  Astar::Vecf ec_rough;
+  Astar::Vecf resolution;
   double goal_tolerance_lin_f;
   double goal_tolerance_ang_f;
   double goal_tolerance_ang_finish;
@@ -255,11 +256,11 @@ private:
       has_goal = false;
     }
   }
-  void fill_costmap(reservable_priority_queue<astar::pq> &open,
-                    astar::gridmap<float> &g,
-                    const astar::vec &s, const astar::vec &e)
+  void fill_costmap(reservable_priority_queue<Astar::pq> &open,
+                    Astar::Gridmap<float> &g,
+                    const Astar::Vec &s, const Astar::Vec &e)
   {
-    astar::vec s_rough = s;
+    Astar::Vec s_rough = s;
     s_rough[2] = 0;
 
     while (true)
@@ -267,7 +268,7 @@ private:
       if (open.size() < 1)
         break;
       const auto center = open.top();
-      const astar::vec p = center.v;
+      const Astar::Vec p = center.v;
       const auto c = center.p_raw;
       open.pop();
       if (c > g[p])
@@ -275,7 +276,7 @@ private:
       if (c - ec_rough[0] * (range + local_range + longcut_range) > g[s_rough])
         continue;
 
-      astar::vec d;
+      Astar::Vec d;
       d[2] = 0;
 
       const int range_rough = 4;
@@ -288,7 +289,7 @@ private:
           if (d.sqlen() > range_rough * range_rough)
             continue;
 
-          const astar::vec next = p + d;
+          const Astar::Vec next = p + d;
           if ((unsigned int)next[0] >= (unsigned int)map_info.width ||
               (unsigned int)next[1] >= (unsigned int)map_info.height)
             continue;
@@ -308,7 +309,7 @@ private:
             v[2] = 0;
             dp[0] = static_cast<float>(d[0]) / dist;
             dp[1] = static_cast<float>(d[1]) / dist;
-            astar::vec pos(v);
+            Astar::Vec pos(v);
             char c = 0;
             for (int i = 0; i < dist; i++)
             {
@@ -331,19 +332,19 @@ private:
           if (gnext > gp)
           {
             gnext = gp;
-            open.push(astar::pq(gp, gp, next));
+            open.push(Astar::pq(gp, gp, next));
           }
         }
       }
     }
     rough_cost_max = g[s_rough] + ec_rough[0] * (range + local_range);
   }
-  bool search_available_pos(astar::vec &s, const int xy_range, const int angle_range,
+  bool search_available_pos(Astar::Vec &s, const int xy_range, const int angle_range,
                             const int cost_acceptable = 50, const int min_xy_range = 0)
   {
-    astar::vec d;
+    Astar::Vec d;
     float range_min = FLT_MAX;
-    astar::vec s_out;
+    Astar::Vec s_out;
     ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
     for (d[2] = -angle_range; d[2] <= angle_range; d[2]++)
     {
@@ -358,7 +359,7 @@ private:
           if (d.sqlen() < min_xy_range * min_xy_range)
             continue;
 
-          astar::vec s2 = s + d;
+          Astar::Vec s2 = s + d;
           if ((unsigned int)s2[0] >= (unsigned int)map_info.width ||
               (unsigned int)s2[1] >= (unsigned int)map_info.height)
             continue;
@@ -397,7 +398,7 @@ private:
       return;
     }
 
-    astar::vec s, e;
+    Astar::Vec s, e;
     metric2grid(s[0], s[1], s[2],
                 start.pose.position.x, start.pose.position.y,
                 tf::getYaw(start.pose.orientation));
@@ -410,7 +411,7 @@ private:
              e[0], e[1], e[2]);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
-    reservable_priority_queue<astar::pq> open;
+    reservable_priority_queue<Astar::pq> open;
     auto &g = cost_estim_cache;
 
     g.clear(FLT_MAX);
@@ -440,7 +441,7 @@ private:
 
     e[2] = 0;
     g[e] = -ec_rough[0] * 0.5;  // Decrement to reduce calculation error
-    open.push(astar::pq(g[e], g[e], e));
+    open.push(Astar::pq(g[e], g[e], e));
     fill_costmap(open, g, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.3f sec.)",
@@ -460,7 +461,7 @@ private:
     debug.header = map_header;
     debug.header.stamp = ros::Time::now();
     {
-      astar::vec p;
+      Astar::Vec p;
       for (p[1] = 0; p[1] < cost_estim_cache.size[1]; p[1]++)
       {
         for (p[0] = 0; p[0] < cost_estim_cache.size[0]; p[0]++)
@@ -509,7 +510,7 @@ private:
       pc.header = map_header;
       pc.header.stamp = ros::Time::now();
 
-      astar::vec p;
+      Astar::Vec p;
       for (p[1] = 0; p[1] < cm_hist.size[1]; p[1]++)
       {
         for (p[0] = 0; p[0] < cm_hist.size[0]; p[0]++)
@@ -517,7 +518,7 @@ private:
           p[2] = 0;
           if (cm_hist[p] > hist_cnt_thres)
           {
-            astar::vec p2;
+            Astar::Vec p2;
             p2 = p;
             for (p2[2] = 0; p2[2] < static_cast<int>(map_info.angle); p2[2]++)
             {
@@ -539,15 +540,15 @@ private:
     }
 
     {
-      astar::vec p;
-      astar::vec center;
+      Astar::Vec p;
+      Astar::Vec center;
       center[0] = msg->width / 2;
       center[1] = msg->height / 2;
-      astar::vec gp;
+      Astar::Vec gp;
       gp[0] = msg->x;
       gp[1] = msg->y;
       gp[2] = msg->yaw;
-      astar::vec gp_rough = gp;
+      Astar::Vec gp_rough = gp;
       gp_rough[2] = 0;
       const int hist_ignore_range_sq = hist_ignore_range * hist_ignore_range;
       const int hist_ignore_range_max_sq =
@@ -570,11 +571,11 @@ private:
           p[2] = 0;
           cm_rough[gp_rough + p] = cost_min;
 
-          astar::vec pos = gp + p;
+          Astar::Vec pos = gp + p;
           pos[2] = 0;
           if (cost_min == 100)
           {
-            astar::vec p2 = p - center;
+            Astar::Vec p2 = p - center;
             float sqlen = p2.sqlen();
             if (sqlen > hist_ignore_range_sq &&
                 sqlen < hist_ignore_range_max_sq)
@@ -587,7 +588,7 @@ private:
           }
           else if (cost_max == 0)
           {
-            astar::vec p2 = p - center;
+            Astar::Vec p2 = p - center;
             float sqlen = p2.sqlen();
             if (sqlen < hist_ignore_range_max_sq)
             {
@@ -618,7 +619,7 @@ private:
       return;
     }
 
-    astar::vec s, e;
+    Astar::Vec s, e;
     metric2grid(s[0], s[1], s[2],
                 start.pose.position.x, start.pose.position.y,
                 tf::getYaw(start.pose.orientation));
@@ -639,7 +640,7 @@ private:
     const auto ts = boost::chrono::high_resolution_clock::now();
     auto &g = cost_estim_cache;
 
-    astar::vec p, p_cost_min;
+    Astar::Vec p, p_cost_min;
     p[2] = 0;
     float cost_min = FLT_MAX;
     for (p[1] = static_cast<int>(msg->y); p[1] < static_cast<int>(msg->y + msg->height); p[1]++)
@@ -654,26 +655,26 @@ private:
       }
     }
 
-    reservable_priority_queue<astar::pq> open;
-    reservable_priority_queue<astar::pq> erase;
+    reservable_priority_queue<Astar::pq> open;
+    reservable_priority_queue<Astar::pq> erase;
     open.reserve(map_info.width * map_info.height / 2);
     erase.reserve(map_info.width * map_info.height / 2);
 
     if (cost_min != FLT_MAX)
-      erase.push(astar::pq(cost_min, cost_min, p_cost_min));
+      erase.push(Astar::pq(cost_min, cost_min, p_cost_min));
     while (true)
     {
       if (erase.size() < 1)
         break;
-      const astar::pq center = erase.top();
-      const astar::vec p = center.v;
+      const Astar::pq center = erase.top();
+      const Astar::Vec p = center.v;
       erase.pop();
 
       if (g[p] == FLT_MAX)
         continue;
       g[p] = FLT_MAX;
 
-      astar::vec d;
+      Astar::Vec d;
       d[2] = 0;
       for (d[0] = -1; d[0] <= 1; d[0]++)
       {
@@ -681,7 +682,7 @@ private:
         {
           if (!((d[0] == 0) ^ (d[1] == 0)))
             continue;
-          const astar::vec next = p + d;
+          const Astar::Vec next = p + d;
           if ((unsigned int)next[0] >= (unsigned int)map_info.width ||
               (unsigned int)next[1] >= (unsigned int)map_info.height)
             continue;
@@ -690,19 +691,19 @@ private:
             continue;
           if (gn < cost_min)
           {
-            open.push(astar::pq(gn, gn, next));
+            open.push(Astar::pq(gn, gn, next));
             continue;
           }
-          erase.push(astar::pq(gn, gn, next));
+          erase.push(Astar::pq(gn, gn, next));
         }
       }
     }
     if (open.size() == 0)
     {
-      open.push(astar::pq(-ec_rough[0] * 0.5, -ec_rough[0] * 0.5, e));
+      open.push(Astar::pq(-ec_rough[0] * 0.5, -ec_rough[0] * 0.5, e));
     }
     {
-      astar::vec p;
+      Astar::Vec p;
       auto &g = cost_estim_cache;
       p[2] = 0;
       for (p[0] = 0; p[0] < static_cast<int>(map_info.width); p[0]++)
@@ -712,7 +713,7 @@ private:
           auto &gp = g[p];
           if (gp > rough_cost_max)
           {
-            open.push(astar::pq(gp, gp, p));
+            open.push(Astar::pq(gp, gp, p));
           }
         }
       }
@@ -743,14 +744,14 @@ private:
           1.0f * cc.weight_ang_vel / max_ang_vel
         };
 
-    ec = astar::vecf(ec_val);
+    ec = Astar::Vecf(ec_val);
     ec_val[2] = 0;
-    ec_rough = astar::vecf(ec_val);
+    ec_rough = Astar::Vecf(ec_val);
 
     if (map_info.linear_resolution != msg->info.linear_resolution ||
         map_info.angular_resolution != msg->info.angular_resolution)
     {
-      astar::vec d;
+      Astar::Vec d;
       range = static_cast<int>(search_range / msg->info.linear_resolution);
 
       search_list.clear();
@@ -790,9 +791,9 @@ private:
               static_cast<int>(msg->info.angle)
             };
         auto &r = rotgm[i];
-        r.reset(astar::vec(size));
+        r.reset(Astar::Vec(size));
 
-        astar::vec d;
+        Astar::Vec d;
 
         for (d[0] = 0; d[0] <= range * 2; d[0]++)
         {
@@ -806,7 +807,7 @@ private:
                     (d[1] - range) * msg->info.linear_resolution,
                     d[2] * msg->info.angular_resolution
                   };
-              auto v = astar::vecf(val);
+              auto v = Astar::Vecf(val);
               rotate(v, -i * msg->info.angular_resolution);
               r[d] = v;
             }
@@ -837,15 +838,15 @@ private:
           static_cast<int>(map_info.height),
           static_cast<int>(map_info.angle)
         };
-    as.reset(astar::vec(size));
-    cm.reset(astar::vec(size));
+    as.reset(Astar::Vec(size));
+    cm.reset(Astar::Vec(size));
     size[2] = 1;
-    cost_estim_cache.reset(astar::vec(size));
-    cm_rough.reset(astar::vec(size));
-    cm_hyst.reset(astar::vec(size));
-    cm_hist.reset(astar::vec(size));
+    cost_estim_cache.reset(Astar::Vec(size));
+    cm_rough.reset(Astar::Vec(size));
+    cm_hyst.reset(Astar::Vec(size));
+    cm_hist.reset(Astar::Vec(size));
 
-    astar::vec p;
+    Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info.width); p[0]++)
     {
       for (p[1] = 0; p[1] < static_cast<int>(map_info.height); p[1]++)
@@ -878,19 +879,19 @@ private:
   }
 
 public:
-  planner_3d()
+  Planner3d()
     : nh("~")
   {
-    sub_map = nh.subscribe("costmap", 1, &planner_3d::cb_map, this);
-    sub_map_update = nh.subscribe("costmap_update", 1, &planner_3d::cb_map_update, this);
-    sub_goal = nh.subscribe("goal", 1, &planner_3d::cb_goal, this);
+    sub_map = nh.subscribe("costmap", 1, &Planner3d::cb_map, this);
+    sub_map_update = nh.subscribe("costmap_update", 1, &Planner3d::cb_map_update, this);
+    sub_goal = nh.subscribe("goal", 1, &Planner3d::cb_goal, this);
     pub_path = nh.advertise<nav_msgs::Path>("path", 1, true);
     pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
     pub_hist = nh.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
     pub_start = nh.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end = nh.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
-    srs_forget = nh.advertiseService("forget", &planner_3d::cb_forget, this);
+    srs_forget = nh.advertiseService("forget", &Planner3d::cb_forget, this);
 
     nh.param_cast("freq", freq, 4.0f);
     nh.param_cast("freq_min", freq_min, 2.0f);
@@ -936,7 +937,7 @@ public:
     nh.param("fast_map_update", fast_map_update, false);
     if (fast_map_update)
     {
-      ROS_WARN("planner_3d: Experimental fast_map_update is enabled. ");
+      ROS_WARN("Planner3d: Experimental fast_map_update is enabled. ");
     }
     std::string debug_mode;
     nh.param("debug_mode", debug_mode, std::string("cost_estim"));
@@ -949,7 +950,7 @@ public:
 
     int queue_size_limit;
     nh.param("queue_size_limit", queue_size_limit, 0);
-    as.set_queue_size_limit(queue_size_limit);
+    as.setQueueSizeLimit(queue_size_limit);
 
     status.status = planner_cspace::PlannerStatus::DONE;
 
@@ -1080,8 +1081,8 @@ private:
     gy = y * map_info.linear_resolution + map_info.origin.position.y;
     gyaw = yaw * map_info.angular_resolution;
   }
-  void grid2metric(const std::list<astar::vec> &path_grid,
-                   nav_msgs::Path &path, const astar::vec &v_start)
+  void grid2metric(const std::list<Astar::Vec> &path_grid,
+                   nav_msgs::Path &path, const Astar::Vec &v_start)
   {
     path.header = map_header;
     path.header.stamp = ros::Time::now();
@@ -1089,7 +1090,7 @@ private:
     // static int cnt = 0;
     // cnt ++;
     float x_ = 0, y_ = 0, yaw_ = 0;
-    astar::vec p_;
+    Astar::Vec p_;
     bool init = false;
     for (auto &p : path_grid)
     {
@@ -1109,12 +1110,12 @@ private:
               d[1] * map_info.linear_resolution,
               p[2] * map_info.angular_resolution
             };
-        astar::vecf motion_(diff_val);
+        Astar::Vecf motion_(diff_val);
         rotate(motion_, -p_[2] * map_info.angular_resolution);
 
         float inter = 0.1 / d.len();
 
-        const astar::vecf motion = motion_;
+        const Astar::Vecf motion = motion_;
         float cos_v = cosf(motion[2]);
         float sin_v = sinf(motion[2]);
         if (d[0] == 0 && d[1] == 0)
@@ -1207,7 +1208,7 @@ private:
   bool make_plan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge,
                  nav_msgs::Path &path, bool hyst)
   {
-    astar::vec s, e;
+    Astar::Vec s, e;
     metric2grid(s[0], s[1], s[2],
                 gs.position.x, gs.position.y, tf::getYaw(gs.orientation));
     s.cycle_unsigned(s[2], map_info.angle);
@@ -1303,18 +1304,18 @@ private:
 
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
-    std::list<astar::vec> path_grid;
+    std::list<Astar::Vec> path_grid;
     // const auto ts = boost::chrono::high_resolution_clock::now();
     if (!as.search(s, e, path_grid,
-                   std::bind(&planner_3d::cb_cost,
+                   std::bind(&Planner3d::cb_cost,
                              this, std::placeholders::_1, std::placeholders::_2,
                              std::placeholders::_3, std::placeholders::_4, hyst),
-                   std::bind(&planner_3d::cb_cost_estim,
+                   std::bind(&Planner3d::cb_cost_estim,
                              this, std::placeholders::_1, std::placeholders::_2),
-                   std::bind(&planner_3d::cb_search,
+                   std::bind(&Planner3d::cb_search,
                              this, std::placeholders::_1,
                              std::placeholders::_2, std::placeholders::_3),
-                   std::bind(&planner_3d::cb_progress,
+                   std::bind(&Planner3d::cb_progress,
                              this, std::placeholders::_1),
                    range_limit,
                    1.0f / freq_min,
@@ -1333,17 +1334,17 @@ private:
 
     if (hyst)
     {
-      std::unordered_map<astar::vec, bool, astar::vec> path_points;
+      std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       float max_dist = cc.hysteresis_max_dist / map_info.linear_resolution;
       int path_range = range + max_dist + 1;
       for (auto &p : path_grid)
       {
-        astar::vec d;
+        Astar::Vec d;
         for (d[0] = -path_range; d[0] <= path_range; d[0]++)
         {
           for (d[1] = -path_range; d[1] <= path_range; d[1]++)
           {
-            astar::vec point = p + d;
+            Astar::Vec point = p + d;
             point[2] = 0;
             if ((unsigned int)point[0] >= (unsigned int)map_info.width ||
                 (unsigned int)point[1] >= (unsigned int)map_info.height)
@@ -1385,9 +1386,9 @@ private:
     return true;
   }
   bool rough;
-  std::vector<astar::vec> &cb_search(
-      const astar::vec &p,
-      const astar::vec &s, const astar::vec &e)
+  std::vector<Astar::Vec> &cb_search(
+      const Astar::Vec &p,
+      const Astar::Vec &s, const Astar::Vec &e)
   {
     const auto ds = s - p;
     rot_cache = &rotgm[p[2]];
@@ -1402,7 +1403,7 @@ private:
     euclid_cost_coef = ec_rough;
     return search_list_rough;
   }
-  bool cb_progress(const std::list<astar::vec> &path_grid)
+  bool cb_progress(const std::list<Astar::Vec> &path_grid)
   {
     nav_msgs::Path path;
     path.header = map_header;
@@ -1412,9 +1413,9 @@ private:
     ROS_WARN("Search timed out");
     return true;
   }
-  void rotate(astar::vecf &v, const float &ang)
+  void rotate(Astar::Vecf &v, const float &ang)
   {
-    const astar::vecf tmp = v;
+    const Astar::Vecf tmp = v;
     const float cos_v = cosf(ang);
     const float sin_v = sinf(ang);
 
@@ -1426,7 +1427,7 @@ private:
     else if (v[2] < -M_PI)
       v[2] += 2 * M_PI;
   }
-  float cb_cost_estim(const astar::vec &s, const astar::vec &e)
+  float cb_cost_estim(const Astar::Vec &s, const Astar::Vec &e)
   {
     auto s2 = s;
     s2[2] = 0;
@@ -1477,12 +1478,12 @@ private:
     }
     return false;
   }
-  float cb_cost(const astar::vec &s, astar::vec &e,
-                const astar::vec &v_goal,
-                const astar::vec &v_start,
+  float cb_cost(const Astar::Vec &s, Astar::Vec &e,
+                const Astar::Vec &v_goal,
+                const Astar::Vec &v_start,
                 const bool hyst)
   {
-    const astar::vec d = e - s;
+    const Astar::Vec d = e - s;
     float cost = euclid_cost(d);
 
     if (d[0] == 0 && d[1] == 0)
@@ -1492,7 +1493,7 @@ private:
       int dir = 1;
       if (d[2] > static_cast<int>(map_info.angle) / 2)
         dir = -1;
-      astar::vec pos = s;
+      Astar::Vec pos = s;
       for (int i = 0; i < abs(d[2]); i++)
       {
         pos[2] += dir;
@@ -1510,13 +1511,13 @@ private:
       return cc.in_place_turn + cost;
     }
 
-    astar::vec d2;
+    Astar::Vec d2;
     d2[0] = d[0] + range;
     d2[1] = d[1] + range;
     d2[2] = e[2];
-    const astar::vecf motion = (*rot_cache)[d2];
+    const Astar::Vecf motion = (*rot_cache)[d2];
 
-    const astar::vecf motion_grid = motion * resolution;
+    const Astar::Vecf motion_grid = motion * resolution;
     // motion_grid[0] /= map_info.linear_resolution;
     // motion_grid[1] /= map_info.linear_resolution;
     // motion_grid[2] /= map_info.angular_resolution;
@@ -1568,7 +1569,7 @@ private:
       v[2] = s[2];
       dp[0] = static_cast<float>(d[0]) / dist;
       dp[1] = static_cast<float>(d[1]) / dist;
-      astar::vec pos(v);
+      Astar::Vec pos(v);
       for (int i = 0; i < dist; i++)
       {
         pos[0] = lroundf(v[0]);
@@ -1641,7 +1642,7 @@ private:
         else if (dp[2] >= map_info.angle / 2)
           dp[2] -= map_info.angle;
         dp[2] /= dist;
-        astar::vec pos(v);
+        Astar::Vec pos(v);
         for (int i = 0; i < dist; i++)
         {
           pos[0] = lroundf(v[0]);
@@ -1676,9 +1677,9 @@ private:
 
 int main(int argc, char *argv[])
 {
-  ros::init(argc, argv, "planner_3d");
+  ros::init(argc, argv, "Planner3d");
 
-  planner_3d jy;
+  Planner3d jy;
   jy.spin();
 
   return 0;

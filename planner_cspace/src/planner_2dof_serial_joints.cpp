@@ -52,10 +52,11 @@ float signf(float a)
   return 0;
 }
 
-typedef grid_astar<2, 2> astar;
-
 class planner_2dof_serial_joints
 {
+public:
+  using Astar = GridAstar<2, 2>;
+
 private:
   ros::Publisher pub_status;
   ros::Publisher pub_trajectory;
@@ -64,23 +65,23 @@ private:
 
   tf::TransformListener tfl;
 
-  astar as;
-  astar::gridmap<char, 0x40> cm;
+  Astar as;
+  Astar::Gridmap<char, 0x40> cm;
 
-  astar::vecf euclid_cost_coef;
+  Astar::Vecf euclid_cost_coef;
 
-  float euclid_cost(const astar::vec &v, const astar::vecf coef)
+  float euclid_cost(const Astar::Vec &v, const Astar::Vecf coef)
   {
     auto vc = v;
     float cost = 0;
-    for (int i = 0; i < as.get_dim(); i++)
+    for (int i = 0; i < as.getDim(); i++)
     {
       // vc.cycle(vc[i], cm.size[i]);
       cost += fabs(coef[i] * vc[i]);
     }
     return cost;
   }
-  float euclid_cost(const astar::vec &v)
+  float euclid_cost(const Astar::Vec &v)
   {
     return euclid_cost(v, euclid_cost_coef);
   }
@@ -89,7 +90,7 @@ private:
   float freq_min;
   bool has_goal;
   bool has_start;
-  std::vector<astar::vec> search_list;
+  std::vector<Astar::Vec> search_list;
   int resolution;
   float weight_cost;
   float expand;
@@ -250,15 +251,15 @@ private:
           static_cast<float>(traj_prev.points[0].positions[id[0]]),
           static_cast<float>(traj_prev.points[0].positions[id[1]])
         };
-    astar::vecf start(st);
-    astar::vecf end(en);
+    Astar::Vecf start(st);
+    Astar::Vecf end(en);
 
     ROS_INFO("link %s: %0.3f, %0.3f", group.c_str(),
              traj_prev.points[0].positions[id[0]],
              traj_prev.points[0].positions[id[1]]);
 
     ROS_INFO("Start searching");
-    std::list<astar::vecf> path;
+    std::list<Astar::Vecf> path;
     if (make_plan(start, end, path))
     {
       ROS_INFO("Trajectory found");
@@ -402,7 +403,7 @@ public:
 
     int queue_size_limit;
     nh.param("queue_size_limit", queue_size_limit, 0);
-    as.set_queue_size_limit(queue_size_limit);
+    as.setQueueSizeLimit(queue_size_limit);
 
     status.status = planner_cspace::PlannerStatus::DONE;
 
@@ -410,8 +411,8 @@ public:
     has_start = false;
 
     int size[2] = { resolution * 2, resolution * 2 };
-    cm.reset(astar::vec(size));
-    as.reset(astar::vec(size));
+    cm.reset(Astar::Vec(size));
+    as.reset(Astar::Vec(size));
     cm.clear(0);
 
     nh.param("link0_name", links[0].name, std::string("link0"));
@@ -459,12 +460,12 @@ public:
       ROS_ERROR("point_vel_mode must be prev/next/avg");
 
     ROS_INFO("Resolution: %d", resolution);
-    astar::vec p;
+    Astar::Vec p;
     for (p[0] = 0; p[0] < resolution * 2; p[0]++)
     {
       for (p[1] = 0; p[1] < resolution * 2; p[1]++)
       {
-        astar::vecf pf;
+        Astar::Vecf pf;
         grid2metric(p, pf);
 
         if (links[0].isCollide(links[1], pf[0], pf[1]))
@@ -482,13 +483,13 @@ public:
         if (cm[p] != 100)
           continue;
 
-        astar::vec d;
+        Astar::Vec d;
         int range = lroundf(expand * resolution / (2.0 * M_PI));
         for (d[0] = -range; d[0] <= range; d[0]++)
         {
           for (d[1] = -range; d[1] <= range; d[1]++)
           {
-            astar::vec p2 = p + d;
+            Astar::Vec p2 = p + d;
             if ((unsigned int)p2[0] >= (unsigned int)resolution * 2 ||
                 (unsigned int)p2[1] >= (unsigned int)resolution * 2)
               continue;
@@ -529,20 +530,20 @@ private:
     t1 = lroundf(gt1 * resolution / (2.0 * M_PI)) + resolution;
   }
   void grid2metric(
-      const astar::vec t,
-      astar::vecf &gt)
+      const Astar::Vec t,
+      Astar::Vecf &gt)
   {
     grid2metric(t[0], t[1], gt[0], gt[1]);
   }
   void metric2grid(
-      astar::vec &t,
-      const astar::vecf gt)
+      Astar::Vec &t,
+      const Astar::Vecf gt)
   {
     metric2grid(t[0], t[1], gt[0], gt[1]);
   }
-  bool make_plan(const astar::vecf sg, const astar::vecf eg, std::list<astar::vecf> &path)
+  bool make_plan(const Astar::Vecf sg, const Astar::Vecf eg, std::list<Astar::Vecf> &path)
   {
-    astar::vec s, e;
+    Astar::Vec s, e;
     metric2grid(s, sg);
     metric2grid(e, eg);
     ROS_INFO("Planning from (%d, %d) to (%d, %d)",
@@ -560,7 +561,7 @@ private:
       status.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
-    astar::vec d = e - s;
+    Astar::Vec d = e - s;
     d.cycle(d[0], resolution);
     d.cycle(d[1], resolution);
 
@@ -574,7 +575,7 @@ private:
       }
       return true;
     }
-    std::list<astar::vec> path_grid;
+    std::list<Astar::Vec> path_grid;
     // const auto ts = std::chrono::high_resolution_clock::now();
     float cancel = FLT_MAX;
     if (replan_interval >= ros::Duration(0))
@@ -603,7 +604,7 @@ private:
     //   std::chrono::duration<float>(tnow - ts).count());
 
     bool first = false;
-    astar::vec n_prev = s;
+    Astar::Vec n_prev = s;
     path.push_back(sg);
     int i = 0;
     for (auto &n : path_grid)
@@ -615,19 +616,19 @@ private:
       }
       if (i == 0)
         ROS_INFO("  next: %d, %d", n[0], n[1]);
-      astar::vec n_diff = n - n_prev;
+      Astar::Vec n_diff = n - n_prev;
       n_diff.cycle(n_diff[0], resolution);
       n_diff.cycle(n_diff[1], resolution);
-      astar::vec n2 = n_prev + n_diff;
+      Astar::Vec n2 = n_prev + n_diff;
       n_prev = n2;
 
-      astar::vecf p;
+      Astar::Vecf p;
       grid2metric(n2, p);
       path.push_back(p);
       i++;
     }
     float prec = 2.0 * M_PI / static_cast<float>(resolution);
-    astar::vecf egp = eg;
+    Astar::Vecf egp = eg;
     if (egp[0] < 0)
       egp[0] += ceilf(-egp[0] / M_PI * 2.0) * M_PI * 2.0;
     if (egp[1] < 0)
@@ -637,7 +638,7 @@ private:
 
     if (debug_aa)
     {
-      astar::vec p;
+      Astar::Vec p;
       for (p[0] = resolution / 2; p[0] < resolution * 3 / 2; p[0]++)
       {
         for (p[1] = resolution / 2; p[1] < resolution * 3 / 2; p[1]++)
@@ -664,29 +665,29 @@ private:
 
     return true;
   }
-  std::vector<astar::vec> &cb_search(
-      const astar::vec &p,
-      const astar::vec &s, const astar::vec &e)
+  std::vector<Astar::Vec> &cb_search(
+      const Astar::Vec &p,
+      const Astar::Vec &s, const Astar::Vec &e)
   {
     return search_list;
   }
-  bool cb_progress(const std::list<astar::vec> &path_grid)
+  bool cb_progress(const std::list<Astar::Vec> &path_grid)
   {
     return false;
   }
-  float cb_cost_estim(const astar::vec &s, const astar::vec &e)
+  float cb_cost_estim(const Astar::Vec &s, const Astar::Vec &e)
   {
-    const astar::vec d = e - s;
+    const Astar::Vec d = e - s;
     return euclid_cost(d);
   }
-  float cb_cost(const astar::vec &s, astar::vec &e,
-                const astar::vec &v_goal,
-                const astar::vec &v_start)
+  float cb_cost(const Astar::Vec &s, Astar::Vec &e,
+                const Astar::Vec &v_goal,
+                const Astar::Vec &v_start)
   {
     if ((unsigned int)e[0] >= (unsigned int)resolution * 2 ||
         (unsigned int)e[1] >= (unsigned int)resolution * 2)
       return -1;
-    astar::vec d = e - s;
+    Astar::Vec d = e - s;
     d.cycle(d[0], resolution);
     d.cycle(d[1], resolution);
 
@@ -701,7 +702,7 @@ private:
     v[1] = s[1];
     dp[0] = static_cast<float>(d[0]) / dist;
     dp[1] = static_cast<float>(d[1]) / dist;
-    astar::vec pos;
+    Astar::Vec pos;
     for (int i = 0; i < dist; i++)
     {
       pos[0] = lroundf(v[0]);
