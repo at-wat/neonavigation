@@ -54,6 +54,9 @@ add_executable(planner_2dof_serial_joints src/planner_2dof_serial_joints.cpp)
 target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES})
 add_dependencies(planner_2dof_serial_joints planner_cspace_generate_messages)
 
+add_executable(dummy_robot src/dummy_robot.cpp)
+target_link_libraries(dummy_robot ${catkin_LIBRARIES})
+
 
 roslint_cpp()
 
