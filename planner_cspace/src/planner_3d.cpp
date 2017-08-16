@@ -396,7 +396,7 @@ private:
   {
     if (!has_map_ || !has_goal_ || !has_start_)
     {
-      ROS_ERROR("Goal received, however map/goal_/start_ are not ready. (%d/%d/%d)",
+      ROS_ERROR("Goal received, however map/goal/start are not ready. (%d/%d/%d)",
                 static_cast<int>(has_map_), static_cast<int>(has_goal_), static_cast<int>(has_start_));
       return;
     }
@@ -410,7 +410,7 @@ private:
                 goal_.pose.position.x, goal_.pose.position.y,
                 tf::getYaw(goal_.pose.orientation));
     e.cycle_unsigned(e[2], map_info_.angle);
-    ROS_INFO("New goal_ received (%d, %d, %d)",
+    ROS_INFO("New goal received (%d, %d, %d)",
              e[0], e[1], e[2]);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
@@ -887,60 +887,60 @@ public:
   {
     subMap = nh_.subscribe("costmap", 1, &Planner3d::cb_map, this);
     subMapUpdate = nh_.subscribe("costmap_update", 1, &Planner3d::cb_map_update, this);
-    subGoal = nh_.subscribe("goal_", 1, &Planner3d::cb_goal, this);
+    subGoal = nh_.subscribe("goal", 1, &Planner3d::cb_goal, this);
     pubPath = nh_.advertise<nav_msgs::Path>("path", 1, true);
     pubDebug = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
     pubHist = nh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
     pubStart = nh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
-    pub_status_ = nh_.advertise<planner_cspace::PlannerStatus>("status_", 1, true);
+    pub_status_ = nh_.advertise<planner_cspace::PlannerStatus>("status", 1, true);
     srs_forget_ = nh_.advertiseService("forget", &Planner3d::cb_forget, this);
 
-    nh_.param_cast("freq_", freq_, 4.0f);
-    nh_.param_cast("freq_min_", freq_min_, 2.0f);
-    nh_.param_cast("search_range_", search_range_, 0.4f);
+    nh_.param_cast("freq", freq_, 4.0f);
+    nh_.param_cast("freq_min", freq_min_, 2.0f);
+    nh_.param_cast("search_range", search_range_, 0.4f);
 
-    nh_.param_cast("max_vel_", max_vel_, 0.3f);
-    nh_.param_cast("max_ang_vel_", max_ang_vel_, 0.6f);
+    nh_.param_cast("max_vel", max_vel_, 0.3f);
+    nh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
 
-    nh_.param_cast("weight_decel_", cc_.weight_decel_, 50.0f);
-    nh_.param_cast("weight_backward_", cc_.weight_backward_, 0.9f);
-    nh_.param_cast("weight_ang_vel_", cc_.weight_ang_vel_, 1.0f);
-    nh_.param_cast("weight_costmap_", cc_.weight_costmap_, 50.0f);
+    nh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
+    nh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
+    nh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
+    nh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
     nh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
-    nh_.param_cast("hysteresis_max_dist_", cc_.hysteresis_max_dist_, 0.3f);
-    nh_.param_cast("weight_hysteresis_", cc_.weight_hysteresis_, 5.0f);
+    nh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
+    nh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
-    nh_.param("goal_tolerance_lin_", goal_tolerance_lin_f_, 0.05);
-    nh_.param("goal_tolerance_ang_", goal_tolerance_ang_f_, 0.1);
-    nh_.param("goal_tolerance_ang_finish_", goal_tolerance_ang_finish_, 0.05);
+    nh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
+    nh_.param("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
+    nh_.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
 
-    nh_.param("unknown_cost_", unknown_cost_, 100);
-    nh_.param("hist_cnt_max_", hist_cnt_max_, 20);
-    nh_.param("hist_cnt_thres_", hist_cnt_thres_, 19);
-    nh_.param("hist_cost_", hist_cost_, 90);
-    nh_.param("hist_ignore_range_", hist_ignore_range_f_, 0.6);
-    nh_.param("hist_ignore_range_max_", hist_ignore_range_max_f_, 1.25);
-    nh_.param("remember_updates_", remember_updates_, false);
+    nh_.param("unknown_cost", unknown_cost_, 100);
+    nh_.param("hist_cnt_max", hist_cnt_max_, 20);
+    nh_.param("hist_cnt_thres", hist_cnt_thres_, 19);
+    nh_.param("hist_cost", hist_cost_, 90);
+    nh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
+    nh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
+    nh_.param("remember_updates", remember_updates_, false);
 
-    nh_.param("local_range_", local_range_f_, 2.5);
-    nh_.param("longcut_range_", longcut_range_f_, 0.0);
-    nh_.param("esc_range_", esc_range_f_, 0.25);
+    nh_.param("local_range", local_range_f_, 2.5);
+    nh_.param("longcut_range", longcut_range_f_, 0.0);
+    nh_.param("esc_range", esc_range_f_, 0.25);
 
-    nh_.param_cast("sw_wait_", sw_wait_, 2.0f);
-    nh_.param("find_best_", find_best_, true);
+    nh_.param_cast("sw_wait", sw_wait_, 2.0f);
+    nh_.param("find_best", find_best_, true);
 
-    nh_.param("pos_jump_", pos_jump_, 1.0);
-    nh_.param("yaw_jump_", yaw_jump_, 1.5);
+    nh_.param("pos_jump", pos_jump_, 1.0);
+    nh_.param("yaw_jump", yaw_jump_, 1.5);
 
-    nh_.param("force_goal_orientation_", force_goal_orientation_, true);
+    nh_.param("force_goal_orientation", force_goal_orientation_, true);
 
-    nh_.param("temporary_escape_", temporary_escape_, true);
+    nh_.param("temporary_escape", temporary_escape_, true);
 
-    nh_.param("fast_map_update_", fast_map_update_, false);
+    nh_.param("fast_map_update", fast_map_update_, false);
     if (fast_map_update_)
     {
-      ROS_WARN("Planner3d: Experimental fast_map_update_ is enabled. ");
+      ROS_WARN("Planner3d: Experimental fast_map_update is enabled. ");
     }
     std::string DebugMode;
     nh_.param("DebugMode", DebugMode, std::string("cost_estim"));
@@ -1252,7 +1252,7 @@ private:
         if (search_available_pos(e, esc_range_, esc_angle_, 50, esc_range_ / 2))
         {
           escaping_ = true;
-          ROS_INFO("Temporary goal_ (%d, %d, %d)",
+          ROS_INFO("Temporary goal (%d, %d, %d)",
                    e[0], e[1], e[2]);
           float x, y, yaw;
           grid2metric(e[0], e[1], e[2], x, y, yaw);
@@ -1324,7 +1324,7 @@ private:
                     1.0f / freq_min_,
                     true))
     {
-      ROS_WARN("Path plan failed (goal_ unreachable)");
+      ROS_WARN("Path plan failed (goal unreachable)");
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       if (!find_best_)
         return false;

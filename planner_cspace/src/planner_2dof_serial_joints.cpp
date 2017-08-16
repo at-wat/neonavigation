@@ -188,7 +188,7 @@ private:
     }
     if (id[0] == -1 || id[1] == -1)
     {
-      ROS_ERROR("joint_state does not contain link group_ %s.", group_.c_str());
+      ROS_ERROR("joint_state does not contain link group %s.", group_.c_str());
       return;
     }
     links_[0].current_th_ = msg->position[id[0]];
@@ -217,7 +217,7 @@ private:
     }
     if (id[0] == -1 || id[1] == -1)
     {
-      ROS_ERROR("joint_trajectory does not contains link group_ %s.", group_.c_str());
+      ROS_ERROR("joint_trajectory does not contains link group %s.", group_.c_str());
       return;
     }
     if (msg->points.size() != 1)
@@ -390,15 +390,15 @@ public:
 
     pub_trajectory_ = nh_home.advertise<trajectory_msgs::JointTrajectory>("trajectory_out", 1, true);
     sub_trajectory_ = nh_home.subscribe("trajectory_in", 1, &planner2dofSerialJoints::cb_trajectory, this);
-    sub_joint_ = nh_home.subscribe("joint_", 1, &planner2dofSerialJoints::cb_joint, this);
+    sub_joint_ = nh_home.subscribe("joint", 1, &planner2dofSerialJoints::cb_joint, this);
 
-    pub_status_ = nh.advertise<planner_cspace::PlannerStatus>("status_", 1, true);
+    pub_status_ = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
 
-    nh.param("resolution_", resolution_, 128);
-    nh_home.param("debug_aa_", debug_aa_, false);
+    nh.param("resolution", resolution_, 128);
+    nh_home.param("debug_aa", debug_aa_, false);
 
     double interval;
-    nh_home.param("replan_interval_", interval, 0.2);
+    nh_home.param("replan_interval", interval, 0.2);
     replan_interval_ = ros::Duration(interval);
     replan_prev_ = ros::Time(0);
 
@@ -445,8 +445,8 @@ public:
     nh.param_cast("link0_coef", euclid_cost_coef_[0], 1.0f);
     nh.param_cast("link1_coef", euclid_cost_coef_[1], 1.5f);
 
-    nh.param_cast("weight_cost_", weight_cost_, 4.0f);
-    nh.param_cast("expand_", expand_, 0.1);
+    nh.param_cast("weight_cost", weight_cost_, 4.0f);
+    nh.param_cast("expand", expand_, 0.1);
 
     std::string point_vel_mode;
     nh.param("point_vel_mode", point_vel_mode, std::string("prev"));
@@ -552,13 +552,13 @@ private:
 
     if (cm_[s] == 100)
     {
-      ROS_WARN("Path plan failed (current status_ is in collision)");
+      ROS_WARN("Path plan failed (current status is in collision)");
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     if (cm_[e] == 100)
     {
-      ROS_WARN("Path plan failed (goal status_ is in collision)");
+      ROS_WARN("Path plan failed (goal status is in collision)");
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
@@ -733,8 +733,8 @@ int main(int argc, char *argv[])
   for (int i = 0; i < n; i++)
   {
     std::string name;
-    nh.param("group_" + std::to_string(i) + "_name",
-             name, std::string("group_") + std::to_string(i));
+    nh.param("group" + std::to_string(i) + "_name",
+             name, std::string("group") + std::to_string(i));
     std::shared_ptr<planner2dofSerialJoints> jy;
 
     jy.reset(new planner2dofSerialJoints(name));
