@@ -84,7 +84,7 @@ private:
 
   Astar::Vecf euclid_cost_coef_;
 
-  float euclid_cost(const Astar::Vec &v, const Astar::Vecf coef)
+  float euclidCost(const Astar::Vec &v, const Astar::Vecf coef)
   {
     Astar::Vec vc = v;
     float cost = 0;
@@ -100,12 +100,12 @@ private:
     }
     return cost;
   }
-  float euclid_cost(const Astar::Vec &v)
+  float euclidCost(const Astar::Vec &v)
   {
-    return euclid_cost(v, euclid_cost_coef_);
+    return euclidCost(v, euclid_cost_coef_);
   }
 
-  class rotation_cache
+  class RotationCache
   {
   protected:
     std::unique_ptr<Astar::Vecf[]> c_;
@@ -125,11 +125,11 @@ private:
 
       c_.reset(new Astar::Vecf[ser_size]);
     }
-    explicit rotation_cache(const Astar::Vec &size)
+    explicit RotationCache(const Astar::Vec &size)
     {
       reset(size);
     }
-    rotation_cache()
+    RotationCache()
     {
     }
     Astar::Vecf &operator[](const Astar::Vec &pos)
@@ -143,8 +143,8 @@ private:
       return c_[addr];
     }
   };
-  std::vector<rotation_cache> rotgm_;
-  rotation_cache *rot_cache_;
+  std::vector<RotationCache> rotgm_;
+  RotationCache *rot_cache_;
 
   costmap_cspace::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -183,7 +183,7 @@ private:
   double yaw_jump_;
 
   // Cost weights
-  class cost_coeff
+  class CostCoeff
   {
   public:
     float weight_decel_;
@@ -194,7 +194,7 @@ private:
     float in_place_turn_;
     float hysteresis_max_dist_;
   };
-  cost_coeff cc_;
+  CostCoeff cc_;
 
   geometry_msgs::PoseStamped start_;
   geometry_msgs::PoseStamped goal_;
@@ -209,13 +209,13 @@ private:
   int goal_tolerance_ang_;
   float angle_resolution_aspect_;
 
-  enum debug_mode
+  enum DebugMode
   {
     DEBUG_HYSTERESIS,
     DEBUG_HISTORY,
     DEBUG_COST_ESTIM
   };
-  debug_mode debug_out_;
+  DebugMode debug_out_;
 
   planner_cspace::PlannerStatus status_;
 
@@ -259,7 +259,7 @@ private:
       has_goal_ = false;
     }
   }
-  void fill_costmap(reservable_priority_queue<Astar::pq> &open,
+  void fill_costmap(reservable_priority_queue<Astar::PriorityVec> &open,
                     Astar::Gridmap<float> &g,
                     const Astar::Vec &s, const Astar::Vec &e)
   {
@@ -271,8 +271,8 @@ private:
       if (open.size() < 1)
         break;
       const auto center = open.top();
-      const Astar::Vec p = center.v;
-      const auto c = center.p_raw;
+      const Astar::Vec p = center.v_;
+      const auto c = center.p_raw_;
       open.pop();
       if (c > g[p])
         continue;
@@ -329,13 +329,13 @@ private:
               continue;
             cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / 100.0;
           }
-          cost += euclid_cost(d, ec_rough_);
+          cost += euclidCost(d, ec_rough_);
 
           const auto gp = c + cost;
           if (gnext > gp)
           {
             gnext = gp;
-            open.push(Astar::pq(gp, gp, next));
+            open.push(Astar::PriorityVec(gp, gp, next));
           }
         }
       }
@@ -369,7 +369,7 @@ private:
           s2.cycle_unsigned(s2[2], map_info_.angle);
           if (cm_[s2] >= cost_acceptable)
             continue;
-          auto cost = euclid_cost(d, ec_);
+          auto cost = euclidCost(d, ec_);
           if (cost < range_min)
           {
             range_min = cost;
@@ -414,7 +414,7 @@ private:
              e[0], e[1], e[2]);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
-    reservable_priority_queue<Astar::pq> open;
+    reservable_priority_queue<Astar::PriorityVec> open;
     auto &g = cost_estim_cache_;
 
     g.clear(FLT_MAX);
@@ -444,7 +444,7 @@ private:
 
     e[2] = 0;
     g[e] = -ec_rough_[0] * 0.5;  // Decrement to reduce calculation error
-    open.push(Astar::pq(g[e], g[e], e));
+    open.push(Astar::PriorityVec(g[e], g[e], e));
     fill_costmap(open, g, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.3f sec.)",
@@ -658,19 +658,19 @@ private:
       }
     }
 
-    reservable_priority_queue<Astar::pq> open;
-    reservable_priority_queue<Astar::pq> erase;
+    reservable_priority_queue<Astar::PriorityVec> open;
+    reservable_priority_queue<Astar::PriorityVec> erase;
     open.reserve(map_info_.width * map_info_.height / 2);
     erase.reserve(map_info_.width * map_info_.height / 2);
 
     if (cost_min != FLT_MAX)
-      erase.push(Astar::pq(cost_min, cost_min, p_cost_min));
+      erase.push(Astar::PriorityVec(cost_min, cost_min, p_cost_min));
     while (true)
     {
       if (erase.size() < 1)
         break;
-      const Astar::pq center = erase.top();
-      const Astar::Vec p = center.v;
+      const Astar::PriorityVec center = erase.top();
+      const Astar::Vec p = center.v_;
       erase.pop();
 
       if (g[p] == FLT_MAX)
@@ -694,16 +694,16 @@ private:
             continue;
           if (gn < cost_min)
           {
-            open.push(Astar::pq(gn, gn, next));
+            open.push(Astar::PriorityVec(gn, gn, next));
             continue;
           }
-          erase.push(Astar::pq(gn, gn, next));
+          erase.push(Astar::PriorityVec(gn, gn, next));
         }
       }
     }
     if (open.size() == 0)
     {
-      open.push(Astar::pq(-ec_rough_[0] * 0.5, -ec_rough_[0] * 0.5, e));
+      open.push(Astar::PriorityVec(-ec_rough_[0] * 0.5, -ec_rough_[0] * 0.5, e));
     }
     {
       Astar::Vec p;
@@ -716,7 +716,7 @@ private:
           auto &gp = g[p];
           if (gp > rough_cost_max_)
           {
-            open.push(Astar::pq(gp, gp, p));
+            open.push(Astar::PriorityVec(gp, gp, p));
           }
         }
       }
@@ -942,13 +942,13 @@ public:
     {
       ROS_WARN("Planner3d: Experimental fast_map_update_ is enabled. ");
     }
-    std::string debug_mode;
-    nh_.param("debug_mode", debug_mode, std::string("cost_estim"));
-    if (debug_mode == "hyst")
+    std::string DebugMode;
+    nh_.param("DebugMode", DebugMode, std::string("cost_estim"));
+    if (DebugMode == "hyst")
       debug_out_ = DEBUG_HYSTERESIS;
-    else if (debug_mode == "hist")
+    else if (DebugMode == "hist")
       debug_out_ = DEBUG_HISTORY;
-    else if (debug_mode == "cost_estim")
+    else if (DebugMode == "cost_estim")
       debug_out_ = DEBUG_COST_ESTIM;
 
     int queue_size_limit;
@@ -1487,7 +1487,7 @@ private:
                 const bool hyst)
   {
     const Astar::Vec d = e - s;
-    float cost = euclid_cost(d);
+    float cost = euclidCost(d);
 
     if (d[0] == 0 && d[1] == 0)
     {

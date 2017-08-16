@@ -58,33 +58,34 @@ public:
     using BlockMemGridmap<T, DIM, NONCYCLIC, block_width>::BlockMemGridmap;
   };
 
-  class pq
+  class PriorityVec
   {
   public:
-    float p;
-    float p_raw;
-    Vec v;
-    pq()
+    float p_;
+    float p_raw_;
+    Vec v_;
+
+    PriorityVec()
     {
-      p = 0;
+      p_ = 0;
     }
-    pq(const float &p, const float &p_raw, const Vec &v)
+    PriorityVec(const float &p, const float &p_raw, const Vec &v)
     {
-      this->p = p;
-      this->p_raw = p_raw;
-      this->v = v;
+      this->p_ = p;
+      this->p_raw_ = p_raw;
+      this->v_ = v;
     }
-    bool operator<(const pq &b) const
+    bool operator<(const PriorityVec &b) const
     {
       // smaller first
-      return this->p > b.p;
+      return this->p_ > b.p_;
     }
   };
 
 protected:
   Gridmap<float> g_;
   std::unordered_map<Vec, Vec, Vec> parents_;
-  reservable_priority_queue<pq> open_;
+  reservable_priority_queue<PriorityVec> open_;
   size_t queue_size_limit_;
 
 public:
@@ -159,7 +160,7 @@ public:
     parents_.clear();
 
     g_[s] = 0;
-    open_.push(pq(cb_cost_estim(s, e), 0, s));
+    open_.push(PriorityVec(cb_cost_estim(s, e), 0, s));
 
     auto ts = boost::chrono::high_resolution_clock::now();
 
@@ -178,10 +179,10 @@ public:
         }
         return false;
       }
-      pq center = open_.top();
-      Vec p = center.v;
-      float c = center.p_raw;
-      float c_estim = center.p;
+      PriorityVec center = open_.top();
+      Vec p = center.v_;
+      float c = center.p_raw_;
+      float c_estim = center.p_;
       open_.pop();
       if (p == e || c_estim - c <= cost_leave)
       {
@@ -236,7 +237,7 @@ public:
         {
           gnext = c + cost;
           parents_[next] = p;
-          open_.push(pq(c + cost + cost_estim, c + cost, next));
+          open_.push(PriorityVec(c + cost + cost_estim, c + cost, next));
           if (queue_size_limit_ > 0 &&
               open_.size() > queue_size_limit_)
             open_.pop_back();
