@@ -18,8 +18,6 @@ apt-get clean && rm -rf /var/lib/apt/lists/*
 
 sync
 
-gh-pr-comment STARTED "Start testing"
-
 catkin_make || (gh-pr-comment FAILED '```catkin_make``` failed'; false)
 catkin_make tests || (gh-pr-comment FAILED '```catkin_make tests``` failed'; false)
 catkin_make run_tests || (gh-pr-comment FAILED '```catkin_make run_tests``` failed'; false)
