@@ -8,6 +8,7 @@ find_package(catkin REQUIRED
     sensor_msgs
     geometry_msgs
     move_base_msgs
+    nav_msgs
     tf
     message_generation
     costmap_cspace
@@ -24,6 +25,7 @@ catkin_package(
     sensor_msgs
     geometry_msgs
     move_base_msgs
+    nav_msgs
     tf
     costmap_cspace
 )
