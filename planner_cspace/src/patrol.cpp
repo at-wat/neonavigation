@@ -42,7 +42,7 @@ protected:
   std::shared_ptr<MoveBaseClient> act_cli_;
 
   nav_msgs::Path path_;
-  int pos_;
+  size_t pos_;
 
   void cbPath(const nav_msgs::Path::ConstPtr &msg)
   {
@@ -67,12 +67,17 @@ public:
     if (path_.poses.size() <= pos_)
     {
       ROS_WARN("Patrol finished. Waiting next path.");
+      path_.poses.clear();
+
       return false;
     }
 
     goal.target_pose.header = path_.poses[pos_].header;
     goal.target_pose.header.stamp = ros::Time::now();
-    goal.target_pose.pose = path_.poses[pos_];
+    goal.target_pose.pose = path_.poses[pos_].pose;
+
+    act_cli_->sendGoal(goal);
+    pos_++;
 
     return true;
   }
@@ -90,24 +95,26 @@ public:
         continue;
       }
 
-      actionlib::SimpleClientGoalState state = act_cli_->getState();
-      switch(state)
+      if (pos_ == 0)
       {
-      case actionlib::SimpleClientGoalState::SUCCEEDED:
-        ROS_ERROR("Action has been finished.");
         sendNextGoal();
-        pos_ ++;
-        break;
-      case actionlib::SimpleClientGoalState::ABORTED:
+        continue;
+      }
+
+      actionlib::SimpleClientGoalState state = act_cli_->getState();
+      if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
+      {
+        ROS_INFO("Action has been finished.");
+        sendNextGoal();
+      }
+      else if (state == actionlib::SimpleClientGoalState::ABORTED)
+      {
         ROS_ERROR("Action has been aborted. Skipping.");
         sendNextGoal();
-        pos_ ++;
-        break;
-      case actionlib::SimpleClientGoalState::LOST:
+      }
+      else if (state == actionlib::SimpleClientGoalState::LOST)
+      {
         ROS_WARN_ONCE("Action server is not ready.");
-        break;
-      default:
-        break;
       }
     }
   }
@@ -117,7 +124,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "patrol");
 
-  PatrolAction pa();
+  PatrolAction pa;
   pa.spin();
 
   return 0;
