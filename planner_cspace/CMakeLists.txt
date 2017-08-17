@@ -8,6 +8,7 @@ find_package(catkin REQUIRED
     sensor_msgs
     geometry_msgs
     move_base_msgs
+    nav_msgs
     tf
     message_generation
     costmap_cspace
@@ -26,6 +27,7 @@ catkin_package(
     sensor_msgs
     geometry_msgs
     move_base_msgs
+    nav_msgs
     tf
     costmap_cspace
 )
@@ -58,6 +60,9 @@ add_dependencies(planner_2dof_serial_joints planner_cspace_generate_messages)
 
 add_executable(dummy_robot src/dummy_robot.cpp)
 target_link_libraries(dummy_robot ${catkin_LIBRARIES})
+
+add_executable(patrol src/patrol.cpp)
+target_link_libraries(patrol ${catkin_LIBRARIES})
 
 
 roslint_cpp()
