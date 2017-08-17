@@ -16,6 +16,8 @@ find_package(catkin REQUIRED
     roslint
 )
 
+find_package(Boost REQUIRED COMPONENTS chrono)
+
 add_message_files(FILES PlannerStatus.msg)
 generate_messages(DEPENDENCIES std_msgs)
 
@@ -49,11 +51,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops -finline-functions")
 include_directories(${catkin_INCLUDE_DIRS} include)
 
 add_executable(planner_3d src/planner_3d.cpp)
-target_link_libraries(planner_3d ${catkin_LIBRARIES})
+target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(planner_3d costmap_cspace_generate_messages planner_cspace_generate_messages)
 
 add_executable(planner_2dof_serial_joints src/planner_2dof_serial_joints.cpp)
-target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES})
+target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(planner_2dof_serial_joints planner_cspace_generate_messages)
 
 add_executable(dummy_robot src/dummy_robot.cpp)
