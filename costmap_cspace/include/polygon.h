@@ -111,7 +111,7 @@ public:
           cn++;
       }
     }
-    return !((cn & 1) == 1);
+    return ((cn & 1) == 1);
   }
   float dist(const Vec &a) const
   {
