@@ -36,9 +36,9 @@
 class DummyRobot
 {
 protected:
-  float x_;
-  float y_;
-  float yaw_;
+  double x_;
+  double y_;
+  double yaw_;
   float v_;
   float w_;
 
@@ -62,6 +62,13 @@ public:
   DummyRobot()
   {
     ros::NodeHandle nh("");
+    ros::NodeHandle pnh("~");
+
+    pnh.param("initial_x", x_, 0.0);
+    pnh.param("initial_y", y_, 0.0);
+    pnh.param("initial_yaw", yaw_, 0.0);
+    v_ = 0.0;
+    w_ = 0.0;
 
     sub_twist_ = nh.subscribe("cmd_vel", 1, &DummyRobot::cbTwist, this);
     sub_init_ = nh.subscribe("initialpose", 1, &DummyRobot::cbInit, this);
