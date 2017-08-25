@@ -102,17 +102,15 @@ public:
 
     double grid;
     int min_points;
-    int robot_width;
     int robot_height;
-    double min_floorage;
-    double floorage_filter;
+    double min_floor_area;
+    double floor_area_filter;
 
     n.param("grid", grid, 0.05);
     n.param("min_points", min_points, 5000);
-    n.param("robot_width", robot_width, 4);
     n.param("robot_height", robot_height, 20);
-    n.param("min_floor_area", min_floorage, 100.0);
-    n.param("floor_area_filter", floorage_filter, 300.0);
+    n.param("min_floor_area", min_floor_area, 100.0);
+    n.param("floor_area_filter", floor_area_filter, 300.0);
 
     std::map<int, int> hist;
     int x_min = INT_MAX, x_max = 0;
@@ -141,7 +139,10 @@ public:
       hist[h]++;
     }
     int max_height = h_max;
-    std::vector<float> floorage(max_height);
+    int min_height = h_min;
+    std::map<int, float> floor_area;
+    for (int i = min_height; i < max_height; i++)
+      floor_area[i] = 0;
 
     nav_msgs::MapMetaData mmd;
     mmd.resolution = grid;
@@ -153,8 +154,13 @@ public:
     ROS_INFO("width %d, height %d", mmd.width, mmd.height);
     std::vector<nav_msgs::OccupancyGrid> maps;
 
+    int hist_max = INT_MIN;
+    for (auto h : hist)
+      if (h.second > hist_max)
+        hist_max = h.second;
+
     int map_num = 0;
-    for (int i = 0; i < max_height; i++)
+    for (int i = min_height; i < max_height; i++)
     {
       if (hist[i] > min_points)
       {
@@ -184,10 +190,10 @@ public:
           if (m.second == 0)
             cnt++;
         }
-        floorage[i] = cnt * (grid * grid);
-        if (floorage[i] < floorage_filter)
+        floor_area[i] = cnt * (grid * grid);
+        if (floor_area[i] < floor_area_filter)
         {
-          floorage[i] = 0;
+          floor_area[i] = 0;
         }
         else
         {
@@ -215,7 +221,7 @@ public:
       }
       else
       {
-        floorage[i] = 0;
+        floor_area[i] = 0;
       }
     }
     ROS_INFO("Floor candidates: %d", map_num);
@@ -236,7 +242,7 @@ public:
       }
       it_prev = it;
     }
-    std::vector<float> floorage_ext(map_num);
+    std::vector<float> floor_area_ext(map_num);
     int num = 0;
     for (auto &map : maps)
     {
@@ -245,45 +251,49 @@ public:
       {
         if (map.data[i] != 0)
         {
-          for (int xp = -robot_width; xp <= robot_width; xp++)
-          {
-            for (int yp = -robot_width; yp <= robot_width; yp++)
-            {
-              if (xp * xp + yp * yp > robot_width * robot_width)
-                continue;
-              unsigned int x = i % mmd.width + xp;
-              unsigned int y = i / mmd.width + yp;
-              if (x >= mmd.width)
-                continue;
-              if (y >= mmd.height)
-                continue;
-              int addr = x + y * mmd.width;
-              map_exp[addr] = map.data[i];
-            }
-          }
+          unsigned int x = i % mmd.width;
+          unsigned int y = i / mmd.width;
+          if (x >= mmd.width)
+            continue;
+          if (y >= mmd.height)
+            continue;
+          int addr = x + y * mmd.width;
+          map_exp[addr] = map.data[i];
         }
       }
       int cnt = 0;
       for (auto &c : map_exp)
         if (c == 0)
           cnt++;
-      floorage_ext[num] = cnt * grid * grid;
+      floor_area_ext[num] = cnt * grid * grid;
       num++;
     }
-    num = -1;
+    for (int i = max_height - 1; i >= min_height; i--)
+    {
+      printf(" %6.2f ", i * grid);
+      for (int j = 0; j < 16; j++)
+      {
+        if (j < hist[i] * 16 / hist_max)
+          printf("#");
+        else
+          printf(" ");
+      }
+      printf("  (%5d points, %5.0f m^2 occupied)\n", hist[i], floor_area[i]);
+    }
+    num = 0;
     int floor_num = 0;
     map_organizer::OccupancyGridArray map_array;
     for (auto &map : maps)
     {
       num++;
-      if (floorage_ext[num] < min_floorage)
+      if (floor_area_ext[num] < min_floor_area)
         continue;
       std::string name = "map" + std::to_string(floor_num);
       pubMaps[name] = n.advertise<nav_msgs::OccupancyGrid>(name, 1, true);
       pubMaps[name].publish(map);
       map_array.maps.push_back(map);
       ROS_ERROR("floor %d (%5.2fm^2), h = %0.2fm",
-                floor_num, floorage_ext[num], map.info.origin.position.z);
+                floor_num, floor_area_ext[num], map.info.origin.position.z);
       floor_num++;
     }
     pubMapArray.publish(map_array);
