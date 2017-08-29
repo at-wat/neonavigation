@@ -27,19 +27,17 @@ pointcloud_to_maps node detects floors from given pointcloud and publishes layer
 ### Parameters
 
 * points_thresh_rate (double, default 0.5)
-  > layers with larger number of points than `(max * rate)` are extracted as floor
+  > Layers with larger numbers of points than (max * rate) are extracted as floors.
 * floor_area_thresh_rate (double, default 0.8)
-  > layers with `(max * rate)` are extracted as floor
+  > Layers with (max * rate) are extracted as floors.
 * robot_height (double, default 1.0)
-  > points with `(floor_height + floor_tolerance)` to `floor_height` of height are assumed to be wall
+  > Points with (floor_height + floor_tolerance) to floor_height of height are assumed as walls.
 * floor_height (double, default 0.1)
-  > points with `+-floor_height` of height are assumed to be floor
+  > Points with +-floor_height of height are assumed as floors.
 * floor_tolerance (double, default 0.2)
-  > points with `floor_height` to `(floor_height + floor_tolerance)` of height are ignored
+  > Points with floor_height to (floor_height + floor_tolerance) of height are ignored.
 * min_floor_area (double, default 100.0)
-  > minimum floor area (m^2)
-
-
+  > Minimum floor area (m^2).
 
 
 ----
