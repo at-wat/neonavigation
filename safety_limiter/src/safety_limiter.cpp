@@ -274,6 +274,12 @@ public:
     pc->erase(std::remove_if(pc->points.begin(), pc->points.end(), filter_z),
               pc->points.end());
 
+    if (pc->width == 0)
+    {
+      ROS_WARN("Safety Limit: Empty pointcloud passed.");
+      return DBL_MAX;
+    }
+
     pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
     kdtree.setInputCloud(pc);
 
