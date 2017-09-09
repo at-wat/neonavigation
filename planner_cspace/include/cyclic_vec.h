@@ -103,21 +103,25 @@ public:
   template <typename C>
   int cross(const C &a) const
   {
+    assert(NONCYCLIC == 2);
     return (*this)[0] * a[1] - (*this)[1] * a[0];
   }
   template <typename C>
   int dot(const C &a) const
   {
+    assert(NONCYCLIC == 2);
     return (*this)[0] * a[0] + (*this)[1] * a[1];
   }
   template <typename C>
   float dist_line(const C &a, const C &b) const
   {
+    assert(NONCYCLIC == 2);
     return (b - a).cross((*this) - a) / (b - a).len();
   }
   template <typename C>
   float dist_linestrip(const C &a, const C &b) const
   {
+    assert(NONCYCLIC == 2);
     auto to_a = (*this) - a;
     if ((b - a).dot(to_a) <= 0)
       return to_a.len();
@@ -141,7 +145,7 @@ public:
       e[i] = init[i];
     }
   }
-  int sqlen() const
+  T sqlen() const
   {
     T out = 0;
     for (int i = 0; i < NONCYCLIC; i++)
