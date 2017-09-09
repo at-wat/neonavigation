@@ -12,6 +12,7 @@ branches:
     - master
 
 before_install:
+  - .travis.scripts/setup_docker.sh
   - .travis.scripts/load_cache.sh
 
 install: true
