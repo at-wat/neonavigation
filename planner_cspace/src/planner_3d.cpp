@@ -101,7 +101,7 @@ protected:
     cost = sqrtf(cost);
     for (int i = as_.getNoncyclic(); i < as_.getDim(); i++)
     {
-      vc.cycle(vc[i], cm_.size[i]);
+      vc.cycle(vc[i], cm_.size()[i]);
       cost += fabs(coef[i] * vc[i]);
     }
     return cost;
@@ -481,9 +481,9 @@ protected:
     debug.header.stamp = ros::Time::now();
     {
       Astar::Vec p;
-      for (p[1] = 0; p[1] < cost_estim_cache_.size[1]; p[1]++)
+      for (p[1] = 0; p[1] < cost_estim_cache_.size()[1]; p[1]++)
       {
-        for (p[0] = 0; p[0] < cost_estim_cache_.size[0]; p[0]++)
+        for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
         {
           p[2] = 0;
           float x, y, yaw;
@@ -530,9 +530,9 @@ protected:
       pc.header.stamp = ros::Time::now();
 
       Astar::Vec p;
-      for (p[1] = 0; p[1] < cm_hist_.size[1]; p[1]++)
+      for (p[1] = 0; p[1] < cm_hist_.size()[1]; p[1]++)
       {
-        for (p[0] = 0; p[0] < cm_hist_.size[0]; p[0]++)
+        for (p[0] = 0; p[0] < cm_hist_.size()[0]; p[0]++)
         {
           p[2] = 0;
           if (cm_hist_[p] > hist_cnt_thres_)

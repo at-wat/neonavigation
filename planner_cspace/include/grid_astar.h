@@ -102,8 +102,8 @@ public:
   {
     g_.reset(size);
     g_.clear(FLT_MAX);
-    parents_.reserve(g_.ser_size / 16);
-    open_.reserve(g_.ser_size / 16);
+    parents_.reserve(g_.ser_size() / 16);
+    open_.reserve(g_.ser_size() / 16);
   }
   GridAstar()
   {
@@ -152,8 +152,8 @@ public:
     Vec e = en;
     for (int i = NONCYCLIC; i < DIM; i++)
     {
-      s.cycle_unsigned(s[i], g.size[i]);
-      e.cycle_unsigned(e[i], g.size[i]);
+      s.cycle_unsigned(s[i], g.size()[i]);
+      e.cycle_unsigned(e[i], g.size()[i]);
     }
     g.clear(FLT_MAX);
     open_.clear();
@@ -216,10 +216,10 @@ public:
         Vec next = p + diff;
         for (int i = NONCYCLIC; i < DIM; i++)
         {
-          next.cycle_unsigned(next[i], g.size[i]);
+          next.cycle_unsigned(next[i], g.size()[i]);
         }
-        if ((unsigned int)next[0] >= (unsigned int)g.size[0] ||
-            (unsigned int)next[1] >= (unsigned int)g.size[1])
+        if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
+            (unsigned int)next[1] >= (unsigned int)g.size()[1])
           continue;
         if (g[next] < 0)
           continue;
