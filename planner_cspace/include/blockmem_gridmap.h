@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c_) 2014-2017, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,99 +32,108 @@
 
 #include <cyclic_vec.h>
 
-template <class T, int DIM, int NONCYCLIC, int block_width = 0x20>
+template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20>
 class BlockMemGridmap
 {
-public:
-  std::unique_ptr<T[]> c;
-  CyclicVecInt<DIM, NONCYCLIC> size;
-  CyclicVecInt<DIM, NONCYCLIC> block_size;
-  size_t ser_size;
-  size_t block_ser_size;
-  size_t block_num;
-  void clear(const T zero)
-  {
-    for (size_t i = 0; i < ser_size; i++)
-    {
-      c[i] = zero;
-    }
-  }
-  void clear_positive(const T zero)
-  {
-    for (size_t i = 0; i < ser_size; i++)
-    {
-      if (c[i] >= 0)
-        c[i] = zero;
-    }
-  }
-  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size)
-  {
-    this->size = size;
+protected:
+  std::unique_ptr<T[]> c_;
+  CyclicVecInt<DIM, NONCYCLIC> size_;
+  CyclicVecInt<DIM, NONCYCLIC> block_size_;
+  size_t ser_size_;
+  size_t block_ser_size_;
+  size_t block_num_;
 
-    for (int i = 0; i < NONCYCLIC; i++)
-    {
-      if (this->size[i] < static_cast<int>(block_width))
-        this->size[i] = block_width;
-    }
-
-    block_ser_size = 1;
-    block_num = 1;
-    for (int i = 0; i < DIM; i++)
-    {
-      int width;
-      if (i < NONCYCLIC)
-      {
-        width = block_width;
-        block_size[i] = (this->size[i] + width - 1) / width;
-      }
-      else
-      {
-        width = this->size[i];
-        block_size[i] = 1;
-      }
-
-      block_ser_size *= width;
-      block_num *= block_size[i];
-    }
-    ser_size = block_ser_size * block_num;
-
-    c.reset(new T[ser_size]);
-  }
-  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC> &size)
-  {
-    reset(size);
-  }
-  BlockMemGridmap()
-  {
-  }
-  void block_addr(const CyclicVecInt<DIM, NONCYCLIC> &pos, size_t &baddr, size_t &addr)
+  size_t block_addr(const CyclicVecInt<DIM, NONCYCLIC> &pos, size_t &baddr, size_t &addr) const
   {
     addr = 0;
     baddr = 0;
     for (int i = 0; i < NONCYCLIC; i++)
     {
-      addr *= block_width;
-      addr += pos[i] % block_width;
-      baddr *= block_size[i];
-      baddr += pos[i] / block_width;
+      addr *= BLOCK_WIDTH;
+      addr += pos[i] % BLOCK_WIDTH;
+      baddr *= block_size_[i];
+      baddr += pos[i] / BLOCK_WIDTH;
     }
     for (int i = NONCYCLIC; i < DIM; i++)
     {
-      addr *= size[i];
+      addr *= size_[i];
       addr += pos[i];
     }
+  }
+
+public:
+  void clear(const T zero)
+  {
+    for (size_t i = 0; i < ser_size_; i++)
+    {
+      c_[i] = zero;
+    }
+  }
+  void clear_positive(const T zero)
+  {
+    for (size_t i = 0; i < ser_size_; i++)
+    {
+      if (c_[i] >= 0)
+        c_[i] = zero;
+    }
+  }
+  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size_)
+  {
+    this->size_ = size_;
+
+    for (int i = 0; i < NONCYCLIC; i++)
+    {
+      if (this->size_[i] < static_cast<int>(BLOCK_WIDTH))
+        this->size_[i] = BLOCK_WIDTH;
+    }
+
+    block_ser_size_ = 1;
+    block_num_ = 1;
+    for (int i = 0; i < DIM; i++)
+    {
+      int width;
+      if (i < NONCYCLIC)
+      {
+        width = BLOCK_WIDTH;
+        block_size_[i] = (this->size_[i] + width - 1) / width;
+      }
+      else
+      {
+        width = this->size_[i];
+        block_size_[i] = 1;
+      }
+
+      block_ser_size_ *= width;
+      block_num_ *= block_size_[i];
+    }
+    ser_size_ = block_ser_size_ * block_num_;
+
+    c_.reset(new T[ser_size_]);
+  }
+  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC> &size_)
+  {
+    reset(size_);
+  }
+  BlockMemGridmap()
+  {
   }
   T &operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos)
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
-    return c[baddr * block_ser_size + addr];
+    return c_[baddr * block_ser_size_ + addr];
   }
-  const BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
-      &operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, block_width> &gm)
+  const T operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos) const
   {
-    reset(gm.size);
-    memcpy(c.get(), gm.c.get(), ser_size);
+    size_t baddr, addr;
+    block_addr(pos, baddr, addr);
+    return c_[baddr * block_ser_size_ + addr];
+  }
+  const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>
+      &operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH> &gm)
+  {
+    reset(gm.size_);
+    memcpy(c_.get(), gm.c_.get(), ser_size_);
 
     return *this;
   }
