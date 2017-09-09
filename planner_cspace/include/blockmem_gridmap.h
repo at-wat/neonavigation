@@ -62,6 +62,14 @@ protected:
   }
 
 public:
+  const CyclicVecInt<DIM, NONCYCLIC> &size() const
+  {
+    return size_;
+  }
+  size_t ser_size() const
+  {
+    return ser_size_;
+  }
   void clear(const T zero)
   {
     for (size_t i = 0; i < ser_size_; i++)
