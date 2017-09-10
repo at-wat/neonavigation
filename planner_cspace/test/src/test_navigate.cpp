@@ -54,15 +54,20 @@ TEST(Navigate, testNavigate)
 
   ros::Duration(2.0).sleep();
   nav_msgs::Path path;
-  path.poses.resize(1);
-  path.header.frame_id = path.poses[0].header.frame_id = "map";
+  path.poses.resize(2);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.9;
   path.poses[0].pose.position.y = 2.8;
   path.poses[0].pose.orientation = tf::createQuaternionMsgFromYaw(-1.57);
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.7;
+  path.poses[0].pose.position.y = 2.9;
+  path.poses[0].pose.orientation = tf::createQuaternionMsgFromYaw(-3.14);
   pub_path.publish(path);
 
   tf::Pose goal;
-  tf::poseMsgToTF(path.poses[0].pose, goal);
+  tf::poseMsgToTF(path.poses.back().pose, goal);
 
   ros::Rate wait(10);
   while (ros::ok())
