@@ -382,7 +382,7 @@ protected:
           if ((unsigned int)s2[0] >= (unsigned int)map_info_.width ||
               (unsigned int)s2[1] >= (unsigned int)map_info_.height)
             continue;
-          s2.cycle_unsigned(s2[2], map_info_.angle);
+          s2.cycleUnsigned(s2[2], map_info_.angle);
           if (cm_[s2] >= cost_acceptable)
             continue;
           auto cost = euclidCost(d, ec_);
@@ -404,7 +404,7 @@ protected:
       return false;
     }
     s = s_out;
-    s.cycle_unsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(s[2], map_info_.angle);
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
@@ -421,11 +421,11 @@ protected:
     metric2Grid(s[0], s[1], s[2],
                 start_.pose.position.x, start_.pose.position.y,
                 tf::getYaw(start_.pose.orientation));
-    s.cycle_unsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(s[2], map_info_.angle);
     metric2Grid(e[0], e[1], e[2],
                 goal_.pose.position.x, goal_.pose.position.y,
                 tf::getYaw(goal_.pose.orientation));
-    e.cycle_unsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(e[2], map_info_.angle);
     ROS_INFO("New goal received (%d, %d, %d)",
              e[0], e[1], e[2]);
 
@@ -642,11 +642,11 @@ protected:
     metric2Grid(s[0], s[1], s[2],
                 start_.pose.position.x, start_.pose.position.y,
                 tf::getYaw(start_.pose.orientation));
-    s.cycle_unsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(s[2], map_info_.angle);
     metric2Grid(e[0], e[1], e[2],
                 goal_.pose.position.x, goal_.pose.position.y,
                 tf::getYaw(goal_.pose.orientation));
-    e.cycle_unsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(e[2], map_info_.angle);
 
     if (cm_[e] == 100)
     {
@@ -1248,10 +1248,10 @@ protected:
     Astar::Vec s, e;
     metric2Grid(s[0], s[1], s[2],
                 gs.position.x, gs.position.y, tf::getYaw(gs.orientation));
-    s.cycle_unsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(s[2], map_info_.angle);
     metric2Grid(e[0], e[1], e[2],
                 ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
-    e.cycle_unsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(e[2], map_info_.angle);
 
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
@@ -1402,7 +1402,7 @@ protected:
         {
           if (it != it_prev)
           {
-            auto d = p.dist_linestrip(*it_prev, *it);
+            auto d = p.distLinestrip2d(*it_prev, *it);
             if (d < d_min)
               d_min = d;
           }

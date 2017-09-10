@@ -201,13 +201,13 @@ TEST(CyclicVec, testCycle)
   Vec3 v(v1c);
   v.cycle(v[2], 4);
   ASSERT_EQ(v[2], 1);
-  v.cycle_unsigned(v[2], 4);
+  v.cycleUnsigned(v[2], 4);
   ASSERT_EQ(v[2], 1);
 
   v[2] = 7;
   v.cycle(v[2], 4);
   ASSERT_EQ(v[2], -1);
-  v.cycle_unsigned(v[2], 4);
+  v.cycleUnsigned(v[2], 4);
   ASSERT_EQ(v[2], 3);
 }
 

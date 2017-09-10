@@ -708,8 +708,8 @@ private:
     {
       pos[0] = lroundf(v[0]);
       pos[1] = lroundf(v[1]);
-      pos.cycle_unsigned(pos[0], resolution_);
-      pos.cycle_unsigned(pos[1], resolution_);
+      pos.cycleUnsigned(pos[0], resolution_);
+      pos.cycleUnsigned(pos[1], resolution_);
       const auto c = cm_[pos];
       if (c > 99)
         return -1;
