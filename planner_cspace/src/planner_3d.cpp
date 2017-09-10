@@ -223,7 +223,6 @@ protected:
     DEBUG_COST_ESTIM
   };
   DebugMode debug_out_;
-  bool print_planning_duration_;
 
   planner_cspace::PlannerStatus status_;
 
@@ -976,8 +975,10 @@ public:
       debug_out_ = DEBUG_HISTORY;
     else if (debug_mode == "cost_estim")
       debug_out_ = DEBUG_COST_ESTIM;
-    nh_.param("print_planning_duration", print_planning_duration_, false);
-    if (print_planning_duration_)
+
+    bool print_planning_duration;
+    nh_.param("print_planning_duration", print_planning_duration, false);
+    if (print_planning_duration)
     {
       if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
       {
