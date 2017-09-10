@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8.3)
 
 find_package(catkin REQUIRED COMPONENTS roscpp rostest nav_msgs tf)
 
+catkin_add_gtest(test_cyclic_vec src/test_cyclic_vec.cpp)
+target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 catkin_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
