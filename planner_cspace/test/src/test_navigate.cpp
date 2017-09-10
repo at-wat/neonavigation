@@ -57,13 +57,13 @@ TEST(Navigate, testNavigate)
   path.poses.resize(2);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
-  path.poses[0].pose.position.x = 1.9;
-  path.poses[0].pose.position.y = 2.8;
-  path.poses[0].pose.orientation = tf::createQuaternionMsgFromYaw(-1.57);
-  path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.7;
   path.poses[0].pose.position.y = 2.9;
   path.poses[0].pose.orientation = tf::createQuaternionMsgFromYaw(-3.14);
+  path.poses[1].header.frame_id = path.header.frame_id;
+  path.poses[1].pose.position.x = 1.9;
+  path.poses[1].pose.position.y = 2.8;
+  path.poses[1].pose.orientation = tf::createQuaternionMsgFromYaw(-1.57);
   pub_path.publish(path);
 
   tf::Pose goal;
