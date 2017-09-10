@@ -28,6 +28,7 @@
  */
 
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 #include <planner_cspace/PlannerStatus.h>
@@ -1035,6 +1036,16 @@ public:
     else if (debug_mode == "cost_estim")
       debug_out_ = DEBUG_COST_ESTIM;
 
+    bool print_planning_duration;
+    nh_.param("print_planning_duration", print_planning_duration, false);
+    if (print_planning_duration)
+    {
+      if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+      {
+        ros::console::notifyLoggerLevelsChanged();
+      }
+    }
+
     int queue_size_limit;
     nh_.param("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
@@ -1399,10 +1410,10 @@ protected:
     auto range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
     angle_resolution_aspect_ = 1.0 / tanf(map_info_.angular_resolution);
 
+    const auto ts = boost::chrono::high_resolution_clock::now();
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
     std::list<Astar::Vec> path_grid;
-    // const auto ts = boost::chrono::high_resolution_clock::now();
     if (!as_.search(s, e, path_grid,
                     std::bind(&Planner3d::cbCost,
                               this, std::placeholders::_1, std::placeholders::_2,
@@ -1423,9 +1434,9 @@ protected:
       if (!find_best_)
         return false;
     }
-    // const auto tnow = boost::chrono::high_resolution_clock::now();
-    // ROS_INFO("Path found (%0.3f sec.)",
-    //   boost::chrono::duration<float>(tnow - ts).count());
+    const auto tnow = boost::chrono::high_resolution_clock::now();
+    ROS_DEBUG("Path found (%0.3f sec.)",
+              boost::chrono::duration<float>(tnow - ts).count());
 
     grid2Metric(path_grid, path, s);
 
