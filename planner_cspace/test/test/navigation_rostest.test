@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
 	<test test-name="test_navigate" pkg="planner_cspace" type="test_navigate" time-limit="60.0" />
 	
