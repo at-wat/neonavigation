@@ -392,8 +392,8 @@ protected:
             char c = 0;
             for (int i = 0; i < dist; i++)
             {
-              pos[0] = lroundf(v[0]);
-              pos[1] = lroundf(v[1]);
+              pos[0] = static_cast<int>(v[0]);
+              pos[1] = static_cast<int>(v[1]);
               c = cm_rough_[pos];
               if (c > 99)
                 break;
@@ -1185,8 +1185,8 @@ protected:
       const int x, const int y, const int yaw,
       float &gx, float &gy, float &gyaw)
   {
-    gx = x * map_info_.linear_resolution + map_info_.origin.position.x;
-    gy = y * map_info_.linear_resolution + map_info_.origin.position.y;
+    gx = (x + 0.5) * map_info_.linear_resolution + map_info_.origin.position.x;
+    gy = (y + 0.5) * map_info_.linear_resolution + map_info_.origin.position.y;
     gyaw = yaw * map_info_.angular_resolution;
   }
   void grid2Metric(const std::list<Astar::Vec> &path_grid,
@@ -1309,8 +1309,8 @@ protected:
       int &x, int &y, int &yaw,
       const float gx, const float gy, const float gyaw)
   {
-    x = lroundf((gx - map_info_.origin.position.x) / map_info_.linear_resolution);
-    y = lroundf((gy - map_info_.origin.position.y) / map_info_.linear_resolution);
+    x = static_cast<int>((gx - map_info_.origin.position.x) / map_info_.linear_resolution);
+    y = static_cast<int>((gy - map_info_.origin.position.y) / map_info_.linear_resolution);
     yaw = lroundf(gyaw / map_info_.angular_resolution);
   }
   bool makePlan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge,

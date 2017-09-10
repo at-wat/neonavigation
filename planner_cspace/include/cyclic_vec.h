@@ -208,7 +208,7 @@ public:
   explicit CyclicVecInt(const float *v)
   {
     for (int i = 0; i < DIM; i++)
-      this->e_[i] = lroundf(v[i]);
+      this->e_[i] = v[i];
   }
   explicit CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int> &c)
   {
