@@ -44,6 +44,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <algorithm>
 
 #include <costmap_cspace/node_handle_float.h>
 #include <grid_astar.h>
@@ -272,7 +273,7 @@ protected:
             rotate(motion, -syaw * map_info_.angular_resolution);
             const float cos_v = cosf(motion[2]);
             const float sin_v = sinf(motion[2]);
-            
+
             const float inter = 1.0 / d.len();
 
             if (fabs(sin_v) < 0.1)
@@ -290,7 +291,7 @@ protected:
                 };
                 Astar::Vec pos(pos_raw);
                 pos.cycleUnsigned(pos[2], map_info_.angle);
-                if(registered.find(pos) == registered.end())
+                if (registered.find(pos) == registered.end())
                 {
                   motion_interp_cache_[syaw][d].push_back(pos);
                   registered[pos] = true;
@@ -340,7 +341,7 @@ protected:
               };
               Astar::Vec pos(posf_raw);
               pos.cycleUnsigned(pos[2], map_info_.angle);
-              if(registered.find(pos) == registered.end())
+              if (registered.find(pos) == registered.end())
               {
                 motion_interp_cache_[syaw][d].push_back(pos);
                 registered[pos] = true;
@@ -355,20 +356,19 @@ protected:
       // Sort to improve cache hit rate
       for (auto &cache : motion_interp_cache_[syaw])
       {
-        std::sort(cache.second.begin(), cache.second.end(),
-            [this](const Astar::Vec a, const Astar::Vec b)
-            {
-              size_t a_baddr, a_addr;
-              size_t b_baddr, b_addr;
-              cm_.block_addr(a, a_baddr, a_addr);
-              cm_.block_addr(b, b_baddr, b_addr);
-              if (a_baddr == b_baddr)
-              {
-                return (a_addr < b_addr);
-              }
-              return (a_baddr < b_baddr);
-            }
-          );
+        auto comp = [this](const Astar::Vec a, const Astar::Vec b)
+        {
+          size_t a_baddr, a_addr;
+          size_t b_baddr, b_addr;
+          cm_.block_addr(a, a_baddr, a_addr);
+          cm_.block_addr(b, b_baddr, b_addr);
+          if (a_baddr == b_baddr)
+          {
+            return (a_addr < b_addr);
+          }
+          return (a_baddr < b_baddr);
+        };
+        std::sort(cache.second.begin(), cache.second.end(), comp);
       }
     }
   }
