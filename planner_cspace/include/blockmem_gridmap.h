@@ -43,6 +43,7 @@ protected:
   size_t block_ser_size_;
   size_t block_num_;
 
+public:
   size_t block_addr(const CyclicVecInt<DIM, NONCYCLIC> &pos, size_t &baddr, size_t &addr) const
   {
     addr = 0;
@@ -60,8 +61,6 @@ protected:
       addr += pos[i];
     }
   }
-
-public:
   const CyclicVecInt<DIM, NONCYCLIC> &size() const
   {
     return size_;
