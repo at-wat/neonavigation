@@ -108,8 +108,8 @@ TEST(Navigate, testNavigate)
       for (int y = -1; y <= 1; ++y)
       {
         const tf::Vector3 pos = trans * tf::Vector3(x * map.info.resolution, y * map.info.resolution, 0);
-        const int map_x = lroundf(pos.x() / map.info.resolution);
-        const int map_y = lroundf(pos.y() / map.info.resolution);
+        const int map_x = pos.x() / map.info.resolution;
+        const int map_y = pos.y() / map.info.resolution;
         const size_t addr = map_x + map_y * map.info.width;
         ASSERT_LT(addr, map.data.size());
         ASSERT_LT(map_x, static_cast<int>(map.info.width));
