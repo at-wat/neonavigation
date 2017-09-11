@@ -44,6 +44,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <algorithm>
 
 #include <costmap_cspace/node_handle_float.h>
 #include <grid_astar.h>
@@ -236,6 +237,142 @@ protected:
 
   bool escaping_;
 
+  std::unordered_map<int, std::unordered_map<Astar::Vec,
+    std::vector<Astar::Vec>, Astar::Vec>> motion_interp_cache_;
+  std::unordered_map<int, std::unordered_map<Astar::Vec,
+    float, Astar::Vec>> distf_cache_;
+
+  void initMotionInterpCache()
+  {
+    ROS_DEBUG("initMotionInterpCache: (range: %d, angle: %d)", range_, map_info_.angle);
+    motion_interp_cache_.clear();
+    for (int syaw = 0; syaw < static_cast<int>(map_info_.angle); syaw++)
+    {
+      const float yaw = syaw * map_info_.angular_resolution;
+      Astar::Vec d;
+      for (d[0] = -range_; d[0] <= range_; d[0]++)
+      {
+        for (d[1] = -range_; d[1] <= range_; d[1]++)
+        {
+          if (d[0] == 0 && d[1] == 0)
+            continue;
+          if (d.sqlen() > range_ * range_)
+            continue;
+          for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
+          {
+            const float yaw_e = d[2] * map_info_.angular_resolution;
+            const float diff_val[3] =
+            {
+              d[0] * map_info_.linear_resolution,
+              d[1] * map_info_.linear_resolution,
+              d[2] * map_info_.angular_resolution
+            };
+            std::unordered_map<Astar::Vec, bool, Astar::Vec> registered;
+
+            Astar::Vecf motion(diff_val);
+            rotate(motion, -syaw * map_info_.angular_resolution);
+            const float cos_v = cosf(motion[2]);
+            const float sin_v = sinf(motion[2]);
+
+            const float inter = 1.0 / d.len();
+
+            if (fabs(sin_v) < 0.1)
+            {
+              for (float i = 0; i < 1.0; i += inter)
+              {
+                const float x = diff_val[0] * i;
+                const float y = diff_val[1] * i;
+
+                const float pos_raw[3] =
+                {
+                  roundf(x / map_info_.linear_resolution),
+                  roundf(y / map_info_.linear_resolution),
+                  roundf(yaw / map_info_.angular_resolution)
+                };
+                Astar::Vec pos(pos_raw);
+                pos.cycleUnsigned(pos[2], map_info_.angle);
+                if (registered.find(pos) == registered.end())
+                {
+                  motion_interp_cache_[syaw][d].push_back(pos);
+                  registered[pos] = true;
+                }
+              }
+              distf_cache_[syaw][d] = d.len();
+              continue;
+            }
+
+            float distf = 0.0;
+            const float r1 = motion[1] + motion[0] * cos_v / sin_v;
+            float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
+            if (motion[0] * sin_v < 0)
+              r2 = -r2;
+
+            float cx, cy, cx_s, cy_s, dyaw;
+            dyaw = yaw_e - yaw;
+            if (dyaw < -M_PI)
+              dyaw += 2 * M_PI;
+            else if (dyaw > M_PI)
+              dyaw -= 2 * M_PI;
+
+            cx = d[0] * map_info_.linear_resolution + r2 * cosf(yaw_e + M_PI / 2);
+            cy = d[1] * map_info_.linear_resolution + r2 * sinf(yaw_e + M_PI / 2);
+            cx_s = r1 * cosf(yaw + M_PI / 2);
+            cy_s = r1 * sinf(yaw + M_PI / 2);
+
+            Astar::Vecf posf_prev;
+
+            for (float i = 0; i < 1.0; i += inter)
+            {
+              const float r = r1 * (1.0 - i) + r2 * i;
+              const float cx2 = cx_s * (1.0 - i) + cx * i;
+              const float cy2 = cy_s * (1.0 - i) + cy * i;
+              const float cyaw = yaw + i * dyaw;
+
+              const float posf_raw[3] =
+              {
+                (cx2 - r * cosf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
+                (cy2 - r * sinf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
+                cyaw / map_info_.angular_resolution
+              };
+              Astar::Vecf posf(posf_raw);
+              const float pos_raw[3] =
+              {
+                roundf(posf_raw[0]), roundf(posf_raw[1]), roundf(posf_raw[2])
+              };
+              Astar::Vec pos(posf_raw);
+              pos.cycleUnsigned(pos[2], map_info_.angle);
+              if (registered.find(pos) == registered.end())
+              {
+                motion_interp_cache_[syaw][d].push_back(pos);
+                registered[pos] = true;
+              }
+              distf += (posf - posf_prev).len();
+              posf_prev = posf;
+            }
+            distf_cache_[syaw][d] = distf;
+          }
+        }
+      }
+      // Sort to improve cache hit rate
+      for (auto &cache : motion_interp_cache_[syaw])
+      {
+        auto comp = [this](const Astar::Vec a, const Astar::Vec b)
+        {
+          size_t a_baddr, a_addr;
+          size_t b_baddr, b_addr;
+          cm_.block_addr(a, a_baddr, a_addr);
+          cm_.block_addr(b, b_baddr, b_addr);
+          if (a_baddr == b_baddr)
+          {
+            return (a_addr < b_addr);
+          }
+          return (a_baddr < b_baddr);
+        };
+        std::sort(cache.second.begin(), cache.second.end(), comp);
+      }
+    }
+  }
+
   bool cbForget(std_srvs::EmptyRequest &req,
                 std_srvs::EmptyResponse &res)
   {
@@ -333,8 +470,8 @@ protected:
             char c = 0;
             for (int i = 0; i < dist; i++)
             {
-              pos[0] = lroundf(v[0]);
-              pos[1] = lroundf(v[1]);
+              pos[0] = static_cast<int>(v[0]);
+              pos[1] = static_cast<int>(v[1]);
               c = cm_rough_[pos];
               if (c > 99)
                 break;
@@ -771,8 +908,10 @@ protected:
     if (map_info_.linear_resolution != msg->info.linear_resolution ||
         map_info_.angular_resolution != msg->info.angular_resolution)
     {
+      map_info_ = msg->info;
       Astar::Vec d;
-      range_ = static_cast<int>(search_range_ / msg->info.linear_resolution);
+      range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
+      initMotionInterpCache();
 
       search_list_.clear();
       for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -781,7 +920,7 @@ protected:
         {
           if (d.sqlen() > range_ * range_)
             continue;
-          for (d[2] = 0; d[2] < static_cast<int>(msg->info.angle); d[2]++)
+          for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
           {
             search_list_.push_back(d);
           }
@@ -799,16 +938,16 @@ protected:
         }
       }
       ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d",
-                msg->info.angle, range_, static_cast<int>(search_list_.size()));
+                map_info_.angle, range_, static_cast<int>(search_list_.size()));
 
-      rotgm_.resize(msg->info.angle);
-      for (int i = 0; i < static_cast<int>(msg->info.angle); i++)
+      rotgm_.resize(map_info_.angle);
+      for (int i = 0; i < static_cast<int>(map_info_.angle); i++)
       {
         const int size[3] =
             {
               range_ * 2 + 1,
               range_ * 2 + 1,
-              static_cast<int>(msg->info.angle)
+              static_cast<int>(map_info_.angle)
             };
         auto &r = rotgm_[i];
         r.reset(Astar::Vec(size));
@@ -819,16 +958,16 @@ protected:
         {
           for (d[1] = 0; d[1] <= range_ * 2; d[1]++)
           {
-            for (d[2] = 0; d[2] < static_cast<int>(msg->info.angle); d[2]++)
+            for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
             {
               const float val[3] =
                   {
-                    (d[0] - range_) * msg->info.linear_resolution,
-                    (d[1] - range_) * msg->info.linear_resolution,
-                    d[2] * msg->info.angular_resolution
+                    (d[0] - range_) * map_info_.linear_resolution,
+                    (d[1] - range_) * map_info_.linear_resolution,
+                    d[2] * map_info_.angular_resolution
                   };
               auto v = Astar::Vecf(val);
-              rotate(v, -i * msg->info.angular_resolution);
+              rotate(v, -i * map_info_.angular_resolution);
               r[d] = v;
             }
           }
@@ -836,7 +975,10 @@ protected:
       }
       ROS_DEBUG("Rotation cache generated");
     }
-    map_info_ = msg->info;
+    else
+    {
+      map_info_ = msg->info;
+    }
     map_header_ = msg->header;
 
     resolution_[0] = 1.0 / map_info_.linear_resolution;
@@ -1125,8 +1267,8 @@ protected:
       const int x, const int y, const int yaw,
       float &gx, float &gy, float &gyaw)
   {
-    gx = x * map_info_.linear_resolution + map_info_.origin.position.x;
-    gy = y * map_info_.linear_resolution + map_info_.origin.position.y;
+    gx = (x + 0.5) * map_info_.linear_resolution + map_info_.origin.position.x;
+    gy = (y + 0.5) * map_info_.linear_resolution + map_info_.origin.position.y;
     gyaw = yaw * map_info_.angular_resolution;
   }
   void grid2Metric(const std::list<Astar::Vec> &path_grid,
@@ -1249,8 +1391,8 @@ protected:
       int &x, int &y, int &yaw,
       const float gx, const float gy, const float gyaw)
   {
-    x = lroundf((gx - map_info_.origin.position.x) / map_info_.linear_resolution);
-    y = lroundf((gy - map_info_.origin.position.y) / map_info_.linear_resolution);
+    x = static_cast<int>((gx - map_info_.origin.position.x) / map_info_.linear_resolution);
+    y = static_cast<int>((gy - map_info_.origin.position.y) / map_info_.linear_resolution);
     yaw = lroundf(gyaw / map_info_.angular_resolution);
   }
   bool makePlan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge,
@@ -1375,7 +1517,7 @@ protected:
         return false;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Path found (%0.3f sec.)",
+    ROS_DEBUG("Path found (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
 
     grid2Metric(path_grid, path, s);
@@ -1530,7 +1672,9 @@ protected:
                const Astar::Vec &v_start,
                const bool hyst)
   {
-    const Astar::Vec d = e - s;
+    Astar::Vec d_raw = e - s;
+    d_raw.cycle(d_raw[2], map_info_.angle);
+    const Astar::Vec d = d_raw;
     float cost = euclidCost(d);
 
     if (d[0] == 0 && d[1] == 0)
@@ -1584,9 +1728,6 @@ protected:
 
     const float dist = motion.len();
 
-    const float cos_v = cosf(motion[2]);
-    const float sin_v = sinf(motion[2]);
-
     bool forward(true);
     if (motion[0] < 0)
       forward = false;
@@ -1598,8 +1739,6 @@ protected:
 
     if (lroundf(motion_grid[2]) == 0)
     {
-      float distf = d.len();
-
       if (motion_grid[0] == 0)
         return -1;  // side slip
       float aspect = motion[0] / motion[1];
@@ -1607,20 +1746,23 @@ protected:
         return -1;  // large y offset
 
       // Go-straight
-      float v[3], dp[3];
       int sum = 0, sum_hyst = 0;
-      const int dist = distf;
-      distf /= dist;
-      v[0] = s[0];
-      v[1] = s[1];
-      v[2] = s[2];
-      dp[0] = static_cast<float>(d[0]) / dist;
-      dp[1] = static_cast<float>(d[1]) / dist;
-      Astar::Vec pos(v);
-      for (int i = 0; i < dist; i++)
+      int num = 0;
+      auto d_index = d;
+      int syaw = s[2];
+      d_index[2] = e[2];
+      d_index.cycleUnsigned(syaw, map_info_.angle);
+      d_index.cycleUnsigned(d_index[2], map_info_.angle);
+      const auto cache_page = motion_interp_cache_[syaw].find(d_index);
+      if (cache_page == motion_interp_cache_[syaw].end())
+        return -1;
+      for (const auto &pos_diff : cache_page->second)
       {
-        pos[0] = lroundf(v[0]);
-        pos[1] = lroundf(v[1]);
+        const int posi[3] =
+        {
+          s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
+        };
+        const Astar::Vec pos(posi);
         const auto c = cm_[pos];
         if (c > 99)
           return -1;
@@ -1631,11 +1773,11 @@ protected:
           sum_hyst += cm_hyst_[pos_rough];
         }
         sum += c;
-        v[0] += dp[0];
-        v[1] += dp[1];
+        num++;
       }
-      cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / 100.0;
-      cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / 100.0;
+      const float &distf = distf_cache_[s[2]][d_index];
+      cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
+      cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
     }
     else
     {
@@ -1646,6 +1788,9 @@ protected:
         return -1;
       if (fabs(motion[1]) <= map_info_.linear_resolution * 0.5)
         return -1;
+
+      const float cos_v = cosf(motion[2]);
+      const float sin_v = sinf(motion[2]);
 
       const float r1 = motion[1] + motion[0] * cos_v / sin_v;
       float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
@@ -1673,48 +1818,38 @@ protected:
       }
 
       {
-        float v[3], dp[3];
         int sum = 0, sum_hyst = 0;
-        float distf = d.len();
-        const int dist = distf;
-        distf /= dist;
-        v[0] = s[0];
-        v[1] = s[1];
-        v[2] = s[2];
-        dp[0] = static_cast<float>(d[0]) / dist;
-        dp[1] = static_cast<float>(d[1]) / dist;
-        dp[2] = static_cast<float>(d[2]);
-        if (dp[2] < -map_info_.angle / 2)
-          dp[2] += map_info_.angle;
-        else if (dp[2] >= map_info_.angle / 2)
-          dp[2] -= map_info_.angle;
-        dp[2] /= dist;
-        Astar::Vec pos(v);
-        for (int i = 0; i < dist; i++)
+        int num = 0;
+        auto d_index = d;
+        int syaw = s[2];
+        d_index[2] = e[2];
+        d_index.cycleUnsigned(syaw, map_info_.angle);
+        d_index.cycleUnsigned(d_index[2], map_info_.angle);
+        const auto cache_page = motion_interp_cache_[syaw].find(d_index);
+        if (cache_page == motion_interp_cache_[syaw].end())
+          return -1;
+        for (const auto &pos_diff : cache_page->second)
         {
-          pos[0] = lroundf(v[0]);
-          pos[1] = lroundf(v[1]);
-          pos[2] = lroundf(v[2]);
-          if (pos[2] < 0)
-            pos[2] += map_info_.angle;
-          else if (pos[2] >= static_cast<int>(map_info_.angle))
-            pos[2] -= map_info_.angle;
+          const int posi[3] =
+          {
+            s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
+          };
+          const Astar::Vec pos(posi);
           const auto c = cm_[pos];
           if (c > 99)
             return -1;
           sum += c;
+          num++;
           if (hyst)
           {
             auto pos_rough = pos;
             pos_rough[2] = 0;
             sum_hyst += cm_hyst_[pos_rough];
           }
-          v[0] += dp[0];
-          v[1] += dp[1];
-          v[2] += dp[2];
         }
-        cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / 100.0;
-        cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / 100.0;
+        const float &distf = distf_cache_[s[2]][d_index];
+        cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
+        cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
       }
     }
 

@@ -18,3 +18,4 @@ add_rostest_gtest(test_navigate
   src/test_navigate.cpp
 )
 target_link_libraries(test_navigate ${catkin_LIBRARIES})
+add_dependencies(test_navigate planner_3d)
