@@ -287,9 +287,9 @@ protected:
 
                 const float pos_raw[3] =
                 {
-                  x / map_info_.linear_resolution,
-                  y / map_info_.linear_resolution,
-                  yaw / map_info_.angular_resolution
+                  roundf(x / map_info_.linear_resolution),
+                  roundf(y / map_info_.linear_resolution),
+                  roundf(yaw / map_info_.angular_resolution)
                 };
                 Astar::Vec pos(pos_raw);
                 pos.cycleUnsigned(pos[2], map_info_.angle);
@@ -328,9 +328,9 @@ protected:
 
               const float pos_raw[3] =
               {
-                (cx2 - r * cosf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
-                (cy2 - r * sinf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
-                (cyaw) / map_info_.angular_resolution
+                roundf((cx2 - r * cosf(cyaw + M_PI / 2)) / map_info_.linear_resolution),
+                roundf((cy2 - r * sinf(cyaw + M_PI / 2)) / map_info_.linear_resolution),
+                roundf((cyaw) / map_info_.angular_resolution)
               };
               Astar::Vec pos(pos_raw);
               pos.cycleUnsigned(pos[2], map_info_.angle);
