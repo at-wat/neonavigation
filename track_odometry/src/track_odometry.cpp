@@ -120,6 +120,7 @@ private:
 
   bool has_imu;
   bool has_odom;
+  bool publish_tf;
 
   void cb_reset_z(const std_msgs::Float32::Ptr &msg)
   {
@@ -199,7 +200,7 @@ private:
 
       if (!has_imu)
       {
-        ROS_ERROR("IMU data not received");
+        ROS_ERROR_THROTTLE(1.0, "IMU data not received");
         return;
       }
 
@@ -262,7 +263,7 @@ private:
       odom_trans.child_frame_id = base_link_id;
       odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
       odom_trans.transform.rotation = odom.pose.pose.orientation;
-      tf_broadcaster.sendTransform(odom_trans);
+      if (publish_tf) tf_broadcaster.sendTransform(odom_trans);
     }
     odomraw_prev = *msg;
     odom_prev = odom;
@@ -294,6 +295,7 @@ public:
     nh.param("use_kf", use_kf, true);
     nh.param("enable_negative_slip", negative_slip, false);
     nh.param("debug", debug, false);
+    nh.param("publish_tf", publish_tf, true);
 
     if (base_link_id_overwrite.size() > 0)
     {
