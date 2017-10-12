@@ -53,6 +53,10 @@ private:
 			cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
 			pub_twist.publish(cmd_vel);
 		}
+		else
+		{
+			last_joy_msg = ros::Time(0);
+		}
 	};
 	void cb_twist(const geometry_msgs::Twist::Ptr msg)
 	{
@@ -86,7 +90,7 @@ public:
 		nh.param("angular_axis2", angular_axis2, -1);
 		nh.param("interrupt_button", interrupt_button, 6);
 		nh.param("timeout", timeout, 0.5);
-		last_joy_msg = ros::Time::now();
+		last_joy_msg = ros::Time(0);
 	}
 };
 
