@@ -1238,6 +1238,8 @@ public:
             status_.error = planner_cspace::PlannerStatus::GOING_WELL;
 
           nav_msgs::Path path;
+          path.header = map_header_;
+          path.header.stamp = ros::Time::now();
           makePlan(start_.pose, goal_.pose, path, true);
           pubPath.publish(path);
 
@@ -1274,9 +1276,6 @@ protected:
   void grid2Metric(const std::list<Astar::Vec> &path_grid,
                    nav_msgs::Path &path, const Astar::Vec &v_start)
   {
-    path.header = map_header_;
-    path.header.stamp = ros::Time::now();
-
     // static int cnt = 0;
     // cnt ++;
     float x_ = 0, y_ = 0, yaw_ = 0;
@@ -1465,8 +1464,6 @@ protected:
     if (diff.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
         abs(diff[2]) <= goal_tolerance_ang_)
     {
-      path.header = map_header_;
-      path.header.stamp = ros::Time::now();
       path.poses.resize(1);
       path.poses[0].header = path.header;
       if (force_goal_orientation_)
