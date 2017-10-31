@@ -67,7 +67,9 @@ private:
 
 public:
   pointcloud2_to_map()
-    : nh(), pnh("~"), accums(2)
+    : nh()
+    , pnh("~")
+    , accums(2)
   {
     pnh.param("z_min", z_min, 0.1);
     pnh.param("z_max", z_max, 1.0);
@@ -134,6 +136,7 @@ private:
       return;
     published = now;
 
+    float robot_z;
     try
     {
       tf::StampedTransform trans;
@@ -148,6 +151,7 @@ private:
       map.info.origin.orientation.w = 1.0;
       origin_x = x - width * map.info.resolution * 0.5;
       origin_y = y - height * map.info.resolution * 0.5;
+      robot_z = pos.z();
     }
     catch (tf::TransformException &e)
     {
@@ -166,7 +170,7 @@ private:
         sensor_msgs::PointCloud2Iterator<float> iter_z(pc, "z");
         for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
         {
-          if (*iter_z < z_min || z_max < *iter_z)
+          if (*iter_z - robot_z < z_min || z_max < *iter_z - robot_z)
             continue;
           unsigned int x = int(
               (*iter_x - map.info.origin.position.x) / map.info.resolution);
