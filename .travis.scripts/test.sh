@@ -18,8 +18,12 @@ apt-get clean && rm -rf /var/lib/apt/lists/*
 
 sync
 
-CM_OPTIONS="-DCMAKE_CXX_FLAGS=-Wall -Werror"
-echo $CM_OPTIONS
+sed -i -e '5a set(CMAKE_C_FLAGS "-Wall -Werror")' \
+  /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
+sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror")' \
+  /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
+
+CM_OPTIONS=""
 
 catkin_make ${CM_OPTIONS} \
   || (gh-pr-comment FAILED '```catkin_make``` failed'; false)
