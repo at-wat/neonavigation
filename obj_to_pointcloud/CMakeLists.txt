@@ -4,13 +4,13 @@ project(obj_to_pointcloud)
 ## Find catkin and any catkin packages
 find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs eigen_conversions pcl_ros tf_conversions rostest roslint)
 find_package(PCL REQUIRED)
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 ## Declare a catkin package
 catkin_package(
     DEPENDS roscpp geometry_msgs tf sensor_msgs eigen eigen_conversions pcl_ros
 )
-include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
