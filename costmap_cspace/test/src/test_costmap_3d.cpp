@@ -171,9 +171,9 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
 
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (int j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map.info.height; ++j)
     {
-      for (int i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map.info.width; ++i)
       {
         const int cost = cm.getCost(i, j, k);
         // All grid must be 0
@@ -194,9 +194,9 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
   cm.processMap();
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (int j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map.info.height; ++j)
     {
-      for (int i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map.info.width; ++i)
       {
         const int cost = cm.getCost(i, j, k);
         // All grid must be 100
@@ -213,12 +213,12 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
   {
     g = 0;
   }
-  for (int i = map.info.width / 2 - 2; i < map.info.width / 2 + 2; ++i)
+  for (size_t i = map.info.width / 2 - 2; i < map.info.width / 2 + 2; ++i)
   {
     map.data[i + (map.info.height / 2 - 2) * map.info.width] = 100;
     map.data[i + (map.info.height / 2 + 2) * map.info.width] = 100;
   }
-  for (int i = map.info.height / 2 - 2; i < map.info.height / 2 + 2; ++i)
+  for (size_t i = map.info.height / 2 - 2; i < map.info.height / 2 + 2; ++i)
   {
     map.data[(map.info.width / 2 - 2) + i * map.info.width] = 100;
   }
@@ -226,18 +226,18 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
   cm.processMap();
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (int j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map.info.height; ++j)
     {
-      for (int i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map.info.width; ++i)
       {
         const int cost = cm.getCost(i, j, k);
 
         // Offset according to the template shape
         int cost_offset = 0;
-        const int i_offset = i - temp_dir[k][0];
-        const int j_offset = j - temp_dir[k][1];
-        if (0 < i_offset && i_offset < map.info.width &&
-            0 < j_offset && j_offset < map.info.height)
+        const int i_offset = static_cast<int>(i) - temp_dir[k][0];
+        const int j_offset = static_cast<int>(j) - temp_dir[k][1];
+        if (static_cast<size_t>(i_offset) < map.info.width &&
+            static_cast<size_t>(j_offset) < map.info.height)
         {
           cost_offset = map.data[i_offset + j_offset * map.info.width];
         }
@@ -292,13 +292,13 @@ TEST(Costmap3DOFTest, testCSpaceExpandSpread)
     const int i_center2 = map.info.width / 2 + temp_dir[k][0];
     const int j_center2 = map.info.height / 2 + temp_dir[k][1];
 
-    for (int j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map.info.height; ++j)
     {
-      for (int i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map.info.width; ++i)
       {
         const int cost = cm.getCost(i, j, k);
-        const float dist1 = hypotf(i - i_center, j - j_center);
-        const float dist2 = hypotf(i - i_center2, j - j_center2);
+        const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
+        const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
         const float dist = std::min(dist1, dist2);
         if (dist <= expand)
         {
@@ -403,9 +403,9 @@ TEST(Costmap3DOFTest, testCSpaceOverwrite)
   // note: boundary of the local map is not completely overwritten for keeping the spread effect.
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (int j = cm.getRangeMax(); j < map.info.height - cm.getRangeMax(); ++j)
+    for (size_t j = cm.getRangeMax(); j < map.info.height - cm.getRangeMax(); ++j)
     {
-      for (int i = cm.getRangeMax(); i < map.info.width - cm.getRangeMax(); ++i)
+      for (size_t i = cm.getRangeMax(); i < map.info.width - cm.getRangeMax(); ++i)
       {
         const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
         assert(addr < updated.data.size());
@@ -436,9 +436,9 @@ TEST(Costmap3DOFTest, testCSpaceOverwrite)
 
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (int j = cm.getRangeMax(); j < map.info.height - cm.getRangeMax(); ++j)
+    for (int j = cm.getRangeMax(); j < static_cast<int>(map.info.height) - cm.getRangeMax(); ++j)
     {
-      for (int i = cm.getRangeMax(); i < map.info.width - cm.getRangeMax(); ++i)
+      for (int i = cm.getRangeMax(); i < static_cast<int>(map.info.width) - cm.getRangeMax(); ++i)
       {
         const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
         assert(addr < updated_max.data.size());
@@ -514,14 +514,14 @@ TEST(Costmap3DOFTest, testCSpaceOverlayMove)
       cm.processMapOverlay(map2);
       for (int k = 0; k < cm.getAngularGrid(); ++k)
       {
-        const int i_center = map.info.width / 2;
-        const int j_center = map.info.height / 2;
-        const int i_center2 = map.info.width / 2 + temp_dir[k][0];
-        const int j_center2 = map.info.height / 2 + temp_dir[k][1];
+        const size_t i_center = map.info.width / 2;
+        const size_t j_center = map.info.height / 2;
+        const size_t i_center2 = map.info.width / 2 + temp_dir[k][0];
+        const size_t j_center2 = map.info.height / 2 + temp_dir[k][1];
 
-        for (int j = 0; j < map.info.height; ++j)
+        for (size_t j = 0; j < map.info.height; ++j)
         {
-          for (int i = 0; i < map.info.width; ++i)
+          for (size_t i = 0; i < map.info.width; ++i)
           {
             const int cost = cm.getCost(i, j, k);
 
