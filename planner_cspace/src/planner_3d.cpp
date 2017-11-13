@@ -238,9 +238,11 @@ protected:
   bool escaping_;
 
   std::unordered_map<int, std::unordered_map<Astar::Vec,
-    std::vector<Astar::Vec>, Astar::Vec>> motion_interp_cache_;
+                                             std::vector<Astar::Vec>,
+                                             Astar::Vec>> motion_interp_cache_;
   std::unordered_map<int, std::unordered_map<Astar::Vec,
-    float, Astar::Vec>> distf_cache_;
+                                             float,
+                                             Astar::Vec>> distf_cache_;
 
   void initMotionInterpCache()
   {
@@ -262,11 +264,11 @@ protected:
           {
             const float yaw_e = d[2] * map_info_.angular_resolution;
             const float diff_val[3] =
-            {
-              d[0] * map_info_.linear_resolution,
-              d[1] * map_info_.linear_resolution,
-              d[2] * map_info_.angular_resolution
-            };
+                {
+                  d[0] * map_info_.linear_resolution,
+                  d[1] * map_info_.linear_resolution,
+                  d[2] * map_info_.angular_resolution
+                };
             std::unordered_map<Astar::Vec, bool, Astar::Vec> registered;
 
             Astar::Vecf motion(diff_val);
@@ -284,11 +286,11 @@ protected:
                 const float y = diff_val[1] * i;
 
                 const float pos_raw[3] =
-                {
-                  roundf(x / map_info_.linear_resolution),
-                  roundf(y / map_info_.linear_resolution),
-                  roundf(yaw / map_info_.angular_resolution)
-                };
+                    {
+                      roundf(x / map_info_.linear_resolution),
+                      roundf(y / map_info_.linear_resolution),
+                      roundf(yaw / map_info_.angular_resolution)
+                    };
                 Astar::Vec pos(pos_raw);
                 pos.cycleUnsigned(pos[2], map_info_.angle);
                 if (registered.find(pos) == registered.end())
@@ -329,16 +331,12 @@ protected:
               const float cyaw = yaw + i * dyaw;
 
               const float posf_raw[3] =
-              {
-                (cx2 - r * cosf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
-                (cy2 - r * sinf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
-                cyaw / map_info_.angular_resolution
-              };
+                  {
+                    (cx2 - r * cosf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
+                    (cy2 - r * sinf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
+                    cyaw / map_info_.angular_resolution
+                  };
               Astar::Vecf posf(posf_raw);
-              const float pos_raw[3] =
-              {
-                roundf(posf_raw[0]), roundf(posf_raw[1]), roundf(posf_raw[2])
-              };
               Astar::Vec pos(posf_raw);
               pos.cycleUnsigned(pos[2], map_info_.angle);
               if (registered.find(pos) == registered.end())
@@ -1756,9 +1754,9 @@ protected:
       for (const auto &pos_diff : cache_page->second)
       {
         const int posi[3] =
-        {
-          s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
-        };
+            {
+              s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
+            };
         const Astar::Vec pos(posi);
         const auto c = cm_[pos];
         if (c > 99)
@@ -1828,9 +1826,9 @@ protected:
         for (const auto &pos_diff : cache_page->second)
         {
           const int posi[3] =
-          {
-            s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
-          };
+              {
+                s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
+              };
           const Astar::Vec pos(posi);
           const auto c = cm_[pos];
           if (c > 99)
