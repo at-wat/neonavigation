@@ -18,9 +18,19 @@ apt-get clean && rm -rf /var/lib/apt/lists/*
 
 sync
 
-catkin_make || (gh-pr-comment FAILED '```catkin_make``` failed'; false)
-catkin_make tests || (gh-pr-comment FAILED '```catkin_make tests``` failed'; false)
-catkin_make run_tests || (gh-pr-comment FAILED '```catkin_make run_tests``` failed'; false)
+sed -i -e '5a set(CMAKE_C_FLAGS "-Wall -Werror")' \
+  /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
+sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror")' \
+  /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
+
+CM_OPTIONS=""
+
+catkin_make ${CM_OPTIONS} \
+  || (gh-pr-comment FAILED '```catkin_make``` failed'; false)
+catkin_make tests ${CM_OPTIONS} \
+  || (gh-pr-comment FAILED '```catkin_make tests``` failed'; false)
+catkin_make run_tests ${CM_OPTIONS} \
+  || (gh-pr-comment FAILED '```catkin_make run_tests``` failed'; false)
 
 if [ catkin_test_results ];
 then
