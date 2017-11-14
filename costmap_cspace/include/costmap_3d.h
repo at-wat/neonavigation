@@ -277,9 +277,9 @@ public:
   }
   int8_t getCost(const int &x, const int &y, const int &yaw, const costmap_cspace::CSpace3D &map) const
   {
-    assert(0 <= yaw && yaw < map.info.angle);
-    assert(0 <= x && x < map.info.width);
-    assert(0 <= y && y < map.info.height);
+    assert(static_cast<size_t>(yaw) < map.info.angle);
+    assert(static_cast<size_t>(x) < map.info.width);
+    assert(static_cast<size_t>(y) < map.info.height);
 
     const size_t addr = (yaw * map.info.height + y) * map.info.width + x;
     assert(addr < map.data.size());
@@ -292,9 +292,9 @@ public:
   }
   int8_t &getCostRef(const int &x, const int &y, const int &yaw, costmap_cspace::CSpace3D &map)
   {
-    assert(0 <= yaw && yaw < map.info.angle);
-    assert(0 <= x && x < map.info.width);
-    assert(0 <= y && y < map.info.height);
+    assert(static_cast<size_t>(yaw) < map.info.angle);
+    assert(static_cast<size_t>(x) < map.info.width);
+    assert(static_cast<size_t>(y) < map.info.height);
 
     const size_t addr = (yaw * map.info.height + y) * map.info.width + x;
     assert(addr < map.data.size());
@@ -436,11 +436,11 @@ protected:
       update_height += update_y;
       update_y = 0;
     }
-    if (update_x + update_width > map.info.width)
+    if (update_x + update_width > static_cast<int>(map.info.width))
     {
       update_width = map.info.width - update_x;
     }
-    if (update_y + update_height > map.info.height)
+    if (update_y + update_height > static_cast<int>(map.info.height))
     {
       update_height = map.info.height - update_y;
     }
@@ -452,11 +452,11 @@ protected:
     update.angle = angle;
     update.data.resize(update.width * update.height * update.angle);
 
-    for (int i = 0; i < update.width; i++)
+    for (int i = 0; i < static_cast<int>(update.width); i++)
     {
-      for (int j = 0; j < update.height; j++)
+      for (int j = 0; j < static_cast<int>(update.height); j++)
       {
-        for (int k = 0; k < update.angle; k++)
+        for (int k = 0; k < static_cast<int>(update.angle); k++)
         {
           const int x2 = update.x + i;
           const int y2 = update.y + j;
