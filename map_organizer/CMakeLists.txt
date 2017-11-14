@@ -4,7 +4,7 @@ project(map_organizer)
 ## Find catkin and any catkin packages
 find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs nav_msgs eigen_conversions pcl_ros tf_conversions message_generation map_server rostest roslint)
 find_package(PCL REQUIRED)
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 find_package(PkgConfig)
 pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
@@ -19,7 +19,7 @@ generate_messages(DEPENDENCIES nav_msgs)
 catkin_package(
     DEPENDS roscpp geometry_msgs tf sensor_msgs nav_msgs eigen eigen_conversions pcl_ros map_server
 )
-include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
