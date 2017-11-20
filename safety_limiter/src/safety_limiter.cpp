@@ -75,7 +75,7 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   return c;
 }
 
-class safety_limiter_
+class SafetyLimiter
 {
 private:
   ros::NodeHandle nh_;
@@ -111,31 +111,31 @@ private:
   bool has_twist_;
 
 public:
-  safety_limiter_()
+  SafetyLimiter()
     : nh_("~")
   {
     pub_twist_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_out", 1, true);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
     pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
-    sub_twist_ = nh_.subscribe("cmd_vel_in", 1, &safety_limiter_::cb_twist, this);
-    sub_cloud_ = nh_.subscribe("cloud_", 1, &safety_limiter_::cb_cloud, this);
-    sub_disable_ = nh_.subscribe("disable", 100, &safety_limiter_::cb_disable, this);
+    sub_twist_ = nh_.subscribe("cmd_vel_in", 1, &SafetyLimiter::cb_twist, this);
+    sub_cloud_ = nh_.subscribe("cloud", 1, &SafetyLimiter::cb_cloud, this);
+    sub_disable_ = nh_.subscribe("disable", 100, &SafetyLimiter::cb_disable, this);
 
     nh_.param("freq", hz_, 6.0);
     nh_.param("cloud_timeout", timeout_, 0.8);
-    nh_.param("disable_timeout_", disable_timeout, 0.1);
+    nh_.param("disable_timeout", disable_timeout, 0.1);
     nh_.param("lin_vel", vel_[0], 0.5);
     nh_.param("lin_acc", acc_[0], 1.0);
     nh_.param("ang_vel", vel_[1], 0.8);
     nh_.param("ang_acc", acc_[1], 1.6);
     nh_.param("z_range_min", z_range_[0], 0.0);
     nh_.param("z_range_max", z_range_[1], 0.5);
-    nh_.param("dt_", dt, 0.1);
+    nh_.param("dt", dt_, 0.1);
     nh_.param("t_margin", tmargin_, 0.2);
-    nh_.param("downsample_grid_", downsample_grid, 0.05);
-    nh_.param("frame_id_", frame_id, std::string("base_link"));
+    nh_.param("downsample_grid", downsample_grid, 0.05);
+    nh_.param("frame_id", frame_id, std::string("base_link"));
     double hold_d;
-    nh_.param("hold_", hold_d, 0.0);
+    nh_.param("hold", hold_d, 0.0);
     hold_ = ros::Duration(hold_d);
 
     tmax_ = 0.0;
@@ -511,9 +511,9 @@ private:
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "safety_limiter_");
+  ros::init(argc, argv, "safety_limiter");
 
-  safety_limiter_ limiter;
+  SafetyLimiter limiter;
   limiter.spin();
 
   return 0;
