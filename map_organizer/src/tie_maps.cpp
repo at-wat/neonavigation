@@ -55,15 +55,17 @@ void operator>>(const YAML::Node& node, T& i)
 class tie_maps_node
 {
 private:
-  ros::NodeHandle n;
-  ros::Publisher pubMapArray;
-  std::vector<ros::Publisher> pubMap;
+  ros::NodeHandle pnh_;
+  ros::NodeHandle nh_;
+  ros::Publisher pub_map_array_;
+  std::vector<ros::Publisher> pub_map_;
 
 public:
   tie_maps_node()
-    : n("~")
+    : pnh_("~")
+    , nh_("")
   {
-    pubMapArray = n.advertise<map_organizer::OccupancyGridArray>("/maps", 1, true);
+    pub_map_array_ = nh_.advertise<map_organizer::OccupancyGridArray>("maps", 1, true);
 
     map_organizer::OccupancyGridArray maps;
 
@@ -75,8 +77,8 @@ public:
     double occ_th, free_th;
     MapMode mode;
     std::string frame_id;
-    n.param("map_files", files_str, std::string(""));
-    n.param("frame_id", frame_id, std::string("map"));
+    pnh_.param("map_files", files_str, std::string(""));
+    pnh_.param("frame_id", frame_id, std::string("map"));
 
     int i = 0;
     std::string file;
@@ -219,12 +221,12 @@ public:
                map_resp.map.info.height,
                map_resp.map.info.resolution);
       maps.maps.push_back(map_resp.map);
-      pubMap.push_back(n.advertise<nav_msgs::OccupancyGrid>(
-          "/map" + std::to_string(i), 1, true));
-      pubMap.back().publish(map_resp.map);
+      pub_map_.push_back(nh_.advertise<nav_msgs::OccupancyGrid>(
+          "map" + std::to_string(i), 1, true));
+      pub_map_.back().publish(map_resp.map);
       i++;
     }
-    pubMapArray.publish(maps);
+    pub_map_array_.publish(maps);
   }
 };
 
