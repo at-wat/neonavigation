@@ -86,14 +86,22 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   return c;
 }
 
-class pointcloud_to_maps
+class PointcloudToMaps
 {
+private:
+  ros::NodeHandle pnh_;
+  ros::NodeHandle nh_;
+  std::map<std::string, ros::Publisher> pub_maps_;
+  ros::Publisher pub_map_array_;
+  ros::Subscriber sub_points_;
+
 public:
-  pointcloud_to_maps()
-    : n("~")
+  PointcloudToMaps()
+    : pnh_("~")
+    , nh_("")
   {
-    subPoints = n.subscribe("map_cloud", 1, &pointcloud_to_maps::cbPoints, this);
-    pubMapArray = n.advertise<map_organizer::OccupancyGridArray>("/maps", 1, true);
+    sub_points_ = pnh_.subscribe("map_cloud", 1, &PointcloudToMaps::cbPoints, this);
+    pub_map_array_ = nh_.advertise<map_organizer::OccupancyGridArray>("maps", 1, true);
   }
   void cbPoints(const sensor_msgs::PointCloud2::Ptr &msg)
   {
@@ -112,13 +120,13 @@ public:
     int floor_tolerance;
     double points_thresh_rate;
 
-    n.param("grid", grid, 0.05);
-    n.param("points_thresh_rate", points_thresh_rate, 0.5);
-    n.param("robot_height", robot_height_f, 1.0);
-    n.param("floor_height", floor_height_f, 0.1);
-    n.param("floor_tolerance", floor_tolerance_f, 0.2);
-    n.param("min_floor_area", min_floor_area, 100.0);
-    n.param("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
+    pnh_.param("grid", grid, 0.05);
+    pnh_.param("points_thresh_rate", points_thresh_rate, 0.5);
+    pnh_.param("robot_height", robot_height_f, 1.0);
+    pnh_.param("floor_height", floor_height_f, 0.1);
+    pnh_.param("floor_tolerance", floor_tolerance_f, 0.2);
+    pnh_.param("min_floor_area", min_floor_area, 100.0);
+    pnh_.param("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
     robot_height = lroundf(robot_height_f / grid);
     floor_height = lroundf(floor_height_f / grid);
     floor_tolerance = lroundf(floor_tolerance_f / grid);
@@ -344,28 +352,22 @@ public:
         continue;
       }
       std::string name = "map" + std::to_string(floor_num);
-      pubMaps[name] = n.advertise<nav_msgs::OccupancyGrid>(name, 1, true);
-      pubMaps[name].publish(map);
+      pub_maps_[name] = pnh_.advertise<nav_msgs::OccupancyGrid>(name, 1, true);
+      pub_maps_[name].publish(map);
       map_array.maps.push_back(map);
       ROS_ERROR("floor %d (%5.2fm^2), h = %0.2fm",
                 floor_num, floor_runnable_area[h], map.info.origin.position.z);
       floor_num++;
     }
-    pubMapArray.publish(map_array);
+    pub_map_array_.publish(map_array);
   }
-
-private:
-  ros::NodeHandle n;
-  std::map<std::string, ros::Publisher> pubMaps;
-  ros::Publisher pubMapArray;
-  ros::Subscriber subPoints;
 };
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "pointcloud_to_maps");
 
-  pointcloud_to_maps p2m;
+  PointcloudToMaps p2m;
   ros::spin();
 
   return 0;

@@ -37,7 +37,7 @@
 std::string to;
 std::shared_ptr<tf::TransformListener> tfl;
 
-ros::Publisher pubPose;
+ros::Publisher pub_pose;
 
 void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
 {
@@ -54,7 +54,7 @@ void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
     out_msg = *msg;
     out_msg.header = out.header;
     out_msg.pose.pose = out.pose;
-    pubPose.publish(out_msg);
+    pub_pose.publish(out_msg);
   }
   catch (tf::TransformException &e)
   {
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh("~");
 
   auto subPose = nh.subscribe("pose_in", 1, cbPose);
-  pubPose = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_out", 1, false);
+  pub_pose = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_out", 1, false);
   nh.param("to_frame", to, std::string("map"));
 
   tfl.reset(new tf::TransformListener);
