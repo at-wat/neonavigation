@@ -123,7 +123,7 @@ public:
 
     nh_.param("freq", hz_, 6.0);
     nh_.param("cloud_timeout", timeout_, 0.8);
-    nh_.param("disable_timeout", disable_timeout, 0.1);
+    nh_.param("disable_timeout", disable_timeout_, 0.1);
     nh_.param("lin_vel", vel_[0], 0.5);
     nh_.param("lin_acc", acc_[0], 1.0);
     nh_.param("ang_vel", vel_[1], 0.8);
@@ -132,8 +132,8 @@ public:
     nh_.param("z_range_max", z_range_[1], 0.5);
     nh_.param("dt", dt_, 0.1);
     nh_.param("t_margin", tmargin_, 0.2);
-    nh_.param("downsample_grid", downsample_grid, 0.05);
-    nh_.param("frame_id", frame_id, std::string("base_link"));
+    nh_.param("downsample_grid", downsample_grid_, 0.05);
+    nh_.param("frame_id", frame_id_, std::string("base_link"));
     double hold_d;
     nh_.param("hold", hold_d, 0.0);
     hold_ = ros::Duration(hold_d);
@@ -246,7 +246,7 @@ public:
 
     try
     {
-      tfl_.waitForTransform(frame_id_, cloud_.header.frame_id, cloud.header.stamp,
+      tfl_.waitForTransform(frame_id_, cloud_.header.frame_id, cloud_.header.stamp,
                             ros::Duration(0.1));
       pcl_ros::transformPointCloud(frame_id_, *pc, *pc, tfl_);
     }
@@ -260,13 +260,13 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc_ds(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
     ds.setInputCloud(pc);
-    ds.setLeafSize(downsample_grid_, downsample_grid, downsample_grid);
+    ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
     ds.filter(*pc_ds);
     *pc = *pc_ds;
 
     auto filter_z = [this](pcl::PointXYZ &p)
     {
-      if (p.z < this->z_range_[0] || this->z_range[1] < p.z)
+      if (p.z < this->z_range_[0] || this->z_range_[1] < p.z)
         return true;
       p.z = 0.0;
       return false;
@@ -296,7 +296,7 @@ public:
     double t_col_estim = DBL_MAX;
     sensor_msgs::PointCloud col_points;
     sensor_msgs::PointCloud debug_points;
-    col_points.header.frame_id_ = frame_id;
+    col_points.header.frame_id = frame_id_;
     col_points.header.stamp = ros::Time::now();
     debug_points.header = col_points.header;
 
