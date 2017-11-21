@@ -75,92 +75,92 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   return c;
 }
 
-class safety_limiter
+class SafetyLimiter
 {
 private:
-  ros::NodeHandle nh;
-  ros::Publisher pub_twist;
-  ros::Publisher pub_cloud;
-  ros::Publisher pub_debug;
-  ros::Subscriber sub_twist;
-  ros::Subscriber sub_cloud;
-  ros::Subscriber sub_disable;
-  tf::TransformListener tfl;
+  ros::NodeHandle nh_;
+  ros::Publisher pub_twist_;
+  ros::Publisher pub_cloud_;
+  ros::Publisher pub_debug_;
+  ros::Subscriber sub_twist_;
+  ros::Subscriber sub_cloud_;
+  ros::Subscriber sub_disable_;
+  tf::TransformListener tfl_;
 
-  geometry_msgs::Twist twist;
-  sensor_msgs::PointCloud2 cloud;
-  double hz;
-  double timeout;
-  double disable_timeout;
-  double vel[2];
-  double acc[2];
-  double tmax;
-  double dt;
-  double tmargin;
-  double t_col;
-  double z_range[2];
-  float footprint_radius;
-  double downsample_grid;
-  std::string frame_id;
+  geometry_msgs::Twist twist_;
+  sensor_msgs::PointCloud2 cloud_;
+  double hz_;
+  double timeout_;
+  double disable_timeout_;
+  double vel_[2];
+  double acc_[2];
+  double tmax_;
+  double dt_;
+  double tmargin_;
+  double t_col_;
+  double z_range_[2];
+  float footprint_radius_;
+  double downsample_grid_;
+  std::string frame_id_;
 
-  ros::Time last_disable_cmd;
-  ros::Duration hold;
-  ros::Time hold_off;
+  ros::Time last_disable_cmd_;
+  ros::Duration hold_;
+  ros::Time hold_off_;
 
-  bool has_cloud;
-  bool has_twist;
+  bool has_cloud_;
+  bool has_twist_;
 
 public:
-  safety_limiter()
-    : nh("~")
+  SafetyLimiter()
+    : nh_("~")
   {
-    pub_twist = nh.advertise<geometry_msgs::Twist>("cmd_vel_out", 1, true);
-    pub_cloud = nh.advertise<sensor_msgs::PointCloud>("collision", 1, true);
-    pub_debug = nh.advertise<sensor_msgs::PointCloud>("debug", 1, true);
-    sub_twist = nh.subscribe("cmd_vel_in", 1, &safety_limiter::cb_twist, this);
-    sub_cloud = nh.subscribe("cloud", 1, &safety_limiter::cb_cloud, this);
-    sub_disable = nh.subscribe("disable", 100, &safety_limiter::cb_disable, this);
+    pub_twist_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_out", 1, true);
+    pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
+    pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+    sub_twist_ = nh_.subscribe("cmd_vel_in", 1, &SafetyLimiter::cb_twist, this);
+    sub_cloud_ = nh_.subscribe("cloud", 1, &SafetyLimiter::cb_cloud, this);
+    sub_disable_ = nh_.subscribe("disable", 100, &SafetyLimiter::cb_disable, this);
 
-    nh.param("freq", hz, 6.0);
-    nh.param("cloud_timeout", timeout, 0.8);
-    nh.param("disable_timeout", disable_timeout, 0.1);
-    nh.param("lin_vel", vel[0], 0.5);
-    nh.param("lin_acc", acc[0], 1.0);
-    nh.param("ang_vel", vel[1], 0.8);
-    nh.param("ang_acc", acc[1], 1.6);
-    nh.param("z_range_min", z_range[0], 0.0);
-    nh.param("z_range_max", z_range[1], 0.5);
-    nh.param("dt", dt, 0.1);
-    nh.param("t_margin", tmargin, 0.2);
-    nh.param("downsample_grid", downsample_grid, 0.05);
-    nh.param("frame_id", frame_id, std::string("base_link"));
+    nh_.param("freq", hz_, 6.0);
+    nh_.param("cloud_timeout", timeout_, 0.8);
+    nh_.param("disable_timeout", disable_timeout_, 0.1);
+    nh_.param("lin_vel", vel_[0], 0.5);
+    nh_.param("lin_acc", acc_[0], 1.0);
+    nh_.param("ang_vel", vel_[1], 0.8);
+    nh_.param("ang_acc", acc_[1], 1.6);
+    nh_.param("z_range_min", z_range_[0], 0.0);
+    nh_.param("z_range_max", z_range_[1], 0.5);
+    nh_.param("dt", dt_, 0.1);
+    nh_.param("t_margin", tmargin_, 0.2);
+    nh_.param("downsample_grid", downsample_grid_, 0.05);
+    nh_.param("frame_id", frame_id_, std::string("base_link"));
     double hold_d;
-    nh.param("hold", hold_d, 0.0);
-    hold = ros::Duration(hold_d);
+    nh_.param("hold", hold_d, 0.0);
+    hold_ = ros::Duration(hold_d);
 
-    tmax = 0.0;
+    tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
     {
-      auto t = vel[i] / acc[i];
-      if (tmax < t)
-        tmax = t;
+      auto t = vel_[i] / acc_[i];
+      if (tmax_ < t)
+        tmax_ = t;
     }
-    tmax *= 1.5;
-    tmax += tmargin;
+    tmax_ *= 1.5;
+    tmax_ += tmargin_;
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!nh.hasParam("footprint"))
+    if (!nh_.hasParam("footprint"))
     {
       ROS_FATAL("Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified");
     }
-    nh.getParam("footprint", footprint_xml);
+    nh_.getParam("footprint", footprint_xml);
     if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
     {
       ROS_FATAL("Invalid footprint");
       throw std::runtime_error("Invalid footprint");
     }
-    footprint_radius = 0;
+    footprint_radius_ = 0;
     for (int i = 0; i < footprint_xml.size(); i++)
     {
       if (!XmlRpc_isNumber(footprint_xml[i][0]) ||
@@ -176,79 +176,79 @@ public:
       footprint_p.v.push_back(v);
 
       auto dist = hypotf(v[0], v[2]);
-      if (dist > footprint_radius)
-        footprint_radius = dist;
+      if (dist > footprint_radius_)
+        footprint_radius_ = dist;
     }
     footprint_p.v.push_back(footprint_p.v.front());
-    ROS_INFO("footprint radius: %0.3f", footprint_radius);
+    ROS_INFO("footprint radius: %0.3f", footprint_radius_);
 
-    has_cloud = false;
-    has_twist = true;
+    has_cloud_ = false;
+    has_twist_ = true;
 
-    last_disable_cmd = ros::Time(0);
+    last_disable_cmd_ = ros::Time(0);
   }
   void spin()
   {
-    ros::Rate rate(hz);
+    ros::Rate rate(hz_);
     while (ros::ok())
     {
       rate.sleep();
       ros::spinOnce();
 
-      if (!has_twist)
+      if (!has_twist_)
         continue;
 
-      if (ros::Time::now() - last_disable_cmd < ros::Duration(disable_timeout))
+      if (ros::Time::now() - last_disable_cmd_ < ros::Duration(disable_timeout_))
       {
-        pub_twist.publish(twist);
+        pub_twist_.publish(twist_);
         continue;
       }
 
-      if (ros::Time::now() - cloud.header.stamp > ros::Duration(timeout))
+      if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_))
       {
-        if (has_cloud)
+        if (has_cloud_)
           ROS_WARN("Safety Limit: PointCloud timed-out");
         geometry_msgs::Twist cmd_vel;
-        pub_twist.publish(cmd_vel);
-        has_cloud = false;
+        pub_twist_.publish(cmd_vel);
+        has_cloud_ = false;
         continue;
       }
-      if (!has_cloud)
+      if (!has_cloud_)
         continue;
 
       ros::Time now = ros::Time::now();
-      const double t_col_current = predict(twist, cloud);
+      const double t_col_current = predict(twist_, cloud_);
 
       if (t_col_current != DBL_MAX)
       {
-        if (t_col_current < t_col)
-          t_col = t_col_current;
+        if (t_col_current < t_col_)
+          t_col_ = t_col_current;
 
-        hold_off = now + hold;
+        hold_off_ = now + hold_;
       }
 
-      if (now <= hold_off)
+      if (now <= hold_off_)
       {
-        geometry_msgs::Twist cmd_vel = limit(twist);
-        pub_twist.publish(cmd_vel);
+        geometry_msgs::Twist cmd_vel = limit(twist_);
+        pub_twist_.publish(cmd_vel);
       }
       else
       {
-        pub_twist.publish(twist);
+        pub_twist_.publish(twist_);
       }
     }
   }
   double predict(const geometry_msgs::Twist &in,
-                 const sensor_msgs::PointCloud2 &cloud)
+                 const sensor_msgs::PointCloud2 &cloud_)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::fromROSMsg(cloud, *pc);
+    pcl::fromROSMsg(cloud_, *pc);
 
     try
     {
-      tfl.waitForTransform(frame_id, cloud.header.frame_id, cloud.header.stamp,
-                           ros::Duration(0.1));
-      pcl_ros::transformPointCloud(frame_id, *pc, *pc, tfl);
+      tfl_.waitForTransform(frame_id_, cloud_.header.frame_id, cloud_.header.stamp,
+                            ros::Duration(0.1));
+      pcl_ros::transformPointCloud(frame_id_, *pc, *pc, tfl_);
     }
     catch (tf::TransformException &e)
     {
@@ -260,13 +260,13 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc_ds(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
     ds.setInputCloud(pc);
-    ds.setLeafSize(downsample_grid, downsample_grid, downsample_grid);
+    ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
     ds.filter(*pc_ds);
     *pc = *pc_ds;
 
     auto filter_z = [this](pcl::PointXYZ &p)
     {
-      if (p.z < this->z_range[0] || this->z_range[1] < p.z)
+      if (p.z < this->z_range_[0] || this->z_range_[1] < p.z)
         return true;
       p.z = 0.0;
       return false;
@@ -286,21 +286,21 @@ public:
     Eigen::Affine3f move;
     Eigen::Affine3f move_inv;
     Eigen::Affine3f motion =
-        Eigen::AngleAxisf(-twist.angular.z * dt, Eigen::Vector3f::UnitZ()) *
-        Eigen::Translation3f(Eigen::Vector3f(-twist.linear.x * dt, 0.0, 0.0));
+        Eigen::AngleAxisf(-twist_.angular.z * dt_, Eigen::Vector3f::UnitZ()) *
+        Eigen::Translation3f(Eigen::Vector3f(-twist_.linear.x * dt_, 0.0, 0.0));
     Eigen::Affine3f motion_inv =
-        Eigen::Translation3f(Eigen::Vector3f(twist.linear.x * dt, 0.0, 0.0)) *
-        Eigen::AngleAxisf(twist.angular.z * dt, Eigen::Vector3f::UnitZ());
+        Eigen::Translation3f(Eigen::Vector3f(twist_.linear.x * dt_, 0.0, 0.0)) *
+        Eigen::AngleAxisf(twist_.angular.z * dt_, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
     double t_col_estim = DBL_MAX;
     sensor_msgs::PointCloud col_points;
     sensor_msgs::PointCloud debug_points;
-    col_points.header.frame_id = frame_id;
+    col_points.header.frame_id = frame_id_;
     col_points.header.stamp = ros::Time::now();
     debug_points.header = col_points.header;
 
-    for (float t = 0; t < tmax; t += dt)
+    for (float t = 0; t < tmax_; t += dt_)
     {
       move = move * motion;
       move_inv = move_inv * motion_inv;
@@ -314,7 +314,7 @@ public:
 
       std::vector<int> indices;
       std::vector<float> dist;
-      int num = kdtree.radiusSearch(center, footprint_radius, indices, dist);
+      int num = kdtree.radiusSearch(center, footprint_radius_, indices, dist);
       if (num == 0)
         continue;
 
@@ -341,10 +341,10 @@ public:
         break;
       }
     }
-    pub_debug.publish(debug_points);
-    pub_cloud.publish(col_points);
+    pub_debug_.publish(debug_points);
+    pub_cloud_.publish(col_points);
 
-    t_col_estim -= tmargin;
+    t_col_estim -= tmargin_;
     if (t_col_estim < 0)
       t_col_estim = 0;
 
@@ -354,8 +354,8 @@ public:
   geometry_msgs::Twist limit(const geometry_msgs::Twist &in)
   {
     auto out = in;
-    const float lin_vel_lim = t_col * acc[0];
-    const float ang_vel_lim = t_col * acc[1];
+    const float lin_vel_lim = t_col_ * acc_[0];
+    const float ang_vel_lim = t_col_ * acc_[1];
 
     bool col = false;
     if (fabs(out.linear.x) > lin_vel_lim)
@@ -492,19 +492,19 @@ private:
 
   void cb_twist(const geometry_msgs::Twist::Ptr &msg)
   {
-    twist = *msg;
-    has_twist = true;
+    twist_ = *msg;
+    has_twist_ = true;
   }
   void cb_cloud(const sensor_msgs::PointCloud2::Ptr &msg)
   {
-    cloud = *msg;
-    has_cloud = true;
+    cloud_ = *msg;
+    has_cloud_ = true;
   }
   void cb_disable(const std_msgs::Bool::Ptr &msg)
   {
     if (msg->data)
     {
-      last_disable_cmd = ros::Time::now();
+      last_disable_cmd_ = ros::Time::now();
     }
   }
 };
@@ -513,7 +513,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "safety_limiter");
 
-  safety_limiter limiter;
+  SafetyLimiter limiter;
   limiter.spin();
 
   return 0;
