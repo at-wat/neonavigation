@@ -18,9 +18,9 @@ apt-get clean && rm -rf /var/lib/apt/lists/*
 
 sync
 
-sed -i -e '5a set(CMAKE_C_FLAGS "-Wall -Werror")' \
+sed -i -e '5a set(CMAKE_C_FLAGS "-Wall -Werror -O2")' \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
-sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror")' \
+sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror -O2")' \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
 
 CM_OPTIONS=""
