@@ -136,6 +136,15 @@ public:
     block_addr(pos, baddr, addr);
     return c_[baddr * block_ser_size_ + addr];
   }
+  bool validate(const CyclicVecInt<DIM, NONCYCLIC> &pos) const
+  {
+    for (int i = 0; i < DIM; i++)
+    {
+      if (pos[i] < 0 || this->size_[i] <= pos[i])
+        return false;
+    }
+    return true;
+  }
   const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>
       &operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH> &gm)
   {
