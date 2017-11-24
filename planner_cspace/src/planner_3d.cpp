@@ -389,7 +389,7 @@ protected:
     }
     setGoal(*msg);
   }
-  void setGoal(const geometry_msgs::PoseStamped &msg)
+  bool setGoal(const geometry_msgs::PoseStamped &msg)
   {
     goal_raw_ = goal_ = msg;
 
@@ -402,14 +402,20 @@ protected:
     {
       escaping_ = false;
       has_goal_ = true;
+      if (!updateGoal())
+      {
+        has_goal_ = false;
+        return false;
+      }
       status_.status = planner_cspace::PlannerStatus::DOING;
       pub_status_.publish(status_);
-      updateGoal();
     }
     else
     {
       has_goal_ = false;
+      act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal cleared.");
     }
+    return true;
   }
   void fillCostmap(reservable_priority_queue<Astar::PriorityVec> &open,
                    Astar::Gridmap<float> &g,
@@ -544,13 +550,13 @@ protected:
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
-  void updateGoal(const bool goal_changed = true)
+  bool updateGoal(const bool goal_changed = true)
   {
     if (!has_map_ || !has_goal_ || !has_start_)
     {
       ROS_ERROR("Goal received, however map/goal/start are not ready. (%d/%d/%d)",
                 static_cast<int>(has_map_), static_cast<int>(has_goal_), static_cast<int>(has_start_));
-      return;
+      return true;
     }
 
     Astar::Vec s, e;
@@ -565,6 +571,12 @@ protected:
     ROS_INFO("New goal received (%d, %d, %d)",
              e[0], e[1], e[2]);
 
+    if (!cm_.validate(e))
+    {
+      ROS_ERROR("Given goal is not on the map.");
+      return false;
+    }
+
     const auto ts = boost::chrono::high_resolution_clock::now();
     reservable_priority_queue<Astar::PriorityVec> open;
     auto &g = cost_estim_cache_;
@@ -575,7 +587,7 @@ protected:
       if (!searchAvailablePos(e, esc_range_, esc_angle_))
       {
         ROS_WARN("Oops! Goal is in Rock!");
-        return;
+        return true;
       }
       ROS_INFO("Goal moved (%d, %d, %d)",
                e[0], e[1], e[2]);
@@ -590,7 +602,7 @@ protected:
       if (!searchAvailablePos(s, esc_range_, esc_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
-        return;
+        return true;
       }
     }
 
@@ -609,6 +621,8 @@ protected:
     publishCostmap();
 
     goal_updated_ = true;
+
+    return true;
   }
   void publishCostmap()
   {
@@ -1040,7 +1054,10 @@ protected:
   void cbAction()
   {
     move_base_msgs::MoveBaseGoalConstPtr goal = act_->acceptNewGoal();
-    setGoal(goal->target_pose);
+    if (!setGoal(goal->target_pose))
+    {
+      act_->setAborted(move_base_msgs::MoveBaseResult(), "Given goal is invalid.");
+    }
   }
 
 public:
