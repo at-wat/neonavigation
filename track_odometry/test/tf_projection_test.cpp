@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <TfProjection.h>
+#include <tf_projection.h>
 #include <gtest/gtest.h>
 
 void test_transform(
