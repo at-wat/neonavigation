@@ -30,23 +30,23 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-enum type_t
+class Filter
 {
-  FILTER_HPF,
-  FILTER_LPF
-};
+public:
+  enum Type
+  {
+    FILTER_HPF,
+    FILTER_LPF
+  };
 
-class filter
-{
 private:
-  enum type_t type;
-  double time_const;
-  double x;
-  double k[4];
+  double time_const_;
+  double x_;
+  double k_[4];
 
 public:
-  filter(enum type_t type, double tc, double out0);
-  double in(double i);
+  Filter(const Type type, const double tc, const double out0);
+  double in(const double i);
 };
 
 #endif  // FILTER_H
