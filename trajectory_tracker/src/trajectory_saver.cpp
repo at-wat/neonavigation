@@ -46,45 +46,46 @@
 #include <fstream>
 #include <string>
 
-class saver
+class SaverNode
 {
 public:
-  saver();
-  ~saver();
+  SaverNode();
+  ~SaverNode();
   void save();
 
 private:
-  ros::NodeHandle nh;
-  ros::Subscriber subPath;
-  tf::TransformListener tf;
+  ros::NodeHandle pnh_;
+  ros::Subscriber sub_path_;
+  tf::TransformListener tfl_;
 
-  std::string topicPath;
-  std::string filename;
-  bool saved;
+  std::string topic_path_;
+  std::string filename_;
+  bool saved_;
   void cbPath(const nav_msgs::Path::ConstPtr& msg);
 };
 
-saver::saver()
-  : nh("~"), saved(false)
+SaverNode::SaverNode()
+  : pnh_("~")
+  , saved_(false)
 {
-  nh.param("path", topicPath, std::string("recpath"));
-  nh.param("file", filename, std::string("a.path"));
+  pnh_.param("path", topic_path_, std::string("recpath"));
+  pnh_.param("file", filename_, std::string("a.path"));
 
-  subPath = nh.subscribe(topicPath, 10, &saver::cbPath, this);
+  sub_path_ = pnh_.subscribe(topic_path_, 10, &SaverNode::cbPath, this);
 }
-saver::~saver()
+SaverNode::~SaverNode()
 {
 }
 
-void saver::cbPath(const nav_msgs::Path::ConstPtr& msg)
+void SaverNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
 {
-  if (saved)
+  if (saved_)
     return;
-  std::ofstream ofs(filename.c_str());
+  std::ofstream ofs(filename_.c_str());
 
   if (!ofs)
   {
-    ROS_ERROR("Failed to open %s", filename.c_str());
+    ROS_ERROR("Failed to open %s", filename_.c_str());
     return;
   }
 
@@ -97,10 +98,10 @@ void saver::cbPath(const nav_msgs::Path::ConstPtr& msg)
 
   ofs.write(reinterpret_cast<char*>(buffer.get()), serial_size);
 
-  saved = true;
+  saved_ = true;
 }
 
-void saver::save()
+void SaverNode::save()
 {
   ros::Rate loop_rate(5);
   ROS_INFO("Waiting for the path");
@@ -109,7 +110,7 @@ void saver::save()
   {
     ros::spinOnce();
     loop_rate.sleep();
-    if (saved)
+    if (saved_)
       break;
   }
   ROS_INFO("Path saved");
@@ -119,7 +120,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "trajectory_saver");
 
-  saver rec;
+  SaverNode rec;
   rec.save();
 
   return 0;
