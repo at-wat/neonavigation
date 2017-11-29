@@ -32,44 +32,44 @@
 
 #include <limits>
 
-class kalman_filter1
+class KalmanFilter1
 {
 public:
-  float x;
-  float sigma;
+  float x_;
+  float sigma_;
 
   void set(const float x0 = 0.0,
            const float sigma0 = std::numeric_limits<float>::infinity())
   {
-    x = x0;
-    sigma = sigma0;
+    x_ = x0;
+    sigma_ = sigma0;
   }
-  kalman_filter1(const float x0 = 0.0,
-                 const float sigma0 = std::numeric_limits<float>::infinity())
+  KalmanFilter1(const float x0 = 0.0,
+                const float sigma0 = std::numeric_limits<float>::infinity())
   {
     set(x0, sigma0);
   }
   void predict(const float x_plus, const float sigma_plus)
   {
-    x += x_plus;
-    sigma += sigma_plus;
+    x_ += x_plus;
+    sigma_ += sigma_plus;
   }
   void measure(const float x_in, const float sigma_in)
   {
     if (std::isinf(sigma_in))
       return;
-    if (std::isinf(sigma))
+    if (std::isinf(sigma_))
     {
       if (std::isinf(x_in))
-        x = 0;
+        x_ = 0;
       else
-        x = x_in;
-      sigma = sigma_in;
+        x_ = x_in;
+      sigma_ = sigma_in;
       return;
     }
-    float kt = sigma * sigma / (sigma * sigma + sigma_in * sigma_in);
-    x = x + kt * (x_in - x);
-    sigma = (1.0 - kt) * sigma;
+    float kt = sigma_ * sigma_ / (sigma_ * sigma_ + sigma_in * sigma_in);
+    x_ = x_ + kt * (x_in - x_);
+    sigma_ = (1.0 - kt) * sigma_;
   }
 };
 

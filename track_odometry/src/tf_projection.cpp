@@ -36,58 +36,58 @@
 
 #include <tf_projection.h>
 
-class tf_projection_node : public tf_projection
+class TfProjectionNode : public TfProjection
 {
 private:
-  ros::NodeHandle nh;
-  tf::TransformBroadcaster tf_broadcaster;
-  tf::TransformListener tf_listener;
+  ros::NodeHandle nh_;
+  tf::TransformBroadcaster tf_broadcaster_;
+  tf::TransformListener tf_listener_;
 
-  double rate;
-  double tf_tolerance;
-  bool flat;
+  double rate_;
+  double tf_tolerance_;
+  bool flat_;
 
 public:
-  tf_projection_node()
-    : nh("~")
+  TfProjectionNode()
+    : nh_("~")
   {
-    nh.param("base_link_frame", frames["base"], std::string("base_link"));
-    nh.param("projection_frame", frames["projection"], std::string("map"));
-    nh.param("target_frame", frames["target"], std::string("map"));
-    nh.param("frame", frames["frame"], std::string("base_link_projected"));
+    nh_.param("base_link_frame", frames_["base"], std::string("base_link"));
+    nh_.param("projection_frame", frames_["projection"], std::string("map"));
+    nh_.param("target_frame", frames_["target"], std::string("map"));
+    nh_.param("frame", frames_["frame"], std::string("base_link_projected"));
 
-    nh.param("hz", rate, 10.0);
-    nh.param("tf_tolerance", tf_tolerance, 0.1);
-    nh.param("flat", flat, false);
+    nh_.param("hz", rate_, 10.0);
+    nh_.param("tf_tolerance", tf_tolerance_, 0.1);
+    nh_.param("flat", flat_, false);
   }
   void process()
   {
     try
     {
       tf::StampedTransform trans;
-      tf_listener.waitForTransform(frames["projection"], frames["base"],
-                                   ros::Time(0), ros::Duration(0.1));
-      tf_listener.lookupTransform(frames["projection"], frames["base"],
-                                  ros::Time(0), trans);
+      tf_listener_.waitForTransform(frames_["projection"], frames_["base"],
+                                    ros::Time(0), ros::Duration(0.1));
+      tf_listener_.lookupTransform(frames_["projection"], frames_["base"],
+                                   ros::Time(0), trans);
 
       tf::StampedTransform trans_target;
-      tf_listener.waitForTransform(frames["target"], frames["projection"],
-                                   trans.stamp_, ros::Duration(0.1));
-      tf_listener.lookupTransform(frames["target"], frames["projection"],
-                                  trans.stamp_, trans_target);
+      tf_listener_.waitForTransform(frames_["target"], frames_["projection"],
+                                    trans.stamp_, ros::Duration(0.1));
+      tf_listener_.lookupTransform(frames_["target"], frames_["projection"],
+                                   trans.stamp_, trans_target);
 
       const auto result = project(trans, trans_target);
 
       geometry_msgs::TransformStamped trans_out;
       tf::transformStampedTFToMsg(result, trans_out);
-      if (flat)
+      if (flat_)
       {
         const float yaw = tf::getYaw(trans_out.transform.rotation);
         trans_out.transform.rotation = tf::createQuaternionMsgFromYaw(yaw);
       }
-      trans_out.header.stamp = trans.stamp_ + ros::Duration(tf_tolerance);
+      trans_out.header.stamp = trans.stamp_ + ros::Duration(tf_tolerance_);
 
-      tf_broadcaster.sendTransform(trans_out);
+      tf_broadcaster_.sendTransform(trans_out);
     }
     catch (tf::TransformException &e)
     {
@@ -96,7 +96,7 @@ public:
   }
   void spin()
   {
-    ros::Rate r(rate);
+    ros::Rate r(rate_);
     while (ros::ok())
     {
       ros::spinOnce();
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "tf_projection");
 
-  tf_projection_node proj;
+  TfProjectionNode proj;
   proj.spin();
 
   return 0;

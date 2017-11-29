@@ -35,10 +35,10 @@
 #include <map>
 #include <string>
 
-class tf_projection
+class TfProjection
 {
 protected:
-  std::map<std::string, std::string> frames;
+  std::map<std::string, std::string> frames_;
 
 public:
   tf::StampedTransform project(
@@ -51,8 +51,8 @@ public:
 
     tf::StampedTransform output = trans_target;
     output *= projected;
-    output.child_frame_id_ = frames["frame"];
-    output.frame_id_ = frames["target"];
+    output.child_frame_id_ = frames_["frame"];
+    output.frame_id_ = frames_["target"];
 
     return output;
   }

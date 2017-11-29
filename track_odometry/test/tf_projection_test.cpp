@@ -35,7 +35,7 @@ void test_transform(
     const tf::StampedTransform targ2proj,
     const tf::StampedTransform truth)
 {
-  tf_projection tfp;
+  TfProjection tfp;
 
   tf::StampedTransform result = tfp.project(proj2base, targ2proj);
 
