@@ -85,77 +85,78 @@ geometry_msgs::Vector3 cross(const geometry_msgs::Quaternion &q,
   return vout;
 }
 
-class track_odometry
+class TrackOdometryNode
 {
 private:
-  ros::NodeHandle nh;
-  ros::Subscriber sub_odom;
-  ros::Subscriber sub_imu;
-  ros::Subscriber sub_reset_z;
-  ros::Publisher pub_odom;
-  tf::TransformBroadcaster tf_broadcaster;
-  tf::TransformListener tf_listener;
-  nav_msgs::Odometry odom_prev;
-  nav_msgs::Odometry odomraw_prev;
+  ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
+  ros::Subscriber sub_odom_;
+  ros::Subscriber sub_imu_;
+  ros::Subscriber sub_reset_z_;
+  ros::Publisher pub_odom_;
+  tf::TransformBroadcaster tf_broadcaster_;
+  tf::TransformListener tf_listener_;
+  nav_msgs::Odometry odom_prev_;
+  nav_msgs::Odometry odomraw_prev_;
 
-  std::string base_link_id;
-  std::string base_link_id_overwrite;
-  std::string odom_id;
+  std::string base_link_id_;
+  std::string base_link_id_overwrite_;
+  std::string odom_id_;
 
-  sensor_msgs::Imu imu;
-  double gyro_zero[3];
-  double z_filter;
-  double tf_tolerance;
+  sensor_msgs::Imu imu_;
+  double gyro_zero_[3];
+  double z_filter_;
+  double tf_tolerance_;
 
-  bool debug;
-  bool use_kf;
-  bool negative_slip;
-  double sigma_predict;
-  double sigma_odom;
-  double predict_filter_tc;
-  float dist;
-  bool without_odom;
+  bool debug_;
+  bool use_kf_;
+  bool negative_slip_;
+  double sigma_predict_;
+  double sigma_odom_;
+  double predict_filter_tc_;
+  float dist_;
+  bool without_odom_;
 
-  kalman_filter1 slip;
+  KalmanFilter1 slip_;
 
-  bool has_imu;
-  bool has_odom;
-  bool publish_tf;
+  bool has_imu_;
+  bool has_odom_;
+  bool publish_tf_;
 
   void cb_reset_z(const std_msgs::Float32::Ptr &msg)
   {
-    odom_prev.pose.pose.position.z = msg->data;
+    odom_prev_.pose.pose.position.z = msg->data;
   }
   void cb_imu(const sensor_msgs::Imu::Ptr &msg)
   {
-    if (base_link_id.size() == 0)
+    if (base_link_id_.size() == 0)
     {
       ROS_ERROR("base_link id is not specified.");
       return;
     }
 
-    imu.header = msg->header;
+    imu_.header = msg->header;
     try
     {
-      tf_listener.waitForTransform(base_link_id, msg->header.frame_id,
-                                   ros::Time(0), ros::Duration(0.1));
+      tf_listener_.waitForTransform(base_link_id_, msg->header.frame_id,
+                                    ros::Time(0), ros::Duration(0.1));
 
       geometry_msgs::Vector3Stamped vin, vout;
-      vin.header = imu.header;
+      vin.header = imu_.header;
       vin.header.stamp = ros::Time(0);
       vin.vector = msg->linear_acceleration;
-      tf_listener.transformVector(base_link_id, vin, vout);
-      imu.linear_acceleration = vout.vector;
+      tf_listener_.transformVector(base_link_id_, vin, vout);
+      imu_.linear_acceleration = vout.vector;
 
-      vin.header = imu.header;
+      vin.header = imu_.header;
       vin.header.stamp = ros::Time(0);
       vin.vector = msg->angular_velocity;
-      tf_listener.transformVector(base_link_id, vin, vout);
-      imu.angular_velocity = vout.vector;
+      tf_listener_.transformVector(base_link_id_, vin, vout);
+      imu_.angular_velocity = vout.vector;
 
       tf::Stamped<tf::Quaternion> qin, qout;
       geometry_msgs::QuaternionStamped qmin, qmout;
-      qmin.header = imu.header;
+      qmin.header = imu_.header;
       qmin.quaternion = msg->orientation;
       tf::quaternionStampedMsgToTF(qmin, qin);
 
@@ -166,57 +167,57 @@ private:
       axis1.setData(axis);
       axis1.stamp_ = ros::Time(0);
       axis1.frame_id_ = qin.frame_id_;
-      tf_listener.transformVector(base_link_id, axis1, axis2);
+      tf_listener_.transformVector(base_link_id_, axis1, axis2);
 
       qout.setData(tf::Quaternion(axis2, angle));
       qout.stamp_ = qin.stamp_;
-      qout.frame_id_ = base_link_id;
+      qout.frame_id_ = base_link_id_;
 
       tf::quaternionStampedTFToMsg(qout, qmout);
-      imu.orientation = qmout.quaternion;
+      imu_.orientation = qmout.quaternion;
       // ROS_INFO("%0.3f %s -> %0.3f %s",
       //   tf::getYaw(qmin.quaternion), qmin.header.frame_id.c_str(),
       //   tf::getYaw(qmout.quaternion), qmout.header.frame_id.c_str());
 
-      has_imu = true;
+      has_imu_ = true;
     }
     catch (tf::TransformException &e)
     {
       ROS_ERROR("%s", e.what());
-      has_imu = false;
+      has_imu_ = false;
       return;
     }
   }
   void cb_odom(const nav_msgs::Odometry::Ptr &msg)
   {
     nav_msgs::Odometry odom = *msg;
-    if (has_odom)
+    if (has_odom_)
     {
-      double dt = (odom.header.stamp - odomraw_prev.header.stamp).toSec();
-      if (base_link_id_overwrite.size() == 0)
+      double dt = (odom.header.stamp - odomraw_prev_.header.stamp).toSec();
+      if (base_link_id_overwrite_.size() == 0)
       {
-        base_link_id = odom.child_frame_id;
+        base_link_id_ = odom.child_frame_id;
       }
 
-      if (!has_imu)
+      if (!has_imu_)
       {
         ROS_ERROR_THROTTLE(1.0, "IMU data not received");
         return;
       }
 
       float slip_ratio = 1.0;
-      odom.header.stamp += ros::Duration(tf_tolerance);
-      odom.twist.twist.angular = imu.angular_velocity;
-      odom.pose.pose.orientation = imu.orientation;
+      odom.header.stamp += ros::Duration(tf_tolerance_);
+      odom.twist.twist.angular = imu_.angular_velocity;
+      odom.pose.pose.orientation = imu_.orientation;
 
-      float w_imu = imu.angular_velocity.z;
+      float w_imu = imu_.angular_velocity.z;
       const float w_odom = msg->twist.twist.angular.z;
 
-      if (w_imu * w_odom < 0 && !negative_slip)
+      if (w_imu * w_odom < 0 && !negative_slip_)
         w_imu = w_odom;
 
-      slip.predict(-slip.x * dt * predict_filter_tc, dt * sigma_predict);
-      if (fabs(w_odom) > sigma_odom * 3)
+      slip_.predict(-slip_.x_ * dt * predict_filter_tc_, dt * sigma_predict_);
+      if (fabs(w_odom) > sigma_odom_ * 3)
       {
         // non-kf mode: calculate slip_ratio if angular vel < 3*sigma
         slip_ratio = w_imu / w_odom;
@@ -225,99 +226,101 @@ private:
       const float slip_ratio_per_angvel =
           (w_odom - w_imu) / (w_odom * fabs(w_odom));
       float slip_ratio_per_angvel_sigma =
-          sigma_odom * fabs(2 * w_odom * sigma_odom / powf(w_odom * w_odom - sigma_odom * sigma_odom, 2.0));
-      if (fabs(w_odom) < sigma_odom)
+          sigma_odom_ * fabs(2 * w_odom * sigma_odom_ / powf(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2.0));
+      if (fabs(w_odom) < sigma_odom_)
         slip_ratio_per_angvel_sigma = std::numeric_limits<float>::infinity();
 
-      slip.measure(slip_ratio_per_angvel, slip_ratio_per_angvel_sigma);
+      slip_.measure(slip_ratio_per_angvel, slip_ratio_per_angvel_sigma);
       // printf("%0.5f %0.5f %0.5f   %0.5f %0.5f  %0.5f\n",
       //   slip_ratio_per_angvel, slip_ratio_sigma, slip_ratio_per_angvel_sigma,
-      //   slip.x, slip.sigma, msg->twist.twist.angular.z);
-      if (use_kf)
-        odom.twist.twist.linear.x *= 1.0 - slip.x * fabs(w_odom);
+      //   slip_.x_, slip_.sigma_, msg->twist.twist.angular.z);
+      if (use_kf_)
+        odom.twist.twist.linear.x *= 1.0 - slip_.x_ * fabs(w_odom);
       else
         odom.twist.twist.linear.x *= slip_ratio;
 
-      if (debug)
+      if (debug_)
       {
         printf("%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f  %0.3f\n",
-               imu.angular_velocity.z,
+               imu_.angular_velocity.z,
                msg->twist.twist.angular.z,
                slip_ratio,
-               slip.x, slip.sigma,
-               odom.twist.twist.linear.x, dist);
+               slip_.x_, slip_.sigma_,
+               odom.twist.twist.linear.x, dist_);
       }
-      dist += odom.twist.twist.linear.x * dt;
+      dist_ += odom.twist.twist.linear.x * dt;
 
       geometry_msgs::Vector3 v, t;
       t = 2.0 * cross(odom.pose.pose.orientation, odom.twist.twist.linear);
       v = odom.twist.twist.linear + odom.pose.pose.orientation.w * t + cross(odom.pose.pose.orientation, t);
 
-      odom.pose.pose.position = odom_prev.pose.pose.position + dt * v;
-      odom.pose.pose.position.z *= z_filter;
-      pub_odom.publish(odom);
+      odom.pose.pose.position = odom_prev_.pose.pose.position + dt * v;
+      odom.pose.pose.position.z *= z_filter_;
+      pub_odom_.publish(odom);
 
       geometry_msgs::TransformStamped odom_trans;
 
       odom_trans.header = odom.header;
-      odom_trans.child_frame_id = base_link_id;
+      odom_trans.child_frame_id = base_link_id_;
       odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
       odom_trans.transform.rotation = odom.pose.pose.orientation;
-      if (publish_tf) tf_broadcaster.sendTransform(odom_trans);
+      if (publish_tf_)
+        tf_broadcaster_.sendTransform(odom_trans);
     }
-    odomraw_prev = *msg;
-    odom_prev = odom;
-    has_odom = true;
+    odomraw_prev_ = *msg;
+    odom_prev_ = odom;
+    has_odom_ = true;
   }
 
 public:
-  track_odometry()
-    : nh("~")
+  TrackOdometryNode()
+    : nh_("")
+    , pnh_("~")
   {
-    nh.param("without_odom", without_odom, false);
-    if (!without_odom)
-      sub_odom = nh.subscribe("/odom_raw", 64, &track_odometry::cb_odom, this);
-    sub_imu = nh.subscribe("/imu", 64, &track_odometry::cb_imu, this);
-    sub_reset_z = nh.subscribe("reset_z", 1, &track_odometry::cb_reset_z, this);
-    pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 8);
+    pnh_.param("without_odom", without_odom_, false);
+    if (!without_odom_)
+      sub_odom_ = nh_.subscribe("odom_raw", 64, &TrackOdometryNode::cb_odom, this);
+    sub_imu_ = nh_.subscribe("imu", 64, &TrackOdometryNode::cb_imu, this);
+    sub_reset_z_ = pnh_.subscribe("reset_z", 1, &TrackOdometryNode::cb_reset_z, this);
+    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 8);
 
-    if (!without_odom)
+    if (!without_odom_)
     {
-      nh.param("base_link_id", base_link_id_overwrite, std::string(""));
+      pnh_.param("base_link_id", base_link_id_overwrite_, std::string(""));
     }
     else
     {
-      nh.param("base_link_id", base_link_id, std::string("base_link"));
-      nh.param("odom_id", odom_id, std::string("odom"));
+      pnh_.param("base_link_id", base_link_id_, std::string("base_link"));
+      pnh_.param("odom_id", odom_id_, std::string("odom"));
     }
-    nh.param("z_filter", z_filter, 0.99);
-    nh.param("tf_tolerance", tf_tolerance, 0.01);
-    nh.param("use_kf", use_kf, true);
-    nh.param("enable_negative_slip", negative_slip, false);
-    nh.param("debug", debug, false);
-    nh.param("publish_tf", publish_tf, true);
+    pnh_.param("z_filter", z_filter_, 0.99);
+    pnh_.param("tf_tolerance", tf_tolerance_, 0.01);
+    pnh_.param("use_kf", use_kf_, true);
+    pnh_.param("enable_negative_slip", negative_slip_, false);
+    pnh_.param("debug", debug_, false);
+    pnh_.param("publish_tf", publish_tf_, true);
 
-    if (base_link_id_overwrite.size() > 0)
+    if (base_link_id_overwrite_.size() > 0)
     {
-      base_link_id = base_link_id_overwrite;
+      base_link_id_ = base_link_id_overwrite_;
     }
 
-    // sigma_odom [rad/s]: standard deviation of odometry angular vel on straight running
-    nh.param("sigma_odom", sigma_odom, 0.005);
-    // sigma_predict [sigma/second]: prediction sigma of kalman filter
-    nh.param("sigma_predict", sigma_predict, 0.5);
-    // predict_filter_tc [sec.]: LPF time-constant to forget estimated slip ratio
-    nh.param("predict_filter_tc", predict_filter_tc, 1.0);
+    // sigma_odom_ [rad/s]: standard deviation of odometry angular vel on straight running
+    pnh_.param("sigma_odom", sigma_odom_, 0.005);
+    // sigma_predict_ [sigma/second]: prediction sigma of kalman filter
+    pnh_.param("sigma_predict", sigma_predict_, 0.5);
+    // predict_filter_tc_ [sec.]: LPF time-constant to forget estimated slip_ ratio
+    pnh_.param("predict_filter_tc", predict_filter_tc_, 1.0);
 
-    has_imu = false;
-    has_odom = false;
+    has_imu_ = false;
+    has_odom_ = false;
 
-    dist = 0;
-    slip.set(0.0, 0.1);
+    dist_ = 0;
+    slip_.set(0.0, 0.1);
   }
   void spin()
   {
-    if (!without_odom)
+    if (!without_odom_)
     {
       ros::spin();
     }
@@ -331,8 +334,8 @@ public:
 
         nav_msgs::Odometry::Ptr odom(new nav_msgs::Odometry);
         odom->header.stamp = ros::Time::now();
-        odom->header.frame_id = odom_id;
-        odom->child_frame_id = base_link_id;
+        odom->header.frame_id = odom_id_;
+        odom->child_frame_id = base_link_id_;
         odom->pose.pose.orientation.w = 1.0;
         cb_odom(odom);
       }
@@ -344,7 +347,7 @@ int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "track_odometry");
 
-  track_odometry odom;
+  TrackOdometryNode odom;
 
   odom.spin();
 
