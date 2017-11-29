@@ -29,30 +29,30 @@
 
 #include <filter.h>
 
-double filter::in(double i)
+double Filter::in(const double i)
 {
-  x = k[0] * i + k[1] * x;
-  return k[2] * i + k[3] * x;
+  x_ = k_[0] * i + k_[1] * x_;
+  return k_[2] * i + k_[3] * x_;
 }
 
-filter::filter(enum type_t type, double tc, double out0)
+Filter::Filter(const Type type, const double tc, const double out0)
 {
-  time_const = tc;
+  time_const_ = tc;
   switch (type)
   {
     case FILTER_LPF:
-      k[3] = -1 / (1.0 + 2 * time_const);
-      k[2] = -k[3];
-      k[1] = (1.0 - 2 * time_const) * k[3];
-      k[0] = -k[1] - 1.0;
-      x = (1 - k[2]) * out0 / k[3];
+      k_[3] = -1 / (1.0 + 2 * time_const_);
+      k_[2] = -k_[3];
+      k_[1] = (1.0 - 2 * time_const_) * k_[3];
+      k_[0] = -k_[1] - 1.0;
+      x_ = (1 - k_[2]) * out0 / k_[3];
       break;
     case FILTER_HPF:
-      k[3] = -1 / (1.0 + 2 * time_const);
-      k[2] = -k[3] * 2 * time_const;
-      k[1] = (1.0 - 2 * time_const) * k[3];
-      k[0] = 2 * time_const * (-k[1] + 1.0);
-      x = (1 - k[2]) * out0 / k[3];
+      k_[3] = -1 / (1.0 + 2 * time_const_);
+      k_[2] = -k_[3] * 2 * time_const_;
+      k_[1] = (1.0 - 2 * time_const_) * k_[3];
+      k_[0] = 2 * time_const_ * (-k_[1] + 1.0);
+      x_ = (1 - k_[2]) * out0 / k_[3];
       break;
   }
 }

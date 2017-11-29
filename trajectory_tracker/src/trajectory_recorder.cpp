@@ -45,41 +45,41 @@
 #include <math.h>
 #include <string>
 
-class recorder
+class RecorderNode
 {
 public:
-  recorder();
-  ~recorder();
+  RecorderNode();
+  ~RecorderNode();
   void spin();
 
 private:
-  std::string topicPath;
-  std::string frameRobot;
-  std::string frameGlobal;
-  double dist_interval;
-  double ang_interval;
-  bool store_time;
+  std::string topic_path_;
+  std::string frame_robot_;
+  std::string frame_global_;
+  double dist_interval_;
+  double ang_interval_;
+  bool store_time_;
 
-  ros::NodeHandle nh;
-  ros::Publisher pubPath;
-  tf::TransformListener tf;
+  ros::NodeHandle pnh_;
+  ros::Publisher pub_path_;
+  tf::TransformListener tfl_;
 
-  nav_msgs::Path path;
+  nav_msgs::Path path_;
 };
 
-recorder::recorder()
-  : nh("~")
+RecorderNode::RecorderNode()
+  : pnh_("~")
 {
-  nh.param("frame_robot", frameRobot, std::string("base_link"));
-  nh.param("frame_global", frameGlobal, std::string("map"));
-  nh.param("path", topicPath, std::string("recpath"));
-  nh.param("dist_interval", dist_interval, 0.3);
-  nh.param("ang_interval", ang_interval, 1.0);
-  nh.param("store_time", store_time, false);
+  pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
+  pnh_.param("frame_global", frame_global_, std::string("map"));
+  pnh_.param("path", topic_path_, std::string("recpath"));
+  pnh_.param("dist_interval", dist_interval_, 0.3);
+  pnh_.param("ang_interval", ang_interval_, 1.0);
+  pnh_.param("store_time", store_time_, false);
 
-  pubPath = nh.advertise<nav_msgs::Path>(topicPath, 10, true);
+  pub_path_ = pnh_.advertise<nav_msgs::Path>(topic_path_, 10, true);
 }
-recorder::~recorder()
+RecorderNode::~RecorderNode()
 {
 }
 
@@ -88,22 +88,22 @@ float dist2d(geometry_msgs::Point &a, geometry_msgs::Point &b)
   return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
 
-void recorder::spin()
+void RecorderNode::spin()
 {
   ros::Rate loop_rate(50);
-  path.header.frame_id = frameGlobal;
-  path.header.seq = 0;
+  path_.header.frame_id = frame_global_;
+  path_.header.seq = 0;
 
   while (ros::ok())
   {
     ros::Time now = ros::Time(0);
-    if (store_time)
+    if (store_time_)
       now = ros::Time::now();
     tf::StampedTransform transform;
     try
     {
-      tf.waitForTransform(frameGlobal, frameRobot, now, ros::Duration(0.2));
-      tf.lookupTransform(frameGlobal, frameRobot, now, transform);
+      tfl_.waitForTransform(frame_global_, frame_robot_, now, ros::Duration(0.2));
+      tfl_.lookupTransform(frame_global_, frame_robot_, now, transform);
     }
     catch (tf::TransformException &e)
     {
@@ -118,22 +118,22 @@ void recorder::spin()
     pose.pose.position.x = origin.x();
     pose.pose.position.y = origin.y();
     pose.pose.position.z = origin.z();
-    pose.header.frame_id = frameGlobal;
+    pose.header.frame_id = frame_global_;
     pose.header.stamp = now;
-    pose.header.seq = path.poses.size();
+    pose.header.seq = path_.poses.size();
 
-    path.header.seq++;
-    path.header.stamp = now;
+    path_.header.seq++;
+    path_.header.stamp = now;
 
-    if (path.poses.size() == 0)
+    if (path_.poses.size() == 0)
     {
-      path.poses.push_back(pose);
-      pubPath.publish(path);
+      path_.poses.push_back(pose);
+      pub_path_.publish(path_);
     }
-    else if (dist2d(path.poses.back().pose.position, pose.pose.position) > dist_interval)
+    else if (dist2d(path_.poses.back().pose.position, pose.pose.position) > dist_interval_)
     {
-      path.poses.push_back(pose);
-      pubPath.publish(path);
+      path_.poses.push_back(pose);
+      pub_path_.publish(path_);
     }
 
     ros::spinOnce();
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "trajectory_recorder");
 
-  recorder rec;
+  RecorderNode rec;
   rec.spin();
 
   return 0;
