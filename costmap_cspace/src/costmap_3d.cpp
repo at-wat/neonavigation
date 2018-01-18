@@ -41,7 +41,7 @@
 
 #include <costmap_3d.h>
 
-class Costmap3DOFNode : public costmap_cspace::Costmap3DOF
+class Costmap3DOFNode
 {
 protected:
   ros::NodeHandle_f nh_;
@@ -53,56 +53,61 @@ protected:
   ros::Publisher pub_footprint_;
   ros::Publisher pub_debug_;
 
+  costmap_cspace::Costmap3DOF::Ptr costmap_;
+
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
-    if (getAngularGrid() <= 0)
+    if (costmap_->getAngularGrid() <= 0)
     {
       ROS_ERROR("ang_resolution is not set.");
       std::runtime_error("ang_resolution is not set.");
     }
     ROS_INFO("2D costmap received");
 
-    setBaseMap(*msg);
-    processMap();
+    costmap_->setBaseMap(*msg);
+    costmap_->processMap();
     ROS_DEBUG("C-Space costmap generated");
 
-    pub_costmap_.publish(map_);
-    publishDebug(map_);
+    auto map = costmap_->getMap();
+    pub_costmap_.publish(*map);
+    publishDebug(map);
   }
   void cbMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
+    auto map = costmap_->getMap();
+    auto map_overlay = costmap_->getMap();
     ROS_DEBUG("Overlay 2D costmap received");
-    if (map_.header.frame_id != msg->header.frame_id)
+    if (map->header.frame_id != msg->header.frame_id)
     {
       ROS_ERROR("map and map_overlay must have same frame_id");
       return;
     }
-    if (map_.info.width < 1 ||
-        map_.info.height < 1)
+    if (map->info.width < 1 ||
+        map->info.height < 1)
       return;
 
-    costmap_cspace::CSpace3DUpdate update = processMapOverlay(*msg);
+    costmap_cspace::CSpace3DUpdate update = costmap_->processMapOverlay(*msg);
     ROS_DEBUG("C-Space costmap updated");
 
-    publishDebug(map_overlay_);
+    publishDebug(map_overlay);
     pub_costmap_update_.publish(update);
   }
-  void publishDebug(costmap_cspace::CSpace3D &map_)
+  void publishDebug(costmap_cspace::CSpace3D::Ptr map)
   {
     sensor_msgs::PointCloud pc;
-    pc.header = map_.header;
+    pc.header = map->header;
     pc.header.stamp = ros::Time::now();
-    for (size_t yaw = 0; yaw < map_.info.angle; yaw++)
+    for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
-      for (unsigned int i = 0; i < map_.info.width * map_.info.height; i++)
+      for (unsigned int i = 0; i < map->info.width * map->info.height; i++)
       {
-        int gx = i % map_.info.width;
-        int gy = i / map_.info.width;
-        if (map_.data[i + yaw * map_.info.width * map_.info.height] < 100)
+        int gx = i % map->info.width;
+        int gy = i / map->info.width;
+        if (map->data[i + yaw * map->info.width * map->info.height] < 100)
           continue;
         geometry_msgs::Point32 p;
-        p.x = gx * map_.info.linear_resolution + map_.info.origin.position.x;
-        p.y = gy * map_.info.linear_resolution + map_.info.origin.position.y;
+        p.x = gx * map->info.linear_resolution + map->info.origin.position.x;
+        p.y = gy * map->info.linear_resolution + map->info.origin.position.y;
         p.z = yaw * 0.1;
         pc.points.push_back(p);
       }
@@ -118,19 +123,21 @@ public:
     {
       wait.sleep();
       ros::spinOnce();
-      footprint_.header.stamp = ros::Time::now();
-      pub_footprint_.publish(footprint_);
+      auto footprint = costmap_->getFootprintMsg();
+      footprint.header.stamp = ros::Time::now();
+      pub_footprint_.publish(footprint);
     }
   }
   Costmap3DOFNode()
     : nh_()
     , nhp_("~")
+    , costmap_(new costmap_cspace::Costmap3DOF)
   {
     int ang_resolution;
     float linear_expand;
     float linear_spread;
     int unknown_cost;
-    map_overlay_mode overlay_mode;
+    costmap_cspace::Costmap3DOF::map_overlay_mode overlay_mode;
     nhp_.param("ang_resolution", ang_resolution, 16);
     nhp_.param("linear_expand", linear_expand, 0.2f);
     nhp_.param("linear_spread", linear_spread, 0.5f);
@@ -139,11 +146,11 @@ public:
     nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
     if (overlay_mode_str.compare("overwrite") == 0)
     {
-      overlay_mode = OVERWRITE;
+      overlay_mode = costmap_cspace::Costmap3DOF::map_overlay_mode::OVERWRITE;
     }
     else if (overlay_mode_str.compare("max") == 0)
     {
-      overlay_mode = MAX;
+      overlay_mode = costmap_cspace::Costmap3DOF::map_overlay_mode::MAX;
     }
     else
     {
@@ -151,7 +158,7 @@ public:
       throw std::runtime_error("Unknown overlay_mode.");
     }
     ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
-    setCSpaceConfig(ang_resolution, linear_expand, linear_spread, unknown_cost, overlay_mode);
+    costmap_->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, unknown_cost, overlay_mode);
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!nhp_.hasParam("footprint"))
@@ -160,12 +167,12 @@ public:
       throw std::runtime_error("Footprint doesn't specified.");
     }
     nhp_.getParam("footprint", footprint_xml);
-    if (!setFootprint(footprint_xml))
+    if (!costmap_->setFootprint(footprint_xml))
     {
       ROS_FATAL("Invalid footprint");
       throw std::runtime_error("Invalid footprint");
     }
-    ROS_INFO("footprint radius: %0.3f", footprint_radius_);
+    ROS_INFO("footprint radius: %0.3f", costmap_->getFootprintRadius());
 
     sub_map_ = nh_.subscribe("map", 1, &Costmap3DOFNode::cbMap, this);
     sub_map_overlay_ = nh_.subscribe("map_overlay", 1, &Costmap3DOFNode::cbMapOverlay, this);
