@@ -50,9 +50,7 @@ public:
   }
   void generateCSpaceTemplate(const costmap_cspace::MapMetaData3D &info)
   {
-    range_max_ = std::max(
-        static_cast<int>(ceilf((linear_expand_ + linear_spread_) / info.linear_resolution)),
-        1);
+    range_max_ = ceilf((linear_expand_ + linear_spread_) / info.linear_resolution);
     cs_.reset(range_max_, range_max_, info.angle);
 
     // C-Space template

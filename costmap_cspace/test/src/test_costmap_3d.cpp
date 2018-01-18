@@ -153,8 +153,8 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
 
   // Generate CSpace pattern around the robot
   costmap_cspace::MapMetaData3D map_info;
-  map_info.width = 3;
-  map_info.height = 3;
+  map_info.width = 1;
+  map_info.height = 1;
   map_info.angle = 4;
   map_info.linear_resolution = 1.0;
   map_info.angular_resolution = M_PI / 2.0;
@@ -162,7 +162,7 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
 
   cm.generateCSpaceTemplate(map_info);
 
-  ASSERT_EQ(cm.getRangeMax(), 1);
+  ASSERT_EQ(cm.getRangeMax(), 0);
 
   const costmap_cspace::CSpace3Cache &temp = cm.getTemplate();
   // Check template size
@@ -170,30 +170,17 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
   int cx, cy, ca;
   temp.getSize(x, y, a);
   temp.getCenter(cx, cy, ca);
-  ASSERT_EQ(x, 3);
-  ASSERT_EQ(y, 3);
+  ASSERT_EQ(x, 1);
+  ASSERT_EQ(y, 1);
   ASSERT_EQ(a, 4);
-  ASSERT_EQ(cx, 1);
-  ASSERT_EQ(cy, 1);
+  ASSERT_EQ(cx, 0);
+  ASSERT_EQ(cy, 0);
   ASSERT_EQ(ca, 0);
 
   // Check generated template
   for (int k = -ca; k < a - ca; ++k)
   {
-    for (int j = -cy; j < y - cy; ++j)
-    {
-      for (int i = -cx; i < x - cx; ++i)
-      {
-        if (i == 0 && j == 0)
-        {
-          ASSERT_EQ(temp.e(i, j, k), 100);
-        }
-        else
-        {
-          ASSERT_EQ(temp.e(i, j, k), 0);
-        }
-      }
-    }
+    ASSERT_EQ(temp.e(0, 0, k), 100);
   }
 }
 
