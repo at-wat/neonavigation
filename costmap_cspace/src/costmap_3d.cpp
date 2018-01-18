@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2014-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,8 +52,9 @@ protected:
   ros::Publisher pub_costmap_update_;
   ros::Publisher pub_footprint_;
   ros::Publisher pub_debug_;
+  ros::Timer timer_footprint_;
 
-  costmap_cspace::Costmap3DOF::Ptr costmap_;
+  costmap_cspace::Costmap3dLayerBase::Ptr costmap_;
 
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
@@ -114,30 +115,27 @@ protected:
     }
     pub_debug_.publish(pc);
   }
+  void cbPublishFootprint(const ros::TimerEvent &event, const geometry_msgs::PolygonStamped msg)
+  {
+    auto footprint = msg;
+    footprint.header.stamp = ros::Time::now();
+    pub_footprint_.publish(footprint);
+  }
 
 public:
   void spin()
   {
-    ros::Rate wait(1);
-    while (ros::ok())
-    {
-      wait.sleep();
-      ros::spinOnce();
-      auto footprint = costmap_->getFootprintMsg();
-      footprint.header.stamp = ros::Time::now();
-      pub_footprint_.publish(footprint);
-    }
+    ros::spin();
   }
   Costmap3DOFNode()
     : nh_()
     , nhp_("~")
-    , costmap_(new costmap_cspace::Costmap3DOF)
   {
     int ang_resolution;
     float linear_expand;
     float linear_spread;
     int unknown_cost;
-    costmap_cspace::Costmap3DOF::map_overlay_mode overlay_mode;
+    costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
     nhp_.param("ang_resolution", ang_resolution, 16);
     nhp_.param("linear_expand", linear_expand, 0.2f);
     nhp_.param("linear_spread", linear_spread, 0.5f);
@@ -146,11 +144,11 @@ public:
     nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
     if (overlay_mode_str.compare("overwrite") == 0)
     {
-      overlay_mode = costmap_cspace::Costmap3DOF::map_overlay_mode::OVERWRITE;
+      overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
     }
     else if (overlay_mode_str.compare("max") == 0)
     {
-      overlay_mode = costmap_cspace::Costmap3DOF::map_overlay_mode::MAX;
+      overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
     }
     else
     {
@@ -158,7 +156,8 @@ public:
       throw std::runtime_error("Unknown overlay_mode.");
     }
     ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
-    costmap_->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, unknown_cost, overlay_mode);
+    costmap_cspace::Costmap3dLayerFootprint::Ptr costmap(new costmap_cspace::Costmap3dLayerFootprint);
+    costmap->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, unknown_cost, overlay_mode);
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!nhp_.hasParam("footprint"))
@@ -167,12 +166,14 @@ public:
       throw std::runtime_error("Footprint doesn't specified.");
     }
     nhp_.getParam("footprint", footprint_xml);
-    if (!costmap_->setFootprint(footprint_xml))
+    if (!costmap->setFootprint(footprint_xml))
     {
       ROS_FATAL("Invalid footprint");
       throw std::runtime_error("Invalid footprint");
     }
-    ROS_INFO("footprint radius: %0.3f", costmap_->getFootprintRadius());
+    ROS_INFO("footprint radius: %0.3f", costmap->getFootprintRadius());
+
+    costmap_ = costmap;
 
     sub_map_ = nh_.subscribe("map", 1, &Costmap3DOFNode::cbMap, this);
     sub_map_overlay_ = nh_.subscribe("map_overlay", 1, &Costmap3DOFNode::cbMapOverlay, this);
@@ -180,6 +181,11 @@ public:
     pub_costmap_update_ = nhp_.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);
     pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
     pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+
+    const geometry_msgs::PolygonStamped footprint_msg = costmap->getFootprintMsg();
+    timer_footprint_ = nh_.createTimer(
+        ros::Duration(1.0),
+        boost::bind(&Costmap3DOFNode::cbPublishFootprint, this, _1, footprint_msg));
   }
 };
 

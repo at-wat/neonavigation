@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, the mcl_3dl authors
+ * Copyright (c) 2016-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,12 +64,12 @@ const char temp_dir[4][2] =
       0, 1
     };
 
-TEST(Costmap3DOFTest, testCSpaceTemplate)
+TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
 {
-  costmap_cspace::Costmap3DOF cm;
+  costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::MAX);
+  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Set example footprint
   int footprint_offset = 0;
@@ -144,9 +144,49 @@ TEST(Costmap3DOFTest, testCSpaceTemplate)
   }
 }
 
-TEST(Costmap3DOFTest, testCSpaceGenerate)
+TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
 {
-  costmap_cspace::Costmap3DOF cm;
+  costmap_cspace::Costmap3dLayerPlain cm;
+
+  // Settings: 4 angular grids, no expand/spread, unknown cost is 0
+  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+
+  // Generate CSpace pattern around the robot
+  costmap_cspace::MapMetaData3D map_info;
+  map_info.width = 1;
+  map_info.height = 1;
+  map_info.angle = 4;
+  map_info.linear_resolution = 1.0;
+  map_info.angular_resolution = M_PI / 2.0;
+  map_info.origin.orientation.w = 1.0;
+
+  cm.generateCSpaceTemplate(map_info);
+
+  ASSERT_EQ(cm.getRangeMax(), 0);
+
+  const costmap_cspace::CSpace3Cache &temp = cm.getTemplate();
+  // Check template size
+  int x, y, a;
+  int cx, cy, ca;
+  temp.getSize(x, y, a);
+  temp.getCenter(cx, cy, ca);
+  ASSERT_EQ(x, 1);
+  ASSERT_EQ(y, 1);
+  ASSERT_EQ(a, 4);
+  ASSERT_EQ(cx, 0);
+  ASSERT_EQ(cy, 0);
+  ASSERT_EQ(ca, 0);
+
+  // Check generated template
+  for (int k = -ca; k < a - ca; ++k)
+  {
+    ASSERT_EQ(temp.e(0, 0, k), 100);
+  }
+}
+
+TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
+{
+  costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Set example footprint
   int footprint_offset = 0;
@@ -155,7 +195,7 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
   cm.setFootprint(footprint);
 
   // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::MAX);
+  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;
@@ -257,9 +297,9 @@ TEST(Costmap3DOFTest, testCSpaceGenerate)
   }
 }
 
-TEST(Costmap3DOFTest, testCSpaceExpandSpread)
+TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
 {
-  costmap_cspace::Costmap3DOF cm;
+  costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Set example footprint
   int footprint_offset = 0;
@@ -270,7 +310,7 @@ TEST(Costmap3DOFTest, testCSpaceExpandSpread)
   // Settings: 4 angular grids, expand 1.0, spread 2.0, unknown cost is 0
   const float expand = 1.0;
   const float spread = 2.0;
-  cm.setCSpaceConfig(4, expand, spread, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::MAX);
+  cm.setCSpaceConfig(4, expand, spread, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;
@@ -326,11 +366,11 @@ TEST(Costmap3DOFTest, testCSpaceExpandSpread)
   }
 }
 
-TEST(Costmap3DOFTest, testCSpaceOverwrite)
+TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
 {
-  costmap_cspace::Costmap3DOF cm;
-  costmap_cspace::Costmap3DOF cm_ref;
-  costmap_cspace::Costmap3DOF cm_base;
+  costmap_cspace::Costmap3dLayerFootprint cm;
+  costmap_cspace::Costmap3dLayerFootprint cm_ref;
+  costmap_cspace::Costmap3dLayerFootprint cm_base;
 
   // Set example footprint
   int footprint_offset = 0;
@@ -341,9 +381,9 @@ TEST(Costmap3DOFTest, testCSpaceOverwrite)
   cm_base.setFootprint(footprint);
 
   // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::OVERWRITE);
-  cm_ref.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::OVERWRITE);
-  cm_base.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::OVERWRITE);
+  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
+  cm_ref.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
+  cm_base.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
 
   // Generate two sample maps
   nav_msgs::OccupancyGrid map;
@@ -429,7 +469,7 @@ TEST(Costmap3DOFTest, testCSpaceOverwrite)
   }
 
   // Set MAX mode and check
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::MAX);
+  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
   cm.setBaseMap(map);
   cm.processMap();
   costmap_cspace::CSpace3DUpdate updated_max = cm.processMapOverlay(map2);
@@ -471,9 +511,9 @@ TEST(Costmap3DOFTest, testCSpaceOverwrite)
   }
 }
 
-TEST(Costmap3DOFTest, testCSpaceOverlayMove)
+TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
 {
-  costmap_cspace::Costmap3DOF cm;
+  costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Set example footprint
   int footprint_offset = 0;
@@ -482,7 +522,7 @@ TEST(Costmap3DOFTest, testCSpaceOverlayMove)
   cm.setFootprint(footprint);
 
   // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3DOF::map_overlay_mode::MAX);
+  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;

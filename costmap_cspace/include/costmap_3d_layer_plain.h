@@ -27,10 +27,64 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_H
-#define COSTMAP_3D_H
+#ifndef COSTMAP_3D_LAYER_PLAIN_H
+#define COSTMAP_3D_LAYER_PLAIN_H
 
-#include <costmap_3d_layer_footprint.h>
-#include <costmap_3d_layer_plain.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace/CSpace3D.h>
+#include <costmap_cspace/CSpace3DUpdate.h>
 
-#endif  // COSTMAP_3D_H
+#include <costmap_3d_layer_base.h>
+
+namespace costmap_cspace
+{
+class Costmap3dLayerPlain : public Costmap3dLayerBase
+{
+public:
+  using Ptr = std::shared_ptr<Costmap3dLayerPlain>;
+
+public:
+  Costmap3dLayerPlain()
+  {
+  }
+  void generateCSpaceTemplate(const costmap_cspace::MapMetaData3D &info)
+  {
+    range_max_ = ceilf((linear_expand_ + linear_spread_) / info.linear_resolution);
+    cs_.reset(range_max_, range_max_, info.angle);
+
+    // C-Space template
+    for (size_t yaw = 0; yaw < info.angle; yaw++)
+    {
+      for (int y = -range_max_; y <= range_max_; y++)
+      {
+        for (int x = -range_max_; x <= range_max_; x++)
+        {
+          if (x == 0 && y == 0)
+          {
+            cs_.e(x, y, yaw) = 100;
+          }
+          else
+          {
+            const float d = hypotf(x, y);
+            if (d < linear_expand_)
+            {
+              cs_.e(x, y, yaw) = 100;
+            }
+            else if (d < linear_expand_ + linear_spread_)
+            {
+              cs_.e(x, y, yaw) = 100 - (d - linear_expand_) * 100 / linear_spread_;
+            }
+            else
+            {
+              cs_.e(x, y, yaw) = 0;
+            }
+          }
+        }
+      }
+    }
+  }
+};
+}  // namespace costmap_cspace
+
+#endif  // COSTMAP_3D_LAYER_PLAIN_H
