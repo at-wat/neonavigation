@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_FOOTPRINT_H
-#define COSTMAP_3D_FOOTPRINT_H
+#ifndef COSTMAP_3D_LAYER_FOOTPRINT_H
+#define COSTMAP_3D_LAYER_FOOTPRINT_H
 
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -163,4 +163,4 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_3D_FOOTPRINT_H
+#endif  // COSTMAP_3D_LAYER_FOOTPRINT_H
