@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, the mcl_3dl authors
+ * Copyright (c) 2016-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
