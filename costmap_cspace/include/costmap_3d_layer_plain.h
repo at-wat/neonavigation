@@ -48,10 +48,10 @@ public:
   Costmap3dLayerPlain()
   {
   }
-  void generateCSpaceTemplate(const costmap_cspace::MapMetaData3D &info)
+  void generateCSpaceTemplate(const MapMetaData3D &info)
   {
     range_max_ = ceilf((linear_expand_ + linear_spread_) / info.linear_resolution);
-    cs_.reset(range_max_, range_max_, info.angle);
+    cs_template_.reset(range_max_, range_max_, info.angle);
 
     // C-Space template
     for (size_t yaw = 0; yaw < info.angle; yaw++)
@@ -62,22 +62,22 @@ public:
         {
           if (x == 0 && y == 0)
           {
-            cs_.e(x, y, yaw) = 100;
+            cs_template_.e(x, y, yaw) = 100;
           }
           else
           {
             const float d = hypotf(x, y);
             if (d < linear_expand_)
             {
-              cs_.e(x, y, yaw) = 100;
+              cs_template_.e(x, y, yaw) = 100;
             }
             else if (d < linear_expand_ + linear_spread_)
             {
-              cs_.e(x, y, yaw) = 100 - (d - linear_expand_) * 100 / linear_spread_;
+              cs_template_.e(x, y, yaw) = 100 - (d - linear_expand_) * 100 / linear_spread_;
             }
             else
             {
-              cs_.e(x, y, yaw) = 0;
+              cs_template_.e(x, y, yaw) = 0;
             }
           }
         }

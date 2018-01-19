@@ -214,7 +214,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
     {
       for (size_t i = 0; i < map.info.width; ++i)
       {
-        const int cost = cm.getCost(i, j, k);
+        const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be 0
         ASSERT_EQ(cost, 0);
         // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
@@ -236,7 +236,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
     {
       for (size_t i = 0; i < map.info.width; ++i)
       {
-        const int cost = cm.getCost(i, j, k);
+        const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be 100
         ASSERT_EQ(cost, 100);
         // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
@@ -267,7 +267,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
     {
       for (size_t i = 0; i < map.info.width; ++i)
       {
-        const int cost = cm.getCost(i, j, k);
+        const int cost = cm.getMapOverlay()->getCost(i, j, k);
 
         // Offset according to the template shape
         int cost_offset = 0;
@@ -332,7 +332,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
     {
       for (size_t i = 0; i < map.info.width; ++i)
       {
-        const int cost = cm.getCost(i, j, k);
+        const int cost = cm.getMapOverlay()->getCost(i, j, k);
         const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
         const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
         const float dist = std::min(dist1, dist2);
@@ -447,7 +447,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
         const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
         assert(addr < updated.data.size());
         const int cost = updated.data[addr];
-        const int cost_ref = cm_ref.getCost(i, j, k);
+        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
 
         ASSERT_EQ(cost, cost_ref);
 
@@ -456,7 +456,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
       /*std::cout << "  |  ";
       for (int i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
       {
-        const int cost_ref = cm_ref.getCost(i, j, k);
+        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
         std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
       }
       std::cout << std::endl;
@@ -478,8 +478,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
         const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
         assert(addr < updated_max.data.size());
         const int cost = updated_max.data[addr];
-        const int cost_ref = cm_ref.getCost(i, j, k);
-        const int cost_base = cm_base.getCost(i, j, k);
+        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
+        const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);
         const int cost_max = std::max(cost_ref, cost_base);
 
         ASSERT_EQ(cost, cost_max);
@@ -490,13 +490,13 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
       std::cout << "  |  ";
       for (int i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
       {
-        const int cost_ref = cm_ref.getCost(i, j, k);
+        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
         std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
       }
       std::cout << "  |  ";
       for (int i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
       {
-        const int cost_base = cm_base.getCost(i, j, k);
+        const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);
         std::cout << std::setfill(' ') << std::setw(3) << cost_base << " ";
       }
       std::cout << std::endl;
@@ -561,7 +561,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
         {
           for (size_t i = 0; i < map.info.width; ++i)
           {
-            const int cost = cm_over->getCost(i, j, k);
+            const int cost = cm_over->getMapOverlay()->getCost(i, j, k);
 
             if ((i == i_center && j == j_center) ||
                 (i == i_center2 && j == j_center2) ||
