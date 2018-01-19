@@ -68,8 +68,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
 {
   costmap_cspace::Costmap3dLayerFootprint cm;
 
-  // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  // Settings: 4 angular grids, no expand/spread
+  cm.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Set example footprint
   int footprint_offset = 0;
@@ -148,8 +148,8 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
 {
   costmap_cspace::Costmap3dLayerPlain cm;
 
-  // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  // Settings: 4 angular grids, no expand/spread
+  cm.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate CSpace pattern around the robot
   costmap_cspace::MapMetaData3D map_info;
@@ -194,8 +194,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
   footprint.fromXml(footprint_str, &footprint_offset);
   cm.setFootprint(footprint);
 
-  // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  // Settings: 4 angular grids, no expand/spread
+  cm.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;
@@ -207,7 +207,6 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
 
   // Apply empty map
   cm.setBaseMap(map);
-  cm.processMap();
 
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
@@ -231,7 +230,6 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
     g = 100;
   }
   cm.setBaseMap(map);
-  cm.processMap();
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
     for (size_t j = 0; j < map.info.height; ++j)
@@ -263,7 +261,6 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
     map.data[(map.info.width / 2 - 2) + i * map.info.width] = 100;
   }
   cm.setBaseMap(map);
-  cm.processMap();
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
     for (size_t j = 0; j < map.info.height; ++j)
@@ -307,10 +304,10 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
   footprint.fromXml(footprint_str, &footprint_offset);
   cm.setFootprint(footprint);
 
-  // Settings: 4 angular grids, expand 1.0, spread 2.0, unknown cost is 0
+  // Settings: 4 angular grids, expand 1.0, spread 2.0
   const float expand = 1.0;
   const float spread = 2.0;
-  cm.setCSpaceConfig(4, expand, spread, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  cm.setCSpaceConfig(4, expand, spread, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;
@@ -323,7 +320,6 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
   const int max_cost = 80;
   map.data[map.info.width / 2 + (map.info.height / 2) * map.info.width] = max_cost;
   cm.setBaseMap(map);
-  cm.processMap();
 
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
@@ -380,10 +376,10 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm_ref.setFootprint(footprint);
   cm_base.setFootprint(footprint);
 
-  // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
-  cm_ref.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
-  cm_base.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
+  // Settings: 4 angular grids, no expand/spread
+  cm.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
+  cm_ref.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
+  cm_base.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
 
   // Generate two sample maps
   nav_msgs::OccupancyGrid map;
@@ -420,7 +416,6 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
 
   // Apply base map
   cm.setBaseMap(map);
-  cm.processMap();
 
   // Overlay local map
   costmap_cspace::CSpace3DUpdate updated = cm.processMapOverlay(map2);
@@ -435,9 +430,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
 
   // Generate reference local and base cspace map
   cm_ref.setBaseMap(map2);
-  cm_ref.processMap();
   cm_base.setBaseMap(map);
-  cm_base.processMap();
 
   // Compare to confirm MAX mode
   // note: boundary of the local map is not completely overwritten for keeping the spread effect.
@@ -469,9 +462,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   }
 
   // Set MAX mode and check
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  cm.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
   cm.setBaseMap(map);
-  cm.processMap();
   costmap_cspace::CSpace3DUpdate updated_max = cm.processMapOverlay(map2);
 
   for (int k = 0; k < cm.getAngularGrid(); ++k)
@@ -521,8 +513,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
   footprint.fromXml(footprint_str, &footprint_offset);
   cm.setFootprint(footprint);
 
-  // Settings: 4 angular grids, no expand/spread, unknown cost is 0
-  cm.setCSpaceConfig(4, 0.0, 0.0, 0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  // Settings: 4 angular grids, no expand/spread
+  cm.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;
@@ -535,7 +527,6 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
   const int max_cost = 100;
   map.data[map.info.width / 2 + (map.info.height / 2) * map.info.width] = max_cost;
   cm.setBaseMap(map);
-  cm.processMap();
 
   // Generate local sample map
   nav_msgs::OccupancyGrid map2 = map;
