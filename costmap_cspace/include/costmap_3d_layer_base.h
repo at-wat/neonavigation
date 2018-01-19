@@ -54,7 +54,6 @@ protected:
   int ang_grid_;
   float linear_expand_;
   float linear_spread_;
-  int unknown_cost_;
   map_overlay_mode overlay_mode_;
 
   costmap_cspace::CSpace3Cache cs_;
@@ -64,12 +63,13 @@ protected:
   costmap_cspace::CSpace3D::Ptr map_overlay_;
   nav_msgs::OccupancyGrid map_base_;
 
+  Costmap3dLayerBase::Ptr child_;
+
 public:
   Costmap3dLayerBase()
     : ang_grid_(-1)
     , linear_expand_(0.0)
     , linear_spread_(0.0)
-    , unknown_cost_(0.0)
     , overlay_mode_(map_overlay_mode::MAX)
     , map_(new costmap_cspace::CSpace3D)
     , map_overlay_(new costmap_cspace::CSpace3D)
@@ -79,7 +79,6 @@ public:
       const int ang_resolution,
       const float linear_expand,
       const float linear_spread,
-      const int unknown_cost,
       const map_overlay_mode overlay_mode)
   {
     ang_grid_ = ang_resolution;
@@ -125,41 +124,32 @@ public:
       }
     }
     *map_overlay_ = *map_;
+    if (child_)
+      child_->processMapAsChild();
+  }
+  void registerChild(Costmap3dLayerBase::Ptr child)
+  {
+    child_ = child;
+    child_->setMap(getMapOverlay());
   }
   costmap_cspace::CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid &msg)
   {
     const int ox = lroundf((msg.info.origin.position.x - map_->info.origin.position.x) / map_->info.linear_resolution);
     const int oy = lroundf((msg.info.origin.position.y - map_->info.origin.position.y) / map_->info.linear_resolution);
-    auto omap = msg;
-    if (overlay_mode_ == OVERWRITE)
-    {
-      for (unsigned int i = 0; i < msg.data.size(); i++)
-      {
-        if (omap.data[i] < 0)
-        {
-          int mx = lroundf((i % msg.info.width) * msg.info.resolution / map_->info.linear_resolution);
-          if (msg.info.width <= (unsigned int)mx)
-            continue;
-          int my = lroundf((i / msg.info.width) * msg.info.resolution / map_->info.linear_resolution);
-          if (msg.info.height <= (unsigned int)my)
-            continue;
-
-          const size_t addr = (my + oy) * map_base_.info.width + (mx + ox);
-          assert(addr < map_base_.data.size());
-          omap.data[i] = map_base_.data[addr];
-        }
-      }
-    }
     *map_overlay_ = *map_;
-    gemerateCSpace(map_overlay_, omap, true);
+    gemerateCSpace(map_overlay_, msg, true);
 
     const int w = lroundf(msg.info.width * msg.info.resolution / map_->info.linear_resolution);
     const int h = lroundf(msg.info.height * msg.info.resolution / map_->info.linear_resolution);
-    return updateMap(map_overlay_, ox, oy, 0, w, h, map_->info.angle, msg.header.stamp);
+    return generateUpdateMsg(map_overlay_, ox, oy, 0, w, h, map_->info.angle, msg.header.stamp);
   }
   costmap_cspace::CSpace3D::Ptr getMap()
   {
     return map_;
+  }
+  void setMap(costmap_cspace::CSpace3D::Ptr map)
+  {
+    map_ = map;
   }
   costmap_cspace::CSpace3D::Ptr getMapOverlay()
   {
@@ -209,6 +199,14 @@ public:
   }
 
 protected:
+  void processMapAsChild()
+  {
+    ROS_ERROR("child trig");
+    generateCSpaceTemplate(map_->info);
+    *map_overlay_ = *map_;
+    if (child_)
+      child_->processMapAsChild();
+  }
   void gemerateCSpace(costmap_cspace::CSpace3D::Ptr map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
   {
     const int ox = lroundf((msg.info.origin.position.x - map->info.origin.position.x) / map->info.linear_resolution);
@@ -261,43 +259,6 @@ protected:
           continue;
 
         auto val = msg.data[i];
-        if (val < 0)
-        {
-          if (overlay_mode_ != OVERWRITE && overlay)
-            continue;
-          bool edge = false;
-          const int mx = lroundf((i % msg.info.width) * msg.info.resolution / map->info.linear_resolution);
-          if (mx < 1 || static_cast<int>(msg.info.width) - 1 <= mx)
-            continue;
-          const int my = lroundf((i / msg.info.width) * msg.info.resolution / map->info.linear_resolution);
-          if (my < 1 || static_cast<int>(msg.info.height) - 1 <= my)
-            continue;
-
-          for (int y = -1; y <= 1; y++)
-          {
-            for (int x = -1; x <= 1; x++)
-            {
-              if (x == 0 && y == 0)
-                continue;
-              if (static_cast<unsigned int>(mx + x) >= map->info.width ||
-                  static_cast<unsigned int>(my + y) >= map->info.height)
-                continue;
-              const size_t addr = i + y * map->info.width + x;
-              if (addr >= msg.data.size())
-                continue;
-              const auto v = msg.data[addr];
-              if (v >= 0)
-              {
-                edge = true;
-                break;
-              }
-            }
-          }
-          if (edge)
-          {
-            val = unknown_cost_;
-          }
-        }
         if (val <= 0)
           continue;
 
@@ -320,7 +281,7 @@ protected:
       }
     }
   }
-  costmap_cspace::CSpace3DUpdate updateMap(
+  costmap_cspace::CSpace3DUpdate generateUpdateMsg(
       costmap_cspace::CSpace3D::Ptr map, const int &x, const int &y, const int &yaw,
       const int &width, const int &height, const int &angle,
       const ros::Time &stamp)

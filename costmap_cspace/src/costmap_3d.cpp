@@ -54,29 +54,29 @@ protected:
   ros::Publisher pub_debug_;
   ros::Timer timer_footprint_;
 
-  costmap_cspace::Costmap3dLayerBase::Ptr costmap_;
+  std::vector<costmap_cspace::Costmap3dLayerBase::Ptr> costmaps_;
 
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
-    if (costmap_->getAngularGrid() <= 0)
+    if (costmaps_[0]->getAngularGrid() <= 0)
     {
       ROS_ERROR("ang_resolution is not set.");
       std::runtime_error("ang_resolution is not set.");
     }
     ROS_INFO("2D costmap received");
 
-    costmap_->setBaseMap(*msg);
-    costmap_->processMap();
+    costmaps_[0]->setBaseMap(*msg);
+    costmaps_[0]->processMap();
     ROS_DEBUG("C-Space costmap generated");
 
-    auto map = costmap_->getMap();
+    auto map = costmaps_[0]->getMap();
     pub_costmap_.publish(*map);
     publishDebug(map);
   }
   void cbMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
-    auto map = costmap_->getMap();
-    auto map_overlay = costmap_->getMap();
+    auto map = costmaps_[1]->getMap();
+    auto map_overlay = costmaps_[1]->getMapOverlay();
     ROS_DEBUG("Overlay 2D costmap received");
     if (map->header.frame_id != msg->header.frame_id)
     {
@@ -87,7 +87,7 @@ protected:
         map->info.height < 1)
       return;
 
-    costmap_cspace::CSpace3DUpdate update = costmap_->processMapOverlay(*msg);
+    costmap_cspace::CSpace3DUpdate update = costmaps_[1]->processMapOverlay(*msg);
     ROS_DEBUG("C-Space costmap updated");
 
     publishDebug(map_overlay);
@@ -134,12 +134,10 @@ public:
     int ang_resolution;
     float linear_expand;
     float linear_spread;
-    int unknown_cost;
     costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
     nhp_.param("ang_resolution", ang_resolution, 16);
     nhp_.param("linear_expand", linear_expand, 0.2f);
     nhp_.param("linear_spread", linear_spread, 0.5f);
-    nhp_.param("unknown_cost", unknown_cost, 0);
     std::string overlay_mode_str;
     nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
     if (overlay_mode_str.compare("overwrite") == 0)
@@ -156,8 +154,6 @@ public:
       throw std::runtime_error("Unknown overlay_mode.");
     }
     ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
-    costmap_cspace::Costmap3dLayerFootprint::Ptr costmap(new costmap_cspace::Costmap3dLayerFootprint);
-    costmap->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, unknown_cost, overlay_mode);
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!nhp_.hasParam("footprint"))
@@ -166,14 +162,28 @@ public:
       throw std::runtime_error("Footprint doesn't specified.");
     }
     nhp_.getParam("footprint", footprint_xml);
-    if (!costmap->setFootprint(footprint_xml))
+
+    costmaps_.resize(2);
+
+    costmap_cspace::Costmap3dLayerFootprint::Ptr costmap_base(new costmap_cspace::Costmap3dLayerFootprint);
+    costmap_base->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, overlay_mode);
+    if (!costmap_base->setFootprint(footprint_xml))
     {
       ROS_FATAL("Invalid footprint");
       throw std::runtime_error("Invalid footprint");
     }
-    ROS_INFO("footprint radius: %0.3f", costmap->getFootprintRadius());
+    ROS_INFO("footprint radius: %0.3f", costmap_base->getFootprintRadius());
+    costmaps_[0] = costmap_base;
 
-    costmap_ = costmap;
+    costmap_cspace::Costmap3dLayerFootprint::Ptr costmap_overlay(new costmap_cspace::Costmap3dLayerFootprint);
+    costmap_overlay->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, overlay_mode);
+    if (!costmap_overlay->setFootprint(footprint_xml))
+    {
+      ROS_FATAL("Invalid footprint");
+      throw std::runtime_error("Invalid footprint");
+    }
+    costmaps_[1] = costmap_overlay;
+    costmaps_[0]->registerChild(costmaps_[1]);
 
     sub_map_ = nh_.subscribe("map", 1, &Costmap3DOFNode::cbMap, this);
     sub_map_overlay_ = nh_.subscribe("map_overlay", 1, &Costmap3DOFNode::cbMapOverlay, this);
@@ -182,7 +192,7 @@ public:
     pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
     pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 
-    const geometry_msgs::PolygonStamped footprint_msg = costmap->getFootprintMsg();
+    const geometry_msgs::PolygonStamped footprint_msg = costmap_base->getFootprintMsg();
     timer_footprint_ = nh_.createTimer(
         ros::Duration(1.0),
         boost::bind(&Costmap3DOFNode::cbPublishFootprint, this, _1, footprint_msg));
