@@ -66,7 +66,6 @@ protected:
     ROS_INFO("2D costmap received");
 
     costmaps_[0]->setBaseMap(*msg);
-    costmaps_[0]->processMap();
     ROS_DEBUG("C-Space costmap generated");
 
     auto map = costmaps_[0]->getMap();

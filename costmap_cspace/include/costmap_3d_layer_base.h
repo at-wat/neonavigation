@@ -91,9 +91,7 @@ public:
   {
     assert(base_map.data.size() >= base_map.info.width * base_map.info.height);
     map_base_ = base_map;
-  }
-  void processMap()
-  {
+
     map_->header = map_base_.header;
     map_->info.width = map_base_.info.width;
     map_->info.height = map_base_.info.height;
@@ -125,7 +123,7 @@ public:
     }
     *map_overlay_ = *map_;
     if (child_)
-      child_->processMapAsChild();
+      child_->setBaseMapChain();
   }
   void registerChild(Costmap3dLayerBase::Ptr child)
   {
@@ -199,13 +197,12 @@ public:
   }
 
 protected:
-  void processMapAsChild()
+  void setBaseMapChain()
   {
-    ROS_ERROR("child trig");
     generateCSpaceTemplate(map_->info);
     *map_overlay_ = *map_;
     if (child_)
-      child_->processMapAsChild();
+      child_->setBaseMapChain();
   }
   void gemerateCSpace(costmap_cspace::CSpace3D::Ptr map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
   {
