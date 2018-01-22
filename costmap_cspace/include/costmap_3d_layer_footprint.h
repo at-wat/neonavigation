@@ -30,6 +30,8 @@
 #ifndef COSTMAP_3D_LAYER_FOOTPRINT_H
 #define COSTMAP_3D_LAYER_FOOTPRINT_H
 
+#include <ros/ros.h>
+
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace/CSpace3D.h>
@@ -59,7 +61,7 @@ public:
 protected:
   float footprint_radius_;
   geometry_msgs::PolygonStamped footprint_;
-  costmap_cspace::Polygon footprint_p_;
+  Polygon footprint_p_;
 
 public:
   Costmap3dLayerFootprint()
@@ -85,7 +87,7 @@ public:
       }
 
       geometry_msgs::Point32 point;
-      costmap_cspace::Vec v;
+      Vec v;
       v[0] = point.x = static_cast<double>(footprint_xml[i][0]);
       v[1] = point.y = static_cast<double>(footprint_xml[i][1]);
       point.z = 0;
@@ -102,13 +104,13 @@ public:
 
     return true;
   }
-  void generateCSpaceTemplate(const costmap_cspace::MapMetaData3D &info)
+  void generateCSpaceTemplate(const MapMetaData3D &info)
   {
-    assert(footprint_p_.v.size() > 2);
+    ROS_ASSERT(footprint_p_.v.size() > 2);
 
     range_max_ =
         ceilf((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
-    cs_.reset(range_max_, range_max_, info.angle);
+    cs_template_.reset(range_max_, range_max_, info.angle);
 
     // C-Space template
     for (size_t yaw = 0; yaw < info.angle; yaw++)
@@ -121,27 +123,27 @@ public:
           f.move(x * info.linear_resolution,
                  y * info.linear_resolution,
                  yaw * info.angular_resolution);
-          costmap_cspace::Vec p;
+          Vec p;
           p[0] = 0;
           p[1] = 0;
           if (f.inside(p))
           {
-            cs_.e(x, y, yaw) = 100;
+            cs_template_.e(x, y, yaw) = 100;
           }
           else
           {
             const float d = f.dist(p);
             if (d < linear_expand_)
             {
-              cs_.e(x, y, yaw) = 100;
+              cs_template_.e(x, y, yaw) = 100;
             }
             else if (d < linear_expand_ + linear_spread_)
             {
-              cs_.e(x, y, yaw) = 100 - (d - linear_expand_) * 100 / linear_spread_;
+              cs_template_.e(x, y, yaw) = 100 - (d - linear_expand_) * 100 / linear_spread_;
             }
             else
             {
-              cs_.e(x, y, yaw) = 0;
+              cs_template_.e(x, y, yaw) = 0;
             }
           }
         }
