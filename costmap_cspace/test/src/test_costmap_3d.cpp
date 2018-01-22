@@ -382,7 +382,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   // Settings: 4 angular grids, no expand/spread
   cm->setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
   cm_over->setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
-  cm->registerChild(cm_over);
+  cm->setChild(cm_over);
   cm_ref.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
   cm_base.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
 
@@ -522,7 +522,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
   // Settings: 4 angular grids, no expand/spread
   cm->setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
   cm_over->setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
-  cm->registerChild(cm_over);
+  cm->setChild(cm_over);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;

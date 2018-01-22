@@ -64,9 +64,6 @@ protected:
   Polygon footprint_p_;
 
 public:
-  Costmap3dLayerFootprint()
-  {
-  }
   bool setFootprint(const XmlRpc::XmlRpcValue footprint_xml_const)
   {
     XmlRpc::XmlRpcValue footprint_xml = footprint_xml_const;

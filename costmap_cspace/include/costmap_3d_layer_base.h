@@ -84,6 +84,7 @@ protected:
   float linear_expand_;
   float linear_spread_;
   map_overlay_mode overlay_mode_;
+  bool root_;
 
   CSpace3Cache cs_template_;
   int range_max_;
@@ -100,6 +101,7 @@ public:
     , linear_expand_(0.0)
     , linear_spread_(0.0)
     , overlay_mode_(map_overlay_mode::MAX)
+    , root_(true)
     , map_(new CSpace3DMsg)
     , map_overlay_(new CSpace3DMsg)
   {
@@ -115,9 +117,16 @@ public:
     linear_spread_ = linear_spread;
     overlay_mode_ = overlay_mode;
   }
+  void setChild(Costmap3dLayerBase::Ptr child)
+  {
+    child_ = child;
+    child_->setMap(getMapOverlay());
+    child_->root_ = false;
+  }
   virtual void generateCSpaceTemplate(const MapMetaData3D &info) = 0;
   void setBaseMap(const nav_msgs::OccupancyGrid &base_map)
   {
+    ROS_ASSERT(root_);
     ROS_ASSERT(base_map.data.size() >= base_map.info.width * base_map.info.height);
     map_base_ = base_map;
 
@@ -154,13 +163,9 @@ public:
     if (child_)
       child_->setBaseMapChain();
   }
-  void registerChild(Costmap3dLayerBase::Ptr child)
-  {
-    child_ = child;
-    child_->setMap(getMapOverlay());
-  }
   CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid &msg)
   {
+    ROS_ASSERT(!root_);
     const int ox = lroundf((msg.info.origin.position.x - map_->info.origin.position.x) / map_->info.linear_resolution);
     const int oy = lroundf((msg.info.origin.position.y - map_->info.origin.position.y) / map_->info.linear_resolution);
     *map_overlay_ = *map_;
