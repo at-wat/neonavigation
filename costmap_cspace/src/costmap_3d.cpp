@@ -182,7 +182,7 @@ public:
       throw std::runtime_error("Invalid footprint");
     }
     costmaps_[1] = costmap_overlay;
-    costmaps_[0]->registerChild(costmaps_[1]);
+    costmaps_[0]->setChild(costmaps_[1]);
 
     sub_map_ = nh_.subscribe("map", 1, &Costmap3DOFNode::cbMap, this);
     sub_map_overlay_ = nh_.subscribe("map_overlay", 1, &Costmap3DOFNode::cbMapOverlay, this);
