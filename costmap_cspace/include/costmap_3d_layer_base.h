@@ -101,7 +101,7 @@ public:
     , linear_expand_(0.0)
     , linear_spread_(0.0)
     , overlay_mode_(map_overlay_mode::MAX)
-    , root_(true
+    , root_(true)
     , map_(new CSpace3DMsg)
     , map_overlay_(new CSpace3DMsg)
   {
