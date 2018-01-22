@@ -55,13 +55,11 @@ protected:
   Polygon footprint_p_;
 
 public:
-  bool setFootprint(const Polygon footprint)
+  void setFootprint(const Polygon footprint)
   {
     footprint_p_ = footprint;
     footprint_radius_ = footprint.radius();
     footprint_ = footprint.toMsg();
-
-    return true;
   }
   void generateCSpaceTemplate(const MapMetaData3D &info)
   {
