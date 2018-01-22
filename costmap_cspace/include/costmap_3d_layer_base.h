@@ -38,6 +38,7 @@
 #include <costmap_cspace/CSpace3DUpdate.h>
 
 #include <cspace3_cache.h>
+#include <polygon.h>
 
 namespace costmap_cspace
 {
@@ -109,13 +110,19 @@ public:
   void setCSpaceConfig(
       const int ang_resolution,
       const float linear_expand,
-      const float linear_spread,
-      const map_overlay_mode overlay_mode)
+      const float linear_spread)
   {
     ang_grid_ = ang_resolution;
     linear_expand_ = linear_expand;
     linear_spread_ = linear_spread;
+  }
+  void setOverlayMode(
+      const map_overlay_mode overlay_mode)
+  {
     overlay_mode_ = overlay_mode;
+  }
+  void setFootprint(const Polygon footprint)
+  {
   }
   void setChild(Costmap3dLayerBase::Ptr child)
   {

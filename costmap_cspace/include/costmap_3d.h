@@ -33,4 +33,76 @@
 #include <costmap_3d_layer_footprint.h>
 #include <costmap_3d_layer_plain.h>
 
+#include <vector>
+
+namespace costmap_cspace
+{
+class Costmap3d
+{
+protected:
+  std::vector<Costmap3dLayerBase::Ptr> costmaps_;
+  int ang_resolution_;
+  float linear_expand_;
+  float linear_spread_;
+  Polygon footprint_;
+
+public:
+  using Ptr = std::shared_ptr<Costmap3d>;
+
+  Costmap3d(
+      const int ang_resolution,
+      const float linear_expand,
+      const float linear_spread,
+      const Polygon footprint = Polygon())
+  {
+    ang_resolution_ = ang_resolution;
+    linear_expand_ = linear_expand;
+    ang_resolution_ = ang_resolution;
+    footprint_ = footprint;
+  }
+  template <typename T>
+  typename T::Ptr addRootLayer()
+  {
+    typename T::Ptr
+        costmap_base(new T);
+
+    costmap_base->setCSpaceConfig(
+        ang_resolution_,
+        linear_expand_,
+        linear_spread_);
+
+    costmap_base->setOverlayMode(
+        Costmap3dLayerBase::map_overlay_mode::MAX);
+
+    costmap_base->setFootprint(footprint_);
+    costmaps_.resize(1);
+    costmaps_[0] = costmap_base;
+
+    return costmap_base;
+  }
+  template <typename T>
+  typename T::Ptr addLayer(
+      const Costmap3dLayerBase::map_overlay_mode overlay_mode)
+  {
+    typename T::Ptr costmap_overlay(new T);
+    costmap_overlay->setCSpaceConfig(
+        ang_resolution_,
+        linear_expand_,
+        linear_spread_);
+    costmap_overlay->setOverlayMode(overlay_mode);
+
+    costmap_overlay->setFootprint(footprint_);
+
+    costmaps_.back()->setChild(costmap_overlay);
+    costmaps_.push_back(costmap_overlay);
+
+    return costmap_overlay;
+  }
+  Costmap3dLayerBase::Ptr getRootLayer()
+  {
+    return costmaps_.front();
+  }
+};
+}  // namespace costmap_cspace
+
 #endif  // COSTMAP_3D_H
