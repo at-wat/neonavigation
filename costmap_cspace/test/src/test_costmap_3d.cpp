@@ -33,6 +33,7 @@
 
 #include <gtest/gtest.h>
 
+#include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_3d.h>
 
@@ -445,7 +446,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
       for (size_t i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
       {
         const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
-        assert(addr < updated.data.size());
+        ROS_ASSERT(addr < updated.data.size());
         const int cost = updated.data[addr];
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
 
@@ -476,7 +477,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
       for (int i = cm_over->getRangeMax(); i < static_cast<int>(map.info.width) - cm_over->getRangeMax(); ++i)
       {
         const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
-        assert(addr < updated_max.data.size());
+        ROS_ASSERT(addr < updated_max.data.size());
         const int cost = updated_max.data[addr];
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
         const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);

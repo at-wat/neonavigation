@@ -30,6 +30,8 @@
 #ifndef COSTMAP_3D_LAYER_FOOTPRINT_H
 #define COSTMAP_3D_LAYER_FOOTPRINT_H
 
+#include <ros/ros.h>
+
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace/CSpace3D.h>
@@ -104,7 +106,7 @@ public:
   }
   void generateCSpaceTemplate(const MapMetaData3D &info)
   {
-    assert(footprint_p_.v.size() > 2);
+    ROS_ASSERT(footprint_p_.v.size() > 2);
 
     range_max_ =
         ceilf((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
