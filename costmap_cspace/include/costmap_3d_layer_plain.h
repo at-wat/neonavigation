@@ -45,6 +45,9 @@ public:
   using Ptr = std::shared_ptr<Costmap3dLayerPlain>;
 
 public:
+  Costmap3dLayerPlain()
+  {
+  }
   void generateCSpaceTemplate(const MapMetaData3D &info)
   {
     range_max_ = ceilf((linear_expand_ + linear_spread_) / info.linear_resolution);
