@@ -92,7 +92,7 @@ protected:
     publishDebug(*map_overlay);
     pub_costmap_update_.publish(update);
   }
-  void publishDebug(costmap_cspace::CSpace3D map)
+  void publishDebug(const costmap_cspace::CSpace3D &map)
   {
     sensor_msgs::PointCloud pc;
     pc.header = map.header;
