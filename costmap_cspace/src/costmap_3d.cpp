@@ -92,7 +92,7 @@ protected:
     publishDebug(*map_overlay);
     pub_costmap_update_.publish(update);
   }
-  void publishDebug(costmap_cspace::CSpace3D map)
+  void publishDebug(const costmap_cspace::CSpace3D &map)
   {
     sensor_msgs::PointCloud pc;
     pc.header = map.header;
@@ -122,10 +122,6 @@ protected:
   }
 
 public:
-  void spin()
-  {
-    ros::spin();
-  }
   Costmap3DOFNode()
     : nh_()
     , nhp_("~")
@@ -203,7 +199,7 @@ int main(int argc, char *argv[])
   ros::init(argc, argv, "costmap_3d");
 
   Costmap3DOFNode cm;
-  cm.spin();
+  ros::spin();
 
   return 0;
 }
