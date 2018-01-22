@@ -33,6 +33,15 @@
 #include <ros/ros.h>
 #include <vector>
 
+namespace XmlRpc
+{
+bool isNumber(const XmlRpc::XmlRpcValue &value)
+{
+  return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
+         value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
+}
+}  // namespace XmlRpc
+
 namespace costmap_cspace
 {
 class Vec
@@ -85,6 +94,63 @@ class Polygon
 {
 public:
   std::vector<Vec> v;
+
+  Polygon()
+  {
+  }
+  explicit Polygon(const XmlRpc::XmlRpcValue footprint_xml_const)
+  {
+    XmlRpc::XmlRpcValue footprint_xml = footprint_xml_const;
+    if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
+    {
+      throw std::runtime_error("Invalid footprint xml.");
+    }
+
+    for (int i = 0; i < footprint_xml.size(); i++)
+    {
+      if (!XmlRpc::isNumber(footprint_xml[i][0]) ||
+          !XmlRpc::isNumber(footprint_xml[i][1]))
+      {
+        throw std::runtime_error("Invalid footprint xml.");
+      }
+
+      Vec p;
+      p[0] = static_cast<double>(footprint_xml[i][0]);
+      p[1] = static_cast<double>(footprint_xml[i][1]);
+
+      v.push_back(p);
+    }
+    v.push_back(v.front());
+  }
+  geometry_msgs::PolygonStamped toMsg() const
+  {
+    geometry_msgs::PolygonStamped msg;
+
+    msg.polygon.points.clear();
+    msg.header.frame_id = "base_link";
+    for (const auto &p : v)
+    {
+      geometry_msgs::Point32 point;
+      point.x = p[0];
+      point.y = p[1];
+      point.z = 0;
+      msg.polygon.points.push_back(point);
+    }
+    msg.polygon.points.push_back(msg.polygon.points[0]);
+
+    return msg;
+  }
+  float radius() const
+  {
+    float radius = 0;
+    for (const auto &p : v)
+    {
+      const auto dist = hypotf(p[0], p[1]);
+      if (dist > radius)
+        radius = dist;
+    }
+    return radius;
+  }
   void move(const float &x, const float &y, const float &yaw)
   {
     float cos_v = cosf(yaw);
