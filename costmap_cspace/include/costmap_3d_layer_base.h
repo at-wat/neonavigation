@@ -30,6 +30,8 @@
 #ifndef COSTMAP_3D_LAYER_BASE_H
 #define COSTMAP_3D_LAYER_BASE_H
 
+#include <ros/ros.h>
+
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace/CSpace3D.h>
@@ -45,23 +47,23 @@ public:
   using Ptr = std::shared_ptr<CSpace3DMsg>;
   const int8_t &getCost(const int &x, const int &y, const int &yaw) const
   {
-    assert(static_cast<size_t>(yaw) < info.angle);
-    assert(static_cast<size_t>(x) < info.width);
-    assert(static_cast<size_t>(y) < info.height);
+    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
+    ROS_ASSERT(static_cast<size_t>(x) < info.width);
+    ROS_ASSERT(static_cast<size_t>(y) < info.height);
 
     const size_t addr = (yaw * info.height + y) * info.width + x;
-    assert(addr < data.size());
+    ROS_ASSERT(addr < data.size());
 
     return data[addr];
   }
   int8_t &getCost(const int &x, const int &y, const int &yaw)
   {
-    assert(static_cast<size_t>(yaw) < info.angle);
-    assert(static_cast<size_t>(x) < info.width);
-    assert(static_cast<size_t>(y) < info.height);
+    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
+    ROS_ASSERT(static_cast<size_t>(x) < info.width);
+    ROS_ASSERT(static_cast<size_t>(y) < info.height);
 
     const size_t addr = (yaw * info.height + y) * info.width + x;
-    assert(addr < data.size());
+    ROS_ASSERT(addr < data.size());
 
     return data[addr];
   }
@@ -124,7 +126,8 @@ public:
   virtual void generateCSpaceTemplate(const MapMetaData3D &info) = 0;
   void setBaseMap(const nav_msgs::OccupancyGrid &base_map)
   {
-    assert(base_map.data.size() >= base_map.info.width * base_map.info.height);
+    ROS_ASSERT(root_);
+    ROS_ASSERT(base_map.data.size() >= base_map.info.width * base_map.info.height);
     map_base_ = base_map;
 
     map_->header = map_base_.header;
@@ -162,6 +165,7 @@ public:
   }
   CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid &msg)
   {
+    ROS_ASSERT(!root_);
     const int ox = lroundf((msg.info.origin.position.x - map_->info.origin.position.x) / map_->info.linear_resolution);
     const int oy = lroundf((msg.info.origin.position.y - map_->info.origin.position.y) / map_->info.linear_resolution);
     *map_overlay_ = *map_;
@@ -328,7 +332,7 @@ protected:
 
           const auto &m = map->getCost(x2, y2, yaw2);
           const size_t addr = (k * update.height + j) * update.width + i;
-          assert(addr < update.data.size());
+          ROS_ASSERT(addr < update.data.size());
           auto &up = update.data[addr];
           up = m;
         }
