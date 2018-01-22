@@ -157,26 +157,27 @@ public:
       throw std::runtime_error("Footprint doesn't specified.");
     }
     nhp_.getParam("footprint", footprint_xml);
+    costmap_cspace::Polygon footprint;
+    try
+    {
+      footprint = costmap_cspace::Polygon(footprint_xml);
+    }
+    catch (const std::exception &e)
+    {
+      ROS_FATAL("Invalid footprint");
+      throw e;
+    }
 
     costmaps_.resize(2);
 
     costmap_cspace::Costmap3dLayerFootprint::Ptr costmap_base(new costmap_cspace::Costmap3dLayerFootprint);
     costmap_base->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, overlay_mode);
-    if (!costmap_base->setFootprint(footprint_xml))
-    {
-      ROS_FATAL("Invalid footprint");
-      throw std::runtime_error("Invalid footprint");
-    }
-    ROS_INFO("footprint radius: %0.3f", costmap_base->getFootprintRadius());
+    costmap_base->setFootprint(footprint);
     costmaps_[0] = costmap_base;
 
     costmap_cspace::Costmap3dLayerFootprint::Ptr costmap_overlay(new costmap_cspace::Costmap3dLayerFootprint);
     costmap_overlay->setCSpaceConfig(ang_resolution, linear_expand, linear_spread, overlay_mode);
-    if (!costmap_overlay->setFootprint(footprint_xml))
-    {
-      ROS_FATAL("Invalid footprint");
-      throw std::runtime_error("Invalid footprint");
-    }
+    costmap_overlay->setFootprint(footprint);
     costmaps_[1] = costmap_overlay;
     costmaps_[0]->setChild(costmaps_[1]);
 

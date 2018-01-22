@@ -74,9 +74,9 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint;
-  ASSERT_TRUE(footprint.fromXml(footprint_str, &footprint_offset));
-  ASSERT_TRUE(cm.setFootprint(footprint));
+  XmlRpc::XmlRpcValue footprint_xml;
+  ASSERT_TRUE(footprint_xml.fromXml(footprint_str, &footprint_offset));
+  ASSERT_TRUE(cm.setFootprint(costmap_cspace::Polygon(footprint_xml)));
 
   // Check local footprint
   const costmap_cspace::Polygon polygon = cm.getFootprint();
@@ -191,9 +191,9 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint;
-  footprint.fromXml(footprint_str, &footprint_offset);
-  cm.setFootprint(footprint);
+  XmlRpc::XmlRpcValue footprint_xml;
+  footprint_xml.fromXml(footprint_str, &footprint_offset);
+  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
 
   // Settings: 4 angular grids, no expand/spread
   cm.setCSpaceConfig(4, 0.0, 0.0, costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
@@ -301,9 +301,9 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint;
-  footprint.fromXml(footprint_str, &footprint_offset);
-  cm.setFootprint(footprint);
+  XmlRpc::XmlRpcValue footprint_xml;
+  footprint_xml.fromXml(footprint_str, &footprint_offset);
+  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
 
   // Settings: 4 angular grids, expand 1.0, spread 2.0
   const float expand = 1.0;
@@ -372,8 +372,9 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint;
-  footprint.fromXml(footprint_str, &footprint_offset);
+  XmlRpc::XmlRpcValue footprint_xml;
+  footprint_xml.fromXml(footprint_str, &footprint_offset);
+  costmap_cspace::Polygon footprint(footprint_xml);
   cm->setFootprint(footprint);
   cm_over->setFootprint(footprint);
   cm_ref.setFootprint(footprint);
@@ -514,8 +515,9 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint;
-  footprint.fromXml(footprint_str, &footprint_offset);
+  XmlRpc::XmlRpcValue footprint_xml;
+  footprint_xml.fromXml(footprint_str, &footprint_offset);
+  costmap_cspace::Polygon footprint(footprint_xml);
   cm->setFootprint(footprint);
   cm_over->setFootprint(footprint);
 
