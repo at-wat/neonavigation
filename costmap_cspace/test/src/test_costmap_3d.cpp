@@ -76,7 +76,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
   int footprint_offset = 0;
   XmlRpc::XmlRpcValue footprint_xml;
   ASSERT_TRUE(footprint_xml.fromXml(footprint_str, &footprint_offset));
-  ASSERT_TRUE(cm.setFootprint(costmap_cspace::Polygon(footprint_xml)));
+  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
 
   // Check local footprint
   const costmap_cspace::Polygon polygon = cm.getFootprint();
