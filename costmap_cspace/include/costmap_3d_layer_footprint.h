@@ -42,15 +42,6 @@
 #include <costmap_3d_layer_base.h>
 #include <polygon.h>
 
-namespace XmlRpc
-{
-bool isNumber(const XmlRpc::XmlRpcValue &value)
-{
-  return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
-         value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
-}
-}  // namespace XmlRpc
-
 namespace costmap_cspace
 {
 class Costmap3dLayerFootprint : public Costmap3dLayerBase
@@ -64,40 +55,11 @@ protected:
   Polygon footprint_p_;
 
 public:
-  bool setFootprint(const XmlRpc::XmlRpcValue footprint_xml_const)
+  bool setFootprint(const Polygon footprint)
   {
-    XmlRpc::XmlRpcValue footprint_xml = footprint_xml_const;
-    if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
-    {
-      return false;
-    }
-
-    footprint_.polygon.points.clear();
-    footprint_.header.frame_id = "base_link";
-    footprint_radius_ = 0;
-    for (int i = 0; i < footprint_xml.size(); i++)
-    {
-      if (!XmlRpc::isNumber(footprint_xml[i][0]) ||
-          !XmlRpc::isNumber(footprint_xml[i][1]))
-      {
-        return false;
-      }
-
-      geometry_msgs::Point32 point;
-      Vec v;
-      v[0] = point.x = static_cast<double>(footprint_xml[i][0]);
-      v[1] = point.y = static_cast<double>(footprint_xml[i][1]);
-      point.z = 0;
-      footprint_.polygon.points.push_back(point);
-
-      footprint_p_.v.push_back(v);
-
-      const auto dist = hypotf(point.x, point.y);
-      if (dist > footprint_radius_)
-        footprint_radius_ = dist;
-    }
-    footprint_p_.v.push_back(footprint_p_.v.front());
-    footprint_.polygon.points.push_back(footprint_.polygon.points[0]);
+    footprint_p_ = footprint;
+    footprint_radius_ = footprint.radius();
+    footprint_ = footprint.toMsg();
 
     return true;
   }
