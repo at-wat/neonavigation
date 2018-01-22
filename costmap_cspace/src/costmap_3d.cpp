@@ -76,8 +76,7 @@ protected:
   }
   void cbMapOverlay(
       const nav_msgs::OccupancyGrid::ConstPtr &msg,
-      const costmap_cspace::Costmap3dLayerBase::Ptr map,
-      const bool last_layer)
+      const costmap_cspace::Costmap3dLayerBase::Ptr map)
   {
     ROS_DEBUG("Overlay 2D costmap received");
 
@@ -91,14 +90,16 @@ protected:
         map_msg->info.height < 1)
       return;
 
-    costmap_cspace::CSpace3DUpdate update = map->processMapOverlay(*msg);
+    map->processMapOverlay(*msg);
     ROS_DEBUG("C-Space costmap updated");
-
-    if (last_layer)
-    {
-      publishDebug(*map->getMapOverlay());
-      pub_costmap_update_.publish(update);
-    }
+  }
+  bool cbUpdate(
+      const costmap_cspace::CSpace3DMsg::Ptr map,
+      const costmap_cspace::CSpace3DUpdate::Ptr update)
+  {
+    publishDebug(*map);
+    pub_costmap_update_.publish(*update);
+    return true;
   }
   void publishDebug(const costmap_cspace::CSpace3D &map)
   {
@@ -186,7 +187,10 @@ public:
     auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
     sub_map_overlay_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
         "map_overlay", 1,
-        boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer, true));
+        boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer));
+
+    auto end_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
+    end_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
 
     pub_costmap_ = nhp_.advertise<costmap_cspace::CSpace3D>("costmap", 1, true);
     pub_costmap_update_ = nhp_.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);

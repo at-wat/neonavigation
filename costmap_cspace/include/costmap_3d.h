@@ -32,6 +32,7 @@
 
 #include <costmap_3d_layer_footprint.h>
 #include <costmap_3d_layer_plain.h>
+#include <costmap_3d_layer_output.h>
 
 #include <vector>
 
@@ -82,7 +83,8 @@ public:
   }
   template <typename T>
   typename T::Ptr addLayer(
-      const Costmap3dLayerBase::map_overlay_mode overlay_mode)
+      const Costmap3dLayerBase::map_overlay_mode overlay_mode =
+          Costmap3dLayerBase::map_overlay_mode::MAX)
   {
     typename T::Ptr costmap_overlay(new T);
     costmap_overlay->setCSpaceConfig(
