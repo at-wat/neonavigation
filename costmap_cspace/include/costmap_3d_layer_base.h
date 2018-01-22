@@ -30,6 +30,8 @@
 #ifndef COSTMAP_3D_LAYER_BASE_H
 #define COSTMAP_3D_LAYER_BASE_H
 
+#include <ros/ros.h>
+
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace/CSpace3D.h>
@@ -39,6 +41,33 @@
 
 namespace costmap_cspace
 {
+class CSpace3DMsg : public CSpace3D
+{
+public:
+  using Ptr = std::shared_ptr<CSpace3DMsg>;
+  const int8_t &getCost(const int &x, const int &y, const int &yaw) const
+  {
+    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
+    ROS_ASSERT(static_cast<size_t>(x) < info.width);
+    ROS_ASSERT(static_cast<size_t>(y) < info.height);
+
+    const size_t addr = (yaw * info.height + y) * info.width + x;
+    ROS_ASSERT(addr < data.size());
+
+    return data[addr];
+  }
+  int8_t &getCost(const int &x, const int &y, const int &yaw)
+  {
+    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
+    ROS_ASSERT(static_cast<size_t>(x) < info.width);
+    ROS_ASSERT(static_cast<size_t>(y) < info.height);
+
+    const size_t addr = (yaw * info.height + y) * info.width + x;
+    ROS_ASSERT(addr < data.size());
+
+    return data[addr];
+  }
+};
 class Costmap3dLayerBase
 {
 public:
@@ -56,11 +85,11 @@ protected:
   float linear_spread_;
   map_overlay_mode overlay_mode_;
 
-  costmap_cspace::CSpace3Cache cs_;
+  CSpace3Cache cs_template_;
   int range_max_;
 
-  costmap_cspace::CSpace3D::Ptr map_;
-  costmap_cspace::CSpace3D::Ptr map_overlay_;
+  CSpace3DMsg::Ptr map_;
+  CSpace3DMsg::Ptr map_overlay_;
   nav_msgs::OccupancyGrid map_base_;
 
   Costmap3dLayerBase::Ptr child_;
@@ -71,8 +100,8 @@ public:
     , linear_expand_(0.0)
     , linear_spread_(0.0)
     , overlay_mode_(map_overlay_mode::MAX)
-    , map_(new costmap_cspace::CSpace3D)
-    , map_overlay_(new costmap_cspace::CSpace3D)
+    , map_(new CSpace3DMsg)
+    , map_overlay_(new CSpace3DMsg)
   {
   }
   void setCSpaceConfig(
@@ -86,10 +115,10 @@ public:
     linear_spread_ = linear_spread;
     overlay_mode_ = overlay_mode;
   }
-  virtual void generateCSpaceTemplate(const costmap_cspace::MapMetaData3D &info) = 0;
+  virtual void generateCSpaceTemplate(const MapMetaData3D &info) = 0;
   void setBaseMap(const nav_msgs::OccupancyGrid &base_map)
   {
-    assert(base_map.data.size() >= base_map.info.width * base_map.info.height);
+    ROS_ASSERT(base_map.data.size() >= base_map.info.width * base_map.info.height);
     map_base_ = base_map;
 
     map_->header = map_base_.header;
@@ -130,7 +159,7 @@ public:
     child_ = child;
     child_->setMap(getMapOverlay());
   }
-  costmap_cspace::CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid &msg)
+  CSpace3DUpdate processMapOverlay(const nav_msgs::OccupancyGrid &msg)
   {
     const int ox = lroundf((msg.info.origin.position.x - map_->info.origin.position.x) / map_->info.linear_resolution);
     const int oy = lroundf((msg.info.origin.position.y - map_->info.origin.position.y) / map_->info.linear_resolution);
@@ -141,21 +170,21 @@ public:
     const int h = lroundf(msg.info.height * msg.info.resolution / map_->info.linear_resolution);
     return generateUpdateMsg(map_overlay_, ox, oy, 0, w, h, map_->info.angle, msg.header.stamp);
   }
-  costmap_cspace::CSpace3D::Ptr getMap()
+  CSpace3DMsg::Ptr getMap()
   {
     return map_;
   }
-  void setMap(costmap_cspace::CSpace3D::Ptr map)
+  void setMap(CSpace3DMsg::Ptr map)
   {
     map_ = map;
   }
-  costmap_cspace::CSpace3D::Ptr getMapOverlay()
+  CSpace3DMsg::Ptr getMapOverlay()
   {
     return map_overlay_;
   }
   CSpace3Cache &getTemplate()
   {
-    return cs_;
+    return cs_template_;
   }
   int getRangeMax() const
   {
@@ -164,36 +193,6 @@ public:
   int getAngularGrid() const
   {
     return ang_grid_;
-  }
-  int8_t getCost(const int &x, const int &y, const int &yaw) const
-  {
-    return getCost(x, y, yaw, map_overlay_);
-  }
-  int8_t getCost(const int &x, const int &y, const int &yaw, costmap_cspace::CSpace3D::ConstPtr map) const
-  {
-    assert(static_cast<size_t>(yaw) < map->info.angle);
-    assert(static_cast<size_t>(x) < map->info.width);
-    assert(static_cast<size_t>(y) < map->info.height);
-
-    const size_t addr = (yaw * map->info.height + y) * map->info.width + x;
-    assert(addr < map->data.size());
-
-    return map->data[addr];
-  }
-  int8_t &getCostRef(const int &x, const int &y, const int &yaw)
-  {
-    return getCostRef(x, y, yaw, map_overlay_);
-  }
-  int8_t &getCostRef(const int &x, const int &y, const int &yaw, costmap_cspace::CSpace3D::Ptr map)
-  {
-    assert(static_cast<size_t>(yaw) < map->info.angle);
-    assert(static_cast<size_t>(x) < map->info.width);
-    assert(static_cast<size_t>(y) < map->info.height);
-
-    const size_t addr = (yaw * map->info.height + y) * map->info.width + x;
-    assert(addr < map->data.size());
-
-    return map->data[addr];
   }
 
 protected:
@@ -204,7 +203,7 @@ protected:
     if (child_)
       child_->setBaseMapChain();
   }
-  void gemerateCSpace(costmap_cspace::CSpace3D::Ptr map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
+  void gemerateCSpace(CSpace3DMsg::Ptr map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
   {
     const int ox = lroundf((msg.info.origin.position.x - map->info.origin.position.x) / map->info.linear_resolution);
     const int oy = lroundf((msg.info.origin.position.y - map->info.origin.position.y) / map->info.linear_resolution);
@@ -237,7 +236,7 @@ protected:
                   static_cast<unsigned int>(y2) >= map->info.height)
                 continue;
 
-              auto &m = getCostRef(x2, y2, yaw, map);
+              auto &m = map->getCost(x2, y2, yaw);
               m = 0;
             }
           }
@@ -269,8 +268,8 @@ protected:
                 static_cast<unsigned int>(y2) >= map->info.height)
               continue;
 
-            auto &m = getCostRef(x2, y2, yaw, map);
-            const auto c = cs_.e(x, y, yaw) * val / 100;
+            auto &m = map->getCost(x2, y2, yaw);
+            const auto c = cs_template_.e(x, y, yaw) * val / 100;
             if (m < c)
               m = c;
           }
@@ -278,12 +277,12 @@ protected:
       }
     }
   }
-  costmap_cspace::CSpace3DUpdate generateUpdateMsg(
-      costmap_cspace::CSpace3D::Ptr map, const int &x, const int &y, const int &yaw,
+  CSpace3DUpdate generateUpdateMsg(
+      CSpace3DMsg::Ptr map, const int &x, const int &y, const int &yaw,
       const int &width, const int &height, const int &angle,
       const ros::Time &stamp)
   {
-    costmap_cspace::CSpace3DUpdate update;
+    CSpace3DUpdate update;
     update.header = map->header;
     map->header.stamp = stamp;
     int update_x = x - range_max_;
@@ -326,9 +325,9 @@ protected:
           const int y2 = update.y + j;
           const int yaw2 = yaw + k;
 
-          const auto &m = getCostRef(x2, y2, yaw2, map);
+          const auto &m = map->getCost(x2, y2, yaw2);
           const size_t addr = (k * update.height + j) * update.width + i;
-          assert(addr < update.data.size());
+          ROS_ASSERT(addr < update.data.size());
           auto &up = update.data[addr];
           up = m;
         }

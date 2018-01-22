@@ -30,6 +30,8 @@
 #ifndef CSPACE3_CACHE_H
 #define CSPACE3_CACHE_H
 
+#include <ros/ros.h>
+
 namespace costmap_cspace
 {
 class CSpace3Cache
@@ -53,17 +55,17 @@ public:
 
   char &e(const int &x, const int &y, const int &yaw)
   {
-    assert(-center[0] <= x && x < size[0] - center[0]);
-    assert(-center[1] <= y && y < size[1] - center[1]);
-    assert(-center[2] <= yaw && yaw < size[2] - center[2]);
+    ROS_ASSERT(-center[0] <= x && x < size[0] - center[0]);
+    ROS_ASSERT(-center[1] <= y && y < size[1] - center[1]);
+    ROS_ASSERT(-center[2] <= yaw && yaw < size[2] - center[2]);
 
     return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
   }
   const char &e(const int &x, const int &y, const int &yaw) const
   {
-    assert(-center[0] <= x && x < size[0] - center[0]);
-    assert(-center[1] <= y && y < size[1] - center[1]);
-    assert(-center[2] <= yaw && yaw < size[2] - center[2]);
+    ROS_ASSERT(-center[0] <= x && x < size[0] - center[0]);
+    ROS_ASSERT(-center[1] <= y && y < size[1] - center[1]);
+    ROS_ASSERT(-center[2] <= yaw && yaw < size[2] - center[2]);
 
     return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
   }

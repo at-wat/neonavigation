@@ -69,8 +69,8 @@ protected:
     ROS_DEBUG("C-Space costmap generated");
 
     auto map = costmaps_[0]->getMap();
-    pub_costmap_.publish(*map);
-    publishDebug(map);
+    pub_costmap_.publish<costmap_cspace::CSpace3D>(*map);
+    publishDebug(*map);
   }
   void cbMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
@@ -89,25 +89,25 @@ protected:
     costmap_cspace::CSpace3DUpdate update = costmaps_[1]->processMapOverlay(*msg);
     ROS_DEBUG("C-Space costmap updated");
 
-    publishDebug(map_overlay);
+    publishDebug(*map_overlay);
     pub_costmap_update_.publish(update);
   }
-  void publishDebug(costmap_cspace::CSpace3D::Ptr map)
+  void publishDebug(const costmap_cspace::CSpace3D &map)
   {
     sensor_msgs::PointCloud pc;
-    pc.header = map->header;
+    pc.header = map.header;
     pc.header.stamp = ros::Time::now();
-    for (size_t yaw = 0; yaw < map->info.angle; yaw++)
+    for (size_t yaw = 0; yaw < map.info.angle; yaw++)
     {
-      for (unsigned int i = 0; i < map->info.width * map->info.height; i++)
+      for (unsigned int i = 0; i < map.info.width * map.info.height; i++)
       {
-        int gx = i % map->info.width;
-        int gy = i / map->info.width;
-        if (map->data[i + yaw * map->info.width * map->info.height] < 100)
+        int gx = i % map.info.width;
+        int gy = i / map.info.width;
+        if (map.data[i + yaw * map.info.width * map.info.height] < 100)
           continue;
         geometry_msgs::Point32 p;
-        p.x = gx * map->info.linear_resolution + map->info.origin.position.x;
-        p.y = gy * map->info.linear_resolution + map->info.origin.position.y;
+        p.x = gx * map.info.linear_resolution + map.info.origin.position.x;
+        p.y = gy * map.info.linear_resolution + map.info.origin.position.y;
         p.z = yaw * 0.1;
         pc.points.push_back(p);
       }
@@ -122,10 +122,6 @@ protected:
   }
 
 public:
-  void spin()
-  {
-    ros::spin();
-  }
   Costmap3DOFNode()
     : nh_()
     , nhp_("~")
@@ -203,7 +199,7 @@ int main(int argc, char *argv[])
   ros::init(argc, argv, "costmap_3d");
 
   Costmap3DOFNode cm;
-  cm.spin();
+  ros::spin();
 
   return 0;
 }
