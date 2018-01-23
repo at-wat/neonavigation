@@ -297,17 +297,11 @@ protected:
       gemerateCSpace(map_overlay_, map_updated_, true);
 
     if (updateChain())
-    {
-      region_ = UpdatedRegion();
       return true;
-    }
 
     if (child_)
     {
-      const bool clear = child_->updateChainEntry(region_);
-      if (clear)
-        region_ = UpdatedRegion();
-      return clear;
+      return child_->updateChainEntry(region_);
     }
     return false;
   }
