@@ -37,49 +37,62 @@ namespace costmap_cspace
 class CSpace3Cache
 {
 protected:
-  std::unique_ptr<char[]> c;
-  int size[3];
-  int center[3];
+  std::unique_ptr<char[]> c_;
+  int size_[3];
+  int center_[3];
+  int stride_[3];
+  size_t array_size_;
 
 public:
+  CSpace3Cache()
+    : c_(nullptr)
+    , array_size_(0)
+  {
+    size_[0] = size_[1] = size_[2] = 0;
+    center_[0] = center_[1] = center_[2] = 0;
+    stride_[0] = stride_[1] = stride_[2] = 0;
+  }
   void reset(const int &x, const int &y, const int &yaw)
   {
-    size[0] = x * 2 + 1;
-    size[1] = y * 2 + 1;
-    size[2] = yaw;
-    center[0] = x;
-    center[1] = y;
-    center[2] = 0;
-    c.reset(new char[size[0] * size[1] * size[2]]);
+    size_[0] = x * 2 + 1;
+    size_[1] = y * 2 + 1;
+    size_[2] = yaw;
+    center_[0] = x;
+    center_[1] = y;
+    center_[2] = 0;
+    array_size_ = size_[0] * size_[1] * size_[2];
+    c_.reset(new char[array_size_]);
+    memset(c_.get(), 0, array_size_ * sizeof(char));
+    stride_[0] = 1;
+    stride_[1] = size_[0];
+    stride_[2] = size_[0] * size_[1];
   }
 
   char &e(const int &x, const int &y, const int &yaw)
   {
-    ROS_ASSERT(-center[0] <= x && x < size[0] - center[0]);
-    ROS_ASSERT(-center[1] <= y && y < size[1] - center[1]);
-    ROS_ASSERT(-center[2] <= yaw && yaw < size[2] - center[2]);
+    const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
+    ROS_ASSERT(addr < array_size_);
 
-    return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
+    return c_[addr];
   }
   const char &e(const int &x, const int &y, const int &yaw) const
   {
-    ROS_ASSERT(-center[0] <= x && x < size[0] - center[0]);
-    ROS_ASSERT(-center[1] <= y && y < size[1] - center[1]);
-    ROS_ASSERT(-center[2] <= yaw && yaw < size[2] - center[2]);
+    const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
+    ROS_ASSERT(addr < array_size_);
 
-    return c[(yaw * size[1] + (y + center[1])) * size[0] + x + center[0]];
+    return c_[addr];
   }
   void getSize(int &x, int &y, int &a) const
   {
-    x = size[0];
-    y = size[1];
-    a = size[2];
+    x = size_[0];
+    y = size_[1];
+    a = size_[2];
   }
   void getCenter(int &x, int &y, int &a) const
   {
-    x = center[0];
-    y = center[1];
-    a = center[2];
+    x = center_[0];
+    y = center_[1];
+    a = center_[2];
   }
 };
 }  // namespace costmap_cspace
