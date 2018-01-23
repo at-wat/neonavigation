@@ -186,6 +186,11 @@ public:
     ang_grid_ = ang_resolution;
     linear_expand_ = linear_expand;
     linear_spread_ = linear_spread;
+
+    ROS_ASSERT(linear_expand >= 0.0);
+    ROS_ASSERT(std::isfinite(linear_expand));
+    ROS_ASSERT(linear_spread >= 0.0);
+    ROS_ASSERT(std::isfinite(linear_spread));
   }
   void setOverlayMode(
       const map_overlay_mode overlay_mode)

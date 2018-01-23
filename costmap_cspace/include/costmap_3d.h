@@ -30,6 +30,8 @@
 #ifndef COSTMAP_3D_H
 #define COSTMAP_3D_H
 
+#include <ros/ros.h>
+
 #include <costmap_3d_layer_footprint.h>
 #include <costmap_3d_layer_plain.h>
 #include <costmap_3d_layer_output.h>
@@ -58,8 +60,14 @@ public:
   {
     ang_resolution_ = ang_resolution;
     linear_expand_ = linear_expand;
-    ang_resolution_ = ang_resolution;
+    linear_spread_ = linear_spread;
     footprint_ = footprint;
+
+    ROS_ASSERT(ang_resolution_ > 0);
+    ROS_ASSERT(linear_expand_ >= 0);
+    ROS_ASSERT(std::isfinite(linear_expand_));
+    ROS_ASSERT(linear_spread_ >= 0);
+    ROS_ASSERT(std::isfinite(linear_spread_));
   }
   template <typename T>
   typename T::Ptr addRootLayer()
