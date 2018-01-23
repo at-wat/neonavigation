@@ -138,26 +138,9 @@ public:
     int ang_resolution;
     float linear_expand;
     float linear_spread;
-    costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
     nhp_.param("ang_resolution", ang_resolution, 16);
     nhp_.param("linear_expand", linear_expand, 0.2f);
     nhp_.param("linear_spread", linear_spread, 0.5f);
-    std::string overlay_mode_str;
-    nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
-    if (overlay_mode_str.compare("overwrite") == 0)
-    {
-      overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
-    }
-    else if (overlay_mode_str.compare("max") == 0)
-    {
-      overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
-    }
-    else
-    {
-      ROS_ERROR("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
-      throw std::runtime_error("Unknown overlay_mode.");
-    }
-    ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!nhp_.hasParam("footprint"))
@@ -184,10 +167,90 @@ public:
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
 
-    auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
-    sub_map_overlay_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
-        "map_overlay", 1,
-        boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer));
+    if (nhp_.hasParam("layers"))
+    {
+      XmlRpc::XmlRpcValue layers_xml;
+      nhp_.getParam("layers", layers_xml);
+
+      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
+      {
+        ROS_FATAL("layers parameter must be non-empty array.");
+        throw std::runtime_error("layers parameter must be non-empty array.");
+      }
+      for (auto &layer_xml : layers_xml)
+      {
+        costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
+        if (layer_xml.second["overlay_mode"].getType() == XmlRpc::XmlRpcValue::TypeString)
+        {
+          std::string overlay_mode_str(layer_xml.second["overlay_mode"]);
+          if (overlay_mode_str.compare("overwrite") == 0)
+            overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
+          else if (overlay_mode_str.compare("max") == 0)
+            overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
+          else
+          {
+            ROS_FATAL("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
+            throw std::runtime_error("Unknown overlay_mode.");
+          }
+        }
+        else
+        {
+          ROS_WARN("overlay_mode of the layer is not specified. Using MAX mode.");
+          overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
+        }
+
+        auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
+
+        float layer_linear_expand = linear_expand;
+        float layer_linear_spread = linear_spread;
+        if (layer_xml.second["layer_linear_expand"].getType() == XmlRpc::XmlRpcValue::TypeDouble)
+          layer_linear_expand = static_cast<double>(layer_xml.second["layer_linear_expand"]);
+        if (layer_xml.second["layer_linear_spread"].getType() == XmlRpc::XmlRpcValue::TypeDouble)
+          layer_linear_spread = static_cast<double>(layer_xml.second["layer_linear_spread"]);
+        layer->setCSpaceConfig(ang_resolution, layer_linear_expand, layer_linear_spread);
+
+        if (layer_xml.second["footprint"].getType() == XmlRpc::XmlRpcValue::TypeArray)
+        {
+          costmap_cspace::Polygon footprint;
+          try
+          {
+            footprint = costmap_cspace::Polygon(footprint_xml);
+          }
+          catch (const std::exception &e)
+          {
+            ROS_FATAL("Invalid footprint");
+            throw e;
+          }
+          layer->setFootprint(footprint);
+        }
+
+        sub_map_overlay_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
+            layer_xml.first, 1,
+            boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer));
+      }
+    }
+    else
+    {
+      // Single layer mode for backward-compatibility
+      costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
+      std::string overlay_mode_str;
+      nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
+      if (overlay_mode_str.compare("overwrite") == 0)
+        overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
+      else if (overlay_mode_str.compare("max") == 0)
+        overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
+      else
+      {
+        ROS_FATAL("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
+        throw std::runtime_error("Unknown overlay_mode.");
+      }
+      ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
+
+      auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
+      sub_map_overlay_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
+          "map_overlay", 1,
+          boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer));
+    }
 
     auto end_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
     end_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
