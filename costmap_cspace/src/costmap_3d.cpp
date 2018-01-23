@@ -47,7 +47,7 @@ protected:
   ros::NodeHandle_f nh_;
   ros::NodeHandle_f nhp_;
   ros::Subscriber sub_map_;
-  ros::Subscriber sub_map_overlay_;
+  std::vector<ros::Subscriber> sub_map_overlay_;
   ros::Publisher pub_costmap_;
   ros::Publisher pub_costmap_update_;
   ros::Publisher pub_footprint_;
@@ -172,13 +172,14 @@ public:
       XmlRpc::XmlRpcValue layers_xml;
       nhp_.getParam("layers", layers_xml);
 
-      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
+      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeStruct || layers_xml.size() < 1)
       {
-        ROS_FATAL("layers parameter must be non-empty array.");
-        throw std::runtime_error("layers parameter must be non-empty array.");
+        ROS_FATAL("layers parameter must contain at least one layer config.");
+        throw std::runtime_error("layers parameter must contain at least one layer config.");
       }
       for (auto &layer_xml : layers_xml)
       {
+        ROS_INFO("New layer: %s", layer_xml.first.c_str());
         costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
         if (layer_xml.second["overlay_mode"].getType() == XmlRpc::XmlRpcValue::TypeString)
         {
@@ -214,19 +215,20 @@ public:
           costmap_cspace::Polygon footprint;
           try
           {
-            footprint = costmap_cspace::Polygon(footprint_xml);
+            footprint = costmap_cspace::Polygon(layer_xml.second["footprint"]);
           }
           catch (const std::exception &e)
           {
             ROS_FATAL("Invalid footprint");
             throw e;
           }
+          ROS_INFO("  layer specific footprint is set.");
           layer->setFootprint(footprint);
         }
 
-        sub_map_overlay_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
+        sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
             layer_xml.first, 1,
-            boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer));
+            boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
       }
     }
     else
@@ -247,9 +249,9 @@ public:
       ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
 
       auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
-      sub_map_overlay_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
+      sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
           "map_overlay", 1,
-          boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer));
+          boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
     }
 
     auto end_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
