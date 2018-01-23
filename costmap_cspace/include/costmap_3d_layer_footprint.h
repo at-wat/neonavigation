@@ -119,6 +119,12 @@ public:
   {
     return footprint_radius_;
   }
+
+protected:
+  bool updateChain()
+  {
+    return false;
+  }
 };
 }  // namespace costmap_cspace
 
