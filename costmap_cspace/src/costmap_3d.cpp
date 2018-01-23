@@ -200,7 +200,28 @@ public:
           overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
         }
 
-        auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
+        std::string type;
+        if (layer_xml.second["type"].getType() == XmlRpc::XmlRpcValue::TypeString)
+        {
+          type = std::string(layer_xml.second["type"]);
+        }
+        else
+        {
+          ROS_FATAL("Layer type is not specified.");
+          throw std::runtime_error("Layer type is not specified.");
+        }
+
+        costmap_cspace::Costmap3dLayerBase::Ptr layer;
+
+        if (type == "Costmap3dLayerFootprint")
+          layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
+        else if (type == "Costmap3dLayerPlain")
+          layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerPlain>(overlay_mode);
+        else
+        {
+          ROS_FATAL("Unknown layer type \"%s\"", type.c_str());
+          throw std::runtime_error("Unknown layer type.");
+        }
 
         float layer_linear_expand = linear_expand;
         float layer_linear_spread = linear_spread;
