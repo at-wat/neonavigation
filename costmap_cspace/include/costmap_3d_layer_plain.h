@@ -81,6 +81,12 @@ public:
       }
     }
   }
+
+protected:
+  bool updateChain()
+  {
+    return false;
+  }
 };
 }  // namespace costmap_cspace
 
