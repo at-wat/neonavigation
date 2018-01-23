@@ -164,6 +164,7 @@ protected:
 
   Costmap3dLayerBase::Ptr child_;
   UpdatedRegion region_;
+  nav_msgs::OccupancyGrid map_updated_;
 
 public:
   Costmap3dLayerBase()
@@ -247,11 +248,11 @@ public:
     ROS_ASSERT(ang_grid_ > 0);
     const int ox = lroundf((msg.info.origin.position.x - map_->info.origin.position.x) / map_->info.linear_resolution);
     const int oy = lroundf((msg.info.origin.position.y - map_->info.origin.position.y) / map_->info.linear_resolution);
-    *map_overlay_ = *map_;
-    gemerateCSpace(map_overlay_, msg, true);
 
     const int w = lroundf(msg.info.width * msg.info.resolution / map_->info.linear_resolution);
     const int h = lroundf(msg.info.height * msg.info.resolution / map_->info.linear_resolution);
+
+    map_updated_ = msg;
 
     updateChainEntry(UpdatedRegion(ox, oy, 0, w, h, map_->info.angle, msg.header.stamp));
   }
@@ -285,6 +286,11 @@ protected:
   bool updateChainEntry(const UpdatedRegion &region)
   {
     region_.merge(region);
+
+    *map_overlay_ = *map_;
+    if (map_updated_.info.width > 0 && map_updated_.info.height > 0)
+      gemerateCSpace(map_overlay_, map_updated_, true);
+
     if (updateChain())
     {
       region_ = UpdatedRegion();

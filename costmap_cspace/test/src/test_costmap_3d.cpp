@@ -81,7 +81,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
 
   // Check local footprint
   const costmap_cspace::Polygon polygon = cm.getFootprint();
-  ASSERT_EQ(polygon.v.size(), 3 + 1);
+  ASSERT_EQ(polygon.v.size(), 3u + 1u);
   ASSERT_EQ(polygon.v[0][0], 1.5);
   ASSERT_EQ(polygon.v[0][1], 0.0);
   ASSERT_EQ(polygon.v[1][0], -0.5);
@@ -441,12 +441,12 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm_over->processMapOverlay(map2);
 
   // In this case, updated map must have same size as the base map. Check it.
-  ASSERT_EQ(updated->x, 0);
-  ASSERT_EQ(updated->y, 0);
-  ASSERT_EQ(updated->yaw, 0);
+  ASSERT_EQ(updated->x, 0u);
+  ASSERT_EQ(updated->y, 0u);
+  ASSERT_EQ(updated->yaw, 0u);
   ASSERT_EQ(updated->width, map.info.width);
   ASSERT_EQ(updated->height, map.info.height);
-  ASSERT_EQ(updated->angle, cm_over->getAngularGrid());
+  ASSERT_EQ(updated->angle, static_cast<size_t>(cm_over->getAngularGrid()));
 
   // Generate reference local and base cspace map
   cm_ref.setBaseMap(map2);
@@ -480,7 +480,6 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
     }
     // std::cout << "----" << std::endl;
   }
-  return;
   // Set MAX mode and check
   cm_over->setCSpaceConfig(4, 0.0, 0.0);
   cm_over->setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
@@ -495,12 +494,12 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm_output->setHandler(cb_max);
   cm_over->processMapOverlay(map2);
 
-  ASSERT_EQ(updated_max->x, 0);
-  ASSERT_EQ(updated_max->y, 0);
-  ASSERT_EQ(updated_max->yaw, 0);
+  ASSERT_EQ(updated_max->x, 0u);
+  ASSERT_EQ(updated_max->y, 0u);
+  ASSERT_EQ(updated_max->yaw, 0u);
   ASSERT_EQ(updated_max->width, map.info.width);
   ASSERT_EQ(updated_max->height, map.info.height);
-  ASSERT_EQ(updated_max->angle, cm_over->getAngularGrid());
+  ASSERT_EQ(updated_max->angle, static_cast<size_t>(cm_over->getAngularGrid()));
 
   for (int k = 0; k < cm_over->getAngularGrid(); ++k)
   {
