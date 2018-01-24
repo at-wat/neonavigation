@@ -35,7 +35,7 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <costmap_3d_layer_base.h>
+#include <costmap_3d_layer/base.h>
 
 namespace costmap_cspace
 {
@@ -49,16 +49,15 @@ protected:
   Callback cb_;
 
 public:
-  void generateCSpaceTemplate(const MapMetaData3D &info)
+  void loadConfig(XmlRpc::XmlRpcValue config)
   {
-    range_max_ = 0;
-    cs_template_.reset(0, 0, info.angle);
-    for (size_t yaw = 0; yaw < info.angle; yaw++)
-      cs_template_.e(0, 0, yaw) = 100;
   }
   void setHandler(Callback cb)
   {
     cb_ = cb;
+  }
+  void setMapMetaData(const MapMetaData3D &info)
+  {
   }
 
 protected:
@@ -69,16 +68,18 @@ protected:
       return cb_(map_, update_msg);
     return true;
   }
-
+  void updateCSpace(const nav_msgs::OccupancyGrid &map)
+  {
+  }
   CSpace3DUpdate::Ptr generateUpdateMsg()
   {
     CSpace3DUpdate::Ptr update_msg(new CSpace3DUpdate);
     update_msg->header = map_->header;
     map_->header.stamp = region_.stamp_;
-    int update_x = region_.x_ - range_max_;
-    int update_y = region_.y_ - range_max_;
-    int update_width = region_.width_ + range_max_ * 2;
-    int update_height = region_.height_ + range_max_ * 2;
+    int update_x = region_.x_;
+    int update_y = region_.y_;
+    int update_width = region_.width_;
+    int update_height = region_.height_;
     if (update_x < 0)
     {
       update_width += update_x;

@@ -47,7 +47,7 @@ protected:
   ros::NodeHandle_f nh_;
   ros::NodeHandle_f nhp_;
   ros::Subscriber sub_map_;
-  ros::Subscriber sub_map_overlay_;
+  std::vector<ros::Subscriber> sub_map_overlay_;
   ros::Publisher pub_costmap_;
   ros::Publisher pub_costmap_update_;
   ros::Publisher pub_footprint_;
@@ -69,10 +69,6 @@ protected:
 
     map->setBaseMap(*msg);
     ROS_DEBUG("C-Space costmap generated");
-
-    auto map_msg = map->getMap();
-    pub_costmap_.publish<costmap_cspace::CSpace3D>(*map_msg);
-    publishDebug(*map_msg);
   }
   void cbMapOverlay(
       const nav_msgs::OccupancyGrid::ConstPtr &msg,
@@ -92,6 +88,14 @@ protected:
 
     map->processMapOverlay(*msg);
     ROS_DEBUG("C-Space costmap updated");
+  }
+  bool cbUpdateStatic(
+      const costmap_cspace::CSpace3DMsg::Ptr map,
+      const costmap_cspace::CSpace3DUpdate::Ptr update)
+  {
+    publishDebug(*map);
+    pub_costmap_.publish<costmap_cspace::CSpace3D>(*map);
+    return true;
   }
   bool cbUpdate(
       const costmap_cspace::CSpace3DMsg::Ptr map,
@@ -135,29 +139,13 @@ public:
     : nh_()
     , nhp_("~")
   {
+    pub_costmap_ = nhp_.advertise<costmap_cspace::CSpace3D>("costmap", 1, true);
+    pub_costmap_update_ = nhp_.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);
+    pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
+    pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+
     int ang_resolution;
-    float linear_expand;
-    float linear_spread;
-    costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
     nhp_.param("ang_resolution", ang_resolution, 16);
-    nhp_.param("linear_expand", linear_expand, 0.2f);
-    nhp_.param("linear_spread", linear_spread, 0.5f);
-    std::string overlay_mode_str;
-    nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
-    if (overlay_mode_str.compare("overwrite") == 0)
-    {
-      overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
-    }
-    else if (overlay_mode_str.compare("max") == 0)
-    {
-      overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
-    }
-    else
-    {
-      ROS_ERROR("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
-      throw std::runtime_error("Unknown overlay_mode.");
-    }
-    ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!nhp_.hasParam("footprint"))
@@ -177,25 +165,113 @@ public:
       throw e;
     }
 
-    costmap_.reset(new costmap_cspace::Costmap3d(
-        ang_resolution, linear_expand, linear_spread, footprint));
+    costmap_.reset(new costmap_cspace::Costmap3d(ang_resolution));
+
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+    float linear_expand;
+    float linear_spread;
+    nhp_.param("linear_expand", linear_expand, 0.2f);
+    nhp_.param("linear_spread", linear_spread, 0.5f);
+    root_layer->setExpansion(linear_expand, linear_spread);
+    root_layer->setFootprint(footprint);
+
+    auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
+    static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1, _2));
+
     sub_map_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
 
-    auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
-    sub_map_overlay_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
-        "map_overlay", 1,
-        boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer));
+    if (nhp_.hasParam("layers"))
+    {
+      XmlRpc::XmlRpcValue layers_xml;
+      nhp_.getParam("layers", layers_xml);
 
-    auto end_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
-    end_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
+      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeStruct || layers_xml.size() < 1)
+      {
+        ROS_FATAL("layers parameter must contain at least one layer config.");
+        throw std::runtime_error("layers parameter must contain at least one layer config.");
+      }
+      for (auto &layer_xml : layers_xml)
+      {
+        ROS_INFO("New layer: %s", layer_xml.first.c_str());
+        costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
+        if (layer_xml.second["overlay_mode"].getType() == XmlRpc::XmlRpcValue::TypeString)
+        {
+          std::string overlay_mode_str(layer_xml.second["overlay_mode"]);
+          if (overlay_mode_str.compare("overwrite") == 0)
+            overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
+          else if (overlay_mode_str.compare("max") == 0)
+            overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
+          else
+          {
+            ROS_FATAL("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
+            throw std::runtime_error("Unknown overlay_mode.");
+          }
+        }
+        else
+        {
+          ROS_WARN("overlay_mode of the layer is not specified. Using MAX mode.");
+          overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
+        }
 
-    pub_costmap_ = nhp_.advertise<costmap_cspace::CSpace3D>("costmap", 1, true);
-    pub_costmap_update_ = nhp_.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);
-    pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
-    pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+        std::string type;
+        if (layer_xml.second["type"].getType() == XmlRpc::XmlRpcValue::TypeString)
+        {
+          type = std::string(layer_xml.second["type"]);
+        }
+        else
+        {
+          ROS_FATAL("Layer type is not specified.");
+          throw std::runtime_error("Layer type is not specified.");
+        }
+
+        if (!layer_xml.second.hasMember("footprint"))
+        {
+          layer_xml.second["footprint"] = footprint_xml;
+        }
+
+        costmap_cspace::Costmap3dLayerBase::Ptr layer =
+            costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
+        costmap_->addLayer(layer, overlay_mode);
+        layer->loadConfig(layer_xml.second);
+
+        sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
+            layer_xml.first, 1,
+            boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
+      }
+    }
+    else
+    {
+      // Single layer mode for backward-compatibility
+      costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
+      std::string overlay_mode_str;
+      nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
+      if (overlay_mode_str.compare("overwrite") == 0)
+        overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
+      else if (overlay_mode_str.compare("max") == 0)
+        overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
+      else
+      {
+        ROS_FATAL("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
+        throw std::runtime_error("Unknown overlay_mode.");
+      }
+      ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
+
+      XmlRpc::XmlRpcValue layer_xml;
+      layer_xml["footprint"] = footprint_xml;
+      layer_xml["linear_expand"] = linear_expand;
+      layer_xml["linear_spread"] = linear_spread;
+
+      auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
+      layer->loadConfig(layer_xml);
+      sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
+          "map_overlay", 1,
+          boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
+    }
+
+    auto update_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
+    update_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
 
     const geometry_msgs::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = nh_.createTimer(
