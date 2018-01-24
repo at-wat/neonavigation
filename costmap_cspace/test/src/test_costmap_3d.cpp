@@ -72,7 +72,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
   // Settings: 4 angular grids, no expand/spread
   cm.setAngleResolution(4);
   cm.setExpansion(0.0, 0.0);
-  cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Set example footprint
   int footprint_offset = 0;
@@ -154,7 +154,7 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
   // Settings: 4 angular grids, no expand/spread
   cm.setAngleResolution(4);
   cm.setExpansion(0.0, 0.0);
-  cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate CSpace pattern around the robot
   costmap_cspace::MapMetaData3D map_info;
@@ -202,7 +202,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
   // Settings: 4 angular grids, no expand/spread
   cm.setAngleResolution(4);
   cm.setExpansion(0.0, 0.0);
-  cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;
@@ -316,7 +316,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
   const float spread = 2.0;
   cm.setAngleResolution(4);
   cm.setExpansion(expand, spread);
-  cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;
@@ -390,17 +390,17 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm->setExpansion(0.0, 0.0);
   cm->setFootprint(footprint);
   auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
-      costmap_cspace::Costmap3dLayerBase::map_overlay_mode::OVERWRITE);
+      costmap_cspace::MapOverlayMode::OVERWRITE);
   cm_over->setExpansion(0.0, 0.0);
   cm_over->setFootprint(footprint);
   auto cm_output = cms.addLayer<costmap_cspace::Costmap3dLayerOutput>();
 
   cm_ref.setAngleResolution(4);
   cm_ref.setExpansion(0.0, 0.0);
-  cm_ref.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
+  cm_ref.setOverlayMode(costmap_cspace::MapOverlayMode::OVERWRITE);
   cm_base.setAngleResolution(4);
   cm_base.setExpansion(0.0, 0.0);
-  cm_base.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
+  cm_base.setOverlayMode(costmap_cspace::MapOverlayMode::OVERWRITE);
 
   // Generate two sample maps
   nav_msgs::OccupancyGrid map;
@@ -493,7 +493,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   // Set MAX mode and check
   cm_over->setAngleResolution(4);
   cm_over->setExpansion(0.0, 0.0);
-  cm_over->setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
+  cm_over->setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
   costmap_cspace::CSpace3DUpdate::Ptr updated_max(new costmap_cspace::CSpace3DUpdate);
   auto cb_max = [&updated_max](
       const costmap_cspace::CSpace3DMsg::Ptr map,
@@ -563,7 +563,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
   cm->setExpansion(0.0, 0.0);
   cm->setFootprint(footprint);
   auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
-      costmap_cspace::Costmap3dLayerBase::map_overlay_mode::MAX);
+      costmap_cspace::MapOverlayMode::MAX);
   cm_over->setExpansion(0.0, 0.0);
   cm_over->setFootprint(footprint);
 

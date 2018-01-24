@@ -65,8 +65,7 @@ public:
 
     costmap_base->setAngleResolution(ang_resolution_);
 
-    costmap_base->setOverlayMode(
-        Costmap3dLayerBase::map_overlay_mode::MAX);
+    costmap_base->setOverlayMode(MapOverlayMode::MAX);
 
     costmaps_.resize(1);
     costmaps_[0] = costmap_base;
@@ -75,8 +74,7 @@ public:
   }
   template <typename T>
   typename T::Ptr addLayer(
-      const Costmap3dLayerBase::map_overlay_mode overlay_mode =
-          Costmap3dLayerBase::map_overlay_mode::MAX)
+      const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
   {
     typename T::Ptr costmap_overlay(new T);
     costmap_overlay->setAngleResolution(ang_resolution_);
@@ -89,8 +87,7 @@ public:
   }
   Costmap3dLayerBase::Ptr addLayer(
       Costmap3dLayerBase::Ptr costmap_overlay,
-      const Costmap3dLayerBase::map_overlay_mode overlay_mode =
-          Costmap3dLayerBase::map_overlay_mode::MAX)
+      const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
   {
     costmap_overlay->setAngleResolution(ang_resolution_);
     costmap_overlay->setOverlayMode(overlay_mode);

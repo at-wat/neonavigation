@@ -134,6 +134,21 @@ protected:
     pub_footprint_.publish(footprint);
   }
 
+  static costmap_cspace::MapOverlayMode getMapOverlayModeFromString(
+      const std::string overlay_mode_str)
+  {
+    if (overlay_mode_str == "overwrite")
+    {
+      return costmap_cspace::MapOverlayMode::OVERWRITE;
+    }
+    else if (overlay_mode_str == "max")
+    {
+      return costmap_cspace::MapOverlayMode::MAX;
+    }
+    ROS_FATAL("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
+    throw std::runtime_error("Unknown overlay_mode.");
+  };
+
 public:
   Costmap3DOFNode()
     : nh_()
@@ -195,31 +210,17 @@ public:
       for (auto &layer_xml : layers_xml)
       {
         ROS_INFO("New layer: %s", layer_xml.first.c_str());
-        costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
+
+        costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
         if (layer_xml.second["overlay_mode"].getType() == XmlRpc::XmlRpcValue::TypeString)
-        {
-          std::string overlay_mode_str(layer_xml.second["overlay_mode"]);
-          if (overlay_mode_str.compare("overwrite") == 0)
-            overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
-          else if (overlay_mode_str.compare("max") == 0)
-            overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
-          else
-          {
-            ROS_FATAL("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
-            throw std::runtime_error("Unknown overlay_mode.");
-          }
-        }
+          overlay_mode = getMapOverlayModeFromString(
+              layer_xml.second["overlay_mode"]);
         else
-        {
           ROS_WARN("overlay_mode of the layer is not specified. Using MAX mode.");
-          overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
-        }
 
         std::string type;
         if (layer_xml.second["type"].getType() == XmlRpc::XmlRpcValue::TypeString)
-        {
           type = std::string(layer_xml.second["type"]);
-        }
         else
         {
           ROS_FATAL("Layer type is not specified.");
@@ -227,9 +228,7 @@ public:
         }
 
         if (!layer_xml.second.hasMember("footprint"))
-        {
           layer_xml.second["footprint"] = footprint_xml;
-        }
 
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
             costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
@@ -244,13 +243,13 @@ public:
     else
     {
       // Single layer mode for backward-compatibility
-      costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode overlay_mode;
+      costmap_cspace::MapOverlayMode overlay_mode;
       std::string overlay_mode_str;
       nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
       if (overlay_mode_str.compare("overwrite") == 0)
-        overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE;
+        overlay_mode = costmap_cspace::MapOverlayMode::OVERWRITE;
       else if (overlay_mode_str.compare("max") == 0)
-        overlay_mode = costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX;
+        overlay_mode = costmap_cspace::MapOverlayMode::MAX;
       else
       {
         ROS_FATAL("Unknown overlay_mode \"%s\"", overlay_mode_str.c_str());
