@@ -36,6 +36,8 @@
 #include <costmap_3d_layer/plain.h>
 #include <costmap_3d_layer/output.h>
 
+#include <costmap_3d_layer/class_loader.h>
+
 #include <vector>
 
 namespace costmap_cspace
