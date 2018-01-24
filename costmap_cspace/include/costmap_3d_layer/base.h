@@ -248,6 +248,11 @@ public:
     *map_overlay_ = *map_;
     if (child_)
       child_->setBaseMapChain();
+
+    updateChainEntry(
+        UpdatedRegion(
+            0, 0, 0, map_->info.width, map_->info.height, map_->info.angle,
+            base_map.header.stamp));
   }
   void processMapOverlay(const nav_msgs::OccupancyGrid &msg)
   {

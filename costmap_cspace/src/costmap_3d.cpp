@@ -69,10 +69,6 @@ protected:
 
     map->setBaseMap(*msg);
     ROS_DEBUG("C-Space costmap generated");
-
-    auto map_msg = map->getMap();
-    pub_costmap_.publish<costmap_cspace::CSpace3D>(*map_msg);
-    publishDebug(*map_msg);
   }
   void cbMapOverlay(
       const nav_msgs::OccupancyGrid::ConstPtr &msg,
@@ -92,6 +88,14 @@ protected:
 
     map->processMapOverlay(*msg);
     ROS_DEBUG("C-Space costmap updated");
+  }
+  bool cbUpdateStatic(
+      const costmap_cspace::CSpace3DMsg::Ptr map,
+      const costmap_cspace::CSpace3DUpdate::Ptr update)
+  {
+    publishDebug(*map);
+    pub_costmap_.publish<costmap_cspace::CSpace3D>(*map);
+    return true;
   }
   bool cbUpdate(
       const costmap_cspace::CSpace3DMsg::Ptr map,
@@ -135,6 +139,11 @@ public:
     : nh_()
     , nhp_("~")
   {
+    pub_costmap_ = nhp_.advertise<costmap_cspace::CSpace3D>("costmap", 1, true);
+    pub_costmap_update_ = nhp_.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);
+    pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
+    pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+
     int ang_resolution;
     float linear_expand;
     float linear_spread;
@@ -163,6 +172,10 @@ public:
     costmap_.reset(new costmap_cspace::Costmap3d(
         ang_resolution, linear_expand, linear_spread, footprint));
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+
+    auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
+    static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1, _2));
+
     sub_map_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
@@ -267,13 +280,8 @@ public:
           boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
     }
 
-    auto end_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
-    end_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
-
-    pub_costmap_ = nhp_.advertise<costmap_cspace::CSpace3D>("costmap", 1, true);
-    pub_costmap_update_ = nhp_.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);
-    pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
-    pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+    auto update_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
+    update_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
 
     const geometry_msgs::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = nh_.createTimer(
