@@ -35,57 +35,30 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <costmap_3d_layer_base.h>
+#include <costmap_3d_layer/base.h>
 
 namespace costmap_cspace
 {
-class Costmap3dLayerPlain : public Costmap3dLayerBase
+class Costmap3dLayerPlain : public Costmap3dLayerFootprint
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dLayerPlain>;
 
-public:
-  void generateCSpaceTemplate(const MapMetaData3D &info)
+  Costmap3dLayerPlain()
   {
-    range_max_ = ceilf((linear_expand_ + linear_spread_) / info.linear_resolution);
-    cs_template_.reset(range_max_, range_max_, info.angle);
-
-    // C-Space template
-    for (size_t yaw = 0; yaw < info.angle; yaw++)
+    Polygon footprint;
+    footprint.v.resize(3);
+    for (auto &p : footprint.v)
     {
-      for (int y = -range_max_; y <= range_max_; y++)
-      {
-        for (int x = -range_max_; x <= range_max_; x++)
-        {
-          if (x == 0 && y == 0)
-          {
-            cs_template_.e(x, y, yaw) = 100;
-          }
-          else
-          {
-            const float d = hypotf(x, y);
-            if (d < linear_expand_)
-            {
-              cs_template_.e(x, y, yaw) = 100;
-            }
-            else if (d < linear_expand_ + linear_spread_)
-            {
-              cs_template_.e(x, y, yaw) = 100 - (d - linear_expand_) * 100 / linear_spread_;
-            }
-            else
-            {
-              cs_template_.e(x, y, yaw) = 0;
-            }
-          }
-        }
-      }
+      p[0] = p[1] = 0.0;
     }
+    setFootprint(footprint);
   }
-
-protected:
-  bool updateChain()
+  void loadConfig(XmlRpc::XmlRpcValue config)
   {
-    return false;
+    setExpansion(
+        static_cast<double>(config["linear_expand"]),
+        static_cast<double>(config["linear_spread"]));
   }
 };
 }  // namespace costmap_cspace

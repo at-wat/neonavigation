@@ -33,14 +33,7 @@
 #include <ros/ros.h>
 #include <vector>
 
-namespace XmlRpc
-{
-bool isNumber(const XmlRpc::XmlRpcValue &value)
-{
-  return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
-         value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
-}
-}  // namespace XmlRpc
+#include <xmlrpcpp/XmlRpcException.h>
 
 namespace costmap_cspace
 {
@@ -108,15 +101,16 @@ public:
 
     for (int i = 0; i < footprint_xml.size(); i++)
     {
-      if (!XmlRpc::isNumber(footprint_xml[i][0]) ||
-          !XmlRpc::isNumber(footprint_xml[i][1]))
-      {
-        throw std::runtime_error("Invalid footprint xml.");
-      }
-
       Vec p;
-      p[0] = static_cast<double>(footprint_xml[i][0]);
-      p[1] = static_cast<double>(footprint_xml[i][1]);
+      try
+      {
+        p[0] = static_cast<double>(footprint_xml[i][0]);
+        p[1] = static_cast<double>(footprint_xml[i][1]);
+      }
+      catch(XmlRpc::XmlRpcException &e)
+      {
+        throw std::runtime_error(("Invalid footprint xml." + e.getMessage()).c_str());
+      }
 
       v.push_back(p);
     }

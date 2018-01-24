@@ -1,0 +1,15 @@
+costmap_3d:
+  ang_resolution: 16
+  linear_expand: 0.08
+  linear_spread: 0.3
+  layers:
+    overlay1:
+      type: Costmap3dLayerFootprint
+      overlay_mode: max
+      linear_expand: 0.15
+      linear_spread: 0.3
+    overlay2:
+      type: Costmap3dLayerPlain
+      overlay_mode: max
+      linear_expand: 0.08
+      linear_spread: 0.0
