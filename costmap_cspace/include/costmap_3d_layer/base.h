@@ -70,89 +70,90 @@ public:
   }
 };
 
+enum MapOverlayMode
+{
+  OVERWRITE,
+  MAX
+};
+
+class UpdatedRegion
+{
+public:
+  int x_, y_, yaw_;
+  int width_, height_, angle_;
+  ros::Time stamp_;
+
+  UpdatedRegion()
+    : x_(0)
+    , y_(0)
+    , yaw_(0)
+    , width_(0)
+    , height_(0)
+    , angle_(0)
+    , stamp_(0)
+  {
+  }
+  UpdatedRegion(
+      const int &x, const int &y, const int &yaw,
+      const int &width, const int &height, const int &angle,
+      const ros::Time &stamp)
+    : x_(x)
+    , y_(y)
+    , yaw_(yaw)
+    , width_(width)
+    , height_(height)
+    , angle_(angle)
+    , stamp_(stamp)
+  {
+  }
+  void merge(const UpdatedRegion &region)
+  {
+    if (region.width_ == 0 || region.height_ == 0 || region.angle_ == 0)
+      return;
+    if (region.stamp_ > stamp_)
+      stamp_ = region.stamp_;
+
+    if (width_ == 0 || height_ == 0 || angle_ == 0)
+    {
+      *this = region;
+      return;
+    }
+    int x2 = x_ + width_;
+    int y2 = y_ + height_;
+    int yaw2 = yaw_ + angle_;
+
+    const int mx2 = region.x_ + region.width_;
+    const int my2 = region.y_ + region.height_;
+    const int myaw2 = region.yaw_ + region.angle_;
+
+    if (region.x_ < x_)
+      x_ = region.x_;
+    if (region.y_ < y_)
+      y_ = region.y_;
+    if (region.yaw_ < yaw_)
+      yaw_ = region.yaw_;
+
+    if (x2 < mx2)
+      x2 = mx2;
+    if (y2 < my2)
+      y2 = my2;
+    if (yaw2 < myaw2)
+      yaw2 = myaw2;
+
+    width_ = x2 - x_;
+    height_ = y2 - y_;
+    angle_ = yaw2 - yaw_;
+  }
+};
+
 class Costmap3dLayerBase
 {
 public:
-  enum map_overlay_mode
-  {
-    OVERWRITE,
-    MAX
-  };
-  class UpdatedRegion
-  {
-  public:
-    int x_, y_, yaw_;
-    int width_, height_, angle_;
-    ros::Time stamp_;
-
-    UpdatedRegion()
-      : x_(0)
-      , y_(0)
-      , yaw_(0)
-      , width_(0)
-      , height_(0)
-      , angle_(0)
-      , stamp_(0)
-    {
-    }
-    UpdatedRegion(
-        const int &x, const int &y, const int &yaw,
-        const int &width, const int &height, const int &angle,
-        const ros::Time &stamp)
-      : x_(x)
-      , y_(y)
-      , yaw_(yaw)
-      , width_(width)
-      , height_(height)
-      , angle_(angle)
-      , stamp_(stamp)
-    {
-    }
-    void merge(const UpdatedRegion &region)
-    {
-      if (region.width_ == 0 || region.height_ == 0 || region.angle_ == 0)
-        return;
-      if (region.stamp_ > stamp_)
-        stamp_ = region.stamp_;
-
-      if (width_ == 0 || height_ == 0 || angle_ == 0)
-      {
-        *this = region;
-        return;
-      }
-      int x2 = x_ + width_;
-      int y2 = y_ + height_;
-      int yaw2 = yaw_ + angle_;
-
-      const int mx2 = region.x_ + region.width_;
-      const int my2 = region.y_ + region.height_;
-      const int myaw2 = region.yaw_ + region.angle_;
-
-      if (region.x_ < x_)
-        x_ = region.x_;
-      if (region.y_ < y_)
-        y_ = region.y_;
-      if (region.yaw_ < yaw_)
-        yaw_ = region.yaw_;
-
-      if (x2 < mx2)
-        x2 = mx2;
-      if (y2 < my2)
-        y2 = my2;
-      if (yaw2 < myaw2)
-        yaw2 = myaw2;
-
-      width_ = x2 - x_;
-      height_ = y2 - y_;
-      angle_ = yaw2 - yaw_;
-    }
-  };
-
   using Ptr = std::shared_ptr<Costmap3dLayerBase>;
 
 protected:
   int ang_grid_;
-  map_overlay_mode overlay_mode_;
+  MapOverlayMode overlay_mode_;
   bool root_;
 
   CSpace3DMsg::Ptr map_;
@@ -165,7 +166,7 @@ protected:
 public:
   Costmap3dLayerBase()
     : ang_grid_(-1)
-    , overlay_mode_(map_overlay_mode::MAX)
+    , overlay_mode_(MapOverlayMode::MAX)
     , root_(true)
     , map_(new CSpace3DMsg)
     , map_overlay_(new CSpace3DMsg)
@@ -181,7 +182,7 @@ public:
     ang_grid_ = ang_resolution;
   }
   void setOverlayMode(
-      const map_overlay_mode overlay_mode)
+      const MapOverlayMode overlay_mode)
   {
     overlay_mode_ = overlay_mode;
   }
