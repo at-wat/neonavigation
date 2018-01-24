@@ -49,6 +49,9 @@ protected:
   Callback cb_;
 
 public:
+  void setFootprint(const Polygon footprint)
+  {
+  }
   void generateCSpaceTemplate(const MapMetaData3D &info)
   {
     range_max_ = 0;

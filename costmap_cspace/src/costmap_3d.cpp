@@ -211,17 +211,9 @@ public:
           throw std::runtime_error("Layer type is not specified.");
         }
 
-        costmap_cspace::Costmap3dLayerBase::Ptr layer;
-
-        if (type == "Costmap3dLayerFootprint")
-          layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
-        else if (type == "Costmap3dLayerPlain")
-          layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerPlain>(overlay_mode);
-        else
-        {
-          ROS_FATAL("Unknown layer type \"%s\"", type.c_str());
-          throw std::runtime_error("Unknown layer type.");
-        }
+        costmap_cspace::Costmap3dLayerBase::Ptr layer =
+            costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
+        costmap_->addLayer(layer, overlay_mode);
 
         float layer_linear_expand = linear_expand;
         float layer_linear_spread = linear_spread;
@@ -231,12 +223,12 @@ public:
           layer_linear_spread = static_cast<double>(layer_xml.second["layer_linear_spread"]);
         layer->setCSpaceConfig(ang_resolution, layer_linear_expand, layer_linear_spread);
 
+        costmap_cspace::Polygon footprint_local = footprint;
         if (layer_xml.second["footprint"].getType() == XmlRpc::XmlRpcValue::TypeArray)
         {
-          costmap_cspace::Polygon footprint;
           try
           {
-            footprint = costmap_cspace::Polygon(layer_xml.second["footprint"]);
+            footprint_local = costmap_cspace::Polygon(layer_xml.second["footprint"]);
           }
           catch (const std::exception &e)
           {
@@ -244,8 +236,8 @@ public:
             throw e;
           }
           ROS_INFO("  layer specific footprint is set.");
-          layer->setFootprint(footprint);
         }
+        layer->setFootprint(footprint_local);
 
         sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
             layer_xml.first, 1,

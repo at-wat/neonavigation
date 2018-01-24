@@ -108,6 +108,24 @@ public:
 
     return costmap_overlay;
   }
+  Costmap3dLayerBase::Ptr addLayer(
+      Costmap3dLayerBase::Ptr costmap_overlay,
+      const Costmap3dLayerBase::map_overlay_mode overlay_mode =
+          Costmap3dLayerBase::map_overlay_mode::MAX)
+  {
+    costmap_overlay->setCSpaceConfig(
+        ang_resolution_,
+        linear_expand_,
+        linear_spread_);
+    costmap_overlay->setOverlayMode(overlay_mode);
+
+    costmap_overlay->setFootprint(footprint_);
+
+    costmaps_.back()->setChild(costmap_overlay);
+    costmaps_.push_back(costmap_overlay);
+
+    return costmap_overlay;
+  }
   Costmap3dLayerBase::Ptr getRootLayer()
   {
     return costmaps_.front();

@@ -40,6 +40,9 @@
 #include <cspace3_cache.h>
 #include <polygon.h>
 
+#include <string>
+#include <map>
+
 namespace costmap_cspace
 {
 class CSpace3DMsg : public CSpace3D
@@ -69,6 +72,7 @@ public:
     return data[addr];
   }
 };
+
 class Costmap3dLayerBase
 {
 public:
@@ -197,15 +201,13 @@ public:
   {
     overlay_mode_ = overlay_mode;
   }
-  void setFootprint(const Polygon footprint)
-  {
-  }
   void setChild(Costmap3dLayerBase::Ptr child)
   {
     child_ = child;
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
+  virtual void setFootprint(const Polygon footprint) = 0;
   virtual void generateCSpaceTemplate(const MapMetaData3D &info) = 0;
   void setBaseMap(const nav_msgs::OccupancyGrid &base_map)
   {
@@ -388,6 +390,62 @@ protected:
     }
   }
 };
+
+class Costmap3dLayerSpawnerBase
+{
+public:
+  using Ptr = std::shared_ptr<Costmap3dLayerSpawnerBase>;
+  virtual Costmap3dLayerBase::Ptr spawn() const = 0;
+};
+template <typename T>
+class Costmap3dLayerSpawner : public Costmap3dLayerSpawnerBase
+{
+public:
+  Costmap3dLayerBase::Ptr spawn() const
+  {
+    return Costmap3dLayerBase::Ptr(new T);
+  }
+};
+class Costmap3dLayerClassLoader
+{
+protected:
+  using ClassList = std::map<std::string, Costmap3dLayerSpawnerBase::Ptr>;
+  static ClassList classes_;
+
+public:
+  static Costmap3dLayerBase::Ptr loadClass(const std::string &name)
+  {
+    if (classes_.find(name) == classes_.end())
+    {
+      throw std::runtime_error("Costmap3dLayerSpawner: class not found");
+    }
+    return classes_[name]->spawn();
+  };
+  static void registerClass(const std::string &name, Costmap3dLayerSpawnerBase::Ptr spawner)
+  {
+    classes_[name] = spawner;
+  };
+};
+#define COSTMAP_3D_LAYER_CLASS_LOADER_ENABLE()         \
+  costmap_cspace::Costmap3dLayerClassLoader::ClassList \
+      costmap_cspace::Costmap3dLayerClassLoader::classes_;
+
+#define COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(name, klass, id)   \
+  namespace                                                       \
+  {                                                               \
+  struct ClassLoaderRegister##id                                  \
+  {                                                               \
+    ClassLoaderRegister##id()                                     \
+    {                                                             \
+      costmap_cspace::Costmap3dLayerClassLoader::registerClass(   \
+          name,                                                   \
+          costmap_cspace::Costmap3dLayerSpawnerBase::Ptr(         \
+              new costmap_cspace::Costmap3dLayerSpawner<klass>)); \
+    } /* NOLINT(whitespace/braces)*/                              \
+  };  /* NOLINT(whitespace/braces)*/                              \
+  static ClassLoaderRegister##id g_register_class_##id;           \
+  } /* NOLINT(readability/namespace) */  // namespace
+
 }  // namespace costmap_cspace
 
 #endif  // COSTMAP_3D_LAYER_BASE_H

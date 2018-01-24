@@ -30,7 +30,7 @@ endif()
 
 include_directories(${catkin_INCLUDE_DIRS} include)
 
-add_executable(costmap_3d src/costmap_3d.cpp)
+add_executable(costmap_3d src/costmap_3d.cpp src/costmap_3d_layers.cpp)
 target_link_libraries(costmap_3d ${catkin_LIBRARIES})
 add_dependencies(costmap_3d costmap_cspace_generate_messages)
 
