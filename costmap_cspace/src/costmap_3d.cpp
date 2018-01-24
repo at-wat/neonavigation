@@ -258,7 +258,13 @@ public:
       }
       ROS_INFO("costmap_3d: %s mode", overlay_mode_str.c_str());
 
+      XmlRpc::XmlRpcValue layer_xml;
+      layer_xml["footprint"] = footprint_xml;
+      layer_xml["linear_expand"] = linear_expand;
+      layer_xml["linear_spread"] = linear_spread;
+
       auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
+      layer->loadConfig(layer_xml);
       sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
           "map_overlay", 1,
           boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
