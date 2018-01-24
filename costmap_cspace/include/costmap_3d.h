@@ -32,9 +32,9 @@
 
 #include <ros/ros.h>
 
-#include <costmap_3d_layer_footprint.h>
-#include <costmap_3d_layer_plain.h>
-#include <costmap_3d_layer_output.h>
+#include <costmap_3d_layer/footprint.h>
+#include <costmap_3d_layer/plain.h>
+#include <costmap_3d_layer/output.h>
 
 #include <vector>
 

@@ -39,7 +39,7 @@
 
 #include <xmlrpcpp/XmlRpcValue.h>
 
-#include <costmap_3d_layer_base.h>
+#include <costmap_3d_layer/base.h>
 #include <polygon.h>
 
 namespace costmap_cspace

@@ -35,7 +35,7 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <costmap_3d_layer_base.h>
+#include <costmap_3d_layer/base.h>
 
 namespace costmap_cspace
 {
