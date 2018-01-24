@@ -52,9 +52,35 @@ public:
 protected:
   float footprint_radius_;
   geometry_msgs::PolygonStamped footprint_;
+  float linear_expand_;
+  float linear_spread_;
   Polygon footprint_p_;
 
 public:
+  Costmap3dLayerFootprint()
+    : linear_expand_(0.0)
+    , linear_spread_(0.0)
+  {
+  }
+  void loadConfig(XmlRpc::XmlRpcValue config)
+  {
+    setExpansion(
+        static_cast<double>(config["linear_expand"]),
+        static_cast<double>(config["linear_spread"]));
+    setFootprint(costmap_cspace::Polygon(config["footprint"]));
+  }
+  void setExpansion(
+      const float linear_expand,
+      const float linear_spread)
+  {
+    linear_expand_ = linear_expand;
+    linear_spread_ = linear_spread;
+
+    ROS_ASSERT(linear_expand >= 0.0);
+    ROS_ASSERT(std::isfinite(linear_expand));
+    ROS_ASSERT(linear_spread >= 0.0);
+    ROS_ASSERT(std::isfinite(linear_spread));
+  }
   void setFootprint(const Polygon footprint)
   {
     footprint_p_ = footprint;
@@ -105,6 +131,8 @@ public:
           }
         }
       }
+      if (footprint_radius_ == 0)
+        cs_template_.e(0, 0, yaw) = 100;
     }
   }
   Polygon &getFootprint()

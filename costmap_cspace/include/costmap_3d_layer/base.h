@@ -155,8 +155,6 @@ public:
 
 protected:
   int ang_grid_;
-  float linear_expand_;
-  float linear_spread_;
   map_overlay_mode overlay_mode_;
   bool root_;
 
@@ -173,8 +171,6 @@ protected:
 public:
   Costmap3dLayerBase()
     : ang_grid_(-1)
-    , linear_expand_(0.0)
-    , linear_spread_(0.0)
     , overlay_mode_(map_overlay_mode::MAX)
     , root_(true)
     , range_max_(0)
@@ -182,20 +178,12 @@ public:
     , map_overlay_(new CSpace3DMsg)
   {
   }
-  void setCSpaceConfig(
-      const int ang_resolution,
-      const float linear_expand,
-      const float linear_spread)
+  void setAngleResolution(
+      const int ang_resolution)
   {
     ang_grid_ = ang_resolution;
-    linear_expand_ = linear_expand;
-    linear_spread_ = linear_spread;
-
-    ROS_ASSERT(linear_expand >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_expand));
-    ROS_ASSERT(linear_spread >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_spread));
   }
+  virtual void loadConfig(XmlRpc::XmlRpcValue config) = 0;
   void setOverlayMode(
       const map_overlay_mode overlay_mode)
   {
@@ -207,7 +195,6 @@ public:
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
-  virtual void setFootprint(const Polygon footprint) = 0;
   virtual void generateCSpaceTemplate(const MapMetaData3D &info) = 0;
   void setBaseMap(const nav_msgs::OccupancyGrid &base_map)
   {

@@ -49,7 +49,7 @@ protected:
   Callback cb_;
 
 public:
-  void setFootprint(const Polygon footprint)
+  void loadConfig(XmlRpc::XmlRpcValue config)
   {
   }
   void generateCSpaceTemplate(const MapMetaData3D &info)

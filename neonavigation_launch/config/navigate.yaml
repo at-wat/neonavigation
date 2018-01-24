@@ -11,5 +11,5 @@ costmap_3d:
     overlay2:
       type: Costmap3dLayerPlain
       overlay_mode: max
-      linear_expand: 0.0
+      linear_expand: 0.08
       linear_spread: 0.0

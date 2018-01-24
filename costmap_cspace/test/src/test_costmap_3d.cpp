@@ -70,7 +70,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
   costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Settings: 4 angular grids, no expand/spread
-  cm.setCSpaceConfig(4, 0.0, 0.0);
+  cm.setAngleResolution(4);
+  cm.setExpansion(0.0, 0.0);
   cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Set example footprint
@@ -151,7 +152,8 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
   costmap_cspace::Costmap3dLayerPlain cm;
 
   // Settings: 4 angular grids, no expand/spread
-  cm.setCSpaceConfig(4, 0.0, 0.0);
+  cm.setAngleResolution(4);
+  cm.setExpansion(0.0, 0.0);
   cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate CSpace pattern around the robot
@@ -198,7 +200,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
   cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
 
   // Settings: 4 angular grids, no expand/spread
-  cm.setCSpaceConfig(4, 0.0, 0.0);
+  cm.setAngleResolution(4);
+  cm.setExpansion(0.0, 0.0);
   cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
@@ -311,7 +314,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
   // Settings: 4 angular grids, expand 1.0, spread 2.0
   const float expand = 1.0;
   const float spread = 2.0;
-  cm.setCSpaceConfig(4, expand, spread);
+  cm.setAngleResolution(4);
+  cm.setExpansion(expand, spread);
   cm.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
 
   // Generate sample map
@@ -381,15 +385,21 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm_base.setFootprint(footprint);
 
   // Settings: 4 angular grids, no expand/spread
-  costmap_cspace::Costmap3d cms(4, 0.0, 0.0, footprint);
+  costmap_cspace::Costmap3d cms(4);
   auto cm = cms.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm->setExpansion(0.0, 0.0);
+  cm->setFootprint(footprint);
   auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
       costmap_cspace::Costmap3dLayerBase::map_overlay_mode::OVERWRITE);
+  cm_over->setExpansion(0.0, 0.0);
+  cm_over->setFootprint(footprint);
   auto cm_output = cms.addLayer<costmap_cspace::Costmap3dLayerOutput>();
 
-  cm_ref.setCSpaceConfig(4, 0.0, 0.0);
+  cm_ref.setAngleResolution(4);
+  cm_ref.setExpansion(0.0, 0.0);
   cm_ref.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
-  cm_base.setCSpaceConfig(4, 0.0, 0.0);
+  cm_base.setAngleResolution(4);
+  cm_base.setExpansion(0.0, 0.0);
   cm_base.setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::OVERWRITE);
 
   // Generate two sample maps
@@ -481,7 +491,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
     // std::cout << "----" << std::endl;
   }
   // Set MAX mode and check
-  cm_over->setCSpaceConfig(4, 0.0, 0.0);
+  cm_over->setAngleResolution(4);
+  cm_over->setExpansion(0.0, 0.0);
   cm_over->setOverlayMode(costmap_cspace::Costmap3dLayerFootprint::map_overlay_mode::MAX);
   costmap_cspace::CSpace3DUpdate::Ptr updated_max(new costmap_cspace::CSpace3DUpdate);
   auto cb_max = [&updated_max](
@@ -547,10 +558,14 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
   costmap_cspace::Polygon footprint(footprint_xml);
 
   // Settings: 4 angular grids, no expand/spread
-  costmap_cspace::Costmap3d cms(4, 0.0, 0.0, footprint);
+  costmap_cspace::Costmap3d cms(4);
   auto cm = cms.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm->setExpansion(0.0, 0.0);
+  cm->setFootprint(footprint);
   auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
       costmap_cspace::Costmap3dLayerBase::map_overlay_mode::MAX);
+  cm_over->setExpansion(0.0, 0.0);
+  cm_over->setFootprint(footprint);
 
   // Generate sample map
   nav_msgs::OccupancyGrid map;

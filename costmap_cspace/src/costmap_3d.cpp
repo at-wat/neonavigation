@@ -145,11 +145,7 @@ public:
     pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 
     int ang_resolution;
-    float linear_expand;
-    float linear_spread;
     nhp_.param("ang_resolution", ang_resolution, 16);
-    nhp_.param("linear_expand", linear_expand, 0.2f);
-    nhp_.param("linear_spread", linear_spread, 0.5f);
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!nhp_.hasParam("footprint"))
@@ -169,9 +165,15 @@ public:
       throw e;
     }
 
-    costmap_.reset(new costmap_cspace::Costmap3d(
-        ang_resolution, linear_expand, linear_spread, footprint));
+    costmap_.reset(new costmap_cspace::Costmap3d(ang_resolution));
+
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+    float linear_expand;
+    float linear_spread;
+    nhp_.param("linear_expand", linear_expand, 0.2f);
+    nhp_.param("linear_spread", linear_spread, 0.5f);
+    root_layer->setExpansion(linear_expand, linear_spread);
+    root_layer->setFootprint(footprint);
 
     auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
     static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1, _2));
@@ -224,33 +226,15 @@ public:
           throw std::runtime_error("Layer type is not specified.");
         }
 
+        if (!layer_xml.second.hasMember("footprint"))
+        {
+          layer_xml.second["footprint"] = footprint_xml;
+        }
+
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
             costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
         costmap_->addLayer(layer, overlay_mode);
-
-        float layer_linear_expand = linear_expand;
-        float layer_linear_spread = linear_spread;
-        if (layer_xml.second["layer_linear_expand"].getType() == XmlRpc::XmlRpcValue::TypeDouble)
-          layer_linear_expand = static_cast<double>(layer_xml.second["layer_linear_expand"]);
-        if (layer_xml.second["layer_linear_spread"].getType() == XmlRpc::XmlRpcValue::TypeDouble)
-          layer_linear_spread = static_cast<double>(layer_xml.second["layer_linear_spread"]);
-        layer->setCSpaceConfig(ang_resolution, layer_linear_expand, layer_linear_spread);
-
-        costmap_cspace::Polygon footprint_local = footprint;
-        if (layer_xml.second["footprint"].getType() == XmlRpc::XmlRpcValue::TypeArray)
-        {
-          try
-          {
-            footprint_local = costmap_cspace::Polygon(layer_xml.second["footprint"]);
-          }
-          catch (const std::exception &e)
-          {
-            ROS_FATAL("Invalid footprint");
-            throw e;
-          }
-          ROS_INFO("  layer specific footprint is set.");
-        }
-        layer->setFootprint(footprint_local);
+        layer->loadConfig(layer_xml.second);
 
         sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
             layer_xml.first, 1,
