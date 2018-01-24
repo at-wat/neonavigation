@@ -190,6 +190,50 @@ public:
     root_layer->setExpansion(linear_expand, linear_spread);
     root_layer->setFootprint(footprint);
 
+    if (nhp_.hasParam("static_layers"))
+    {
+      XmlRpc::XmlRpcValue layers_xml;
+      nhp_.getParam("static_layers", layers_xml);
+
+      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeStruct || layers_xml.size() < 1)
+      {
+        ROS_FATAL("static_layers parameter must contain at least one layer config.");
+        throw std::runtime_error("layers parameter must contain at least one layer config.");
+      }
+      for (auto &layer_xml : layers_xml)
+      {
+        ROS_INFO("New static layer: %s", layer_xml.first.c_str());
+
+        costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
+        if (layer_xml.second["overlay_mode"].getType() == XmlRpc::XmlRpcValue::TypeString)
+          overlay_mode = getMapOverlayModeFromString(
+              layer_xml.second["overlay_mode"]);
+        else
+          ROS_WARN("overlay_mode of the static layer is not specified. Using MAX mode.");
+
+        std::string type;
+        if (layer_xml.second["type"].getType() == XmlRpc::XmlRpcValue::TypeString)
+          type = std::string(layer_xml.second["type"]);
+        else
+        {
+          ROS_FATAL("Layer type is not specified.");
+          throw std::runtime_error("Layer type is not specified.");
+        }
+
+        if (!layer_xml.second.hasMember("footprint"))
+          layer_xml.second["footprint"] = footprint_xml;
+
+        costmap_cspace::Costmap3dLayerBase::Ptr layer =
+            costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
+        costmap_->addLayer(layer, overlay_mode);
+        layer->loadConfig(layer_xml.second);
+
+        sub_map_overlay_.push_back(nh_.subscribe<nav_msgs::OccupancyGrid>(
+            layer_xml.first, 1,
+            boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
+      }
+    }
+
     auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
     static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1, _2));
 
