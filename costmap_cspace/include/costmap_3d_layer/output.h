@@ -52,7 +52,7 @@ public:
   void loadConfig(XmlRpc::XmlRpcValue config)
   {
   }
-  void generateCSpaceTemplate(const MapMetaData3D &info)
+  void setMapMetaData(const MapMetaData3D &info)
   {
     range_max_ = 0;
     cs_template_.reset(0, 0, info.angle);

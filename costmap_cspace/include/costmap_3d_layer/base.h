@@ -195,7 +195,7 @@ public:
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
-  virtual void generateCSpaceTemplate(const MapMetaData3D &info) = 0;
+  virtual void setMapMetaData(const MapMetaData3D &info) = 0;
   void setBaseMap(const nav_msgs::OccupancyGrid &base_map)
   {
     ROS_ASSERT(root_);
@@ -212,7 +212,7 @@ public:
     map_->info.origin = base_map.info.origin;
     map_->data.resize(xy_size * map_->info.angle);
 
-    generateCSpaceTemplate(map_->info);
+    setMapMetaData(map_->info);
 
     for (size_t yaw = 0; yaw < map_->info.angle; yaw++)
     {
@@ -288,7 +288,7 @@ protected:
 
     *map_overlay_ = *map_;
     if (map_updated_.info.width > 0 && map_updated_.info.height > 0)
-      gemerateCSpace(map_overlay_, map_updated_, true);
+      gemerateCSpace(map_overlay_, map_updated_);
 
     if (updateChain())
       return true;
@@ -301,18 +301,20 @@ protected:
   }
   void setBaseMapChain()
   {
-    generateCSpaceTemplate(map_->info);
+    setMapMetaData(map_->info);
     *map_overlay_ = *map_;
     if (child_)
       child_->setBaseMapChain();
   }
-  void gemerateCSpace(CSpace3DMsg::Ptr map, const nav_msgs::OccupancyGrid &msg, bool overlay = false)
+  void gemerateCSpace(CSpace3DMsg::Ptr map, const nav_msgs::OccupancyGrid &msg)
   {
     ROS_ASSERT(ang_grid_ > 0);
-    const int ox = lroundf((msg.info.origin.position.x - map->info.origin.position.x) / map->info.linear_resolution);
-    const int oy = lroundf((msg.info.origin.position.y - map->info.origin.position.y) / map->info.linear_resolution);
+    const int ox = lroundf((msg.info.origin.position.x - map->info.origin.position.x) /
+                           map->info.linear_resolution);
+    const int oy = lroundf((msg.info.origin.position.y - map->info.origin.position.y) /
+                           map->info.linear_resolution);
     // Clear travelable area in OVERWRITE mode
-    if (overlay_mode_ == OVERWRITE && overlay)
+    if (overlay_mode_ == OVERWRITE && !root_)
     {
       for (size_t yaw = 0; yaw < map->info.angle; yaw++)
       {

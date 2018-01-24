@@ -103,7 +103,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
   map_info.angular_resolution = M_PI / 2.0;
   map_info.origin.orientation.w = 1.0;
 
-  cm.generateCSpaceTemplate(map_info);
+  cm.setMapMetaData(map_info);
 
   ASSERT_EQ(cm.getRangeMax(), static_cast<int>(ceilf(1.5 / 1.0)));
 
@@ -165,7 +165,7 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
   map_info.angular_resolution = M_PI / 2.0;
   map_info.origin.orientation.w = 1.0;
 
-  cm.generateCSpaceTemplate(map_info);
+  cm.setMapMetaData(map_info);
 
   ASSERT_EQ(cm.getRangeMax(), 0);
 

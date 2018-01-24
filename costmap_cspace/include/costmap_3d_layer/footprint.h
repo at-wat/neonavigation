@@ -87,7 +87,7 @@ public:
     footprint_radius_ = footprint.radius();
     footprint_ = footprint.toMsg();
   }
-  void generateCSpaceTemplate(const MapMetaData3D &info)
+  void setMapMetaData(const MapMetaData3D &info)
   {
     ROS_ASSERT(footprint_p_.v.size() > 2);
 
