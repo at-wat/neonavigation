@@ -278,7 +278,16 @@ protected:
 
     *map_overlay_ = *map_;
     if (map_updated_.info.width > 0 && map_updated_.info.height > 0)
-      updateCSpace(map_updated_);
+    {
+      if (map_->header.frame_id == map_updated_.header.frame_id)
+      {
+        updateCSpace(map_updated_);
+      }
+      else
+      {
+        ROS_ERROR("map and map_overlay must have same frame_id. skipping");
+      }
+    }
 
     if (updateChain())
       return true;
