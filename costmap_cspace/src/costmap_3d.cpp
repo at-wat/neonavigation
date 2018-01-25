@@ -77,11 +77,6 @@ protected:
     ROS_DEBUG("Overlay 2D costmap received");
 
     auto map_msg = map->getMap();
-    if (map_msg->header.frame_id != msg->header.frame_id)
-    {
-      ROS_ERROR("map and map_overlay must have same frame_id");
-      return;
-    }
     if (map_msg->info.width < 1 ||
         map_msg->info.height < 1)
       return;
