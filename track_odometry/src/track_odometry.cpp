@@ -279,20 +279,19 @@ public:
   {
     pnh_.param("without_odom", without_odom_, false);
     if (!without_odom_)
-      sub_odom_ = nh_.subscribe("odom_raw", 64, &TrackOdometryNode::cb_odom, this);
-    sub_imu_ = nh_.subscribe("imu", 64, &TrackOdometryNode::cb_imu, this);
-    sub_reset_z_ = pnh_.subscribe("reset_z", 1, &TrackOdometryNode::cb_reset_z, this);
-    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 8);
-
-    if (!without_odom_)
     {
       pnh_.param("base_link_id", base_link_id_overwrite_, std::string(""));
+      sub_odom_ = nh_.subscribe("odom_raw", 64, &TrackOdometryNode::cb_odom, this);
     }
     else
     {
       pnh_.param("base_link_id", base_link_id_, std::string("base_link"));
       pnh_.param("odom_id", odom_id_, std::string("odom"));
     }
+    sub_imu_ = nh_.subscribe("imu", 64, &TrackOdometryNode::cb_imu, this);
+    sub_reset_z_ = pnh_.subscribe("reset_z", 1, &TrackOdometryNode::cb_reset_z, this);
+    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 8);
+
     pnh_.param("z_filter", z_filter_, 0.99);
     pnh_.param("tf_tolerance", tf_tolerance_, 0.01);
     pnh_.param("use_kf", use_kf_, true);
