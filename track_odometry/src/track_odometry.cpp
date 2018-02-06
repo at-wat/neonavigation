@@ -256,6 +256,7 @@ private:
 
       odom.pose.pose.position = odom_prev_.pose.pose.position + dt * v;
       odom.pose.pose.position.z *= z_filter_;
+      odom.child_frame_id = base_link_id_;
       pub_odom_.publish(odom);
 
       geometry_msgs::TransformStamped odom_trans;
