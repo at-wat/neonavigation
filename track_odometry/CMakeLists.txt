@@ -9,6 +9,8 @@ catkin_package(
 	CATKIN_DEPENDS roscpp tf sensor_msgs std_msgs nav_msgs trajectory_msgs geometry_msgs rostest
 )
 
+find_package(Eigen3 REQUIRED)
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -21,7 +23,7 @@ else()
 endif()
 
 
-include_directories(${catkin_INCLUDE_DIRS} include)
+include_directories(${catkin_INCLUDE_DIRS} ${EIGEN_INCLUDE_DIRS} include)
 
 add_executable(track_odometry src/track_odometry.cpp)
 target_link_libraries(track_odometry ${catkin_LIBRARIES})

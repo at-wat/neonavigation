@@ -39,50 +39,38 @@
 #include <limits>
 #include <string>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 #include <kalman_filter1.h>
 
-static geometry_msgs::Vector3 operator*(const double &a, const geometry_msgs::Vector3 &vin)
+Eigen::Vector3f toEigen(const geometry_msgs::Vector3 &a)
 {
-  geometry_msgs::Vector3 vout;
-  vout.x = vin.x * a;
-  vout.y = vin.y * a;
-  vout.z = vin.z * a;
-  return vout;
+  return Eigen::Vector3f(a.x, a.y, a.z);
 }
-static geometry_msgs::Vector3 operator+(const geometry_msgs::Vector3 &a,
-                                        const geometry_msgs::Vector3 &b)
+Eigen::Vector3f toEigen(const geometry_msgs::Point &a)
 {
-  geometry_msgs::Vector3 vout;
-  vout.x = a.x + b.x;
-  vout.y = a.y + b.y;
-  vout.z = a.z + b.z;
-  return vout;
+  return Eigen::Vector3f(a.x, a.y, a.z);
 }
-static geometry_msgs::Point operator+(const geometry_msgs::Point &a,
-                                      const geometry_msgs::Vector3 &b)
+Eigen::Quaternionf toEigen(const geometry_msgs::Quaternion &a)
 {
-  geometry_msgs::Point vout;
-  vout.x = a.x + b.x;
-  vout.y = a.y + b.y;
-  vout.z = a.z + b.z;
-  return vout;
+  return Eigen::Quaternionf(a.w, a.x, a.y, a.z);
 }
-geometry_msgs::Vector3 to_vector3(const geometry_msgs::Point &a)
+geometry_msgs::Point toPoint(const Eigen::Vector3f &a)
 {
-  geometry_msgs::Vector3 vout;
-  vout.x = a.x;
-  vout.y = a.y;
-  vout.z = a.z;
-  return vout;
+  geometry_msgs::Point b;
+  b.x = a.x();
+  b.y = a.y();
+  b.z = a.z();
+  return b;
 }
-geometry_msgs::Vector3 cross(const geometry_msgs::Quaternion &q,
-                             const geometry_msgs::Vector3 &vin)
+geometry_msgs::Vector3 toVector3(const Eigen::Vector3f &a)
 {
-  geometry_msgs::Vector3 vout;
-  vout.x = q.y * vin.z - q.z * vin.y;
-  vout.y = q.z * vin.x - q.x * vin.z;
-  vout.z = q.x * vin.y - q.y * vin.x;
-  return vout;
+  geometry_msgs::Vector3 b;
+  b.x = a.x();
+  b.y = a.y();
+  b.z = a.z();
+  return b;
 }
 
 class TrackOdometryNode
@@ -193,7 +181,7 @@ private:
     nav_msgs::Odometry odom = *msg;
     if (has_odom_)
     {
-      double dt = (odom.header.stamp - odomraw_prev_.header.stamp).toSec();
+      const double dt = (odom.header.stamp - odomraw_prev_.header.stamp).toSec();
       if (base_link_id_overwrite_.size() == 0)
       {
         base_link_id_ = odom.child_frame_id;
@@ -234,10 +222,6 @@ private:
       // printf("%0.5f %0.5f %0.5f   %0.5f %0.5f  %0.5f\n",
       //   slip_ratio_per_angvel, slip_ratio_sigma, slip_ratio_per_angvel_sigma,
       //   slip_.x_, slip_.sigma_, msg->twist.twist.angular.z);
-      if (use_kf_)
-        odom.twist.twist.linear.x *= 1.0 - slip_.x_ * fabs(w_odom);
-      else
-        odom.twist.twist.linear.x *= slip_ratio;
 
       if (debug_)
       {
@@ -250,11 +234,15 @@ private:
       }
       dist_ += odom.twist.twist.linear.x * dt;
 
-      geometry_msgs::Vector3 v, t;
-      t = 2.0 * cross(odom.pose.pose.orientation, odom.twist.twist.linear);
-      v = odom.twist.twist.linear + odom.pose.pose.orientation.w * t + cross(odom.pose.pose.orientation, t);
+      const Eigen::Vector3f diff = toEigen(msg->pose.pose.position) - toEigen(odomraw_prev_.pose.pose.position);
+      Eigen::Vector3f v =
+          toEigen(odom.pose.pose.orientation) * toEigen(msg->pose.pose.orientation).inverse() * diff;
+      if (use_kf_)
+        v *= 1.0 - slip_.x_;
+      else
+        v *= slip_ratio;
 
-      odom.pose.pose.position = odom_prev_.pose.pose.position + dt * v;
+      odom.pose.pose.position = toPoint(toEigen(odom_prev_.pose.pose.position) + v);
       odom.pose.pose.position.z *= z_filter_;
       odom.child_frame_id = base_link_id_;
       pub_odom_.publish(odom);
@@ -263,7 +251,7 @@ private:
 
       odom_trans.header = odom.header;
       odom_trans.child_frame_id = base_link_id_;
-      odom_trans.transform.translation = to_vector3(odom.pose.pose.position);
+      odom_trans.transform.translation = toVector3(toEigen(odom.pose.pose.position));
       odom_trans.transform.rotation = odom.pose.pose.orientation;
       if (publish_tf_)
         tf_broadcaster_.sendTransform(odom_trans);
@@ -294,6 +282,7 @@ public:
       pnh_.param("base_link_id", base_link_id_, std::string("base_link"));
       pnh_.param("odom_id", odom_id_, std::string("odom"));
     }
+
     pnh_.param("z_filter", z_filter_, 0.99);
     pnh_.param("tf_tolerance", tf_tolerance_, 0.01);
     pnh_.param("use_kf", use_kf_, true);
