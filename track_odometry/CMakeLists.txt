@@ -23,7 +23,7 @@ else()
 endif()
 
 
-include_directories(${catkin_INCLUDE_DIRS} ${EIGEN_INCLUDE_DIRS} include)
+include_directories(${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} include)
 
 add_executable(track_odometry src/track_odometry.cpp)
 target_link_libraries(track_odometry ${catkin_LIBRARIES})
