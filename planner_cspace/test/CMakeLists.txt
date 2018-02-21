@@ -19,3 +19,10 @@ add_rostest_gtest(test_navigate
 )
 target_link_libraries(test_navigate ${catkin_LIBRARIES})
 add_dependencies(test_navigate planner_3d)
+
+add_rostest_gtest(test_abort
+  test/abort_rostest.test
+  src/test_abort.cpp
+)
+target_link_libraries(test_abort ${catkin_LIBRARIES})
+add_dependencies(test_abort planner_3d)
