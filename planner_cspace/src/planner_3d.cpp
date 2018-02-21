@@ -190,6 +190,8 @@ protected:
   double pos_jump_;
   double yaw_jump_;
 
+  int max_retry_num_;
+
   // Cost weights
   class CostCoeff
   {
@@ -236,6 +238,8 @@ protected:
   bool force_goal_orientation_;
 
   bool escaping_;
+
+  int cnt_stuck_;
 
   std::unordered_map<int, std::unordered_map<Astar::Vec,
                                              std::vector<Astar::Vec>,
@@ -402,6 +406,7 @@ protected:
     {
       escaping_ = false;
       has_goal_ = true;
+      cnt_stuck_ = 0;
       if (!updateGoal())
       {
         has_goal_ = false;
@@ -587,6 +592,7 @@ protected:
       if (!searchAvailablePos(e, esc_range_, esc_angle_))
       {
         ROS_WARN("Oops! Goal is in Rock!");
+        ++cnt_stuck_;
         return true;
       }
       ROS_INFO("Goal moved (%d, %d, %d)",
@@ -1143,6 +1149,8 @@ public:
       }
     }
 
+    nh_.param("max_retry_num", max_retry_num_, -1);
+
     int queue_size_limit;
     nh_.param("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
@@ -1155,6 +1163,7 @@ public:
     goal_updated_ = false;
 
     escaping_ = false;
+    cnt_stuck_ = 0;
 
     act_->start();
   }
@@ -1249,6 +1258,17 @@ public:
         {
           if (escaping_)
             status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+          else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
+          {
+            status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+            status_.status = planner_cspace::PlannerStatus::DONE;
+            has_goal_ = false;
+            act_->setAborted(move_base_msgs::MoveBaseResult(),
+                             "Goal is in Rock");
+            ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
+            continue;
+          }
+
           else
             status_.error = planner_cspace::PlannerStatus::GOING_WELL;
 
