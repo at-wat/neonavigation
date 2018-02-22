@@ -1257,7 +1257,9 @@ public:
         else
         {
           if (escaping_)
+          {
             status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+          }
           else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
           {
             status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
@@ -1268,10 +1270,10 @@ public:
             ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
             continue;
           }
-
           else
+          {
             status_.error = planner_cspace::PlannerStatus::GOING_WELL;
-
+          }
           nav_msgs::Path path;
           path.header = map_header_;
           path.header.stamp = ros::Time::now();

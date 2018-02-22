@@ -54,8 +54,8 @@ class AbortTest : public ::testing::Test
   ~AbortTest() {}
 
  protected:
-  typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ActionClient;
-  typedef std::shared_ptr<ActionClient> ActionClientPtr;
+  using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
+  using ActionClientPtr = std::shared_ptr<ActionClient>;
 
   void StatusCallback(const planner_cspace::PlannerStatus& msg)
   {
