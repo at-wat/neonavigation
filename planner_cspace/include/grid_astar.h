@@ -175,11 +175,9 @@ public:
     Vec better = s;
     int cost_estim_min = cb_cost_estim(s, e);
 
-    const int num_threads = omp_get_num_threads();
-
     while (true)
     {
-      // Fetch num_threads points
+      // Fetch tasks to be paralellized
       if (open_.size() < 1)
       {
         // No fesible path
