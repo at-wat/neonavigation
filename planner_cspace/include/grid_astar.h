@@ -45,6 +45,8 @@
 #include <cyclic_vec.h>
 #include <blockmem_gridmap.h>
 
+#include <omp.h>
+
 template <int DIM = 3, int NONCYCLIC = 2>
 class GridAstar
 {
@@ -87,6 +89,7 @@ protected:
   std::unordered_map<Vec, Vec, Vec> parents_;
   reservable_priority_queue<PriorityVec> open_;
   size_t queue_size_limit_;
+  size_t search_task_num_;
 
 public:
   const int getDim()
@@ -97,6 +100,10 @@ public:
   {
     return NONCYCLIC;
   }
+  void setSearchTaskNum(const size_t &search_task_num)
+  {
+    search_task_num_ = search_task_num;
+  }
 
   void reset(const Vec size)
   {
@@ -106,8 +113,9 @@ public:
     open_.reserve(g_.ser_size() / 16);
   }
   GridAstar()
+    : queue_size_limit_(0)
+    , search_task_num_(1)
   {
-    queue_size_limit_ = 0;
   }
   explicit GridAstar(const Vec size)
   {
@@ -166,87 +174,112 @@ public:
 
     Vec better = s;
     int cost_estim_min = cb_cost_estim(s, e);
+
+    const int num_threads = omp_get_num_threads();
+
     while (true)
     {
-      // printf("search queue %d\n", (int)open_.size());
+      // Fetch num_threads points
       if (open_.size() < 1)
       {
         // No fesible path
-        // printf("No fesible path\n");
         if (return_best)
         {
           findPath(s, better, path);
         }
         return false;
       }
-      PriorityVec center = open_.top();
-      Vec p = center.v_;
-      float c = center.p_raw_;
-      float c_estim = center.p_;
-      open_.pop();
-      if (p == e || c_estim - c <= cost_leave)
+      bool found(false);
+      std::vector<PriorityVec> centers;
+      for (size_t i = 0; i < search_task_num_; ++i)
       {
-        e = p;
+        if (open_.size() == 0)
+          break;
+        PriorityVec center = open_.top();
+        open_.pop();
+        if (center.v_ == e || center.p_ - center.p_raw_ <= cost_leave)
+        {
+          e = center.v_;
+          found = true;
+          break;
+        }
+        centers.push_back(center);
+      }
+      if (found)
         break;
-      }
 
-      float &gp = g[p];
-      if (c > gp)
-        continue;
-
-      if (c_estim - c < cost_estim_min)
+      for (auto it = centers.begin(); it < centers.end(); ++it)
       {
-        cost_estim_min = c_estim - c;
-        better = p;
-      }
+        const Vec p = it->v_;
+        const float c = it->p_raw_;
+        const float c_estim = it->p_;
+        float &gp = g[p];
+        if (c > gp)
+          continue;
 
-      auto tnow = boost::chrono::high_resolution_clock::now();
-      if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
-      {
-        std::list<Vec> path_tmp;
-        ts = tnow;
-        findPath(s, better, path_tmp);
-        cb_progress(path_tmp);
-      }
-
-      std::vector<Vec> search_list = cb_search(p, s, e);
-      int updates = 0;
-      for (auto &diff : search_list)
-      {
-        Vec next = p + diff;
-        for (int i = NONCYCLIC; i < DIM; i++)
+        if (c_estim - c < cost_estim_min)
         {
-          next.cycleUnsigned(next[i], g.size()[i]);
+          cost_estim_min = c_estim - c;
+          better = p;
         }
-        if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
-            (unsigned int)next[1] >= (unsigned int)g.size()[1])
-          continue;
-        if (g[next] < 0)
-          continue;
 
-        float cost_estim = cb_cost_estim(next, e);
-        if (cost_estim < 0 || cost_estim == FLT_MAX)
-          continue;
-
-        float cost = cb_cost(p, next, s, e);
-        if (cost < 0 || cost == FLT_MAX)
-          continue;
-
-        float &gnext = g[next];
-        if (gnext > c + cost)
+        auto tnow = boost::chrono::high_resolution_clock::now();
+        if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
         {
-          gnext = c + cost;
-          parents_[next] = p;
-          open_.push(PriorityVec(c + cost + cost_estim, c + cost, next));
-          if (queue_size_limit_ > 0 &&
-              open_.size() > queue_size_limit_)
-            open_.pop_back();
-          updates++;
+          std::list<Vec> path_tmp;
+          ts = tnow;
+          findPath(s, better, path_tmp);
+          cb_progress(path_tmp);
         }
-      }
-      if (updates == 0)
-      {
-        gp = -1;
+
+        const std::vector<Vec> search_list = cb_search(p, s, e);
+        int updates = 0;
+
+#pragma omp parallel for schedule(static)
+        for (auto it = search_list.begin(); it < search_list.end(); ++it)
+        {
+          while (1)
+          {
+            Vec next = p + *it;
+            for (int i = NONCYCLIC; i < DIM; i++)
+            {
+              next.cycleUnsigned(next[i], g.size()[i]);
+            }
+            if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
+                (unsigned int)next[1] >= (unsigned int)g.size()[1])
+              break;
+            if (g[next] < 0)
+              break;
+
+            const float cost_estim = cb_cost_estim(next, e);
+            if (cost_estim < 0 || cost_estim == FLT_MAX)
+              break;
+
+            const float cost = cb_cost(p, next, s, e);
+            if (cost < 0 || cost == FLT_MAX)
+              break;
+
+            float &gnext = g[next];
+            if (gnext > c + cost)
+            {
+              gnext = c + cost;
+#pragma omp critical
+              {
+                parents_[next] = p;
+                open_.push(PriorityVec(c + cost + cost_estim, c + cost, next));
+                if (queue_size_limit_ > 0 &&
+                    open_.size() > queue_size_limit_)
+                  open_.pop_back();
+              }
+              updates++;
+            }
+            break;
+          }
+        }
+        if (updates == 0)
+        {
+          gp = -1;
+        }
       }
       // printf("(parents %d)\n", (int)parents_.size());
     }
