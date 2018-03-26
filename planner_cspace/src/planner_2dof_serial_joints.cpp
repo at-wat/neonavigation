@@ -43,6 +43,8 @@
 #include <costmap_cspace/node_handle_float.h>
 #include <grid_astar.h>
 
+#include <omp.h>
+
 float signf(float a)
 {
   if (a < 0)
@@ -512,6 +514,11 @@ public:
         search_list_.push_back(p);
       }
     }
+
+    int num_threads;
+    nh.param("num_threads", num_threads, 1);
+    omp_set_num_threads(num_threads);
+
     has_start_ = has_goal_ = true;
   }
 
