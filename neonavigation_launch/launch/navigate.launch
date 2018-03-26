@@ -31,6 +31,7 @@
     <remap from="~/goal" to="$(arg goal_topic)" />
     <remap from="~/costmap" to="/costmap_3d/costmap" />
     <remap from="~/costmap_update" to="/costmap_3d/costmap_update" />
+    <param name="num_threads" value="2" />
   </node>
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">

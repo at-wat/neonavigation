@@ -49,6 +49,8 @@
 #include <costmap_cspace/node_handle_float.h>
 #include <grid_astar.h>
 
+#include <omp.h>
+
 float signf(float a)
 {
   if (a < 0)
@@ -1154,6 +1156,14 @@ public:
     int queue_size_limit;
     nh_.param("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
+
+    int num_threads;
+    nh_.param("num_threads", num_threads, 1);
+    omp_set_num_threads(num_threads);
+
+    int num_task;
+    nh_.param("num_search_task", num_task, num_threads * 16);
+    as_.setSearchTaskNum(num_task);
 
     status_.status = planner_cspace::PlannerStatus::DONE;
 
