@@ -105,9 +105,10 @@ private:
   nav_msgs::Path path_;
   nav_msgs::Odometry odom_;
 
-  void cbPath(const nav_msgs::Path::ConstPtr &msg);
-  void cbOdom(const nav_msgs::Odometry::ConstPtr &msg);
-  void cbSpeed(const std_msgs::Float32::ConstPtr &msg);
+  void cbPath(const nav_msgs::Path::ConstPtr &);
+  void cbOdom(const nav_msgs::Odometry::ConstPtr &);
+  void cbSpeed(const std_msgs::Float32::ConstPtr &);
+  void cbTimer(const ros::TimerEvent &);
   void control();
 };
 
@@ -317,16 +318,16 @@ float timeoptimal_control(const float angle_orig, const float acc_, const float 
   return angvel;
 }
 
+void TrackerNode::cbTimer(const ros::TimerEvent &event)
+{
+  control();
+}
+
 void TrackerNode::spin()
 {
-  ros::Rate loop_rate(hz_);
+  ros::Timer timer = nh_.createTimer(ros::Duration(1.0 / hz_), &TrackerNode::cbTimer, this);
 
-  while (ros::ok())
-  {
-    control();
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+  ros::spin();
 }
 
 void TrackerNode::control()
