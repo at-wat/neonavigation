@@ -48,6 +48,7 @@
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <math.h>
 #include <string>
@@ -64,6 +65,7 @@ private:
   std::string topic_cmd_vel_;
   std::string topic_odom_;
   std::string frame_robot_;
+  std::string frame_odom_;
   double hz_;
   double look_forward_;
   double curv_forward_;
@@ -144,6 +146,7 @@ TrackerNode::TrackerNode()
   , nh_("~")
 {
   nh_.param("frame_robot", frame_robot_, std::string("base_link"));
+  nh_.param("frame_odom", frame_odom_, std::string("odom"));
   nh_.param("path", topic_path_, std::string("path"));
   nh_.param("odom", topic_odom_, std::string("odom"));
   nh_.param("cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
@@ -305,17 +308,9 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr &msg)
   }
 }
 
-float timeoptimal_control(const float angle_orig, const float acc_, const float dt)
+float timeoptimal_control(const float angle, const float acc_, const float dt)
 {
-  float angle = angle_orig;
-
-  float angvel = -sign(angle) * sqrtf(fabs(2 * angle * acc_ * 0.85));
-  angle += angvel * dt * 1.5;
-  if (angle * angle_orig < 0)
-    angle = 0;
-
-  angvel = -sign(angle) * sqrtf(fabs(2 * angle * acc_ * 0.85));
-  return angvel;
+  return -sign(angle) * sqrtf(fabs(2 * angle * acc_ * 0.85));
 }
 
 void TrackerNode::cbTimer(const ros::TimerEvent &event)
@@ -352,10 +347,15 @@ void TrackerNode::control()
   nav_msgs::Path lpath;
   lpath.header = path_.header;
   tf::StampedTransform transform;
+  double transform_delay = 0;
   try
   {
-    tfl_.lookupTransform(frame_robot_, path_.header.frame_id, ros::Time(0), transform);
-    if (fabs((ros::Time::now() - transform.stamp_).toSec()) > 0.1)
+    tf::StampedTransform trans_odom;
+    tfl_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0), transform);
+    tfl_.lookupTransform(frame_odom_, path_.header.frame_id, ros::Time(0), trans_odom);
+    transform *= trans_odom;
+    transform_delay = (ros::Time::now() - transform.stamp_).toSec();
+    if (fabs(transform_delay) > 0.1)
     {
       if (error_cnt_ % 16 == 0 && check_old_path_)
         ROS_ERROR("Timestamp of the transform is too old %f %f", ros::Time::now().toSec(), transform.stamp_.toSec());
@@ -366,10 +366,13 @@ void TrackerNode::control()
       error_cnt_ = 0;
     }
 
+    geometry_msgs::TransformStamped trans_msg;
+    tf::transformStampedTFToMsg(transform, trans_msg);
+
     for (size_t i = 0; i < path_.poses.size(); i += path_step_)
     {
       geometry_msgs::PoseStamped pose;
-      tfl_.transformPose(frame_robot_, transform.stamp_, path_.poses[i], path_.header.frame_id, pose);
+      tf2::doTransform(path_.poses[i], pose, trans_msg);
       lpath.poses.push_back(pose);
     }
   }
@@ -544,7 +547,7 @@ void TrackerNode::control()
       angle = -tf::getYaw(lpath.poses.back().pose.orientation);
       status.angle_remains = angle;
     }
-    w_ = timeoptimal_control(angle, acc_[1], dt);
+    w_ = timeoptimal_control(angle + _w * dt * 1.5, acc_[1], dt);
 
     v_ = 0;
     if (v_ > vel_[0])
@@ -564,7 +567,7 @@ void TrackerNode::control()
     else if (w_ < _w - dt * acc_[1])
       w_ = _w - dt * acc_[1];
     ROS_DEBUG("trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
-              angle, w_, (transform.stamp_ - ros::Time::now()).toSec());
+              angle, w_, transform_delay);
 
     if (distance_path_ < stop_tolerance_dist_)
     {
