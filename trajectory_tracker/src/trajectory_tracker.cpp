@@ -354,9 +354,7 @@ void TrackerNode::control()
   tf::StampedTransform transform;
   try
   {
-    ros::Time now = ros::Time(0);
-    tfl_.waitForTransform(frame_robot_, path_.header.frame_id, now, ros::Duration(0.05));
-    tfl_.lookupTransform(frame_robot_, path_.header.frame_id, now, transform);
+    tfl_.lookupTransform(frame_robot_, path_.header.frame_id, ros::Time(0), transform);
     if (fabs((ros::Time::now() - transform.stamp_).toSec()) > 0.1)
     {
       if (error_cnt_ % 16 == 0 && check_old_path_)
@@ -541,16 +539,13 @@ void TrackerNode::control()
       fabs(remain_local_) < stop_tolerance_dist_ ||
       distance_path_ < min_track_path_)
   {
-    // int m = 0;
     if (distance_path_ < min_track_path_ || fabs(remain_local_) < stop_tolerance_dist_)
     {
       angle = -tf::getYaw(lpath.poses.back().pose.orientation);
       status.angle_remains = angle;
-      // m = 1;
     }
     w_ = timeoptimal_control(angle, acc_[1], dt);
 
-    // float wo = w_;
     v_ = 0;
     if (v_ > vel_[0])
       v_ = vel_[0];
@@ -568,7 +563,7 @@ void TrackerNode::control()
       w_ = _w + dt * acc_[1];
     else if (w_ < _w - dt * acc_[1])
       w_ = _w - dt * acc_[1];
-    // fprintf(stderr, "%0.3f %0.3f %0.3f %d\n", angle, w_, wo, m);
+    ROS_DEBUG("trajectory_tracker: angular residual %0.3f, angular vel %0.3f", angle, w_);
 
     if (distance_path_ < stop_tolerance_dist_)
     {
