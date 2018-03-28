@@ -191,16 +191,6 @@ public:
   {
     if (!has_twist_)
       return;
-
-    if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_))
-    {
-      if (has_cloud_)
-        ROS_WARN("Safety Limit: PointCloud timed-out");
-      geometry_msgs::Twist cmd_vel;
-      pub_twist_.publish(cmd_vel);
-      has_cloud_ = false;
-      return;
-    }
     if (!has_cloud_)
       return;
 
@@ -483,6 +473,14 @@ private:
     if (now - last_disable_cmd_ < ros::Duration(disable_timeout_))
     {
       pub_twist_.publish(twist_);
+    }
+    else if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_))
+    {
+      if (has_cloud_)
+        ROS_WARN("Safety Limit: PointCloud timed-out");
+      geometry_msgs::Twist cmd_vel;
+      pub_twist_.publish(cmd_vel);
+      has_cloud_ = false;
     }
     else if (now <= hold_off_)
     {
