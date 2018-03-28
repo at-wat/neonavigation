@@ -563,7 +563,8 @@ void TrackerNode::control()
       w_ = _w + dt * acc_[1];
     else if (w_ < _w - dt * acc_[1])
       w_ = _w - dt * acc_[1];
-    ROS_DEBUG("trajectory_tracker: angular residual %0.3f, angular vel %0.3f", angle, w_);
+    ROS_DEBUG("trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
+              angle, w_, (transform.stamp_ - ros::Time::now()).toSec());
 
     if (distance_path_ < stop_tolerance_dist_)
     {
