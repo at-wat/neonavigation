@@ -94,15 +94,15 @@ public:
       ROS_WARN_ONCE("%s", e.what());
     }
   }
+  void cbTimer(const ros::TimerEvent &event)
+  {
+    process();
+  }
   void spin()
   {
-    ros::Rate r(rate_);
-    while (ros::ok())
-    {
-      ros::spinOnce();
-      process();
-      r.sleep();
-    }
+    ros::Timer timer = nh_.createTimer(
+        ros::Duration(1.0 / rate_), &TfProjectionNode::cbTimer, this);
+    ros::spin();
   }
 };
 
