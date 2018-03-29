@@ -111,11 +111,11 @@ private:
   bool has_odom_;
   bool publish_tf_;
 
-  void cb_reset_z(const std_msgs::Float32::Ptr &msg)
+  void cbResetZ(const std_msgs::Float32::Ptr &msg)
   {
     odom_prev_.pose.pose.position.z = msg->data;
   }
-  void cb_imu(const sensor_msgs::Imu::Ptr &msg)
+  void cbImu(const sensor_msgs::Imu::Ptr &msg)
   {
     if (base_link_id_.size() == 0)
     {
@@ -176,7 +176,7 @@ private:
       return;
     }
   }
-  void cb_odom(const nav_msgs::Odometry::Ptr &msg)
+  void cbOdom(const nav_msgs::Odometry::Ptr &msg)
   {
     nav_msgs::Odometry odom = *msg;
     if (has_odom_)
@@ -268,9 +268,9 @@ public:
   {
     pnh_.param("without_odom", without_odom_, false);
     if (!without_odom_)
-      sub_odom_ = nh_.subscribe("odom_raw", 64, &TrackOdometryNode::cb_odom, this);
-    sub_imu_ = nh_.subscribe("imu", 64, &TrackOdometryNode::cb_imu, this);
-    sub_reset_z_ = pnh_.subscribe("reset_z", 1, &TrackOdometryNode::cb_reset_z, this);
+      sub_odom_ = nh_.subscribe("odom_raw", 64, &TrackOdometryNode::cbOdom, this);
+    sub_imu_ = nh_.subscribe("imu", 64, &TrackOdometryNode::cbImu, this);
+    sub_reset_z_ = pnh_.subscribe("reset_z", 1, &TrackOdometryNode::cbResetZ, this);
     pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 8);
 
     if (!without_odom_)
@@ -308,6 +308,15 @@ public:
     dist_ = 0;
     slip_.set(0.0, 0.1);
   }
+  void cbTimer(const ros::TimerEvent &event)
+  {
+    nav_msgs::Odometry::Ptr odom(new nav_msgs::Odometry);
+    odom->header.stamp = ros::Time::now();
+    odom->header.frame_id = odom_id_;
+    odom->child_frame_id = base_link_id_;
+    odom->pose.pose.orientation.w = 1.0;
+    cbOdom(odom);
+  }
   void spin()
   {
     if (!without_odom_)
@@ -316,19 +325,9 @@ public:
     }
     else
     {
-      ros::Rate r(50);
-      while (ros::ok())
-      {
-        r.sleep();
-        ros::spinOnce();
-
-        nav_msgs::Odometry::Ptr odom(new nav_msgs::Odometry);
-        odom->header.stamp = ros::Time::now();
-        odom->header.frame_id = odom_id_;
-        odom->child_frame_id = base_link_id_;
-        odom->pose.pose.orientation.w = 1.0;
-        cb_odom(odom);
-      }
+      ros::Timer timer = nh_.createTimer(
+          ros::Duration(1.0 / 50.0), &TrackOdometryNode::cbTimer, this);
+      ros::spin();
     }
   }
 };
