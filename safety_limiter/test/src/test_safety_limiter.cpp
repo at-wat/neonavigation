@@ -72,10 +72,6 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         if (with_cloud > 0)
         {
           sensor_msgs::PointCloud2 cloud;
-          cloud.fields.resize(3);
-          cloud.fields[0].name = "x";
-          cloud.fields[1].name = "y";
-          cloud.fields[2].name = "z";
           if (with_cloud > 1)
           {
             // cloud must have timestamp, otherwise the robot stops
