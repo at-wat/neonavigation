@@ -31,6 +31,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Empty.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <tf/transform_listener.h>
@@ -85,6 +86,8 @@ private:
   ros::Subscriber sub_twist_;
   ros::Subscriber sub_cloud_;
   ros::Subscriber sub_disable_;
+  ros::Subscriber sub_watchdog_;
+  ros::Timer watchdog_timer_;
   tf::TransformListener tfl_;
 
   geometry_msgs::Twist twist_;
@@ -106,20 +109,28 @@ private:
   ros::Time last_disable_cmd_;
   ros::Duration hold_;
   ros::Time hold_off_;
+  ros::Duration watchdog_interval_;
+  bool allow_empty_cloud_;
 
+  bool watchdog_stop_;
   bool has_cloud_;
   bool has_twist_;
 
 public:
   SafetyLimiter()
     : nh_("~")
+    , last_disable_cmd_(0)
+    , watchdog_stop_(false)
+    , has_cloud_(false)
+    , has_twist_(true)
   {
     pub_twist_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_out", 1, true);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
     pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
     sub_twist_ = nh_.subscribe("cmd_vel_in", 1, &SafetyLimiter::cbTwist, this);
     sub_cloud_ = nh_.subscribe("cloud", 1, &SafetyLimiter::cbCloud, this);
-    sub_disable_ = nh_.subscribe("disable", 100, &SafetyLimiter::cbDisable, this);
+    sub_disable_ = nh_.subscribe("disable", 1, &SafetyLimiter::cbDisable, this);
+    sub_watchdog_ = nh_.subscribe("watchdog_reset", 1, &SafetyLimiter::cbWatchdogReset, this);
 
     nh_.param("freq", hz_, 6.0);
     nh_.param("cloud_timeout", timeout_, 0.8);
@@ -137,6 +148,10 @@ public:
     double hold_d;
     nh_.param("hold", hold_d, 0.0);
     hold_ = ros::Duration(hold_d);
+    double watchdog_interval_d;
+    nh_.param("watchdog_interval", watchdog_interval_d, 0.0);
+    watchdog_interval_ = ros::Duration(watchdog_interval_d);
+    nh_.param("allow_empty_cloud", allow_empty_cloud_, false);
 
     tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
@@ -181,18 +196,48 @@ public:
     }
     footprint_p.v.push_back(footprint_p.v.front());
     ROS_INFO("footprint radius: %0.3f", footprint_radius_);
-
-    has_cloud_ = false;
-    has_twist_ = true;
-
-    last_disable_cmd_ = ros::Time(0);
   }
-  void cbTimer(const ros::TimerEvent &event)
+  void spin()
+  {
+    ros::Timer predict_timer =
+        nh_.createTimer(ros::Duration(1.0 / hz_), &SafetyLimiter::cbPredictTimer, this);
+
+    if (watchdog_interval_ != ros::Duration(0.0))
+    {
+      watchdog_timer_ =
+          nh_.createTimer(watchdog_interval_, &SafetyLimiter::cbWatchdogTimer, this);
+    }
+
+    ros::spin();
+  }
+
+protected:
+  void cbWatchdogReset(const std_msgs::Empty::ConstPtr &msg)
+  {
+    watchdog_timer_.setPeriod(watchdog_interval_, true);
+    watchdog_stop_ = false;
+  }
+  void cbWatchdogTimer(const ros::TimerEvent &event)
+  {
+    ROS_WARN_THROTTLE(1.0, "Safety Limit: Watchdog timed-out");
+    watchdog_stop_ = true;
+    geometry_msgs::Twist cmd_vel;
+    pub_twist_.publish(cmd_vel);
+  }
+  void cbPredictTimer(const ros::TimerEvent &event)
   {
     if (!has_twist_)
       return;
     if (!has_cloud_)
       return;
+
+    if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_))
+    {
+      ROS_WARN_THROTTLE(1.0, "Safety Limit: PointCloud timed-out");
+      geometry_msgs::Twist cmd_vel;
+      pub_twist_.publish(cmd_vel);
+      return;
+    }
 
     ros::Time now = ros::Time::now();
     const double t_col_current = predict(twist_, cloud_);
@@ -204,12 +249,6 @@ public:
 
       hold_off_ = now + hold_;
     }
-  }
-  void spin()
-  {
-    ros::Timer timer = nh_.createTimer(ros::Duration(1.0 / hz_), &SafetyLimiter::cbTimer, this);
-
-    ros::spin();
   }
   double predict(const geometry_msgs::Twist &in,
                  const sensor_msgs::PointCloud2 &cloud_)
@@ -225,7 +264,7 @@ public:
     }
     catch (tf::TransformException &e)
     {
-      ROS_WARN("Safety Limit: Transform failed");
+      ROS_WARN_THROTTLE(1.0, "Safety Limit: Transform failed");
       geometry_msgs::Twist cmd_vel;
       return 0.0;
     }
@@ -249,7 +288,11 @@ public:
 
     if (pc->width == 0)
     {
-      ROS_WARN("Safety Limit: Empty pointcloud passed.");
+      if (allow_empty_cloud_)
+      {
+        return 60.0;
+      }
+      ROS_WARN_THROTTLE(1.0, "Safety Limit: Empty pointcloud passed.");
       return DBL_MAX;
     }
 
@@ -347,14 +390,14 @@ public:
     }
     if (col)
     {
-      ROS_WARN("Safety Limit: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
-               in.linear.x, in.angular.z,
-               out.linear.x, out.angular.z);
+      ROS_WARN_THROTTLE(
+          1.0, "Safety Limit: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
+          in.linear.x, in.angular.z,
+          out.linear.x, out.angular.z);
     }
     return out;
   }
 
-private:
   bool XmlRpc_isNumber(XmlRpc::XmlRpcValue &value)
   {
     return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
@@ -463,7 +506,7 @@ private:
 
   polygon footprint_p;
 
-  void cbTwist(const geometry_msgs::Twist::Ptr &msg)
+  void cbTwist(const geometry_msgs::Twist::ConstPtr &msg)
   {
     ros::Time now = ros::Time::now();
 
@@ -474,13 +517,10 @@ private:
     {
       pub_twist_.publish(twist_);
     }
-    else if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_))
+    else if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_) || watchdog_stop_)
     {
-      if (has_cloud_)
-        ROS_WARN("Safety Limit: PointCloud timed-out");
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
-      has_cloud_ = false;
     }
     else if (now <= hold_off_)
     {
@@ -492,12 +532,12 @@ private:
       pub_twist_.publish(twist_);
     }
   }
-  void cbCloud(const sensor_msgs::PointCloud2::Ptr &msg)
+  void cbCloud(const sensor_msgs::PointCloud2::ConstPtr &msg)
   {
     cloud_ = *msg;
     has_cloud_ = true;
   }
-  void cbDisable(const std_msgs::Bool::Ptr &msg)
+  void cbDisable(const std_msgs::Bool::ConstPtr &msg)
   {
     if (msg->data)
     {
