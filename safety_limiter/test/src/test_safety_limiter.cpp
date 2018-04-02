@@ -51,14 +51,15 @@ TEST(SafetyLimiter, testSafetyTimeouts)
   ros::Publisher pub_watchdog = nh.advertise<std_msgs::Empty>("/safety_limiter/watchdog_reset", 1);
   ros::Subscriber sub_cmd_vel = nh.subscribe("/safety_limiter/cmd_vel_out", 1, cb_cmd_vel);
 
-  ros::Rate wait(10);
+  ros::Rate wait(10.0);
 
-  for (size_t with_cloud = 0; with_cloud < 2; ++with_cloud)
+  for (size_t with_cloud = 0; with_cloud < 3; ++with_cloud)
   {
     for (size_t with_watchdog_reset = 0; with_watchdog_reset < 2; ++with_watchdog_reset)
     {
       ros::Duration(0.3).sleep();
-      for (size_t i = 0; i < 10; ++i)
+
+      for (size_t i = 0; i < 20; ++i)
       {
         ASSERT_TRUE(ros::ok());
 
@@ -71,6 +72,16 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         if (with_cloud > 0)
         {
           sensor_msgs::PointCloud2 cloud;
+          cloud.fields.resize(3);
+          cloud.fields[0].name = "x";
+          cloud.fields[1].name = "y";
+          cloud.fields[2].name = "z";
+          if (with_cloud > 1)
+          {
+            // cloud must have timestamp, otherwise the robot stops
+            cloud.header.stamp = ros::Time::now();
+            cloud.header.frame_id = "base_link";
+          }
           pub_cloud.publish(cloud);
         }
 
@@ -82,9 +93,9 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         wait.sleep();
         ros::spinOnce();
 
-        if (i > 2)
+        if (i > 5)
         {
-          if (with_watchdog_reset > 0 && with_cloud > 0)
+          if (with_watchdog_reset > 0 && with_cloud > 1)
           {
             ASSERT_EQ(cmd_vel->linear.x, cmd_vel_out.linear.x);
             ASSERT_EQ(cmd_vel->linear.y, cmd_vel_out.linear.y);
