@@ -62,13 +62,13 @@ TEST(SafetyLimiter, testSafetyTimeouts)
       {
         ASSERT_TRUE(ros::ok());
 
-        if (with_watchdog_reset)
+        if (with_watchdog_reset > 0)
         {
           std_msgs::Empty watchdog_reset;
           pub_watchdog.publish(watchdog_reset);
         }
 
-        if (with_cloud)
+        if (with_cloud > 0)
         {
           sensor_msgs::PointCloud2 cloud;
           pub_cloud.publish(cloud);
@@ -82,9 +82,9 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         wait.sleep();
         ros::spinOnce();
 
-        if (i > 0)
+        if (i > 5)
         {
-          if (with_watchdog_reset && with_cloud)
+          if (with_watchdog_reset > 0 && with_cloud > 0)
           {
             ASSERT_EQ(cmd_vel->linear.x, cmd_vel_out.linear.x);
             ASSERT_EQ(cmd_vel->linear.y, cmd_vel_out.linear.y);
