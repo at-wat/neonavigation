@@ -55,6 +55,9 @@ protected:
   ros::Timer timer_footprint_;
 
   costmap_cspace::Costmap3d::Ptr costmap_;
+  std::vector<
+      std::pair<nav_msgs::OccupancyGrid::ConstPtr,
+                costmap_cspace::Costmap3dLayerBase::Ptr>> map_buffer_;
 
   void cbMap(
       const nav_msgs::OccupancyGrid::ConstPtr &msg,
@@ -69,6 +72,14 @@ protected:
 
     map->setBaseMap(*msg);
     ROS_DEBUG("C-Space costmap generated");
+
+    if (map_buffer_.size() > 0)
+    {
+      for (auto &map : map_buffer_)
+        cbMapOverlay(map.first, map.second);
+      ROS_INFO("%ld buffered costmap processed", map_buffer_.size());
+      map_buffer_.clear();
+    }
   }
   void cbMapOverlay(
       const nav_msgs::OccupancyGrid::ConstPtr &msg,
@@ -79,7 +90,12 @@ protected:
     auto map_msg = map->getMap();
     if (map_msg->info.width < 1 ||
         map_msg->info.height < 1)
+    {
+      map_buffer_.push_back(
+          std::pair<nav_msgs::OccupancyGrid::ConstPtr,
+                    costmap_cspace::Costmap3dLayerBase::Ptr>(msg, map));
       return;
+    }
 
     map->processMapOverlay(*msg);
     ROS_DEBUG("C-Space costmap updated");
