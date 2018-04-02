@@ -78,7 +78,7 @@ protected:
     {
       for (auto &map : map_buffer_)
         cbMapOverlay(map.first, map.second);
-      ROS_INFO("%ld buffered costmap processed", map_buffer_.size());
+      ROS_INFO("%ld buffered costmaps processed", map_buffer_.size());
       map_buffer_.clear();
     }
   }
