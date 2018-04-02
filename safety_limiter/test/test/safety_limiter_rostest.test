@@ -6,5 +6,7 @@
     <rosparam param="footprint">[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]</rosparam>
     <param name="allow_empty_cloud" value="true" />
     <param name="watchdog_interval" value="0.2" />
+    <param name="cloud_timeout" value="0.2" />
+    <param name="hz" value="10.0" />
   </node>
 </launch>

@@ -82,7 +82,7 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         wait.sleep();
         ros::spinOnce();
 
-        if (i > 5)
+        if (i > 2)
         {
           if (with_watchdog_reset > 0 && with_cloud > 0)
           {
