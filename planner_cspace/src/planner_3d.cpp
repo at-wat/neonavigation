@@ -438,9 +438,8 @@ protected:
       if (open.size() < 1)
         break;
 
-      bool found(false);
       std::vector<Astar::PriorityVec> centers;
-      for (size_t i = 0; i < num_task_; ++i)
+      for (size_t i = 0; i < static_cast<size_t>(num_task_); ++i)
       {
         if (open.size() < 1)
           break;
