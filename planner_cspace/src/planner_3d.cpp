@@ -194,6 +194,8 @@ protected:
 
   int max_retry_num_;
 
+  int num_task_;
+
   // Cost weights
   class CostCoeff
   {
@@ -435,72 +437,87 @@ protected:
     {
       if (open.size() < 1)
         break;
-      const auto center = open.top();
-      const Astar::Vec p = center.v_;
-      const auto c = center.p_raw_;
-      open.pop();
-      if (c > g[p])
-        continue;
-      if (c - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
-        continue;
 
-      Astar::Vec d;
-      d[2] = 0;
-
-      const int range_rough = 4;
-      for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+      std::vector<Astar::PriorityVec> centers;
+      for (size_t i = 0; i < static_cast<size_t>(num_task_); ++i)
       {
-        for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+        if (open.size() < 1)
+          break;
+        auto center = open.top();
+        open.pop();
+        if (center.p_raw_ > g[center.v_])
+          continue;
+        if (center.p_raw_ - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
+          continue;
+        centers.push_back(center);
+      }
+#pragma omp parallel for schedule(static)
+      for (auto it = centers.begin(); it < centers.end(); ++it)
+      {
+        const Astar::Vec p = it->v_;
+        const float c = it->p_raw_;
+
+        Astar::Vec d;
+        d[2] = 0;
+
+        const int range_rough = 4;
+        for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
         {
-          if (d[0] == 0 && d[1] == 0)
-            continue;
-          if (d.sqlen() > range_rough * range_rough)
-            continue;
-
-          const Astar::Vec next = p + d;
-          if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
-              (unsigned int)next[1] >= (unsigned int)map_info_.height)
-            continue;
-          auto &gnext = g[next];
-          if (gnext < 0)
-            continue;
-
-          float cost = 0;
-
+          for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
           {
-            float v[3], dp[3], sum = 0;
-            float distf = d.len();
-            const int dist = distf;
-            distf /= dist;
-            v[0] = p[0];
-            v[1] = p[1];
-            v[2] = 0;
-            dp[0] = static_cast<float>(d[0]) / dist;
-            dp[1] = static_cast<float>(d[1]) / dist;
-            Astar::Vec pos(v);
-            char c = 0;
-            for (int i = 0; i < dist; i++)
-            {
-              pos[0] = static_cast<int>(v[0]);
-              pos[1] = static_cast<int>(v[1]);
-              c = cm_rough_[pos];
-              if (c > 99)
-                break;
-              sum += c;
-              v[0] += dp[0];
-              v[1] += dp[1];
-            }
-            if (c > 99)
+            if (d[0] == 0 && d[1] == 0)
               continue;
-            cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / 100.0;
-          }
-          cost += euclidCost(d, ec_rough_);
+            if (d.sqlen() > range_rough * range_rough)
+              continue;
 
-          const auto gp = c + cost;
-          if (gnext > gp)
-          {
-            gnext = gp;
-            open.push(Astar::PriorityVec(gp, gp, next));
+            const Astar::Vec next = p + d;
+            if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
+                (unsigned int)next[1] >= (unsigned int)map_info_.height)
+              continue;
+            auto &gnext = g[next];
+            if (gnext < 0)
+              continue;
+
+            float cost = 0;
+
+            {
+              float v[3], dp[3], sum = 0;
+              float distf = d.len();
+              const int dist = distf;
+              distf /= dist;
+              v[0] = p[0];
+              v[1] = p[1];
+              v[2] = 0;
+              dp[0] = static_cast<float>(d[0]) / dist;
+              dp[1] = static_cast<float>(d[1]) / dist;
+              Astar::Vec pos(v);
+              char c = 0;
+              for (int i = 0; i < dist; i++)
+              {
+                pos[0] = static_cast<int>(v[0]);
+                pos[1] = static_cast<int>(v[1]);
+                c = cm_rough_[pos];
+                if (c > 99)
+                  break;
+                sum += c;
+                v[0] += dp[0];
+                v[1] += dp[1];
+              }
+              if (c > 99)
+                continue;
+              cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / 100.0;
+            }
+            cost += euclidCost(d, ec_rough_);
+
+            const auto gp = c + cost;
+            if (gnext > gp)
+            {
+              gnext = gp;
+#pragma omp critical
+              {
+                open.push(Astar::PriorityVec(gp, gp, next));
+              }
+            }
           }
         }
       }
@@ -1161,9 +1178,8 @@ public:
     nh_.param("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
 
-    int num_task;
-    nh_.param("num_search_task", num_task, num_threads * 16);
-    as_.setSearchTaskNum(num_task);
+    nh_.param("num_search_task", num_task_, num_threads * 16);
+    as_.setSearchTaskNum(num_task_);
 
     status_.status = planner_cspace::PlannerStatus::DONE;
 

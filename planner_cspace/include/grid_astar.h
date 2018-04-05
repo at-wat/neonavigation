@@ -206,6 +206,7 @@ public:
       if (found)
         break;
 
+#pragma omp parallel for schedule(static)
       for (auto it = centers.begin(); it < centers.end(); ++it)
       {
         const Vec p = it->v_;
@@ -233,7 +234,6 @@ public:
         const std::vector<Vec> search_list = cb_search(p, s, e);
         int updates = 0;
 
-#pragma omp parallel for schedule(static)
         for (auto it = search_list.begin(); it < search_list.end(); ++it)
         {
           while (1)
