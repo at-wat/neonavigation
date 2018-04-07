@@ -1,24 +1,20 @@
 sudo: required
 services: docker
 
-cache:
-  directories:
-    - /home/travis/docker/
 env:
   global:
-    - DOCKER_CACHE_FILE=/home/travis/docker/cache.tar.lz4
+    - DOCKER_CACHE=atwat/ros-neonavigation-cache
 branches:
   only:
     - master
 
 before_install:
-  - .travis.scripts/setup_docker.sh
   - .travis.scripts/load_cache.sh
 
 install: true
 
 script:
-  - docker build -t docker-neonavigation:latest --pull=true ${TRAVIS_BUILD_DIR}
+  - docker build --cache-from ${DOCKER_CACHE} -t docker-neonavigation:latest --pull=true ${TRAVIS_BUILD_DIR}
   - docker run --rm -it -e TRAVIS_PULL_REQUEST=${TRAVIS_PULL_REQUEST} -e TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG} -e TRAVIS_BOT_GITHUB_TOKEN=${TRAVIS_BOT_GITHUB_TOKEN} docker-neonavigation /catkin_ws/src/neonavigation/.travis.scripts/test.sh
   - .travis.scripts/save_cache.sh
 
