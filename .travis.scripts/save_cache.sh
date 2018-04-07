@@ -3,13 +3,9 @@
 set -o errexit
 set -o verbose
 
-if [[ ${TRAVIS_BRANCH} == "master" ]] && [[ ${TRAVIS_PULL_REQUEST} == "false" ]];
-then
-	mkdir -p $(dirname ${DOCKER_CACHE_FILE})
-	docker save $(docker history -q docker-neonavigation:latest | grep -v '<missing>') | lz4 -zcf - > ${DOCKER_CACHE_FILE}
-
-	echo "------------"
-	ls -lh $(dirname ${DOCKER_CACHE_FILE})
-	echo "------------"
-fi
-
+#if [[ ${TRAVIS_BRANCH} == "master" ]] && [[ ${TRAVIS_PULL_REQUEST} == "false" ]];
+#then
+  docker tag docker-neonavigation:latest atwat/ros-neonavigation-cache:latest
+  docker login -u ${DOCKER_HUB_USER} -p ${DOCKER_HUB_TOKEN}
+	docker push atwat/ros-neonavigation-cache
+#fi
