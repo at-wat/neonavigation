@@ -69,13 +69,13 @@ protected:
   using Planner3DActionServer = actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction>;
 
   ros::NodeHandle_f nh_;
-  ros::Subscriber subMap;
-  ros::Subscriber subMapUpdate;
-  ros::Subscriber subGoal;
-  ros::Publisher pubPath;
-  ros::Publisher pubDebug;
-  ros::Publisher pubHist;
-  ros::Publisher pubStart;
+  ros::Subscriber sub_map_;
+  ros::Subscriber sub_map_update_;
+  ros::Subscriber sub_goal_;
+  ros::Publisher pub_path_;
+  ros::Publisher pub_debug_;
+  ros::Publisher pub_hist_;
+  ros::Publisher pub_start_;
   ros::Publisher pub_end_;
   ros::Publisher pub_status_;
   ros::ServiceServer srs_forget_;
@@ -651,6 +651,9 @@ protected:
   }
   void publishCostmap()
   {
+    if (pub_debug_.getNumSubscribers() == 0)
+      return;
+
     sensor_msgs::PointCloud debug;
     debug.header = map_header_;
     debug.header.stamp = ros::Time::now();
@@ -688,7 +691,7 @@ protected:
         }
       }
     }
-    pubDebug.publish(debug);
+    pub_debug_.publish(debug);
   }
   void cbMapUpdate(const costmap_cspace::CSpace3DUpdate::ConstPtr &msg)
   {
@@ -698,7 +701,7 @@ protected:
 
     cm_ = cm_base_;
     cm_rough_ = cm_rough_base_;
-    if (remember_updates_)
+    if (remember_updates_ && pub_hist_.getNumSubscribers() > 0)
     {
       sensor_msgs::PointCloud pc;
       pc.header = map_header_;
@@ -730,7 +733,7 @@ protected:
           }
         }
       }
-      pubHist.publish(pc);
+      pub_hist_.publish(pc);
     }
 
     {
@@ -1089,13 +1092,13 @@ public:
   Planner3d()
     : nh_("~")
   {
-    subMap = nh_.subscribe("costmap", 1, &Planner3d::cbMap, this);
-    subMapUpdate = nh_.subscribe("costmap_update", 1, &Planner3d::cbMapUpdate, this);
-    subGoal = nh_.subscribe("goal", 1, &Planner3d::cbGoal, this);
-    pubPath = nh_.advertise<nav_msgs::Path>("path", 1, true);
-    pubDebug = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
-    pubHist = nh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
-    pubStart = nh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
+    sub_map_ = nh_.subscribe("costmap", 1, &Planner3d::cbMap, this);
+    sub_map_update_ = nh_.subscribe("costmap_update", 1, &Planner3d::cbMapUpdate, this);
+    sub_goal_ = nh_.subscribe("goal", 1, &Planner3d::cbGoal, this);
+    pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
+    pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+    pub_hist_ = nh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
+    pub_start_ = nh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status_ = nh_.advertise<planner_cspace::PlannerStatus>("status", 1, true);
     srs_forget_ = nh_.advertiseService("forget", &Planner3d::cbForget, this);
@@ -1304,7 +1307,7 @@ public:
           path.header = map_header_;
           path.header.stamp = ros::Time::now();
           makePlan(start_.pose, goal_.pose, path, true);
-          pubPath.publish(path);
+          pub_path_.publish(path);
 
           if (switchDetect(path))
           {
@@ -1321,7 +1324,7 @@ public:
         nav_msgs::Path path;
         path.header = map_header_;
         path.header.stamp = ros::Time::now();
-        pubPath.publish(path);
+        pub_path_.publish(path);
       }
       pub_status_.publish(status_);
     }
@@ -1520,7 +1523,7 @@ protected:
     p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
     p.pose.position.x = x;
     p.pose.position.y = y;
-    pubStart.publish(p);
+    pub_start_.publish(p);
 
     auto diff = s - e;
     diff.cycle(diff[2], map_info_.angle);
@@ -1658,7 +1661,7 @@ protected:
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
     // grid2Metric(path_grid, path);
-    pubPath.publish(path);
+    pub_path_.publish(path);
     ROS_WARN("Search timed out");
     return true;
   }
