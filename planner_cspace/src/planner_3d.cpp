@@ -651,6 +651,9 @@ protected:
   }
   void publishCostmap()
   {
+    if (pub_debug_.getNumSubscribers() == 0)
+      return;
+
     sensor_msgs::PointCloud debug;
     debug.header = map_header_;
     debug.header.stamp = ros::Time::now();
@@ -698,7 +701,7 @@ protected:
 
     cm_ = cm_base_;
     cm_rough_ = cm_rough_base_;
-    if (remember_updates_)
+    if (remember_updates_ && pub_hist_.getNumSubscribers() > 0)
     {
       sensor_msgs::PointCloud pc;
       pc.header = map_header_;
