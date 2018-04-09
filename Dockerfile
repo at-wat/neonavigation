@@ -1,16 +1,50 @@
 FROM ros:kinetic
 
-RUN apt-get -qq update && \
-	apt-get install -y --no-install-recommends sudo libavcodec-dev libavutil-dev libgstreamer1.0 libqt5gui5 libqtgui4 libyaml-cpp-dev libpcl-dev python-vtk6 qt5-qmake qtbase5-dev qtbase5-dev-tools qtchooser qtcore4-l10n qttools5-dev qttools5-private-dev tcl-dev tk-dev vtk6 wget curl python-pip && \
-	apt-get clean && \
-	rm -rf /var/lib/apt/lists/*
+RUN apt-get -qq update \
+  && apt-get install -y --no-install-recommends \
+    curl \
+    libavcodec-dev \
+    libavutil-dev \
+    libgstreamer1.0 \
+    libpcl-dev \
+    libqt5gui5 \
+    libqtgui4 \
+    libyaml-cpp-dev \
+    libxml2-utils \
+    python-pip \
+    python-vtk6 \
+    qt5-qmake \
+    qtbase5-dev \
+    qtbase5-dev-tools \
+    qtchooser \
+    qtcore4-l10n \
+    qttools5-dev \
+    qttools5-private-dev \
+    sudo \
+    tcl-dev \
+    tk-dev \
+    vtk6 \
+    wget \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN rosdep update && \
-	mkdir -p /catkin_ws/src && \
-	bash -c "cd /catkin_ws/src && . /opt/ros/${ROS_DISTRO}/setup.bash && catkin_init_workspace && cd .. && catkin_make"
+RUN rosdep update \
+  && mkdir -p /catkin_ws/src \
+  && cd /catkin_ws/src \
+  && bash -c ". /opt/ros/${ROS_DISTRO}/setup.bash && catkin_init_workspace && cd .. && catkin_make"
 
-ARG TRAVIS_PULL_REQUEST=false
-ARG TRAVIS_PULL_REQUEST_SLUG=""
-ARG TRAVIS_BOT_GITHUB_TOKEN=""
+COPY ./costmap_cspace/package.xml /catkin_ws/src/neonavigation/costmap_cspace/
+COPY ./map_organizer/package.xml /catkin_ws/src/neonavigation/map_organizer/
+COPY ./neonavigation_launch/package.xml /catkin_ws/src/neonavigation/neonavigation_launch/
+COPY ./planner_cspace/package.xml /catkin_ws/src/neonavigation/planner_cspace/
+COPY ./safety_limiter/package.xml /catkin_ws/src/neonavigation/safety_limiter/
+COPY ./trajectory_tracker/package.xml /catkin_ws/src/neonavigation/trajectory_tracker/
+COPY ./obj_to_pointcloud/package.xml /catkin_ws/src/neonavigation/obj_to_pointcloud/
+COPY ./track_odometry/package.xml /catkin_ws/src/neonavigation/track_odometry/
+
+RUN apt-get -qq update \
+  && rosdep install --from-paths /catkin_ws/src/neonavigation --ignore-src --rosdistro=${ROS_DISTRO} -y \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY ./ /catkin_ws/src/neonavigation
