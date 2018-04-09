@@ -205,6 +205,14 @@ public:
       }
       if (found)
         break;
+      auto tnow = boost::chrono::high_resolution_clock::now();
+      if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
+      {
+        std::list<Vec> path_tmp;
+        ts = tnow;
+        findPath(s, better, path_tmp);
+        cb_progress(path_tmp);
+      }
 
 #pragma omp parallel for schedule(static)
       for (auto it = centers.begin(); it < centers.end(); ++it)
@@ -220,15 +228,6 @@ public:
         {
           cost_estim_min = c_estim - c;
           better = p;
-        }
-
-        auto tnow = boost::chrono::high_resolution_clock::now();
-        if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
-        {
-          std::list<Vec> path_tmp;
-          ts = tnow;
-          findPath(s, better, path_tmp);
-          cb_progress(path_tmp);
         }
 
         const std::vector<Vec> search_list = cb_search(p, s, e);
