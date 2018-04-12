@@ -161,7 +161,7 @@ protected:
 
   Costmap3dLayerBase::Ptr child_;
   UpdatedRegion region_;
-  nav_msgs::OccupancyGrid map_updated_;
+  nav_msgs::OccupancyGrid::ConstPtr map_updated_;
 
 public:
   Costmap3dLayerBase()
@@ -192,20 +192,20 @@ public:
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
-  void setBaseMap(const nav_msgs::OccupancyGrid &base_map)
+  void setBaseMap(const nav_msgs::OccupancyGrid::ConstPtr &base_map)
   {
     ROS_ASSERT(root_);
     ROS_ASSERT(ang_grid_ > 0);
-    ROS_ASSERT(base_map.data.size() >= base_map.info.width * base_map.info.height);
+    ROS_ASSERT(base_map->data.size() >= base_map->info.width * base_map->info.height);
 
-    const size_t xy_size = base_map.info.width * base_map.info.height;
-    map_->header = base_map.header;
-    map_->info.width = base_map.info.width;
-    map_->info.height = base_map.info.height;
+    const size_t xy_size = base_map->info.width * base_map->info.height;
+    map_->header = base_map->header;
+    map_->info.width = base_map->info.width;
+    map_->info.height = base_map->info.height;
     map_->info.angle = ang_grid_;
-    map_->info.linear_resolution = base_map.info.resolution;
+    map_->info.linear_resolution = base_map->info.resolution;
     map_->info.angular_resolution = 2.0 * M_PI / ang_grid_;
-    map_->info.origin = base_map.info.origin;
+    map_->info.origin = base_map->info.origin;
     map_->data.resize(xy_size * map_->info.angle);
 
     setMapMetaData(map_->info);
@@ -222,7 +222,7 @@ public:
     {
       for (unsigned int i = 0; i < xy_size; i++)
       {
-        if (base_map.data[i] < 0)
+        if (base_map->data[i] < 0)
         {
           map_->data[i + yaw * xy_size] = -1;
         }
@@ -235,21 +235,21 @@ public:
     updateChainEntry(
         UpdatedRegion(
             0, 0, 0, map_->info.width, map_->info.height, map_->info.angle,
-            base_map.header.stamp));
+            base_map->header.stamp));
   }
-  void processMapOverlay(const nav_msgs::OccupancyGrid &msg)
+  void processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
     ROS_ASSERT(!root_);
     ROS_ASSERT(ang_grid_ > 0);
-    const int ox = lroundf((msg.info.origin.position.x - map_->info.origin.position.x) / map_->info.linear_resolution);
-    const int oy = lroundf((msg.info.origin.position.y - map_->info.origin.position.y) / map_->info.linear_resolution);
+    const int ox = lroundf((msg->info.origin.position.x - map_->info.origin.position.x) / map_->info.linear_resolution);
+    const int oy = lroundf((msg->info.origin.position.y - map_->info.origin.position.y) / map_->info.linear_resolution);
 
-    const int w = lroundf(msg.info.width * msg.info.resolution / map_->info.linear_resolution);
-    const int h = lroundf(msg.info.height * msg.info.resolution / map_->info.linear_resolution);
+    const int w = lroundf(msg->info.width * msg->info.resolution / map_->info.linear_resolution);
+    const int h = lroundf(msg->info.height * msg->info.resolution / map_->info.linear_resolution);
 
     map_updated_ = msg;
 
-    updateChainEntry(UpdatedRegion(ox, oy, 0, w, h, map_->info.angle, msg.header.stamp));
+    updateChainEntry(UpdatedRegion(ox, oy, 0, w, h, map_->info.angle, msg->header.stamp));
   }
   CSpace3DMsg::Ptr getMap()
   {
@@ -270,16 +270,16 @@ public:
 
 protected:
   virtual bool updateChain() = 0;
-  virtual void updateCSpace(const nav_msgs::OccupancyGrid &map) = 0;
+  virtual void updateCSpace(const nav_msgs::OccupancyGrid::ConstPtr &map) = 0;
 
   bool updateChainEntry(const UpdatedRegion &region)
   {
     region_.merge(region);
 
     *map_overlay_ = *map_;
-    if (map_updated_.info.width > 0 && map_updated_.info.height > 0)
+    if (map_updated_)
     {
-      if (map_->header.frame_id == map_updated_.header.frame_id)
+      if (map_->header.frame_id == map_updated_->header.frame_id)
       {
         updateCSpace(map_updated_);
       }

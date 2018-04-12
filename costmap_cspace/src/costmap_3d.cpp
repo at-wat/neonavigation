@@ -71,7 +71,7 @@ protected:
     }
     ROS_INFO("2D costmap received");
 
-    map->setBaseMap(*msg);
+    map->setBaseMap(msg);
     ROS_DEBUG("C-Space costmap generated");
 
     if (map_buffer_.size() > 0)
@@ -98,7 +98,7 @@ protected:
       return;
     }
 
-    map->processMapOverlay(*msg);
+    map->processMapOverlay(msg);
     ROS_DEBUG("C-Space costmap updated");
   }
   bool cbUpdateStatic(

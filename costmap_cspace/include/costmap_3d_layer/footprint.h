@@ -166,39 +166,39 @@ protected:
   {
     return false;
   }
-  void updateCSpace(const nav_msgs::OccupancyGrid &map)
+  void updateCSpace(const nav_msgs::OccupancyGrid::ConstPtr &map)
   {
     if (root_)
       gemerateCSpace(map_, map);
     else
       gemerateCSpace(map_overlay_, map);
   }
-  void gemerateCSpace(CSpace3DMsg::Ptr map, const nav_msgs::OccupancyGrid &msg)
+  void gemerateCSpace(CSpace3DMsg::Ptr map, const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
     ROS_ASSERT(ang_grid_ > 0);
-    const int ox = lroundf((msg.info.origin.position.x - map->info.origin.position.x) /
+    const int ox = lroundf((msg->info.origin.position.x - map->info.origin.position.x) /
                            map->info.linear_resolution);
-    const int oy = lroundf((msg.info.origin.position.y - map->info.origin.position.y) /
+    const int oy = lroundf((msg->info.origin.position.y - map->info.origin.position.y) /
                            map->info.linear_resolution);
     // Clear travelable area in OVERWRITE mode
     if (overlay_mode_ == OVERWRITE && !root_)
     {
       for (size_t yaw = 0; yaw < map->info.angle; yaw++)
       {
-        for (unsigned int i = 0; i < msg.data.size(); i++)
+        for (unsigned int i = 0; i < msg->data.size(); i++)
         {
-          const auto &val = msg.data[i];
+          const auto &val = msg->data[i];
           if (val < 0)
             continue;
 
-          const int x = lroundf((i % msg.info.width) * msg.info.resolution / map->info.linear_resolution);
-          if (x < range_max_ || static_cast<int>(msg.info.width) - range_max_ <= x)
+          const int x = lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          if (x < range_max_ || static_cast<int>(msg->info.width) - range_max_ <= x)
             continue;
-          const int y = lroundf((i / msg.info.width) * msg.info.resolution / map->info.linear_resolution);
-          if (y < range_max_ || static_cast<int>(msg.info.height) - range_max_ <= y)
+          const int y = lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          if (y < range_max_ || static_cast<int>(msg->info.height) - range_max_ <= y)
             continue;
 
-          const int res_up = ceilf(msg.info.resolution / map->info.linear_resolution);
+          const int res_up = ceilf(msg->info.resolution / map->info.linear_resolution);
           for (int yp = 0; yp < res_up; yp++)
           {
             for (int xp = 0; xp < res_up; xp++)
@@ -219,15 +219,15 @@ protected:
     // Get max
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
-      for (unsigned int i = 0; i < msg.data.size(); i++)
+      for (unsigned int i = 0; i < msg->data.size(); i++)
       {
-        const int gx = lroundf((i % msg.info.width) * msg.info.resolution / map->info.linear_resolution) + ox;
-        const int gy = lroundf((i / msg.info.width) * msg.info.resolution / map->info.linear_resolution) + oy;
+        const int gx = lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution) + ox;
+        const int gy = lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution) + oy;
         if ((unsigned int)gx >= map->info.width ||
             (unsigned int)gy >= map->info.height)
           continue;
 
-        auto val = msg.data[i];
+        auto val = msg->data[i];
         if (val <= 0)
           continue;
 

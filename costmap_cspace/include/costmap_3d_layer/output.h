@@ -68,7 +68,7 @@ protected:
       return cb_(map_, update_msg);
     return true;
   }
-  void updateCSpace(const nav_msgs::OccupancyGrid &map)
+  void updateCSpace(const nav_msgs::OccupancyGrid::ConstPtr &map)
   {
   }
   CSpace3DUpdate::Ptr generateUpdateMsg()
