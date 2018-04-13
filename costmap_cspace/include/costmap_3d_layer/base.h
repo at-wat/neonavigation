@@ -175,7 +175,7 @@ public:
         sizeof(src->data[0]);
     for (
         size_t a = yaw_;
-        a < yaw_ + angle_ && a < src->info.angle;
+        static_cast<int>(a) < yaw_ + angle_ && a < src->info.angle;
         ++a)
     {
       auto dest_pos = &dest->data[dest->address(x_, y_, a)];
@@ -184,7 +184,7 @@ public:
       const auto src_stride = src->info.width * sizeof(src->data[0]);
       for (
           size_t y = y_;
-          y < y_ + height_ && y < src->info.height;
+          static_cast<int>(y) < y_ + height_ && y < src->info.height;
           ++y)
       {
         memcpy(
