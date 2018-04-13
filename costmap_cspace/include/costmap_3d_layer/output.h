@@ -108,9 +108,9 @@ protected:
     UpdatedRegion region(
         update_x,
         update_y,
+        region_.yaw_,
         update_width,
         update_height,
-        region_.yaw_,
         region_.angle_);
     UpdatedRegion region_merged = region;
     region_merged.merge(region_prev_);
