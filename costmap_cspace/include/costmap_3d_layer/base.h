@@ -34,11 +34,13 @@
 
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
+
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <string>
+#include <algorithm>
 #include <map>
+#include <string>
 
 namespace costmap_cspace
 {
