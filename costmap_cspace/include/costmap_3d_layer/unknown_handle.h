@@ -27,82 +27,78 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_H
-#define COSTMAP_3D_H
+#ifndef COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
+#define COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
 
-#include <ros/ros.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace/CSpace3D.h>
+#include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <costmap_3d_layer/footprint.h>
-#include <costmap_3d_layer/plain.h>
-#include <costmap_3d_layer/output.h>
-#include <costmap_3d_layer/unknown_handle.h>
-
-#include <costmap_3d_layer/class_loader.h>
-
-#include <vector>
+#include <costmap_3d_layer/base.h>
 
 namespace costmap_cspace
 {
-class Costmap3d
+class Costmap3dLayerUnknownHandle : public Costmap3dLayerBase
 {
+public:
+  using Ptr = std::shared_ptr<Costmap3dLayerUnknownHandle>;
+
 protected:
-  std::vector<Costmap3dLayerBase::Ptr> costmaps_;
-  int ang_resolution_;
+  int8_t unknown_cost_;
 
 public:
-  using Ptr = std::shared_ptr<Costmap3d>;
-
-  explicit Costmap3d(const int ang_resolution)
+  Costmap3dLayerUnknownHandle()
+    : unknown_cost_(-1)
   {
-    ang_resolution_ = ang_resolution;
-
-    ROS_ASSERT(ang_resolution_ > 0);
   }
-  template <typename T>
-  typename T::Ptr addRootLayer()
+  void loadConfig(XmlRpc::XmlRpcValue config)
   {
-    typename T::Ptr
-        costmap_base(new T);
-
-    costmap_base->setAngleResolution(ang_resolution_);
-
-    costmap_base->setOverlayMode(MapOverlayMode::MAX);
-
-    costmaps_.resize(1);
-    costmaps_[0] = costmap_base;
-
-    return costmap_base;
+    if (config.hasMember("unknown_cost"))
+    {
+      unknown_cost_ = static_cast<int>(config["unknown_cost"]);
+    }
   }
-  template <typename T>
-  typename T::Ptr addLayer(
-      const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
+  void setMapMetaData(const MapMetaData3D &info)
   {
-    typename T::Ptr costmap_overlay(new T);
-    costmap_overlay->setAngleResolution(ang_resolution_);
-    costmap_overlay->setOverlayMode(overlay_mode);
-
-    costmaps_.back()->setChild(costmap_overlay);
-    costmaps_.push_back(costmap_overlay);
-
-    return costmap_overlay;
   }
-  Costmap3dLayerBase::Ptr addLayer(
-      Costmap3dLayerBase::Ptr costmap_overlay,
-      const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
+
+protected:
+  int getRangeMax() const
   {
-    costmap_overlay->setAngleResolution(ang_resolution_);
-    costmap_overlay->setOverlayMode(overlay_mode);
-
-    costmaps_.back()->setChild(costmap_overlay);
-    costmaps_.push_back(costmap_overlay);
-
-    return costmap_overlay;
+    return 0;
   }
-  Costmap3dLayerBase::Ptr getRootLayer()
+  bool updateChain(const bool output)
   {
-    return costmaps_.front();
+    for (
+        size_t a = region_.yaw_;
+        static_cast<int>(a) < region_.yaw_ + region_.angle_ && a < map_->info.angle;
+        ++a)
+    {
+      for (
+          size_t y = region_.y_;
+          static_cast<int>(y) < region_.y_ + region_.height_ && y < map_->info.height;
+          ++y)
+      {
+        for (
+            size_t x = region_.x_;
+            static_cast<int>(x) < region_.x_ + region_.width_ && x < map_->info.width;
+            ++x)
+        {
+          auto &m = map_overlay_->getCost(x, y, a);
+          if (m < 0)
+            m = unknown_cost_;
+        }
+      }
+    }
+    return false;
+  }
+  void updateCSpace(
+      const nav_msgs::OccupancyGrid::ConstPtr &map,
+      const UpdatedRegion &region)
+  {
   }
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_3D_H
+#endif  // COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H

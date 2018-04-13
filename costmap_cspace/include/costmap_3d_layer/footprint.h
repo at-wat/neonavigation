@@ -162,7 +162,7 @@ public:
   }
 
 protected:
-  bool updateChain()
+  bool updateChain(const bool output)
   {
     return false;
   }

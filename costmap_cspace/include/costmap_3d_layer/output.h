@@ -66,10 +66,10 @@ protected:
   {
     return 0;
   }
-  bool updateChain()
+  bool updateChain(const bool output)
   {
     auto update_msg = generateUpdateMsg();
-    if (cb_)
+    if (cb_ && output)
       return cb_(map_, update_msg);
     return true;
   }

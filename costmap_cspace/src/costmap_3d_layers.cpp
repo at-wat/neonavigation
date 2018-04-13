@@ -36,7 +36,6 @@
 
 COSTMAP_3D_LAYER_CLASS_LOADER_ENABLE();
 
-
 COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
     "Costmap3dLayerFootprint",
     costmap_cspace::Costmap3dLayerFootprint,
@@ -51,3 +50,8 @@ COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
     "Costmap3dLayerOutput",
     costmap_cspace::Costmap3dLayerOutput,
     Costmap3dLayerOutput);
+
+COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
+    "Costmap3dLayerUnknownHandle",
+    costmap_cspace::Costmap3dLayerUnknownHandle,
+    Costmap3dLayerUnknownHandle);
