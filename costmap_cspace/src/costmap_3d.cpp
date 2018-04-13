@@ -119,6 +119,8 @@ protected:
   }
   void publishDebug(const costmap_cspace::CSpace3D &map)
   {
+    if (pub_debug_.getNumSubscribers() == 0)
+      return;
     sensor_msgs::PointCloud pc;
     pc.header = map.header;
     pc.header.stamp = ros::Time::now();
