@@ -205,21 +205,21 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
   cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate sample map
-  nav_msgs::OccupancyGrid map;
-  map.info.width = 7;
-  map.info.height = 7;
-  map.info.resolution = 1.0;
-  map.info.origin.orientation.w = 1.0;
-  map.data.resize(map.info.width * map.info.height);
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = 7;
+  map->info.height = 7;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height);
 
   // Apply empty map
   cm.setBaseMap(map);
 
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (size_t j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map->info.height; ++j)
     {
-      for (size_t i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be 0
@@ -232,16 +232,16 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
   }
 
   // std::cout << "========" << std::endl;
-  for (auto &g : map.data)
+  for (auto &g : map->data)
   {
     g = 100;
   }
   cm.setBaseMap(map);
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (size_t j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map->info.height; ++j)
     {
-      for (size_t i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be 100
@@ -254,25 +254,25 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
   }
 
   // C shape wall in the map
-  for (auto &g : map.data)
+  for (auto &g : map->data)
   {
     g = 0;
   }
-  for (size_t i = map.info.width / 2 - 2; i < map.info.width / 2 + 2; ++i)
+  for (size_t i = map->info.width / 2 - 2; i < map->info.width / 2 + 2; ++i)
   {
-    map.data[i + (map.info.height / 2 - 2) * map.info.width] = 100;
-    map.data[i + (map.info.height / 2 + 2) * map.info.width] = 100;
+    map->data[i + (map->info.height / 2 - 2) * map->info.width] = 100;
+    map->data[i + (map->info.height / 2 + 2) * map->info.width] = 100;
   }
-  for (size_t i = map.info.height / 2 - 2; i < map.info.height / 2 + 2; ++i)
+  for (size_t i = map->info.height / 2 - 2; i < map->info.height / 2 + 2; ++i)
   {
-    map.data[(map.info.width / 2 - 2) + i * map.info.width] = 100;
+    map->data[(map->info.width / 2 - 2) + i * map->info.width] = 100;
   }
   cm.setBaseMap(map);
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    for (size_t j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map->info.height; ++j)
     {
-      for (size_t i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
 
@@ -280,12 +280,12 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
         int cost_offset = 0;
         const int i_offset = static_cast<int>(i) - temp_dir[k][0];
         const int j_offset = static_cast<int>(j) - temp_dir[k][1];
-        if (static_cast<size_t>(i_offset) < map.info.width &&
-            static_cast<size_t>(j_offset) < map.info.height)
+        if (static_cast<size_t>(i_offset) < map->info.width &&
+            static_cast<size_t>(j_offset) < map->info.height)
         {
-          cost_offset = map.data[i_offset + j_offset * map.info.width];
+          cost_offset = map->data[i_offset + j_offset * map->info.width];
         }
-        if (map.data[i + j * map.info.width] == 100 || cost_offset == 100)
+        if (map->data[i + j * map->info.width] == 100 || cost_offset == 100)
         {
           ASSERT_EQ(cost, 100);
         }
@@ -319,27 +319,27 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
   cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate sample map
-  nav_msgs::OccupancyGrid map;
-  map.info.width = 9;
-  map.info.height = 9;
-  map.info.resolution = 1.0;
-  map.info.origin.orientation.w = 1.0;
-  map.data.resize(map.info.width * map.info.height);
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = 9;
+  map->info.height = 9;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height);
 
   const int max_cost = 80;
-  map.data[map.info.width / 2 + (map.info.height / 2) * map.info.width] = max_cost;
+  map->data[map->info.width / 2 + (map->info.height / 2) * map->info.width] = max_cost;
   cm.setBaseMap(map);
 
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    const int i_center = map.info.width / 2;
-    const int j_center = map.info.height / 2;
-    const int i_center2 = map.info.width / 2 + temp_dir[k][0];
-    const int j_center2 = map.info.height / 2 + temp_dir[k][1];
+    const int i_center = map->info.width / 2;
+    const int j_center = map->info.height / 2;
+    const int i_center2 = map->info.width / 2 + temp_dir[k][0];
+    const int j_center2 = map->info.height / 2 + temp_dir[k][1];
 
-    for (size_t j = 0; j < map.info.height; ++j)
+    for (size_t j = 0; j < map->info.height; ++j)
     {
-      for (size_t i = 0; i < map.info.width; ++i)
+      for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
         const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
@@ -403,14 +403,15 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm_base.setOverlayMode(costmap_cspace::MapOverlayMode::OVERWRITE);
 
   // Generate two sample maps
-  nav_msgs::OccupancyGrid map;
-  map.info.width = 9;
-  map.info.height = 9;
-  map.info.resolution = 1.0;
-  map.info.origin.orientation.w = 1.0;
-  map.data.resize(map.info.width * map.info.height);
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = 9;
+  map->info.height = 9;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height);
 
-  nav_msgs::OccupancyGrid map2 = map;
+  nav_msgs::OccupancyGrid::Ptr map2(new nav_msgs::OccupancyGrid);
+  *map2 = *map;
 
   const int num_points_base_map = 2;
   const int points_base_map[num_points_base_map][2] =
@@ -420,7 +421,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
       };
   for (int i = 0; i < num_points_base_map; ++i)
   {
-    map.data[points_base_map[i][0] + points_base_map[i][1] * map.info.width] = 100;
+    map->data[points_base_map[i][0] + points_base_map[i][1] * map->info.width] = 100;
   }
 
   const int num_points_local_map = 3;
@@ -432,7 +433,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
       };
   for (int i = 0; i < num_points_local_map; ++i)
   {
-    map2.data[points_local_map[i][0] + points_local_map[i][1] * map.info.width] = 100;
+    map2->data[points_local_map[i][0] + points_local_map[i][1] * map->info.width] = 100;
   }
 
   // Apply base map
@@ -454,8 +455,8 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   ASSERT_EQ(updated->x, 0u);
   ASSERT_EQ(updated->y, 0u);
   ASSERT_EQ(updated->yaw, 0u);
-  ASSERT_EQ(updated->width, map.info.width);
-  ASSERT_EQ(updated->height, map.info.height);
+  ASSERT_EQ(updated->width, map->info.width);
+  ASSERT_EQ(updated->height, map->info.height);
   ASSERT_EQ(updated->angle, static_cast<size_t>(cm_over->getAngularGrid()));
 
   // Generate reference local and base cspace map
@@ -466,11 +467,11 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   // note: boundary of the local map is not completely overwritten for keeping the spread effect.
   for (int k = 0; k < cm_over->getAngularGrid(); ++k)
   {
-    for (size_t j = cm_over->getRangeMax(); j < map.info.height - cm_over->getRangeMax(); ++j)
+    for (size_t j = cm_over->getRangeMax(); j < map->info.height - cm_over->getRangeMax(); ++j)
     {
-      for (size_t i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
+      for (size_t i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
       {
-        const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
+        const size_t addr = ((k * map->info.height + j) * map->info.width) + i;
         ROS_ASSERT(addr < updated->data.size());
         const int cost = updated->data[addr];
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
@@ -480,7 +481,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
         // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
       /*std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
+      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
       {
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
         std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
@@ -508,17 +509,17 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   ASSERT_EQ(updated_max->x, 0u);
   ASSERT_EQ(updated_max->y, 0u);
   ASSERT_EQ(updated_max->yaw, 0u);
-  ASSERT_EQ(updated_max->width, map.info.width);
-  ASSERT_EQ(updated_max->height, map.info.height);
+  ASSERT_EQ(updated_max->width, map->info.width);
+  ASSERT_EQ(updated_max->height, map->info.height);
   ASSERT_EQ(updated_max->angle, static_cast<size_t>(cm_over->getAngularGrid()));
 
   for (int k = 0; k < cm_over->getAngularGrid(); ++k)
   {
-    for (int j = cm_over->getRangeMax(); j < static_cast<int>(map.info.height) - cm_over->getRangeMax(); ++j)
+    for (int j = cm_over->getRangeMax(); j < static_cast<int>(map->info.height) - cm_over->getRangeMax(); ++j)
     {
-      for (int i = cm_over->getRangeMax(); i < static_cast<int>(map.info.width) - cm_over->getRangeMax(); ++i)
+      for (int i = cm_over->getRangeMax(); i < static_cast<int>(map->info.width) - cm_over->getRangeMax(); ++i)
       {
-        const size_t addr = ((k * map.info.height + j) * map.info.width) + i;
+        const size_t addr = ((k * map->info.height + j) * map->info.width) + i;
         ROS_ASSERT(addr < updated_max->data.size());
         const int cost = updated_max->data[addr];
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
@@ -531,13 +532,13 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
       }
       /*
       std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
+      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
       {
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
         std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
       }
       std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map.info.width - cm_over->getRangeMax(); ++i)
+      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
       {
         const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);
         std::cout << std::setfill(' ') << std::setw(3) << cost_base << " ";
@@ -568,42 +569,43 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
   cm_over->setFootprint(footprint);
 
   // Generate sample map
-  nav_msgs::OccupancyGrid map;
-  map.info.width = 5;
-  map.info.height = 5;
-  map.info.resolution = 1.0;
-  map.info.origin.orientation.w = 1.0;
-  map.data.resize(map.info.width * map.info.height);
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = 5;
+  map->info.height = 5;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height);
 
   const int max_cost = 100;
-  map.data[map.info.width / 2 + (map.info.height / 2) * map.info.width] = max_cost;
+  map->data[map->info.width / 2 + (map->info.height / 2) * map->info.width] = max_cost;
   cm->setBaseMap(map);
 
   // Generate local sample map
-  nav_msgs::OccupancyGrid map2 = map;
+  nav_msgs::OccupancyGrid::Ptr map2(new nav_msgs::OccupancyGrid);
+  *map2 = *map;
 
   for (int xp = -1; xp <= 1; ++xp)
   {
     for (int yp = -1; yp <= 1; ++yp)
     {
-      map2.info.origin.position.x = map2.info.resolution * xp;
-      map2.info.origin.position.y = map2.info.resolution * yp;
+      map2->info.origin.position.x = map2->info.resolution * xp;
+      map2->info.origin.position.y = map2->info.resolution * yp;
       /*
       std::cout << "=== origin: ("
-                << map2.info.origin.position.x << ", " << map2.info.origin.position.y
+                << map2->info.origin.position.x << ", " << map2->info.origin.position.y
                 << ")" << std::endl;
       */
       cm_over->processMapOverlay(map2);
       for (int k = 0; k < cm_over->getAngularGrid(); ++k)
       {
-        const size_t i_center = map.info.width / 2;
-        const size_t j_center = map.info.height / 2;
-        const size_t i_center2 = map.info.width / 2 + temp_dir[k][0];
-        const size_t j_center2 = map.info.height / 2 + temp_dir[k][1];
+        const size_t i_center = map->info.width / 2;
+        const size_t j_center = map->info.height / 2;
+        const size_t i_center2 = map->info.width / 2 + temp_dir[k][0];
+        const size_t j_center2 = map->info.height / 2 + temp_dir[k][1];
 
-        for (size_t j = 0; j < map.info.height; ++j)
+        for (size_t j = 0; j < map->info.height; ++j)
         {
-          for (size_t i = 0; i < map.info.width; ++i)
+          for (size_t i = 0; i < map->info.width; ++i)
           {
             const int cost = cm_over->getMapOverlay()->getCost(i, j, k);
 
