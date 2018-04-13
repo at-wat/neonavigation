@@ -166,20 +166,27 @@ protected:
   {
     return false;
   }
-  void updateCSpace(const nav_msgs::OccupancyGrid::ConstPtr &map)
+  void updateCSpace(
+      const nav_msgs::OccupancyGrid::ConstPtr &map,
+      const UpdatedRegion &region)
   {
     if (root_)
-      gemerateCSpace(map_, map);
+      gemerateCSpace(map_, map, region);
     else
-      gemerateCSpace(map_overlay_, map);
+      gemerateCSpace(map_overlay_, map, region);
   }
-  void gemerateCSpace(CSpace3DMsg::Ptr map, const nav_msgs::OccupancyGrid::ConstPtr &msg)
+  void gemerateCSpace(
+      CSpace3DMsg::Ptr map,
+      const nav_msgs::OccupancyGrid::ConstPtr &msg,
+      const UpdatedRegion &region)
   {
     ROS_ASSERT(ang_grid_ > 0);
-    const int ox = lroundf((msg->info.origin.position.x - map->info.origin.position.x) /
-                           map->info.linear_resolution);
-    const int oy = lroundf((msg->info.origin.position.y - map->info.origin.position.y) /
-                           map->info.linear_resolution);
+    const int ox =
+        lroundf((msg->info.origin.position.x - map->info.origin.position.x) /
+                map->info.linear_resolution);
+    const int oy =
+        lroundf((msg->info.origin.position.y - map->info.origin.position.y) /
+                map->info.linear_resolution);
     // Clear travelable area in OVERWRITE mode
     if (overlay_mode_ == OVERWRITE && !root_)
     {
@@ -191,10 +198,12 @@ protected:
           if (val < 0)
             continue;
 
-          const int x = lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          const int x =
+              lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution);
           if (x < range_max_ || static_cast<int>(msg->info.width) - range_max_ <= x)
             continue;
-          const int y = lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          const int y =
+              lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution);
           if (y < range_max_ || static_cast<int>(msg->info.height) - range_max_ <= y)
             continue;
 

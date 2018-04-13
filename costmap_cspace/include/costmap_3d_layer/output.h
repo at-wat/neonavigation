@@ -47,6 +47,7 @@ public:
 
 protected:
   Callback cb_;
+  UpdatedRegion region_prev_;
 
 public:
   void loadConfig(XmlRpc::XmlRpcValue config)
@@ -61,6 +62,10 @@ public:
   }
 
 protected:
+  int getRangeMax() const
+  {
+    return 0;
+  }
   bool updateChain()
   {
     auto update_msg = generateUpdateMsg();
@@ -68,7 +73,9 @@ protected:
       return cb_(map_, update_msg);
     return true;
   }
-  void updateCSpace(const nav_msgs::OccupancyGrid::ConstPtr &map)
+  void updateCSpace(
+      const nav_msgs::OccupancyGrid::ConstPtr &map,
+      const UpdatedRegion &region)
   {
   }
   CSpace3DUpdate::Ptr generateUpdateMsg()
@@ -98,12 +105,23 @@ protected:
     {
       update_height = map_->info.height - update_y;
     }
-    update_msg->x = update_x;
-    update_msg->y = update_y;
-    update_msg->width = update_width;
-    update_msg->height = update_height;
-    update_msg->yaw = region_.yaw_;
-    update_msg->angle = region_.angle_;
+    UpdatedRegion region(
+        update_x,
+        update_y,
+        update_width,
+        update_height,
+        region_.yaw_,
+        region_.angle_);
+    UpdatedRegion region_merged = region;
+    region_merged.merge(region_prev_);
+    region_prev_ = region;
+
+    update_msg->x = region_merged.x_;
+    update_msg->y = region_merged.y_;
+    update_msg->width = region_merged.width_;
+    update_msg->height = region_merged.height_;
+    update_msg->yaw = region_merged.yaw_;
+    update_msg->angle = region_merged.angle_;
     update_msg->data.resize(update_msg->width * update_msg->height * update_msg->angle);
 
     for (int i = 0; i < static_cast<int>(update_msg->width); i++)
