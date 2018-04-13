@@ -71,7 +71,7 @@ protected:
     }
     ROS_INFO("2D costmap received");
 
-    map->setBaseMap(*msg);
+    map->setBaseMap(msg);
     ROS_DEBUG("C-Space costmap generated");
 
     if (map_buffer_.size() > 0)
@@ -98,7 +98,7 @@ protected:
       return;
     }
 
-    map->processMapOverlay(*msg);
+    map->processMapOverlay(msg);
     ROS_DEBUG("C-Space costmap updated");
   }
   bool cbUpdateStatic(
@@ -119,6 +119,8 @@ protected:
   }
   void publishDebug(const costmap_cspace::CSpace3D &map)
   {
+    if (pub_debug_.getNumSubscribers() == 0)
+      return;
     sensor_msgs::PointCloud pc;
     pc.header = map.header;
     pc.header.stamp = ros::Time::now();
