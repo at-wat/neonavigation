@@ -339,13 +339,13 @@ public:
   }
 
 protected:
-  virtual bool updateChain() = 0;
+  virtual bool updateChain(const bool output) = 0;
   virtual void updateCSpace(
       const nav_msgs::OccupancyGrid::ConstPtr &map,
       const UpdatedRegion &region) = 0;
   virtual int getRangeMax() const = 0;
 
-  bool updateChainEntry(const UpdatedRegion &region)
+  bool updateChainEntry(const UpdatedRegion &region, bool output = true)
   {
     auto region_expand = region;
     region_expand.expand(getRangeMax());
@@ -365,12 +365,12 @@ protected:
       }
     }
 
-    if (updateChain())
-      return true;
+    if (updateChain(output))
+      output = false;
 
     if (child_)
     {
-      return child_->updateChainEntry(region_);
+      return child_->updateChainEntry(region_, output);
     }
     return false;
   }
