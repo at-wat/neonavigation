@@ -154,8 +154,13 @@ public:
     ROS_ASSERT(ex >= 0);
     x_ -= ex;
     y_ -= ex;
-    int x2 = x_ + width_ + ex * 2;
-    int y2 = y_ + height_ + ex * 2;
+    width_ += 2 * ex;
+    height_ += 2 * ex;
+  }
+  void normalize()
+  {
+    const int x2 = x_ + width_;
+    const int y2 = y_ + height_;
     if (x_ < 0)
       x_ = 0;
     if (y_ < 0)
@@ -170,6 +175,7 @@ public:
     ROS_ASSERT(dest->info.width == src->info.width);
     ROS_ASSERT(dest->info.height == src->info.height);
 
+    normalize();
     const size_t copy_length =
         std::min<size_t>(width_, src->info.width - x_) *
         sizeof(src->data[0]);
