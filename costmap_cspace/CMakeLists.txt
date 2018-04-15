@@ -40,6 +40,9 @@ target_link_libraries(laserscan_to_map ${catkin_LIBRARIES})
 add_executable(pointcloud2_to_map src/pointcloud2_to_map.cpp)
 target_link_libraries(pointcloud2_to_map ${catkin_LIBRARIES})
 
+add_executable(largemap_to_map src/largemap_to_map.cpp)
+target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
+
 
 roslint_cpp()
 
