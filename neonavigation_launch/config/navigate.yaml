@@ -26,6 +26,7 @@ planner_3d:
   num_threads: 2
   freq: 2.0
   freq_min: 0.5
+  local_range: 2.0
 spur:
   hz: 30.0
   odom: /odom
