@@ -22,3 +22,23 @@ costmap_3d:
       overlay_mode: max
       linear_expand: 0.08
       linear_spread: 0.0
+planner_3d:
+  num_threads: 2
+  freq: 2.0
+  freq_min: 0.5
+spur:
+  hz: 30.0
+  odom: /odom
+  path: /planner_3d/path
+  k_dist: 4.5
+  k_ang: 3.0
+  k_avel: 4.0
+  dist_lim: 0.5
+  distance_angle_factor: 0.2
+  goal_tolerance_dist: 0.05
+  goal_tolerance_ang: 0.05
+  stop_tolerance_dist: 0.04
+  stop_tolerance_ang: 0.04
+  no_position_control_dist: 0.05
+  limit_vel_by_avel: true
+  path_step: 1

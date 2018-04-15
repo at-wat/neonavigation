@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find neonavigation_launch)/launch/navigate.launch">
+    <arg name="simulate" value="true" />
+    <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
+  </include>
+
+  <node pkg="map_server" type="map_server" name="map_server_local" args="$(find neonavigation_launch)/map/demo_map_local.yaml">
+    <remap from="map" to="local_map" />
+  </node>
+  <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
+    <remap from="map" to="local_map" />
+    <remap from="~/map" to="overlay1" />
+    <param name="width" value="60" />
+    <param name="hz" value="1.5" />
+  </node>
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" />
+</launch>
+
