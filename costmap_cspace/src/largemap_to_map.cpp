@@ -48,7 +48,7 @@ private:
 
   std::string robot_frame_;
 
-  unsigned int width_;
+  int width_;
 
 public:
   LargeMapToMap()
@@ -60,9 +60,7 @@ public:
     pub_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
     sub_largemap_ = nh_.subscribe("map", 2, &LargeMapToMap::cbLargeMap, this);
 
-    int width_param;
-    pnh_.param("width", width_param, 30);
-    width_ = width_param;
+    pnh_.param("width", width_, 30);
 
     double hz;
     pnh_.param("hz", hz, 1.0);
@@ -120,7 +118,9 @@ private:
       {
         const size_t addr = (y - gy) * width_ + (x - gx);
         const size_t addr_large = y * large_map_->info.width + x;
-        if (x < 0 || y < 0 || x >= large_map_->info.width || y >= large_map_->info.height)
+        if (x < 0 || y < 0 ||
+            x >= static_cast<int>(large_map_->info.width) ||
+            y >= static_cast<int>(large_map_->info.height))
         {
           map.data[addr] = -1;
         }
