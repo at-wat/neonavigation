@@ -10,7 +10,7 @@ A quick demonstration with a simple simulated robot is available.
 roslaunch neonavigation_launch demo.launch
 ```
 
-![Rviz image of the demo](https://github.com/at-wat/neonavigation/blob/add-demo/neonavigation_launch/doc/images/demo.png?raw=true)
+![Rviz image of the demo](https://github.com/at-wat/neonavigation/blob/master/neonavigation_launch/doc/images/demo.png?raw=true)
 
 ## Packages
 
