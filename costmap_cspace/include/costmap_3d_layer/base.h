@@ -219,6 +219,7 @@ protected:
 
   Costmap3dLayerBase::Ptr child_;
   UpdatedRegion region_;
+  UpdatedRegion region_prev_;
   nav_msgs::OccupancyGrid::ConstPtr map_updated_;
 
 public:
@@ -352,7 +353,11 @@ protected:
 
     region_.merge(region_expand);
 
-    region_.bitblt(map_overlay_, map_);
+    auto region_prev_now = region_;
+    region_prev_now.merge(region_prev_);
+    region_prev_ = region_;
+
+    region_prev_now.bitblt(map_overlay_, map_);
     if (map_updated_)
     {
       if (map_->header.frame_id == map_updated_->header.frame_id)
