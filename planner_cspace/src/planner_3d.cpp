@@ -402,6 +402,7 @@ protected:
     ROS_WARN("Preempting the current goal.");
     act_->setPreempted(move_base_msgs::MoveBaseResult(), "Preempted.");
     has_goal_ = false;
+    status_.status = planner_cspace::PlannerStatus::DONE;
   }
   bool setGoal(const geometry_msgs::PoseStamped &msg)
   {
