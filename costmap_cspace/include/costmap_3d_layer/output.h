@@ -115,6 +115,7 @@ protected:
     UpdatedRegion region_merged = region;
     region_merged.merge(region_prev_);
     region_prev_ = region;
+    region_ = UpdatedRegion();
 
     update_msg->x = region_merged.x_;
     update_msg->y = region_merged.y_;
@@ -132,7 +133,7 @@ protected:
         {
           const int x2 = update_msg->x + i;
           const int y2 = update_msg->y + j;
-          const int yaw2 = region_.yaw_ + k;
+          const int yaw2 = update_msg->yaw + k;
 
           const auto &m = map_->getCost(x2, y2, yaw2);
           const size_t addr = (k * update_msg->height + j) * update_msg->width + i;
