@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
   <arg name="dev" default="/dev/input/js1"/>
   <arg name="cmd_vel_out" />
@@ -22,6 +23,4 @@
     <remap from="~/cmd_vel_input" to="$(arg cmd_vel_in)" />
     <remap from="/joy" to="/joystick_interrupt/joy" />
   </node>
-
 </launch>
-
