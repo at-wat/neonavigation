@@ -5,7 +5,7 @@ set -o verbose
 
 if [[ ${TRAVIS_BRANCH} == "master" ]] && [[ ${TRAVIS_PULL_REQUEST} == "false" ]];
 then
-  docker tag docker-neonavigation:latest atwat/ros-neonavigation-cache:latest
+  docker tag ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET} ${DOCKER_CACHE_REGISTRY}:${ROS_DISTRO_TARGET}
   docker login -u ${DOCKER_HUB_USER} -p ${DOCKER_HUB_TOKEN}
-	docker push atwat/ros-neonavigation-cache
+	docker push ${DOCKER_CACHE_REGISTRY}:${ROS_DISTRO_TARGET}
 fi
