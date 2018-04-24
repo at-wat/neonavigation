@@ -3,7 +3,7 @@ services: docker
 
 env:
   global:
-    - PACKAGE_NAME=mcl_3dl
+    - PACKAGE_NAME=neonavigation
     - DOCKER_CACHE_TARGET=neonavigation
     - DOCKER_CACHE_REGISTRY=atwat/ros-neonavigation-cache
   matrix:
