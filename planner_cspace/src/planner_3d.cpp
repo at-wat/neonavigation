@@ -397,6 +397,13 @@ protected:
     }
     setGoal(*msg);
   }
+  void cbPreempt()
+  {
+    ROS_WARN("Preempting the current goal.");
+    act_->setPreempted(move_base_msgs::MoveBaseResult(), "Preempted.");
+    has_goal_ = false;
+    status_.status = planner_cspace::PlannerStatus::DONE;
+  }
   bool setGoal(const geometry_msgs::PoseStamped &msg)
   {
     goal_raw_ = goal_ = msg;
@@ -1105,6 +1112,7 @@ public:
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3d::cbAction, this));
+    act_->registerPreemptCallback(boost::bind(&Planner3d::cbPreempt, this));
 
     nh_.param_cast("freq", freq_, 4.0f);
     nh_.param_cast("freq_min", freq_min_, 2.0f);

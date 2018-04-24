@@ -33,3 +33,10 @@ add_rostest_gtest(test_abort
 )
 target_link_libraries(test_abort ${catkin_LIBRARIES})
 add_dependencies(test_abort planner_3d)
+
+add_rostest_gtest(test_preempt
+  test/preempt_rostest.test
+  src/test_preempt.cpp
+)
+target_link_libraries(test_preempt ${catkin_LIBRARIES})
+add_dependencies(test_preempt planner_3d)
