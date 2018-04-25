@@ -44,11 +44,14 @@ private:
   double linear_vel_;
   double angular_vel_;
   double timeout_;
+  double linear_high_speed_ratio_;
+  double angular_high_speed_ratio_;
   int linear_axis_;
   int angular_axis_;
   int linear_axis2_;
   int angular_axis2_;
   int interrupt_button_;
+  int high_speed_button_;
   ros::Time last_joy_msg_;
 
   void cbJoy(const sensor_msgs::Joy::Ptr msg)
@@ -72,6 +75,15 @@ private:
         if (fabs(msg->axes[angular_axis2_]) > fabs(lin))
         {
           ang = msg->axes[angular_axis2_];
+        }
+      }
+
+      if (high_speed_button_ >= 0)
+      {
+        if (msg->buttons[high_speed_button_])
+        {
+          lin *= linear_high_speed_ratio_;
+          ang *= angular_high_speed_ratio_;
         }
       }
 
@@ -119,6 +131,9 @@ public:
     pnh_.param("linear_axis2", linear_axis2_, -1);
     pnh_.param("angular_axis2", angular_axis2_, -1);
     pnh_.param("interrupt_button", interrupt_button_, 6);
+    pnh_.param("high_speed_button", high_speed_button_, -1);
+    pnh_.param("linear_high_speed_ratio", linear_high_speed_ratio_, 1.3);
+    pnh_.param("angular_high_speed_ratio", angular_high_speed_ratio_, 1.1);
     pnh_.param("timeout", timeout_, 0.5);
     last_joy_msg_ = ros::Time(0);
   }
