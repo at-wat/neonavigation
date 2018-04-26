@@ -56,29 +56,60 @@ private:
 
   void cbJoy(const sensor_msgs::Joy::Ptr msg)
   {
-    if (msg->buttons[interrupt_button_])
+    if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
     {
-      last_joy_msg_ = ros::Time::now();
+      ROS_ERROR("Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
+                msg->buttons.size(), interrupt_button_);
+      last_joy_msg_ = ros::Time(0);
+      return;
+    }
+    if (!msg->buttons[interrupt_button_])
+    {
+      last_joy_msg_ = ros::Time(0);
+      return;
+    }
 
-      float lin, ang;
+    last_joy_msg_ = ros::Time::now();
+
+    float lin(0.0f);
+    float ang(0.0f);
+    if (static_cast<size_t>(linear_axis_) < msg->axes.size())
       lin = msg->axes[linear_axis_];
+    else
+      ROS_ERROR("Out of range: number of axis (%lu) must be greater than linear_axis (%d).",
+                msg->axes.size(), linear_axis_);
+    if (static_cast<size_t>(angular_axis_) < msg->axes.size())
       ang = msg->axes[angular_axis_];
-      if (linear_axis2_ >= 0)
+    else
+      ROS_ERROR("Out of range: number of axis (%lu) must be greater than angular_axis (%d).",
+                msg->axes.size(), angular_axis_);
+
+    if (linear_axis2_ >= 0)
+    {
+      if (static_cast<size_t>(linear_axis2_) < msg->axes.size())
       {
         if (fabs(msg->axes[linear_axis2_]) > fabs(lin))
-        {
           lin = msg->axes[linear_axis2_];
-        }
       }
-      if (angular_axis2_ >= 0)
+      else
+        ROS_ERROR("Out of range: number of axis (%lu) must be greater than linear_axis2 (%d).",
+                  msg->axes.size(), linear_axis2_);
+    }
+    if (angular_axis2_ >= 0)
+    {
+      if (static_cast<size_t>(angular_axis2_) < msg->axes.size())
       {
-        if (fabs(msg->axes[angular_axis2_]) > fabs(lin))
-        {
+        if (fabs(msg->axes[angular_axis2_]) > fabs(ang))
           ang = msg->axes[angular_axis2_];
-        }
       }
+      else
+        ROS_ERROR("Out of range: number of axis (%lu) must be greater than angular_axis2 (%d).",
+                  msg->axes.size(), angular_axis2_);
+    }
 
-      if (high_speed_button_ >= 0)
+    if (high_speed_button_ >= 0)
+    {
+      if (static_cast<size_t>(high_speed_button_) < msg->buttons.size())
       {
         if (msg->buttons[high_speed_button_])
         {
@@ -86,18 +117,17 @@ private:
           ang *= angular_high_speed_ratio_;
         }
       }
+      else
+        ROS_ERROR("Out of range: number of buttons (%lu) must be greater than high_speed_button (%d).",
+                  msg->buttons.size(), high_speed_button_);
+    }
 
-      geometry_msgs::Twist cmd_vel;
-      cmd_vel.linear.x = lin * linear_vel_;
-      cmd_vel.linear.y = cmd_vel.linear.z = 0.0;
-      cmd_vel.angular.z = ang * angular_vel_;
-      cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
-      pub_twist_.publish(cmd_vel);
-    }
-    else
-    {
-      last_joy_msg_ = ros::Time(0);
-    }
+    geometry_msgs::Twist cmd_vel;
+    cmd_vel.linear.x = lin * linear_vel_;
+    cmd_vel.linear.y = cmd_vel.linear.z = 0.0;
+    cmd_vel.angular.z = ang * angular_vel_;
+    cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
+    pub_twist_.publish(cmd_vel);
   };
   void cbTwist(const geometry_msgs::Twist::Ptr msg)
   {
@@ -136,6 +166,25 @@ public:
     pnh_.param("angular_high_speed_ratio", angular_high_speed_ratio_, 1.1);
     pnh_.param("timeout", timeout_, 0.5);
     last_joy_msg_ = ros::Time(0);
+
+    if (interrupt_button_ < 0)
+    {
+      ROS_ERROR("interrupt_button must be grater than -1.");
+      ros::shutdown();
+      return;
+    }
+    if (linear_axis_ < 0)
+    {
+      ROS_ERROR("linear_axis must be grater than -1.");
+      ros::shutdown();
+      return;
+    }
+    if (angular_axis_ < 0)
+    {
+      ROS_ERROR("angular_axis must be grater than -1.");
+      ros::shutdown();
+      return;
+    }
   }
 };
 
