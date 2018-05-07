@@ -30,6 +30,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
 
@@ -42,6 +43,7 @@ protected:
   float v_;
   float w_;
 
+  ros::Publisher pub_odom_;
   ros::Subscriber sub_twist_;
   ros::Subscriber sub_init_;
   tf::TransformBroadcaster tfb_;
@@ -70,6 +72,7 @@ public:
     v_ = 0.0;
     w_ = 0.0;
 
+    pub_odom_ = nh.advertise<nav_msgs::Odometry>("odom", 1, true);
     sub_twist_ = nh.subscribe("cmd_vel", 1, &DummyRobot::cbTwist, this);
     sub_init_ = nh.subscribe("initialpose", 1, &DummyRobot::cbInit, this);
   }
@@ -77,23 +80,38 @@ public:
   {
     const float dt = 0.01;
     ros::Rate rate(1.0 / dt);
+    ros::Time current_time = ros::Time::now();
 
     while (ros::ok())
     {
       ros::spinOnce();
       rate.sleep();
+      current_time = ros::Time::now();
 
       yaw_ += w_ * dt;
       x_ += cosf(yaw_) * v_ * dt;
       y_ += sinf(yaw_) * v_ * dt;
 
       tf::StampedTransform trans;
-      trans.stamp_ = ros::Time::now();
+      trans.stamp_ = current_time;
       trans.frame_id_ = "odom";
       trans.child_frame_id_ = "base_link";
       trans.setOrigin(tf::Vector3(x_, y_, 0.0));
       trans.setRotation(tf::createQuaternionFromYaw(yaw_));
       tfb_.sendTransform(trans);
+
+      nav_msgs::Odometry odom;
+      odom.header.frame_id = "odom";
+      odom.header.stamp = current_time;
+      odom.header.seq++;
+      odom.child_frame_id = "base_link";
+      odom.pose.pose.position.x = x_;
+      odom.pose.pose.position.y = y_;
+      odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw_);
+      odom.twist.twist.linear.x = v_;
+      odom.twist.twist.linear.y = 0.0;
+      odom.twist.twist.angular.z = w_;
+      pub_odom_.publish(odom);
     }
   }
 };
