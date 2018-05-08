@@ -102,13 +102,11 @@ public:
       nav_msgs::Odometry odom;
       odom.header.frame_id = "odom";
       odom.header.stamp = current_time;
-      odom.header.seq++;
       odom.child_frame_id = "base_link";
       odom.pose.pose.position.x = x_;
       odom.pose.pose.position.y = y_;
       odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw_);
       odom.twist.twist.linear.x = v_;
-      odom.twist.twist.linear.y = 0.0;
       odom.twist.twist.angular.z = w_;
       pub_odom_.publish(odom);
     }
