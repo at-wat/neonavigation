@@ -80,13 +80,12 @@ public:
   {
     const float dt = 0.01;
     ros::Rate rate(1.0 / dt);
-    ros::Time current_time = ros::Time::now();
 
     while (ros::ok())
     {
       ros::spinOnce();
       rate.sleep();
-      current_time = ros::Time::now();
+      const ros::Time current_time = ros::Time::now();
 
       yaw_ += w_ * dt;
       x_ += cosf(yaw_) * v_ * dt;
