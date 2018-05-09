@@ -57,10 +57,13 @@ protected:
   }
   void cbInit(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
   {
-    tf::StampedTransform trans_msg_odom;
+    geometry_msgs::PoseStamped pose_in, pose_out;
+    pose_in.header = msg->header;
+    pose_in.pose = msg->pose.pose;
     try
     {
-      tfl_.lookupTransform(msg->header.frame_id, "odom", ros::Time(0), trans_msg_odom);
+      tfl_.waitForTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(1.0));
+      tfl_.transformPose("odom", pose_in, pose_out);
     }
     catch (tf::TransformException &e)
     {
@@ -68,13 +71,9 @@ protected:
       return;
     }
 
-    tf::Pose pose;
-    tf::poseMsgToTF(msg->pose.pose, pose);
-    const tf::Transform trans_odom_baselink = trans_msg_odom.inverse() * pose;
-
-    x_ = trans_odom_baselink.getOrigin().x();
-    y_ = trans_odom_baselink.getOrigin().y();
-    yaw_ = tf::getYaw(trans_odom_baselink.getRotation());
+    x_ = pose_out.pose.position.x;
+    y_ = pose_out.pose.position.y;
+    yaw_ = tf::getYaw(pose_out.pose.orientation);
   }
 
 public:
