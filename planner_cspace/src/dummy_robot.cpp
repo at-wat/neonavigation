@@ -62,7 +62,8 @@ protected:
     {
       tfl_.lookupTransform(msg->header.frame_id, "odom", ros::Time(0), trans_msg_odom);
     }
-    catch (tf::TransformException &e){
+    catch (tf::TransformException &e)
+    {
       ROS_WARN("%s", e.what());
       return;
     }
