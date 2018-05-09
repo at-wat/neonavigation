@@ -33,6 +33,7 @@
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 class DummyRobot
 {
@@ -47,6 +48,7 @@ protected:
   ros::Subscriber sub_twist_;
   ros::Subscriber sub_init_;
   tf::TransformBroadcaster tfb_;
+  tf::TransformListener tfl_;
 
   void cbTwist(const geometry_msgs::Twist::ConstPtr &msg)
   {
@@ -55,9 +57,23 @@ protected:
   }
   void cbInit(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
   {
-    x_ = msg->pose.pose.position.x;
-    y_ = msg->pose.pose.position.y;
-    yaw_ = tf::getYaw(msg->pose.pose.orientation);
+    tf::StampedTransform trans_map_odom;
+    try
+    {
+      tfl_.lookupTransform(msg->header.frame_id, "odom", ros::Time(0), trans_map_odom);
+    }
+    catch (tf::TransformException &e){
+      ROS_WARN("%s", e.what());
+      return;
+    }
+
+    tf::Pose pose;
+    tf::poseMsgToTF(msg->pose.pose, pose);
+    const tf::Transform trans_odom_baselink = trans_map_odom.inverse() * pose;
+
+    x_ = trans_odom_baselink.getOrigin().x();
+    y_ = trans_odom_baselink.getOrigin().y();
+    yaw_ = tf::getYaw(trans_odom_baselink.getRotation());
   }
 
 public:
