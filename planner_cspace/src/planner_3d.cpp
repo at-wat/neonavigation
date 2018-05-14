@@ -770,15 +770,12 @@ protected:
         for (p[1] = 0; p[1] < static_cast<int>(msg->height); p[1]++)
         {
           int cost_min = 100;
-          int cost_max = 0;
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
             char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
-            if (c > cost_max)
-              cost_max = c;
           }
           p[2] = 0;
           if (cost_min > cm_rough_[gp_rough + p])
@@ -801,7 +798,7 @@ protected:
                 ch = hist_cnt_max_;
             }
           }
-          else if (cost_max == 0)
+          else if (cost_min == 0)
           {
             Astar::Vec p2 = p - center;
             float sqlen = p2.sqlen();
