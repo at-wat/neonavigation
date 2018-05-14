@@ -735,9 +735,9 @@ protected:
         pub_hist_.publish(pc);
       }
       Astar::Vec p;
-      for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
+      for (p[1] = 0; p[1] < cm_hist_.size()[1]; p[1]++)
       {
-        for (p[1] = 0; p[1] < static_cast<int>(map_info_.height); p[1]++)
+        for (p[0] = 0; p[0] < cm_hist_.size()[0]; p[0]++)
         {
           p[2] = 0;
           if (cm_hist_[p] > hist_cnt_thres_ &&
