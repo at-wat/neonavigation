@@ -740,6 +740,7 @@ protected:
         pub_hist_.publish(pc);
       }
       Astar::Vec p;
+      cm_hist_.clear(0);
       for (p[1] = 0; p[1] < cm_hist_cnt_.size()[1]; p[1]++)
       {
         for (p[0] = 0; p[0] < cm_hist_cnt_.size()[0]; p[0]++)
