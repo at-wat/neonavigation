@@ -714,25 +714,6 @@ protected:
       pc.header = map_header_;
       pc.header.stamp = ros::Time::now();
 
-      Astar::Vec p;
-      for (p[1] = 0; p[1] < cm_hist_.size()[1]; p[1]++)
-      {
-        for (p[0] = 0; p[0] < cm_hist_.size()[0]; p[0]++)
-        {
-          p[2] = 0;
-          if (cm_hist_[p] > hist_cnt_thres_)
-          {
-            Astar::Vec p2;
-            p2 = p;
-            for (p2[2] = 0; p2[2] < static_cast<int>(map_info_.angle); p2[2]++)
-            {
-              if (cm_[p2] < hist_cost_)
-                cm_[p2] = hist_cost_;
-            }
-          }
-        }
-      }
-
       if (pub_hist_.getNumSubscribers() > 0)
       {
         Astar::Vec p;
@@ -786,7 +767,14 @@ protected:
               cost_max = c;
           }
           p[2] = 0;
-          cm_rough_[gp_rough + p] = cost_min;
+          if (cm_hist_[gp_rough + p] > hist_cnt_thres_ && cost_min < hist_cost_)
+          {
+            cm_rough_[gp_rough + p] = hist_cost_;
+          }
+          else
+          {
+            cm_rough_[gp_rough + p] = cost_min;
+          }
 
           Astar::Vec pos = gp + p;
           pos[2] = 0;
