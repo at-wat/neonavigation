@@ -85,6 +85,7 @@ protected:
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
+  Astar::Gridmap<char, 0x40> cm_hist_cnt_;
   Astar::Gridmap<char, 0x40> cm_hist_;
   Astar::Gridmap<char, 0x80> cm_rough_;
   Astar::Gridmap<char, 0x40> cm_base_;
@@ -204,6 +205,7 @@ protected:
     float weight_backward_;
     float weight_ang_vel_;
     float weight_costmap_;
+    float weight_remembered_;
     float weight_hysteresis_;
     float in_place_turn_;
     float hysteresis_max_dist_;
@@ -384,7 +386,7 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-      cm_hist_.clear(0);
+      cm_hist_cnt_.clear(0);
 
     return true;
   }
@@ -488,7 +490,7 @@ protected:
             float cost = 0;
 
             {
-              float v[3], dp[3], sum = 0;
+              float v[3], dp[3], sum = 0, sum_hist = 0;
               float distf = d.len();
               const int dist = distf;
               distf /= dist;
@@ -507,12 +509,21 @@ protected:
                 if (c > 99)
                   break;
                 sum += c;
+
+                const char c_hist = cm_hist_[pos];
+                if (c_hist > 99)
+                {
+                  c = 100;
+                  break;
+                }
+                sum_hist += c_hist;
                 v[0] += dp[0];
                 v[1] += dp[1];
               }
               if (c > 99)
                 continue;
               cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / 100.0;
+              cost += sum_hist * map_info_.linear_resolution * distf * cc_.weight_remembered_ / 100.0;
             }
             cost += euclidCost(d, ec_rough_);
 
@@ -686,7 +697,7 @@ protected:
             case DEBUG_HISTORY:
               if (cm_rough_base_[p] != 0)
                 continue;
-              point.z = cm_hist_[p] * 0.01;
+              point.z = cm_hist_cnt_[p] * 0.01;
               break;
             case DEBUG_COST_ESTIM:
               if (cost_estim_cache_[p] == FLT_MAX)
@@ -716,11 +727,11 @@ protected:
         pc.header = map_header_;
         pc.header.stamp = ros::Time::now();
         Astar::Vec p;
-        for (p[1] = 0; p[1] < cm_hist_.size()[1]; p[1]++)
+        for (p[1] = 0; p[1] < cm_hist_cnt_.size()[1]; p[1]++)
         {
-          for (p[0] = 0; p[0] < cm_hist_.size()[0]; p[0]++)
+          for (p[0] = 0; p[0] < cm_hist_cnt_.size()[0]; p[0]++)
           {
-            if (cm_hist_[p] > hist_cnt_thres_)
+            if (cm_hist_cnt_[p] > hist_cnt_thres_)
             {
               float x, y, yaw;
               grid2Metric(p[0], p[1], p[2], x, y, yaw);
@@ -735,15 +746,14 @@ protected:
         pub_hist_.publish(pc);
       }
       Astar::Vec p;
-      for (p[1] = 0; p[1] < cm_hist_.size()[1]; p[1]++)
+      for (p[1] = 0; p[1] < cm_hist_cnt_.size()[1]; p[1]++)
       {
-        for (p[0] = 0; p[0] < cm_hist_.size()[0]; p[0]++)
+        for (p[0] = 0; p[0] < cm_hist_cnt_.size()[0]; p[0]++)
         {
           p[2] = 0;
-          if (cm_hist_[p] > hist_cnt_thres_ &&
-              cm_rough_[p] < hist_cost_)
+          if (cm_hist_cnt_[p] > hist_cnt_thres_)
           {
-            cm_rough_[p] = hist_cost_;
+            cm_hist_[p] = hist_cost_;
           }
         }
       }
@@ -793,7 +803,7 @@ protected:
             if (sqlen > hist_ignore_range_sq &&
                 sqlen < hist_ignore_range_max_sq)
             {
-              auto &ch = cm_hist_[pos];
+              auto &ch = cm_hist_cnt_[pos];
               ch++;
               if (ch > hist_cnt_max_)
                 ch = hist_cnt_max_;
@@ -805,7 +815,7 @@ protected:
             float sqlen = p2.sqlen();
             if (sqlen < hist_ignore_range_max_sq)
             {
-              auto &ch = cm_hist_[pos];
+              auto &ch = cm_hist_cnt_[pos];
               ch--;
               if (ch < 0)
                 ch = 0;
@@ -1063,6 +1073,7 @@ protected:
     cm_rough_.reset(Astar::Vec(size));
     cm_hyst_.reset(Astar::Vec(size));
     cm_hist_.reset(Astar::Vec(size));
+    cm_hist_cnt_.reset(Astar::Vec(size));
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1091,7 +1102,7 @@ protected:
 
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
-    cm_hist_.clear(0);
+    cm_hist_cnt_.clear(0);
 
     updateGoal();
   }
@@ -1134,6 +1145,7 @@ public:
     nh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
     nh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
     nh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
+    nh_.param_cast("weight_remembered", cc_.weight_remembered_, 200.0f);
     nh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
     nh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
     nh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
@@ -1259,7 +1271,7 @@ public:
               fabs(yaw_diff) > yaw_jump_)
           {
             ROS_ERROR("Position jumped, history cleared");
-            cm_hist_.clear(0);
+            cm_hist_cnt_.clear(0);
           }
           start_prev = start_;
         }
@@ -1514,7 +1526,7 @@ protected:
     {
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable. History cleared.");
-      cm_hist_.clear(0);
+      cm_hist_cnt_.clear(0);
       if (!escaping_ && temporary_escape_)
       {
         e = s;
