@@ -708,7 +708,7 @@ protected:
 
     cm_ = cm_base_;
     cm_rough_ = cm_rough_base_;
-    if (remember_updates_ && pub_hist_.getNumSubscribers() > 0)
+    if (remember_updates_)
     {
       sensor_msgs::PointCloud pc;
       pc.header = map_header_;
@@ -729,18 +729,30 @@ protected:
               if (cm_[p2] < hist_cost_)
                 cm_[p2] = hist_cost_;
             }
-
-            float x, y, yaw;
-            grid2Metric(p[0], p[1], p[2], x, y, yaw);
-            geometry_msgs::Point32 point;
-            point.x = x;
-            point.y = y;
-            point.z = 0.0;
-            pc.points.push_back(point);
           }
         }
       }
-      pub_hist_.publish(pc);
+
+      if (pub_hist_.getNumSubscribers() > 0)
+      {
+        if (p[1] = 0; p[1] < cm_hist_.size()[1]; p[1]++)
+        {
+          for (p[0] = 0; p[0] < cm_hist_.size()[0]; p[0]++)
+          {
+            if (cm_hist_[p] > hist_cnt_thres_)
+            {
+              float x, y, yaw;
+              grid2Metric(p[0], p[1], p[2], x, y, yaw);
+              geometry_msgs::Point32 point;
+              point.x = x;
+              point.y = y;
+              point.z = 0.0;
+              pc.points.push_back(point);
+            }
+          }
+        }
+        pub_hist_.publish(pc);
+      }
     }
 
     {
