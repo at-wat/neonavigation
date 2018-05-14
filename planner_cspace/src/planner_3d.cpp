@@ -181,7 +181,6 @@ protected:
   bool fast_map_update_;
   std::vector<Astar::Vec> search_list_;
   std::vector<Astar::Vec> search_list_rough_;
-  int hist_cost_;
   int hist_cnt_max_;
   int hist_cnt_thres_;
   double hist_ignore_range_f_;
@@ -510,20 +509,15 @@ protected:
                   break;
                 sum += c;
 
-                const char c_hist = cm_hist_[pos];
-                if (c_hist > 99)
-                {
-                  c = 100;
-                  break;
-                }
-                sum_hist += c_hist;
+                sum_hist += cm_hist_[pos];
                 v[0] += dp[0];
                 v[1] += dp[1];
               }
               if (c > 99)
                 continue;
-              cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / 100.0;
-              cost += sum_hist * map_info_.linear_resolution * distf * cc_.weight_remembered_ / 100.0;
+              cost +=
+                  (map_info_.linear_resolution * distf / 100.0) *
+                  (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
             }
             cost += euclidCost(d, ec_rough_);
 
@@ -752,9 +746,7 @@ protected:
         {
           p[2] = 0;
           if (cm_hist_cnt_[p] > hist_cnt_thres_)
-          {
-            cm_hist_[p] = hist_cost_;
-          }
+            cm_hist_[p] = 100;
         }
       }
     }
@@ -1145,7 +1137,7 @@ public:
     nh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
     nh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
     nh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
-    nh_.param_cast("weight_remembered", cc_.weight_remembered_, 200.0f);
+    nh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
     nh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
     nh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
     nh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
@@ -1157,7 +1149,6 @@ public:
     nh_.param("unknown_cost", unknown_cost_, 100);
     nh_.param("hist_cnt_max", hist_cnt_max_, 20);
     nh_.param("hist_cnt_thres", hist_cnt_thres_, 19);
-    nh_.param("hist_cost", hist_cost_, 90);
     nh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
     nh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
     nh_.param("remember_updates", remember_updates_, false);
