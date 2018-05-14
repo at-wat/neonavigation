@@ -798,7 +798,7 @@ protected:
                 ch = hist_cnt_max_;
             }
           }
-          else if (cost_min == 0)
+          else
           {
             Astar::Vec p2 = p - center;
             float sqlen = p2.sqlen();
