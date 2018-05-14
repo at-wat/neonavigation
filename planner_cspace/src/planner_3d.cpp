@@ -710,12 +710,11 @@ protected:
     cm_rough_ = cm_rough_base_;
     if (remember_updates_)
     {
-      sensor_msgs::PointCloud pc;
-      pc.header = map_header_;
-      pc.header.stamp = ros::Time::now();
-
       if (pub_hist_.getNumSubscribers() > 0)
       {
+        sensor_msgs::PointCloud pc;
+        pc.header = map_header_;
+        pc.header.stamp = ros::Time::now();
         Astar::Vec p;
         for (p[1] = 0; p[1] < cm_hist_.size()[1]; p[1]++)
         {
@@ -734,6 +733,19 @@ protected:
           }
         }
         pub_hist_.publish(pc);
+      }
+      Astar::Vec p;
+      for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
+      {
+        for (p[1] = 0; p[1] < static_cast<int>(map_info_.height); p[1]++)
+        {
+          p[2] = 0;
+          if (cm_hist_[p] > hist_cnt_thres_ &&
+              cm_rough_[p] < hist_cost_)
+          {
+            cm_rough_[p] = hist_cost_;
+          }
+        }
       }
     }
 
@@ -767,11 +779,7 @@ protected:
               cost_max = c;
           }
           p[2] = 0;
-          if (cm_hist_[gp_rough + p] > hist_cnt_thres_ && cost_min < hist_cost_)
-          {
-            cm_rough_[gp_rough + p] = hist_cost_;
-          }
-          else
+          if (cost_min > cm_rough_[gp_rough + p])
           {
             cm_rough_[gp_rough + p] = cost_min;
           }
