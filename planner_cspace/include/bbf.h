@@ -65,6 +65,7 @@ public:
       odds_ = MIN_ODDS;
     else if (odds_ > MAX_ODDS)
       odds_ = MAX_ODDS;
+    return odds_;
   }
   float get() const
   {
