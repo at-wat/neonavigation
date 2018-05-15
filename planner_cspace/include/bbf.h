@@ -42,8 +42,8 @@ constexpr float probabilityToOdds(const float &p)
   return p / (1.0 - p);
 }
 
-const float MIN_PROBABILITY = 0.01;
-const float MAX_PROBABILITY = 1.0 - 0.01;
+const float MIN_PROBABILITY = 0.1;
+const float MAX_PROBABILITY = 1.0 - MIN_PROBABILITY;
 const float MIN_ODDS = probabilityToOdds(MIN_PROBABILITY);
 const float MAX_ODDS = probabilityToOdds(MAX_PROBABILITY);
 
