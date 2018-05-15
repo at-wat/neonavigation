@@ -1250,11 +1250,13 @@ public:
           continue;
         }
         {
-          float x_diff = start_.pose.position.x - start_prev.pose.position.x;
-          float y_diff = start_.pose.position.y - start_prev.pose.position.y;
+          const float x_diff = start_.pose.position.x - start_prev.pose.position.x;
+          const float y_diff = start_.pose.position.y - start_prev.pose.position.y;
           float yaw_diff = tf::getYaw(start_.pose.orientation) - tf::getYaw(start_prev.pose.orientation);
           if (yaw_diff > M_PI)
             yaw_diff -= M_PI * 2;
+          else if (yaw_diff < -M_PI)
+            yaw_diff += M_PI * 2;
 
           if (powf(x_diff, 2.0) + powf(y_diff, 2.0) > powf(pos_jump_, 2.0) ||
               fabs(yaw_diff) > yaw_jump_)
