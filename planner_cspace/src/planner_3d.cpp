@@ -1258,7 +1258,7 @@ public:
           if (powf(x_diff, 2.0) + powf(y_diff, 2.0) > powf(pos_jump_, 2.0) ||
               fabs(yaw_diff) > yaw_jump_)
           {
-            ROS_ERROR("Position jumped, history cleared");
+            ROS_ERROR("Position jumped (%f, %f, %f); clearing history", x_diff, y_diff, yaw_diff);
             cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
           }
           start_prev = start_;
