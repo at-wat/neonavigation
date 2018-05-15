@@ -1513,8 +1513,7 @@ protected:
     if (cost_estim_cache_[s_rough] == FLT_MAX)
     {
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
-      ROS_WARN("Goal unreachable. History cleared.");
-      cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+      ROS_WARN("Goal unreachable.");
       if (!escaping_ && temporary_escape_)
       {
         e = s;
