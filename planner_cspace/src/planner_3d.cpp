@@ -86,7 +86,7 @@ protected:
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
-  Astar::Gridmap<bbf::BinaryBayesFilter, 0x20> cm_hist_cnt_;
+  Astar::Gridmap<bbf::BinaryBayesFilter, 0x20> cm_hist_bbf_;
   Astar::Gridmap<char, 0x40> cm_hist_;
   Astar::Gridmap<char, 0x80> cm_rough_;
   Astar::Gridmap<char, 0x40> cm_base_;
@@ -386,7 +386,7 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-      cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+      cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
 
     return true;
   }
@@ -692,7 +692,7 @@ protected:
             case DEBUG_HISTORY:
               if (cm_rough_base_[p] != 0)
                 continue;
-              point.z = cm_hist_cnt_[p].getProbability();
+              point.z = cm_hist_bbf_[p].getProbability();
               break;
             case DEBUG_COST_ESTIM:
               if (cost_estim_cache_[p] == FLT_MAX)
@@ -722,18 +722,18 @@ protected:
         pc.header = map_header_;
         pc.header.stamp = ros::Time::now();
         Astar::Vec p;
-        for (p[1] = 0; p[1] < cm_hist_cnt_.size()[1]; p[1]++)
+        for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
         {
-          for (p[0] = 0; p[0] < cm_hist_cnt_.size()[0]; p[0]++)
+          for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
           {
-            if (cm_hist_cnt_[p].get() > bbf::probabilityToOdds(0.1))
+            if (cm_hist_bbf_[p].get() > bbf::probabilityToOdds(0.1))
             {
               float x, y, yaw;
               grid2Metric(p[0], p[1], p[2], x, y, yaw);
               geometry_msgs::Point32 point;
               point.x = x;
               point.y = y;
-              point.z = cm_hist_cnt_[p].getProbability();
+              point.z = cm_hist_bbf_[p].getProbability();
               pc.points.push_back(point);
             }
           }
@@ -742,12 +742,12 @@ protected:
       }
       Astar::Vec p;
       cm_hist_.clear(0);
-      for (p[1] = 0; p[1] < cm_hist_cnt_.size()[1]; p[1]++)
+      for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
       {
-        for (p[0] = 0; p[0] < cm_hist_cnt_.size()[0]; p[0]++)
+        for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
         {
           p[2] = 0;
-          cm_hist_[p] = lroundf(cm_hist_cnt_[p].getNormalizedProbability() * 100.0);
+          cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
         }
       }
     }
@@ -793,7 +793,7 @@ protected:
             if (sqlen > hist_ignore_range_sq &&
                 sqlen < hist_ignore_range_max_sq)
             {
-              cm_hist_cnt_[pos].update(remember_hit_odds_);
+              cm_hist_bbf_[pos].update(remember_hit_odds_);
             }
           }
           else
@@ -802,7 +802,7 @@ protected:
             float sqlen = p2.sqlen();
             if (sqlen < hist_ignore_range_max_sq)
             {
-              cm_hist_cnt_[pos].update(remember_miss_odds_);
+              cm_hist_bbf_[pos].update(remember_miss_odds_);
             }
           }
 
@@ -1057,7 +1057,7 @@ protected:
     cm_rough_.reset(Astar::Vec(size));
     cm_hyst_.reset(Astar::Vec(size));
     cm_hist_.reset(Astar::Vec(size));
-    cm_hist_cnt_.reset(Astar::Vec(size));
+    cm_hist_bbf_.reset(Astar::Vec(size));
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1086,7 +1086,7 @@ protected:
 
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
-    cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+    cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
 
     updateGoal();
   }
@@ -1257,7 +1257,7 @@ public:
               fabs(yaw_diff) > yaw_jump_)
           {
             ROS_ERROR("Position jumped, history cleared");
-            cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+            cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
           }
           start_prev = start_;
         }
@@ -1512,7 +1512,7 @@ protected:
     {
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable. History cleared.");
-      cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+      cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
       if (!escaping_ && temporary_escape_)
       {
         e = s;
