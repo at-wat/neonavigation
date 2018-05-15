@@ -386,7 +386,7 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-      cm_hist_cnt_.clear(bbf::BinaryBayesFilter());
+      cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
 
     return true;
   }
@@ -1086,7 +1086,7 @@ protected:
 
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
-    cm_hist_cnt_.clear(bbf::BinaryBayesFilter());
+    cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
 
     updateGoal();
   }
@@ -1257,7 +1257,7 @@ public:
               fabs(yaw_diff) > yaw_jump_)
           {
             ROS_ERROR("Position jumped, history cleared");
-            cm_hist_cnt_.clear(bbf::BinaryBayesFilter());
+            cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
           }
           start_prev = start_;
         }
@@ -1512,7 +1512,7 @@ protected:
     {
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable. History cleared.");
-      cm_hist_cnt_.clear(bbf::BinaryBayesFilter());
+      cm_hist_cnt_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
       if (!escaping_ && temporary_escape_)
       {
         e = s;
