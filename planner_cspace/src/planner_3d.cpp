@@ -796,7 +796,7 @@ protected:
               cm_hist_bbf_[pos].update(remember_hit_odds_);
             }
           }
-          else
+          else if (cost_min >= 0)
           {
             Astar::Vec p2 = p - center;
             float sqlen = p2.sqlen();
