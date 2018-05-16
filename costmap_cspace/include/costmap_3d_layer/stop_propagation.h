@@ -60,19 +60,14 @@ protected:
   bool updateChain(const bool output)
   {
     region_ = UpdatedRegion(0, 0, 0, 0, 0, 0, ros::Time(0));
+    for (auto &c : map_overlay_->data)
+      c = -1;
     return false;
   }
   void updateCSpace(
       const nav_msgs::OccupancyGrid::ConstPtr &map,
       const UpdatedRegion &region)
   {
-  }
-  void setBaseMap() override
-  {
-    setMapMetaData(map_->info);
-    *map_overlay_ = *map_;
-    for (auto &c : map_overlay_->data)
-      c = -1;
   }
 };
 }  // namespace costmap_cspace
