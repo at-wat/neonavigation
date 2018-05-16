@@ -209,13 +209,28 @@ public:
       XmlRpc::XmlRpcValue layers_xml;
       nhp_.getParam("static_layers", layers_xml);
 
-      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeStruct || layers_xml.size() < 1)
+      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {
         ROS_FATAL("static_layers parameter must contain at least one layer config.");
+        ROS_ERROR(
+            "Migration from old version:\n"
+            "---  # Old\n"
+            "static_layers:\n"
+            "  YOUR_LAYER_NAME:\n"
+            "    type: LAYER_TYPE\n"
+            "    parameters: values\n"
+            "---  # New\n"
+            "static_layers:\n"
+            "  - name: YOUR_LAYER_NAME\n"
+            "    type: LAYER_TYPE\n"
+            "    parameters: values\n"
+            "---\n");
         throw std::runtime_error("layers parameter must contain at least one layer config.");
       }
-      for (auto &layer_xml : layers_xml)
+      for (size_t i = 0; i < layers_xml.size(); ++i)
       {
+        auto layer_xml = std::pair<std::string, XmlRpc::XmlRpcValue>(
+            layers_xml[i]["name"], layers_xml[i]);
         ROS_INFO("New static layer: %s", layer_xml.first.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
@@ -260,13 +275,28 @@ public:
       XmlRpc::XmlRpcValue layers_xml;
       nhp_.getParam("layers", layers_xml);
 
-      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeStruct || layers_xml.size() < 1)
+      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {
         ROS_FATAL("layers parameter must contain at least one layer config.");
+        ROS_ERROR(
+            "Migration from old version:\n"
+            "---  # Old\n"
+            "layers:\n"
+            "  YOUR_LAYER_NAME:\n"
+            "    type: LAYER_TYPE\n"
+            "    parameters: values\n"
+            "---  # New\n"
+            "layers:\n"
+            "  - name: YOUR_LAYER_NAME\n"
+            "    type: LAYER_TYPE\n"
+            "    parameters: values\n"
+            "---\n");
         throw std::runtime_error("layers parameter must contain at least one layer config.");
       }
-      for (auto &layer_xml : layers_xml)
+      for (size_t i = 0; i < layers_xml.size(); ++i)
       {
+        auto layer_xml = std::pair<std::string, XmlRpc::XmlRpcValue>(
+            layers_xml[i]["name"], layers_xml[i]);
         ROS_INFO("New layer: %s", layer_xml.first.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
