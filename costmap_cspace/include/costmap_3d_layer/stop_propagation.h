@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2014-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,36 +27,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#ifndef COSTMAP_3D_LAYER_STOP_PROPAGATION_H
+#define COSTMAP_3D_LAYER_STOP_PROPAGATION_H
 
-#include <string>
-#include <vector>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace/CSpace3D.h>
+#include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <costmap_3d.h>
+#include <costmap_3d_layer/base.h>
 
-COSTMAP_3D_LAYER_CLASS_LOADER_ENABLE();
+namespace costmap_cspace
+{
+class Costmap3dLayerStopPropagation : public Costmap3dLayerBase
+{
+public:
+  using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
 
-COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
-    "Costmap3dLayerFootprint",
-    costmap_cspace::Costmap3dLayerFootprint,
-    Costmap3dLayerFootprint);
+public:
+  void loadConfig(XmlRpc::XmlRpcValue config)
+  {
+  }
+  void setMapMetaData(const MapMetaData3D &info)
+  {
+  }
 
-COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
-    "Costmap3dLayerPlain",
-    costmap_cspace::Costmap3dLayerPlain,
-    Costmap3dLayerPlain);
+protected:
+  int getRangeMax() const
+  {
+    return 0;
+  }
+  bool updateChain(const bool output)
+  {
+    region_ = UpdatedRegion(0, 0, 0, 0, 0, 0, ros::Time(0));
+    return false;
+  }
+  void updateCSpace(
+      const nav_msgs::OccupancyGrid::ConstPtr &map,
+      const UpdatedRegion &region)
+  {
+  }
+  void setBaseMap() override
+  {
+    setMapMetaData(map_->info);
+    *map_overlay_ = *map_;
+    for (auto &c : map_overlay_->data)
+      c = -1;
+  }
+};
+}  // namespace costmap_cspace
 
-COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
-    "Costmap3dLayerOutput",
-    costmap_cspace::Costmap3dLayerOutput,
-    Costmap3dLayerOutput);
-
-COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
-    "Costmap3dLayerStopPropagation",
-    costmap_cspace::Costmap3dLayerStopPropagation,
-    Costmap3dLayerStopPropagation);
-
-COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
-    "Costmap3dLayerUnknownHandle",
-    costmap_cspace::Costmap3dLayerUnknownHandle,
-    Costmap3dLayerUnknownHandle);
+#endif  // COSTMAP_3D_LAYER_STOP_PROPAGATION_H

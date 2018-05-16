@@ -381,10 +381,14 @@ protected:
   }
   void setBaseMapChain()
   {
-    setMapMetaData(map_->info);
-    *map_overlay_ = *map_;
+    setBaseMap();
     if (child_)
       child_->setBaseMapChain();
+  }
+  virtual void setBaseMap()
+  {
+    setMapMetaData(map_->info);
+    *map_overlay_ = *map_;
   }
 };
 }  // namespace costmap_cspace
