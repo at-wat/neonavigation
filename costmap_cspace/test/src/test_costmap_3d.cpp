@@ -35,7 +35,7 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <costmap_3d.h>
+#include <costmap_cspace/costmap_3d.h>
 
 const std::string footprint_str(
     "<value><array><data>"
