@@ -3,25 +3,25 @@ costmap_3d:
   linear_expand: 0.08
   linear_spread: 0.3
   static_layers:
-    unknown:
+    - name: unknown
       type: Costmap3dLayerUnknownHandle
       unknown_cost: 100
-    overlay0:
+    - name: overlay0
       type: Costmap3dLayerPlain
       overlay_mode: max
       linear_expand: 0.0
       linear_spread: 0.0
   layers:
-    overlay1:
-      type: Costmap3dLayerFootprint
-      overlay_mode: max
-      linear_expand: 0.15
-      linear_spread: 0.3
-    overlay2:
+    - name: overlay2
       type: Costmap3dLayerPlain
       overlay_mode: max
       linear_expand: 0.08
       linear_spread: 0.0
+    - name: overlay1
+      type: Costmap3dLayerFootprint
+      overlay_mode: max
+      linear_expand: 0.15
+      linear_spread: 0.3
 planner_3d:
   num_threads: 2
   freq: 2.0
