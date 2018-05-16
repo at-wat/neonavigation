@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2014-2017, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,40 +27,75 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_LAYER_PLAIN_H
-#define COSTMAP_3D_LAYER_PLAIN_H
+#ifndef COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#define COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
 
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <costmap_cspace/CSpace3D.h>
-#include <costmap_cspace/CSpace3DUpdate.h>
+#include <ros/ros.h>
 
-#include <costmap_3d_layer/base.h>
+#include <list>
 
-namespace costmap_cspace
-{
-class Costmap3dLayerPlain : public Costmap3dLayerFootprint
+template <typename T>
+class PointcloudAccumurator
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerPlain>;
-
-  Costmap3dLayerPlain()
+  class Points : public T
   {
-    Polygon footprint;
-    footprint.v.resize(3);
-    for (auto &p : footprint.v)
+  public:
+    ros::Time stamp_;
+
+    Points(const T &points, const ros::Time &stamp)
+      : T(points)
+      , stamp_(stamp)
     {
-      p[0] = p[1] = 0.0;
     }
-    setFootprint(footprint);
-  }
-  void loadConfig(XmlRpc::XmlRpcValue config)
-  {
-    setExpansion(
-        static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]));
-  }
-};
-}  // namespace costmap_cspace
+  };
 
-#endif  // COSTMAP_3D_LAYER_PLAIN_H
+  PointcloudAccumurator()
+  {
+  }
+
+  explicit PointcloudAccumurator(const ros::Duration &duration)
+  {
+    reset(duration);
+  }
+
+  void reset(const ros::Duration &duration)
+  {
+    time_to_hold_ = duration;
+    clear();
+  }
+
+  void clear()
+  {
+    points_.clear();
+  }
+
+  void push(const Points &points)
+  {
+    for (auto it = points_.begin(); it != points_.end(); ++it)
+    {
+      if (it->stamp_ + time_to_hold_ < points.stamp_)
+      {
+        it = points_.erase(it);
+        continue;
+      }
+      break;
+    }
+    points_.push_back(points);
+  }
+
+  typename std::list<Points>::iterator begin()
+  {
+    return points_.begin();
+  }
+  typename std::list<Points>::iterator end()
+  {
+    return points_.end();
+  }
+
+protected:
+  ros::Duration time_to_hold_;
+  std::list<Points> points_;
+};
+
+#endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H

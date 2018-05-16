@@ -40,7 +40,7 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <costmap_3d.h>
+#include <costmap_cspace/costmap_3d.h>
 
 class Costmap3DOFNode
 {
