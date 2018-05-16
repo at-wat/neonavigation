@@ -48,6 +48,7 @@
 
 #include <costmap_cspace/node_handle_float.h>
 #include <grid_astar.h>
+#include <bbf.h>
 
 #include <omp.h>
 
@@ -85,7 +86,7 @@ protected:
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
-  Astar::Gridmap<char, 0x40> cm_hist_cnt_;
+  Astar::Gridmap<bbf::BinaryBayesFilter, 0x20> cm_hist_bbf_;
   Astar::Gridmap<char, 0x40> cm_hist_;
   Astar::Gridmap<char, 0x80> cm_rough_;
   Astar::Gridmap<char, 0x40> cm_base_;
@@ -181,13 +182,13 @@ protected:
   bool fast_map_update_;
   std::vector<Astar::Vec> search_list_;
   std::vector<Astar::Vec> search_list_rough_;
-  int hist_cnt_max_;
-  int hist_cnt_thres_;
   double hist_ignore_range_f_;
   int hist_ignore_range_;
   double hist_ignore_range_max_f_;
   int hist_ignore_range_max_;
   bool temporary_escape_;
+  float remember_hit_odds_;
+  float remember_miss_odds_;
 
   double pos_jump_;
   double yaw_jump_;
@@ -385,7 +386,7 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-      cm_hist_cnt_.clear(0);
+      cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
 
     return true;
   }
@@ -691,7 +692,7 @@ protected:
             case DEBUG_HISTORY:
               if (cm_rough_base_[p] != 0)
                 continue;
-              point.z = cm_hist_cnt_[p] * 0.01;
+              point.z = cm_hist_bbf_[p].getProbability();
               break;
             case DEBUG_COST_ESTIM:
               if (cost_estim_cache_[p] == FLT_MAX)
@@ -721,18 +722,18 @@ protected:
         pc.header = map_header_;
         pc.header.stamp = ros::Time::now();
         Astar::Vec p;
-        for (p[1] = 0; p[1] < cm_hist_cnt_.size()[1]; p[1]++)
+        for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
         {
-          for (p[0] = 0; p[0] < cm_hist_cnt_.size()[0]; p[0]++)
+          for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
           {
-            if (cm_hist_cnt_[p] > hist_cnt_thres_)
+            if (cm_hist_bbf_[p].get() > bbf::probabilityToOdds(0.1))
             {
               float x, y, yaw;
               grid2Metric(p[0], p[1], p[2], x, y, yaw);
               geometry_msgs::Point32 point;
               point.x = x;
               point.y = y;
-              point.z = 0.0;
+              point.z = cm_hist_bbf_[p].getProbability();
               pc.points.push_back(point);
             }
           }
@@ -741,13 +742,12 @@ protected:
       }
       Astar::Vec p;
       cm_hist_.clear(0);
-      for (p[1] = 0; p[1] < cm_hist_cnt_.size()[1]; p[1]++)
+      for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
       {
-        for (p[0] = 0; p[0] < cm_hist_cnt_.size()[0]; p[0]++)
+        for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
         {
           p[2] = 0;
-          if (cm_hist_cnt_[p] > hist_cnt_thres_)
-            cm_hist_[p] = 100;
+          cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
         }
       }
     }
@@ -793,22 +793,16 @@ protected:
             if (sqlen > hist_ignore_range_sq &&
                 sqlen < hist_ignore_range_max_sq)
             {
-              auto &ch = cm_hist_cnt_[pos];
-              ch++;
-              if (ch > hist_cnt_max_)
-                ch = hist_cnt_max_;
+              cm_hist_bbf_[pos].update(remember_hit_odds_);
             }
           }
-          else
+          else if (cost_min >= 0)
           {
             Astar::Vec p2 = p - center;
             float sqlen = p2.sqlen();
             if (sqlen < hist_ignore_range_max_sq)
             {
-              auto &ch = cm_hist_cnt_[pos];
-              ch--;
-              if (ch < 0)
-                ch = 0;
+              cm_hist_bbf_[pos].update(remember_miss_odds_);
             }
           }
 
@@ -1063,7 +1057,7 @@ protected:
     cm_rough_.reset(Astar::Vec(size));
     cm_hyst_.reset(Astar::Vec(size));
     cm_hist_.reset(Astar::Vec(size));
-    cm_hist_cnt_.reset(Astar::Vec(size));
+    cm_hist_bbf_.reset(Astar::Vec(size));
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1092,7 +1086,7 @@ protected:
 
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
-    cm_hist_cnt_.clear(0);
+    cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
 
     updateGoal();
   }
@@ -1145,11 +1139,14 @@ public:
     nh_.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
 
     nh_.param("unknown_cost", unknown_cost_, 100);
-    nh_.param("hist_cnt_max", hist_cnt_max_, 20);
-    nh_.param("hist_cnt_thres", hist_cnt_thres_, 19);
     nh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
     nh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
     nh_.param("remember_updates", remember_updates_, false);
+    double remember_hit_prob, remember_miss_prob;
+    nh_.param("remember_hit_prob", remember_hit_prob, 0.6);
+    nh_.param("remember_miss_prob", remember_miss_prob, 0.3);
+    remember_hit_odds_ = bbf::probabilityToOdds(remember_hit_prob);
+    remember_miss_odds_ = bbf::probabilityToOdds(remember_miss_prob);
 
     nh_.param("local_range", local_range_f_, 2.5);
     nh_.param("longcut_range", longcut_range_f_, 0.0);
@@ -1261,8 +1258,8 @@ public:
           if (powf(x_diff, 2.0) + powf(y_diff, 2.0) > powf(pos_jump_, 2.0) ||
               fabs(yaw_diff) > yaw_jump_)
           {
-            ROS_ERROR("Position jumped, history cleared");
-            cm_hist_cnt_.clear(0);
+            ROS_ERROR("Position jumped (%f, %f, %f); clearing history", x_diff, y_diff, yaw_diff);
+            cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
           }
           start_prev = start_;
         }
@@ -1516,8 +1513,7 @@ protected:
     if (cost_estim_cache_[s_rough] == FLT_MAX)
     {
       status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
-      ROS_WARN("Goal unreachable. History cleared.");
-      cm_hist_cnt_.clear(0);
+      ROS_WARN("Goal unreachable.");
       if (!escaping_ && temporary_escape_)
       {
         e = s;
