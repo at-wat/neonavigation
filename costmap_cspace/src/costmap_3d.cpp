@@ -227,7 +227,7 @@ public:
             "---\n");
         throw std::runtime_error("layers parameter must contain at least one layer config.");
       }
-      for (size_t i = 0; i < layers_xml.size(); ++i)
+      for (int i = 0; i < layers_xml.size(); ++i)
       {
         auto layer_xml = std::pair<std::string, XmlRpc::XmlRpcValue>(
             layers_xml[i]["name"], layers_xml[i]);
@@ -293,7 +293,7 @@ public:
             "---\n");
         throw std::runtime_error("layers parameter must contain at least one layer config.");
       }
-      for (size_t i = 0; i < layers_xml.size(); ++i)
+      for (int i = 0; i < layers_xml.size(); ++i)
       {
         auto layer_xml = std::pair<std::string, XmlRpc::XmlRpcValue>(
             layers_xml[i]["name"], layers_xml[i]);
