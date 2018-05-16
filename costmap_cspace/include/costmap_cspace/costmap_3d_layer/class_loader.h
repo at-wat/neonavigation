@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_LAYER_CLASS_LOADER_H
-#define COSTMAP_3D_LAYER_CLASS_LOADER_H
+#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H
+#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H
 
 #include <ros/ros.h>
 
@@ -37,8 +37,8 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <cspace3_cache.h>
-#include <polygon.h>
+#include <costmap_cspace/cspace3_cache.h>
+#include <costmap_cspace/polygon.h>
 
 #include <string>
 #include <map>
@@ -102,4 +102,4 @@ public:
 
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_3D_LAYER_CLASS_LOADER_H
+#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H

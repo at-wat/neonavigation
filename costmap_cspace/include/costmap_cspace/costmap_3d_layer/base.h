@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_LAYER_BASE_H
-#define COSTMAP_3D_LAYER_BASE_H
+#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
+#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
 
 #include <ros/ros.h>
 
@@ -389,4 +389,4 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_3D_LAYER_BASE_H
+#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2014-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,74 +27,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CSPACE3_CACHE_H
-#define CSPACE3_CACHE_H
+#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H
+#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H
 
-#include <ros/ros.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace/CSpace3D.h>
+#include <costmap_cspace/CSpace3DUpdate.h>
+
+#include <costmap_cspace/costmap_3d_layer/base.h>
 
 namespace costmap_cspace
 {
-class CSpace3Cache
+class Costmap3dLayerPlain : public Costmap3dLayerFootprint
 {
-protected:
-  std::unique_ptr<char[]> c_;
-  int size_[3];
-  int center_[3];
-  int stride_[3];
-  size_t array_size_;
-
 public:
-  CSpace3Cache()
-    : c_(nullptr)
-    , array_size_(0)
-  {
-    size_[0] = size_[1] = size_[2] = 0;
-    center_[0] = center_[1] = center_[2] = 0;
-    stride_[0] = stride_[1] = stride_[2] = 0;
-  }
-  void reset(const int &x, const int &y, const int &yaw)
-  {
-    size_[0] = x * 2 + 1;
-    size_[1] = y * 2 + 1;
-    size_[2] = yaw;
-    center_[0] = x;
-    center_[1] = y;
-    center_[2] = 0;
-    array_size_ = size_[0] * size_[1] * size_[2];
-    c_.reset(new char[array_size_]);
-    memset(c_.get(), 0, array_size_ * sizeof(char));
-    stride_[0] = 1;
-    stride_[1] = size_[0];
-    stride_[2] = size_[0] * size_[1];
-  }
+  using Ptr = std::shared_ptr<Costmap3dLayerPlain>;
 
-  char &e(const int &x, const int &y, const int &yaw)
+  Costmap3dLayerPlain()
   {
-    const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
-
-    return c_[addr];
+    Polygon footprint;
+    footprint.v.resize(3);
+    for (auto &p : footprint.v)
+    {
+      p[0] = p[1] = 0.0;
+    }
+    setFootprint(footprint);
   }
-  const char &e(const int &x, const int &y, const int &yaw) const
+  void loadConfig(XmlRpc::XmlRpcValue config)
   {
-    const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
-
-    return c_[addr];
-  }
-  void getSize(int &x, int &y, int &a) const
-  {
-    x = size_[0];
-    y = size_[1];
-    a = size_[2];
-  }
-  void getCenter(int &x, int &y, int &a) const
-  {
-    x = center_[0];
-    y = center_[1];
-    a = center_[2];
+    setExpansion(
+        static_cast<double>(config["linear_expand"]),
+        static_cast<double>(config["linear_spread"]));
   }
 };
 }  // namespace costmap_cspace
 
-#endif  // CSPACE3_CACHE_H
+#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H
