@@ -36,7 +36,7 @@
 
 #include <string>
 
-#include <pointcloud_accumulator/accumulator.h>
+#include <costmap_cspace/pointcloud_accumulator/accumulator.h>
 
 class laserscan_to_map
 {

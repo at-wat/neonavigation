@@ -37,8 +37,8 @@
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <cspace3_cache.h>
-#include <polygon.h>
+#include <costmap_cspace/cspace3_cache.h>
+#include <costmap_cspace/polygon.h>
 
 #include <string>
 #include <map>

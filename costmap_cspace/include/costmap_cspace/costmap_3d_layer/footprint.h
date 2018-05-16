@@ -39,9 +39,9 @@
 
 #include <xmlrpcpp/XmlRpcValue.h>
 
-#include <costmap_3d_layer/base.h>
-#include <cspace3_cache.h>
-#include <polygon.h>
+#include <costmap_cspace/costmap_3d_layer/base.h>
+#include <costmap_cspace/cspace3_cache.h>
+#include <costmap_cspace/polygon.h>
 
 namespace costmap_cspace
 {
