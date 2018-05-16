@@ -35,6 +35,7 @@
 #include <costmap_cspace/costmap_3d_layer/footprint.h>
 #include <costmap_cspace/costmap_3d_layer/plain.h>
 #include <costmap_cspace/costmap_3d_layer/output.h>
+#include <costmap_cspace/costmap_3d_layer/stop_propagation.h>
 #include <costmap_cspace/costmap_3d_layer/unknown_handle.h>
 
 #include <costmap_cspace/costmap_3d_layer/class_loader.h>
