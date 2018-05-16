@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef POLYGON_H
-#define POLYGON_H
+#ifndef COSTMAP_CSPACE_POLYGON_H
+#define COSTMAP_CSPACE_POLYGON_H
 
 #include <ros/ros.h>
 #include <vector>
@@ -107,7 +107,7 @@ public:
         p[0] = static_cast<double>(footprint_xml[i][0]);
         p[1] = static_cast<double>(footprint_xml[i][1]);
       }
-      catch(XmlRpc::XmlRpcException &e)
+      catch (XmlRpc::XmlRpcException &e)
       {
         throw std::runtime_error(("Invalid footprint xml." + e.getMessage()).c_str());
       }
@@ -190,4 +190,4 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // POLYGON_H
+#endif  // COSTMAP_CSPACE_POLYGON_H

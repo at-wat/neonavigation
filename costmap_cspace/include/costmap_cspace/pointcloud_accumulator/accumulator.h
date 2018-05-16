@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
-#define POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#ifndef COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#define COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
 
 #include <ros/ros.h>
 
@@ -44,7 +44,8 @@ public:
     ros::Time stamp_;
 
     Points(const T &points, const ros::Time &stamp)
-      : T(points), stamp_(stamp)
+      : T(points)
+      , stamp_(stamp)
     {
     }
   };
@@ -97,4 +98,4 @@ protected:
   std::list<Points> points_;
 };
 
-#endif  // POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H

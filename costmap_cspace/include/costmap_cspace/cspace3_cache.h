@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CSPACE3_CACHE_H
-#define CSPACE3_CACHE_H
+#ifndef COSTMAP_CSPACE_CSPACE3_CACHE_H
+#define COSTMAP_CSPACE_CSPACE3_CACHE_H
 
 #include <ros/ros.h>
 
@@ -97,4 +97,4 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // CSPACE3_CACHE_H
+#endif  // COSTMAP_CSPACE_CSPACE3_CACHE_H

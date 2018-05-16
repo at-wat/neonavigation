@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_H
-#define COSTMAP_3D_H
+#ifndef COSTMAP_CSPACE_COSTMAP_3D_H
+#define COSTMAP_CSPACE_COSTMAP_3D_H
 
 #include <ros/ros.h>
 
@@ -105,4 +105,4 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_3D_H
+#endif  // COSTMAP_CSPACE_COSTMAP_3D_H
