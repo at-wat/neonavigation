@@ -27,15 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
-#define COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
+#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
+#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
 
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace/CSpace3D.h>
 #include <costmap_cspace/CSpace3DUpdate.h>
 
-#include <costmap_3d_layer/base.h>
+#include <costmap_cspace/costmap_3d_layer/base.h>
 
 namespace costmap_cspace
 {
@@ -101,4 +101,4 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
+#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H

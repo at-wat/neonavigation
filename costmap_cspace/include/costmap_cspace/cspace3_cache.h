@@ -27,74 +27,74 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
-#define POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#ifndef COSTMAP_CSPACE_CSPACE3_CACHE_H
+#define COSTMAP_CSPACE_CSPACE3_CACHE_H
 
 #include <ros/ros.h>
 
-#include <list>
-
-template <typename T>
-class PointcloudAccumurator
+namespace costmap_cspace
 {
-public:
-  class Points : public T
-  {
-  public:
-    ros::Time stamp_;
-
-    Points(const T &points, const ros::Time &stamp)
-      : T(points), stamp_(stamp)
-    {
-    }
-  };
-
-  PointcloudAccumurator()
-  {
-  }
-
-  explicit PointcloudAccumurator(const ros::Duration &duration)
-  {
-    reset(duration);
-  }
-
-  void reset(const ros::Duration &duration)
-  {
-    time_to_hold_ = duration;
-    clear();
-  }
-
-  void clear()
-  {
-    points_.clear();
-  }
-
-  void push(const Points &points)
-  {
-    for (auto it = points_.begin(); it != points_.end(); ++it)
-    {
-      if (it->stamp_ + time_to_hold_ < points.stamp_)
-      {
-        it = points_.erase(it);
-        continue;
-      }
-      break;
-    }
-    points_.push_back(points);
-  }
-
-  typename std::list<Points>::iterator begin()
-  {
-    return points_.begin();
-  }
-  typename std::list<Points>::iterator end()
-  {
-    return points_.end();
-  }
-
+class CSpace3Cache
+{
 protected:
-  ros::Duration time_to_hold_;
-  std::list<Points> points_;
-};
+  std::unique_ptr<char[]> c_;
+  int size_[3];
+  int center_[3];
+  int stride_[3];
+  size_t array_size_;
 
-#endif  // POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+public:
+  CSpace3Cache()
+    : c_(nullptr)
+    , array_size_(0)
+  {
+    size_[0] = size_[1] = size_[2] = 0;
+    center_[0] = center_[1] = center_[2] = 0;
+    stride_[0] = stride_[1] = stride_[2] = 0;
+  }
+  void reset(const int &x, const int &y, const int &yaw)
+  {
+    size_[0] = x * 2 + 1;
+    size_[1] = y * 2 + 1;
+    size_[2] = yaw;
+    center_[0] = x;
+    center_[1] = y;
+    center_[2] = 0;
+    array_size_ = size_[0] * size_[1] * size_[2];
+    c_.reset(new char[array_size_]);
+    memset(c_.get(), 0, array_size_ * sizeof(char));
+    stride_[0] = 1;
+    stride_[1] = size_[0];
+    stride_[2] = size_[0] * size_[1];
+  }
+
+  char &e(const int &x, const int &y, const int &yaw)
+  {
+    const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
+    ROS_ASSERT(addr < array_size_);
+
+    return c_[addr];
+  }
+  const char &e(const int &x, const int &y, const int &yaw) const
+  {
+    const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
+    ROS_ASSERT(addr < array_size_);
+
+    return c_[addr];
+  }
+  void getSize(int &x, int &y, int &a) const
+  {
+    x = size_[0];
+    y = size_[1];
+    a = size_[2];
+  }
+  void getCenter(int &x, int &y, int &a) const
+  {
+    x = center_[0];
+    y = center_[1];
+    a = center_[2];
+  }
+};
+}  // namespace costmap_cspace
+
+#endif  // COSTMAP_CSPACE_CSPACE3_CACHE_H

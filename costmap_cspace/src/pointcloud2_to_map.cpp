@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-#include <pointcloud_accumulator/accumulator.h>
+#include <costmap_cspace/pointcloud_accumulator/accumulator.h>
 
 class pointcloud2_to_map
 {

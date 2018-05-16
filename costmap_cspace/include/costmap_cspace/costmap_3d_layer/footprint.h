@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_3D_LAYER_FOOTPRINT_H
-#define COSTMAP_3D_LAYER_FOOTPRINT_H
+#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
+#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
 #include <ros/ros.h>
 
@@ -39,9 +39,9 @@
 
 #include <xmlrpcpp/XmlRpcValue.h>
 
-#include <costmap_3d_layer/base.h>
-#include <cspace3_cache.h>
-#include <polygon.h>
+#include <costmap_cspace/costmap_3d_layer/base.h>
+#include <costmap_cspace/cspace3_cache.h>
+#include <costmap_cspace/polygon.h>
 
 namespace costmap_cspace
 {
@@ -262,4 +262,4 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_3D_LAYER_FOOTPRINT_H
+#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
