@@ -174,6 +174,7 @@ protected:
   int esc_angle_;
   double esc_range_f_;
   int unknown_cost_;
+  bool overwrite_cost_;
   bool has_map_;
   bool has_goal_;
   bool has_start_;
@@ -810,9 +811,16 @@ protected:
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
             char c = msg->data[addr];
-            if (c < 0)
-              c = unknown_cost_;
-            cm_[gp + p] = c;
+            if (overwrite_cost_)
+            {
+              if (c >= 0)
+                cm_[gp + p] = c;
+            }
+            else
+            {
+              if (cm_[gp + p] < c)
+                cm_[gp + p] = c;
+            }
           }
         }
       }
@@ -1139,6 +1147,8 @@ public:
     nh_.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
 
     nh_.param("unknown_cost", unknown_cost_, 100);
+    nh_.param("overwrite_cost", overwrite_cost_, false);
+
     nh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
     nh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
     nh_.param("remember_updates", remember_updates_, false);
