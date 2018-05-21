@@ -1095,6 +1095,7 @@ protected:
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
     cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+    cm_hist_.clear(0);
 
     updateGoal();
   }
