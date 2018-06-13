@@ -2,7 +2,7 @@
 <package>
   <name>safety_limiter</name>
   <version>0.1.0</version>
-  <description>Motion limiter for collision prevention</description>
+  <description>Motion limiter package for collision prevention</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
   <license>BSD</license>
