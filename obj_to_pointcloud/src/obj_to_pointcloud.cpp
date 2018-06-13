@@ -87,10 +87,10 @@ std::vector<std::string> split(const std::string &input, char delimiter)
   return result;
 }
 
-class ObjToPointcloud
+class ObjToPointcloudNode
 {
 public:
-  ObjToPointcloud()
+  ObjToPointcloudNode()
     : pnh_("~")
     , engine_(seed_gen_())
   {
@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "obj_to_pointcloud");
 
-  ObjToPointcloud m2p;
+  ObjToPointcloudNode m2p;
   ros::spin();
 
   return 0;

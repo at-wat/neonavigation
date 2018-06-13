@@ -86,7 +86,7 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   return c;
 }
 
-class PointcloudToMaps
+class PointcloudToMapsNode
 {
 private:
   ros::NodeHandle pnh_;
@@ -96,11 +96,11 @@ private:
   ros::Subscriber sub_points_;
 
 public:
-  PointcloudToMaps()
+  PointcloudToMapsNode()
     : pnh_("~")
     , nh_("")
   {
-    sub_points_ = pnh_.subscribe("map_cloud", 1, &PointcloudToMaps::cbPoints, this);
+    sub_points_ = pnh_.subscribe("map_cloud", 1, &PointcloudToMapsNode::cbPoints, this);
     pub_map_array_ = nh_.advertise<map_organizer_msgs::OccupancyGridArray>("maps", 1, true);
   }
   void cbPoints(const sensor_msgs::PointCloud2::Ptr &msg)
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "pointcloud_to_maps");
 
-  PointcloudToMaps p2m;
+  PointcloudToMapsNode p2m;
   ros::spin();
 
   return 0;

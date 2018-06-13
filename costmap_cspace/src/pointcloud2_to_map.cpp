@@ -40,84 +40,84 @@
 
 #include <costmap_cspace/pointcloud_accumulator/accumulator.h>
 
-class pointcloud2_to_map
+class Pointcloud2ToMapNode
 {
 private:
-  ros::NodeHandle nh;
-  ros::NodeHandle pnh;
-  ros::Publisher pub_map;
-  ros::Subscriber sub_cloud;
-  ros::Subscriber sub_cloud_single;
+  ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
+  ros::Publisher pub_map_;
+  ros::Subscriber sub_cloud_;
+  ros::Subscriber sub_cloud_single_;
 
-  nav_msgs::OccupancyGrid map;
-  tf::TransformListener tfl;
-  ros::Time published;
-  ros::Duration publish_interval;
+  nav_msgs::OccupancyGrid map_;
+  tf::TransformListener tfl_;
+  ros::Time published_;
+  ros::Duration publish_interval_;
 
-  double z_min, z_max;
-  std::string global_frame;
-  std::string robot_frame;
+  double z_min_, z_max_;
+  std::string global_frame_;
+  std::string robot_frame_;
 
-  unsigned int width;
-  unsigned int height;
-  float origin_x;
-  float origin_y;
+  unsigned int width_;
+  unsigned int height_;
+  float origin_x_;
+  float origin_y_;
 
-  std::vector<PointcloudAccumurator<sensor_msgs::PointCloud2>> accums;
+  std::vector<PointcloudAccumurator<sensor_msgs::PointCloud2>> accums_;
 
 public:
-  pointcloud2_to_map()
-    : nh()
-    , pnh("~")
-    , accums(2)
+  Pointcloud2ToMapNode()
+    : nh_()
+    , pnh_("~")
+    , accums_(2)
   {
-    pnh.param("z_min", z_min, 0.1);
-    pnh.param("z_max", z_max, 1.0);
-    pnh.param("global_frame", global_frame, std::string("map"));
-    pnh.param("robot_frame", robot_frame, std::string("base_link"));
+    pnh_.param("z_min", z_min_, 0.1);
+    pnh_.param("z_max", z_max_, 1.0);
+    pnh_.param("global_frame", global_frame_, std::string("map"));
+    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
     double accum_duration;
-    pnh.param("accum_duration", accum_duration, 1.0);
-    accums[0].reset(ros::Duration(accum_duration));
-    accums[1].reset(ros::Duration(0.0));
+    pnh_.param("accum_duration", accum_duration, 1.0);
+    accums_[0].reset(ros::Duration(accum_duration));
+    accums_[1].reset(ros::Duration(0.0));
 
-    pub_map = pnh.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
-    sub_cloud = nh.subscribe<sensor_msgs::PointCloud2>(
+    pub_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+    sub_cloud_ = nh_.subscribe<sensor_msgs::PointCloud2>(
         "cloud", 100,
-        boost::bind(&pointcloud2_to_map::cb_cloud, this, _1, false));
-    sub_cloud_single = nh.subscribe<sensor_msgs::PointCloud2>(
+        boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, false));
+    sub_cloud_single_ = nh_.subscribe<sensor_msgs::PointCloud2>(
         "cloud_singleshot", 100,
-        boost::bind(&pointcloud2_to_map::cb_cloud, this, _1, true));
+        boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, true));
 
     int width_param;
-    pnh.param("width", width_param, 30);
-    height = width = width_param;
-    map.header.frame_id = global_frame;
+    pnh_.param("width", width_param, 30);
+    height_ = width_ = width_param;
+    map_.header.frame_id = global_frame_;
 
     double resolution;
-    pnh.param("resolution", resolution, 0.1);
-    map.info.resolution = resolution;
-    map.info.width = width;
-    map.info.height = height;
-    map.data.resize(map.info.width * map.info.height);
+    pnh_.param("resolution", resolution, 0.1);
+    map_.info.resolution = resolution;
+    map_.info.width = width_;
+    map_.info.height = height_;
+    map_.data.resize(map_.info.width * map_.info.height);
 
     double hz;
-    pnh.param("hz", hz, 1.0);
-    publish_interval = ros::Duration(1.0 / hz);
+    pnh_.param("hz", hz, 1.0);
+    publish_interval_ = ros::Duration(1.0 / hz);
   }
 
 private:
-  void cb_cloud(const sensor_msgs::PointCloud2::ConstPtr &cloud, const bool singleshot)
+  void cbCloud(const sensor_msgs::PointCloud2::ConstPtr &cloud, const bool singleshot)
   {
     sensor_msgs::PointCloud2 cloud_global;
     geometry_msgs::TransformStamped trans;
     try
     {
       tf::StampedTransform trans_tf;
-      tfl.waitForTransform(global_frame, cloud->header.frame_id,
-                           cloud->header.stamp, ros::Duration(0.5));
-      tfl.lookupTransform(global_frame, cloud->header.frame_id,
-                          cloud->header.stamp, trans_tf);
+      tfl_.waitForTransform(global_frame_, cloud->header.frame_id,
+                            cloud->header.stamp, ros::Duration(0.5));
+      tfl_.lookupTransform(global_frame_, cloud->header.frame_id,
+                           cloud->header.stamp, trans_tf);
       tf::transformStampedTFToMsg(trans_tf, trans);
     }
     catch (tf::TransformException &e)
@@ -128,29 +128,29 @@ private:
     tf2::doTransform(*cloud, cloud_global, trans);
 
     const int buffer = singleshot ? 1 : 0;
-    accums[buffer].push(PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
+    accums_[buffer].push(PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
     ros::Time now = cloud->header.stamp;
-    if (published + publish_interval > now)
+    if (published_ + publish_interval_ > now)
       return;
-    published = now;
+    published_ = now;
 
     float robot_z;
     try
     {
       tf::StampedTransform trans;
-      tfl.lookupTransform(global_frame, robot_frame, ros::Time(0), trans);
+      tfl_.lookupTransform(global_frame_, robot_frame_, ros::Time(0), trans);
 
       auto pos = trans.getOrigin();
-      float x = static_cast<int>(pos.x() / map.info.resolution) * map.info.resolution;
-      float y = static_cast<int>(pos.y() / map.info.resolution) * map.info.resolution;
-      map.info.origin.position.x = x - map.info.width * map.info.resolution * 0.5;
-      map.info.origin.position.y = y - map.info.height * map.info.resolution * 0.5;
-      map.info.origin.position.z = 0.0;
-      map.info.origin.orientation.w = 1.0;
-      origin_x = x - width * map.info.resolution * 0.5;
-      origin_y = y - height * map.info.resolution * 0.5;
+      float x = static_cast<int>(pos.x() / map_.info.resolution) * map_.info.resolution;
+      float y = static_cast<int>(pos.y() / map_.info.resolution) * map_.info.resolution;
+      map_.info.origin.position.x = x - map_.info.width * map_.info.resolution * 0.5;
+      map_.info.origin.position.y = y - map_.info.height * map_.info.resolution * 0.5;
+      map_.info.origin.position.z = 0.0;
+      map_.info.origin.orientation.w = 1.0;
+      origin_x_ = x - width_ * map_.info.resolution * 0.5;
+      origin_y_ = y - height_ * map_.info.resolution * 0.5;
       robot_z = pos.z();
     }
     catch (tf::TransformException &e)
@@ -158,10 +158,10 @@ private:
       ROS_WARN("%s", e.what());
       return;
     }
-    for (auto &cell : map.data)
+    for (auto &cell : map_.data)
       cell = 0;
 
-    for (auto &accum : accums)
+    for (auto &accum : accums_)
     {
       for (auto &pc : accum)
       {
@@ -170,20 +170,20 @@ private:
         sensor_msgs::PointCloud2Iterator<float> iter_z(pc, "z");
         for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
         {
-          if (*iter_z - robot_z < z_min || z_max < *iter_z - robot_z)
+          if (*iter_z - robot_z < z_min_ || z_max_ < *iter_z - robot_z)
             continue;
           unsigned int x = int(
-              (*iter_x - map.info.origin.position.x) / map.info.resolution);
+              (*iter_x - map_.info.origin.position.x) / map_.info.resolution);
           unsigned int y = int(
-              (*iter_y - map.info.origin.position.y) / map.info.resolution);
-          if (x >= map.info.width || y >= map.info.height)
+              (*iter_y - map_.info.origin.position.y) / map_.info.resolution);
+          if (x >= map_.info.width || y >= map_.info.height)
             continue;
-          map.data[x + y * map.info.width] = 100;
+          map_.data[x + y * map_.info.width] = 100;
         }
       }
     }
 
-    pub_map.publish(map);
+    pub_map_.publish(map_);
   }
 };
 
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "pointcloud2_to_map");
 
-  pointcloud2_to_map conv;
+  Pointcloud2ToMapNode conv;
   ros::spin();
 
   return 0;

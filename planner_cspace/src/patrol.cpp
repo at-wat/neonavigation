@@ -33,7 +33,7 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <nav_msgs/Path.h>
 
-class PatrolAction
+class PatrolActionNode
 {
 protected:
   using MoveBaseClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
@@ -51,11 +51,11 @@ protected:
   }
 
 public:
-  PatrolAction()
+  PatrolActionNode()
   {
     ros::NodeHandle nh("~");
 
-    sub_path_ = nh.subscribe("path", 1, &PatrolAction::cbPath, this);
+    sub_path_ = nh.subscribe("path", 1, &PatrolActionNode::cbPath, this);
     act_cli_.reset(new MoveBaseClient("move_base", false));
 
     pos_ = 0;
@@ -124,9 +124,8 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "patrol");
 
-  PatrolAction pa;
+  PatrolActionNode pa;
   pa.spin();
 
   return 0;
 }
-

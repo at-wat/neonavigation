@@ -43,16 +43,16 @@
 /**
  * @brief Map generation node.
  */
-class MapGenerator
+class MapGeneratorNode
 {
 public:
-  explicit MapGenerator(const std::string& mapname)
+  explicit MapGeneratorNode(const std::string& mapname)
     : mapname_(mapname)
     , saved_map_(false)
   {
     ros::NodeHandle n;
     ROS_INFO("Waiting for the map");
-    map_sub_ = n.subscribe("maps", 1, &MapGenerator::mapsCallback, this);
+    map_sub_ = n.subscribe("maps", 1, &MapGeneratorNode::mapsCallback, this);
   }
 
   void mapsCallback(const map_organizer_msgs::OccupancyGridArrayConstPtr& maps)
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
     }
   }
 
-  MapGenerator mg(mapname);
+  MapGeneratorNode mg(mapname);
 
   while (!mg.saved_map_ && ros::ok())
     ros::spinOnce();
