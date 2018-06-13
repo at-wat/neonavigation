@@ -61,7 +61,7 @@ float signf(float a)
   return 0;
 }
 
-class Planner3d
+class Planner3dNode
 {
 public:
   using Astar = GridAstar<3, 2>;
@@ -1109,23 +1109,23 @@ protected:
   }
 
 public:
-  Planner3d()
+  Planner3dNode()
     : nh_("~")
   {
-    sub_map_ = nh_.subscribe("costmap", 1, &Planner3d::cbMap, this);
-    sub_map_update_ = nh_.subscribe("costmap_update", 1, &Planner3d::cbMapUpdate, this);
-    sub_goal_ = nh_.subscribe("goal", 1, &Planner3d::cbGoal, this);
+    sub_map_ = nh_.subscribe("costmap", 1, &Planner3dNode::cbMap, this);
+    sub_map_update_ = nh_.subscribe("costmap_update", 1, &Planner3dNode::cbMapUpdate, this);
+    sub_goal_ = nh_.subscribe("goal", 1, &Planner3dNode::cbGoal, this);
     pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
     pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
     pub_hist_ = nh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
     pub_start_ = nh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status_ = nh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
-    srs_forget_ = nh_.advertiseService("forget", &Planner3d::cbForget, this);
+    srs_forget_ = nh_.advertiseService("forget", &Planner3dNode::cbForget, this);
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
-    act_->registerGoalCallback(boost::bind(&Planner3d::cbAction, this));
-    act_->registerPreemptCallback(boost::bind(&Planner3d::cbPreempt, this));
+    act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
+    act_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
 
     nh_.param_cast("freq", freq_, 4.0f);
     nh_.param_cast("freq_min", freq_min_, 2.0f);
@@ -1176,7 +1176,7 @@ public:
     nh_.param("fast_map_update", fast_map_update_, false);
     if (fast_map_update_)
     {
-      ROS_WARN("Planner3d: Experimental fast_map_update is enabled. ");
+      ROS_WARN("planner_3d: Experimental fast_map_update is enabled. ");
     }
     std::string debug_mode;
     nh_.param("debug_mode", debug_mode, std::string("cost_estim"));
@@ -1587,15 +1587,15 @@ protected:
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
     std::list<Astar::Vec> path_grid;
     if (!as_.search(s, e, path_grid,
-                    std::bind(&Planner3d::cbCost,
+                    std::bind(&Planner3dNode::cbCost,
                               this, std::placeholders::_1, std::placeholders::_2,
                               std::placeholders::_3, std::placeholders::_4, hyst),
-                    std::bind(&Planner3d::cbCostEstim,
+                    std::bind(&Planner3dNode::cbCostEstim,
                               this, std::placeholders::_1, std::placeholders::_2),
-                    std::bind(&Planner3d::cbSearch,
+                    std::bind(&Planner3dNode::cbSearch,
                               this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3),
-                    std::bind(&Planner3d::cbProgress,
+                    std::bind(&Planner3dNode::cbProgress,
                               this, std::placeholders::_1),
                     range_limit,
                     1.0f / freq_min_,
@@ -1951,7 +1951,7 @@ int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "planner_3d");
 
-  Planner3d jy;
+  Planner3dNode jy;
   jy.spin();
 
   return 0;

@@ -35,7 +35,7 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
-class DummyRobot
+class DummyRobotNode
 {
 protected:
   double x_;
@@ -77,7 +77,7 @@ protected:
   }
 
 public:
-  DummyRobot()
+  DummyRobotNode()
   {
     ros::NodeHandle nh("");
     ros::NodeHandle pnh("~");
@@ -89,8 +89,8 @@ public:
     w_ = 0.0;
 
     pub_odom_ = nh.advertise<nav_msgs::Odometry>("odom", 1, true);
-    sub_twist_ = nh.subscribe("cmd_vel", 1, &DummyRobot::cbTwist, this);
-    sub_init_ = nh.subscribe("initialpose", 1, &DummyRobot::cbInit, this);
+    sub_twist_ = nh.subscribe("cmd_vel", 1, &DummyRobotNode::cbTwist, this);
+    sub_init_ = nh.subscribe("initialpose", 1, &DummyRobotNode::cbInit, this);
   }
   void spin()
   {
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "dummy_robot");
 
-  DummyRobot robot;
+  DummyRobotNode robot;
   robot.spin();
 
   return 0;

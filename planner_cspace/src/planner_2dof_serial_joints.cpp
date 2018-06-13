@@ -54,7 +54,7 @@ float signf(float a)
   return 0;
 }
 
-class planner2dofSerialJoints
+class planner2dofSerialJointsNode
 {
 public:
   using Astar = GridAstar<2, 2>;
@@ -384,15 +384,15 @@ private:
   }
 
 public:
-  explicit planner2dofSerialJoints(const std::string group_name)
+  explicit planner2dofSerialJointsNode(const std::string group_name)
   {
     group_ = group_name;
     ros::NodeHandle_f nh("~/" + group_);
     ros::NodeHandle_f nh_home("~");
 
     pub_trajectory_ = nh_home.advertise<trajectory_msgs::JointTrajectory>("trajectory_out", 1, true);
-    sub_trajectory_ = nh_home.subscribe("trajectory_in", 1, &planner2dofSerialJoints::cbTrajectory, this);
-    sub_joint_ = nh_home.subscribe("joint", 1, &planner2dofSerialJoints::cbJoint, this);
+    sub_trajectory_ = nh_home.subscribe("trajectory_in", 1, &planner2dofSerialJointsNode::cbTrajectory, this);
+    sub_joint_ = nh_home.subscribe("joint", 1, &planner2dofSerialJointsNode::cbJoint, this);
 
     pub_status_ = nh.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
 
@@ -589,15 +589,15 @@ private:
     if (replan_interval_ >= ros::Duration(0))
       cancel = replan_interval_.toSec();
     if (!as_.search(s, e, path_grid,
-                    std::bind(&planner2dofSerialJoints::cbCost,
+                    std::bind(&planner2dofSerialJointsNode::cbCost,
                               this, std::placeholders::_1, std::placeholders::_2,
                               std::placeholders::_3, std::placeholders::_4),
-                    std::bind(&planner2dofSerialJoints::cbCostEstim,
+                    std::bind(&planner2dofSerialJointsNode::cbCostEstim,
                               this, std::placeholders::_1, std::placeholders::_2),
-                    std::bind(&planner2dofSerialJoints::cbSearch,
+                    std::bind(&planner2dofSerialJointsNode::cbSearch,
                               this, std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3),
-                    std::bind(&planner2dofSerialJoints::cbProgress,
+                    std::bind(&planner2dofSerialJointsNode::cbProgress,
                               this, std::placeholders::_1),
                     0,
                     cancel,
@@ -734,7 +734,7 @@ int main(int argc, char *argv[])
   ros::init(argc, argv, "planner_2dof_serial_joints");
   ros::NodeHandle_f nh("~");
 
-  std::vector<std::shared_ptr<planner2dofSerialJoints>> jys;
+  std::vector<std::shared_ptr<planner2dofSerialJointsNode>> jys;
   int n;
   nh.param("num_groups", n, 1);
   for (int i = 0; i < n; i++)
@@ -742,9 +742,9 @@ int main(int argc, char *argv[])
     std::string name;
     nh.param("group" + std::to_string(i) + "_name",
              name, std::string("group") + std::to_string(i));
-    std::shared_ptr<planner2dofSerialJoints> jy;
+    std::shared_ptr<planner2dofSerialJointsNode> jy;
 
-    jy.reset(new planner2dofSerialJoints(name));
+    jy.reset(new planner2dofSerialJointsNode(name));
     jys.push_back(jy);
   }
 

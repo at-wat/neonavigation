@@ -76,7 +76,7 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   return c;
 }
 
-class SafetyLimiter
+class SafetyLimiterNode
 {
 private:
   ros::NodeHandle nh_;
@@ -117,7 +117,7 @@ private:
   bool has_twist_;
 
 public:
-  SafetyLimiter()
+  SafetyLimiterNode()
     : nh_("~")
     , last_disable_cmd_(0)
     , watchdog_stop_(false)
@@ -127,10 +127,10 @@ public:
     pub_twist_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_out", 1, true);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
     pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
-    sub_twist_ = nh_.subscribe("cmd_vel_in", 1, &SafetyLimiter::cbTwist, this);
-    sub_cloud_ = nh_.subscribe("cloud", 1, &SafetyLimiter::cbCloud, this);
-    sub_disable_ = nh_.subscribe("disable", 1, &SafetyLimiter::cbDisable, this);
-    sub_watchdog_ = nh_.subscribe("watchdog_reset", 1, &SafetyLimiter::cbWatchdogReset, this);
+    sub_twist_ = nh_.subscribe("cmd_vel_in", 1, &SafetyLimiterNode::cbTwist, this);
+    sub_cloud_ = nh_.subscribe("cloud", 1, &SafetyLimiterNode::cbCloud, this);
+    sub_disable_ = nh_.subscribe("disable", 1, &SafetyLimiterNode::cbDisable, this);
+    sub_watchdog_ = nh_.subscribe("watchdog_reset", 1, &SafetyLimiterNode::cbWatchdogReset, this);
 
     nh_.param("freq", hz_, 6.0);
     nh_.param("cloud_timeout", timeout_, 0.8);
@@ -200,12 +200,12 @@ public:
   void spin()
   {
     ros::Timer predict_timer =
-        nh_.createTimer(ros::Duration(1.0 / hz_), &SafetyLimiter::cbPredictTimer, this);
+        nh_.createTimer(ros::Duration(1.0 / hz_), &SafetyLimiterNode::cbPredictTimer, this);
 
     if (watchdog_interval_ != ros::Duration(0.0))
     {
       watchdog_timer_ =
-          nh_.createTimer(watchdog_interval_, &SafetyLimiter::cbWatchdogTimer, this);
+          nh_.createTimer(watchdog_interval_, &SafetyLimiterNode::cbWatchdogTimer, this);
     }
 
     ros::spin();
@@ -550,7 +550,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "safety_limiter");
 
-  SafetyLimiter limiter;
+  SafetyLimiterNode limiter;
   limiter.spin();
 
   return 0;
