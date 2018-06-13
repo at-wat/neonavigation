@@ -34,7 +34,7 @@
 
 #include <string>
 
-class LargeMapToMap
+class LargeMapToMapNode
 {
 private:
   ros::NodeHandle pnh_;
@@ -51,20 +51,20 @@ private:
   int width_;
 
 public:
-  LargeMapToMap()
+  LargeMapToMapNode()
     : pnh_("~")
     , nh_("")
   {
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
     pub_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
-    sub_largemap_ = nh_.subscribe("map", 2, &LargeMapToMap::cbLargeMap, this);
+    sub_largemap_ = nh_.subscribe("map", 2, &LargeMapToMapNode::cbLargeMap, this);
 
     pnh_.param("width", width_, 30);
 
     double hz;
     pnh_.param("hz", hz, 1.0);
-    timer_ = nh_.createTimer(ros::Duration(1.0 / hz), &LargeMapToMap::cbTimer, this);
+    timer_ = nh_.createTimer(ros::Duration(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
   }
 
 private:
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "largemap_to_map");
 
-  LargeMapToMap conv;
+  LargeMapToMapNode conv;
   ros::spin();
 
   return 0;
