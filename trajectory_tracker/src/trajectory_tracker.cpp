@@ -44,7 +44,7 @@
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float32.h>
-#include <trajectory_tracker/TrajectoryTrackerStatus.h>
+#include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_listener.h>
@@ -181,7 +181,7 @@ TrackerNode::TrackerNode()
   sub_odom_ = nh_.subscribe(topic_odom_, 20, &TrackerNode::cbOdom, this);
   sub_vel_ = nh_.subscribe("speed", 20, &TrackerNode::cbSpeed, this);
   pub_vel_ = nh_.advertise<geometry_msgs::Twist>(topic_cmd_vel_, 10);
-  pub_status_ = nh_.advertise<trajectory_tracker::TrajectoryTrackerStatus>("status", 10);
+  pub_status_ = nh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10);
   pub_tracking_ = nh_.advertise<geometry_msgs::PoseStamped>("tracking", 10);
 }
 TrackerNode::~TrackerNode()
@@ -327,7 +327,7 @@ void TrackerNode::spin()
 
 void TrackerNode::control()
 {
-  trajectory_tracker::TrajectoryTrackerStatus status;
+  trajectory_tracker_msgs::TrajectoryTrackerStatus status;
   status.header.stamp = ros::Time::now();
   status.header.seq = path_.header.seq;
   status.distance_remains = 0.0;
@@ -339,7 +339,7 @@ void TrackerNode::control()
     cmd_vel.linear.x = 0;
     cmd_vel.angular.z = 0;
     pub_vel_.publish(cmd_vel);
-    status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
+    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
     pub_status_.publish(status);
     return;
   }
@@ -379,7 +379,7 @@ void TrackerNode::control()
   catch (tf::TransformException &e)
   {
     ROS_WARN("TF exception: %s", e.what());
-    status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
+    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
     pub_status_.publish(status);
     return;
   }
@@ -438,7 +438,7 @@ void TrackerNode::control()
     cmd_vel.angular.z = 0;
     pub_vel_.publish(cmd_vel);
     // ROS_WARN("failed to find nearest node");
-    status.status = trajectory_tracker::TrajectoryTrackerStatus::NO_PATH;
+    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
     pub_status_.publish(status);
     return;
   }
@@ -635,7 +635,7 @@ void TrackerNode::control()
       cmd_vel.angular.z = 0;
       pub_vel_.publish(cmd_vel);
       // ROS_WARN("Far from given path");
-      status.status = trajectory_tracker::TrajectoryTrackerStatus::FAR_FROM_PATH;
+      status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::FAR_FROM_PATH;
       pub_status_.publish(status);
       return;
     }
@@ -652,11 +652,11 @@ void TrackerNode::control()
   cmd_vel.linear.x = v_;
   cmd_vel.angular.z = w_;
   pub_vel_.publish(cmd_vel);
-  status.status = trajectory_tracker::TrajectoryTrackerStatus::FOLLOWING;
+  status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING;
   if (fabs(status.distance_remains) < goal_tolerance_dist_ &&
       fabs(status.angle_remains) < goal_tolerance_ang_)
   {
-    status.status = trajectory_tracker::TrajectoryTrackerStatus::GOAL;
+    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
   }
   pub_status_.publish(status);
   geometry_msgs::PoseStamped tracking;

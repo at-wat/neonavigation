@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>costmap_cspace</name>
   <version>0.1.0</version>
   <description>3-dof configuration space costmap package</description>
@@ -10,26 +10,17 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>roscpp</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
-  <build_depend>laser_geometry</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>tf2_sensor_msgs</build_depend>
-  <build_depend>rostest</build_depend>
-  <build_depend>roslint</build_depend>
-  <build_depend>xmlrpcpp</build_depend>
+  <depend>roscpp</depend>
+  <test_depend>roslint</test_depend>
+  <test_depend>rostest</test_depend>
 
-  <run_depend>roscpp</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>message_runtime</run_depend>
-  <run_depend>laser_geometry</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>tf2_sensor_msgs</run_depend>
-  <run_depend>xmlrpcpp</run_depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>laser_geometry</depend>
+  <depend>tf</depend>
+  <depend>tf2_sensor_msgs</depend>
 
-  <export>
-  </export>
+  <depend>costmap_cspace_msgs</depend>
+
+  <depend>xmlrpcpp</depend>
 </package>

@@ -15,7 +15,7 @@ pointcloud_to_maps node detects floors from given pointcloud and publishes layer
 
 ### Published topics
 
-* /maps (map_organizer::OccupancyGridArray)
+* /maps (map_organizer_msgs::OccupancyGridArray)
 * /map? (nav_msgs::OccupancyGrid)
 
 ### Services
@@ -55,7 +55,7 @@ tie_maps node loads maps from files and ties into layered OccupancyGrid.
 
 ### Published topics
 
-* /maps (map_organizer::OccupancyGridArray)
+* /maps (map_organizer_msgs::OccupancyGridArray)
 * /map? (nav_msgs::OccupancyGrid)
 
 ### Services
@@ -81,7 +81,7 @@ save_maps saves layered OccupancyGrid to map files.
 
 ### Subscribed topics
 
-* ~/maps (map_organizer::OccupancyGridArray)
+* ~/maps (map_organizer_msgs::OccupancyGridArray)
 
 ### Published topics
 
@@ -107,7 +107,7 @@ select_map node publishes the desired layer from layered OccupancyGrid.
 
 ### Subscribed topics
 
-* /maps (map_organizer::OccupancyGridArray)
+* /maps (map_organizer_msgs::OccupancyGridArray)
 * ~/floor (std_msgs::Int32)
 
 ### Published topics

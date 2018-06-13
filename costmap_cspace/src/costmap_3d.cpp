@@ -37,8 +37,8 @@
 #include <vector>
 
 #include <costmap_cspace/node_handle_float.h>
-#include <costmap_cspace/CSpace3D.h>
-#include <costmap_cspace/CSpace3DUpdate.h>
+#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/CSpace3DUpdate.h>
 
 #include <costmap_cspace/costmap_3d.h>
 
@@ -103,21 +103,21 @@ protected:
   }
   bool cbUpdateStatic(
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace::CSpace3DUpdate::Ptr update)
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
   {
     publishDebug(*map);
-    pub_costmap_.publish<costmap_cspace::CSpace3D>(*map);
+    pub_costmap_.publish<costmap_cspace_msgs::CSpace3D>(*map);
     return true;
   }
   bool cbUpdate(
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace::CSpace3DUpdate::Ptr update)
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
   {
     publishDebug(*map);
     pub_costmap_update_.publish(*update);
     return true;
   }
-  void publishDebug(const costmap_cspace::CSpace3D &map)
+  void publishDebug(const costmap_cspace_msgs::CSpace3D &map)
   {
     if (pub_debug_.getNumSubscribers() == 0)
       return;
@@ -168,8 +168,8 @@ public:
     : nh_()
     , nhp_("~")
   {
-    pub_costmap_ = nhp_.advertise<costmap_cspace::CSpace3D>("costmap", 1, true);
-    pub_costmap_update_ = nhp_.advertise<costmap_cspace::CSpace3DUpdate>("costmap_update", 1, true);
+    pub_costmap_ = nhp_.advertise<costmap_cspace_msgs::CSpace3D>("costmap", 1, true);
+    pub_costmap_update_ = nhp_.advertise<costmap_cspace_msgs::CSpace3DUpdate>("costmap_update", 1, true);
     pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
     pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 
