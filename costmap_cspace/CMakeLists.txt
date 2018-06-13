@@ -61,10 +61,11 @@ target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
 add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
 
 
-roslint_cpp()
-
 if(CATKIN_ENABLE_TESTING)
   add_subdirectory(test)
+
+  find_package(roslint REQUIRED)
+  roslint_cpp()
   roslint_add_test()
 endif()
 

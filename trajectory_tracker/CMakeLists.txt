@@ -5,7 +5,6 @@ project(trajectory_tracker)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
-    roslint
     rostest
 
     geometry_msgs
@@ -61,9 +60,9 @@ add_executable(trajectory_server src/trajectory_server.cpp src/filter.cpp)
 target_link_libraries(trajectory_server ${catkin_LIBRARIES})
 add_dependencies(trajectory_server ${catkin_EXPORTED_TARGETS})
 
-roslint_cpp()
-
 if(CATKIN_ENABLE_TESTING)
+  find_package(roslint REQUIRED)
+  roslint_cpp()
   roslint_add_test()
 endif()
 

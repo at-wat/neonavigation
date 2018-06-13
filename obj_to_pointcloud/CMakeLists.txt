@@ -6,7 +6,6 @@ find_package(catkin REQUIRED
   COMPONENTS
     cmake_modules
     roscpp
-    roslint
     rostest
 
     eigen_conversions
@@ -56,9 +55,9 @@ target_link_libraries(obj_to_pointcloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(obj_to_pointcloud ${catkin_EXPORTED_TARGETS})
 
 
-roslint_cpp()
-
 if(CATKIN_ENABLE_TESTING)
+  find_package(roslint REQUIRED)
+  roslint_cpp()
   roslint_add_test()
 endif()
 
