@@ -6,13 +6,14 @@ find_package(catkin REQUIRED
   COMPONENTS
     cmake_modules
     roscpp
-    geometry_msgs
-    tf
-    sensor_msgs
-    pcl_ros
-    tf_conversions
-    rostest
     roslint
+    rostest
+
+    geometry_msgs
+    pcl_ros
+    sensor_msgs
+    tf
+    tf_conversions
 )
 find_package(PCL REQUIRED)
 
@@ -20,10 +21,12 @@ find_package(PCL REQUIRED)
 catkin_package(
   DEPENDS
     roscpp
+
     geometry_msgs
-    tf
-    sensor_msgs
     pcl_ros
+    sensor_msgs
+    tf
+    tf_conversions
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})

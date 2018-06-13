@@ -38,7 +38,7 @@
 #include <cstdio>
 #include <string>
 
-#include <map_organizer/OccupancyGridArray.h>
+#include <map_organizer_msgs/OccupancyGridArray.h>
 
 /**
  * @brief Map generation node.
@@ -47,14 +47,15 @@ class MapGenerator
 {
 public:
   explicit MapGenerator(const std::string& mapname)
-    : mapname_(mapname), saved_map_(false)
+    : mapname_(mapname)
+    , saved_map_(false)
   {
     ros::NodeHandle n;
     ROS_INFO("Waiting for the map");
     map_sub_ = n.subscribe("maps", 1, &MapGenerator::mapsCallback, this);
   }
 
-  void mapsCallback(const map_organizer::OccupancyGridArrayConstPtr& maps)
+  void mapsCallback(const map_organizer_msgs::OccupancyGridArrayConstPtr& maps)
   {
     int i = 0;
     for (auto& map : maps->maps)

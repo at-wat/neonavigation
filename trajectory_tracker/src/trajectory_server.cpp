@@ -45,8 +45,8 @@
 #include <visualization_msgs/InteractiveMarkerUpdate.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
-#include <trajectory_tracker/ChangePath.h>
-#include <trajectory_tracker/TrajectoryServerStatus.h>
+#include <trajectory_tracker_msgs/ChangePath.h>
+#include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
 #include <interactive_markers/interactive_marker_server.h>
 
 #include <filter.h>
@@ -68,7 +68,7 @@ private:
 
   nav_msgs::Path path_;
   std::string topic_path_;
-  trajectory_tracker::ChangePath::Request req_path_;
+  trajectory_tracker_msgs::ChangePath::Request req_path_;
   double hz_;
   boost::shared_array<uint8_t> buffer_;
   int serial_size_;
@@ -77,8 +77,8 @@ private:
 
   bool loadFile();
   void loadPath();
-  bool change(trajectory_tracker::ChangePath::Request &req,
-              trajectory_tracker::ChangePath::Response &res);
+  bool change(trajectory_tracker_msgs::ChangePath::Request &req,
+              trajectory_tracker_msgs::ChangePath::Response &res);
   void processFeedback(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
   void updateIM();
@@ -102,7 +102,7 @@ ServerNode::ServerNode()
   pnh_.param("filter_step", filter_step_, 0.0);
 
   pub_path_ = pnh_.advertise<nav_msgs::Path>(topic_path_, 2, true);
-  pub_status_ = pnh_.advertise<trajectory_tracker::TrajectoryServerStatus>("status", 2);
+  pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryServerStatus>("status", 2);
   srv_change_path_ = pnh_.advertiseService("ChangePath", &ServerNode::change, this);
   update_num_ = 0;
   max_markers_ = 0;
@@ -224,8 +224,8 @@ void ServerNode::updateIM()
   srv_im_fb_.applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker::ChangePath::Request &req,
-                        trajectory_tracker::ChangePath::Response &res)
+bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request &req,
+                        trajectory_tracker_msgs::ChangePath::Response &res)
 {
   req_path_ = req;
   res.success = false;
@@ -268,7 +268,7 @@ bool ServerNode::change(trajectory_tracker::ChangePath::Request &req,
 void ServerNode::spin()
 {
   ros::Rate loop_rate(hz_);
-  trajectory_tracker::TrajectoryServerStatus status;
+  trajectory_tracker_msgs::TrajectoryServerStatus status;
 
   while (ros::ok())
   {

@@ -1,29 +1,11 @@
-FROM ros:kinetic
+FROM ros:kinetic-ros-core
 
 RUN apt-get -qq update \
   && apt-get install -y --no-install-recommends \
     curl \
-    libavcodec-dev \
-    libavutil-dev \
-    libgstreamer1.0 \
-    libpcl-dev \
-    libqt5gui5 \
-    libqtgui4 \
-    libyaml-cpp-dev \
     libxml2-utils \
     python-pip \
-    python-vtk6 \
-    qt5-qmake \
-    qtbase5-dev \
-    qtbase5-dev-tools \
-    qtchooser \
-    qtcore4-l10n \
-    qttools5-dev \
-    qttools5-private-dev \
     sudo \
-    tcl-dev \
-    tk-dev \
-    vtk6 \
     wget \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
@@ -41,6 +23,8 @@ COPY ./safety_limiter/package.xml /catkin_ws/src/neonavigation/safety_limiter/
 COPY ./trajectory_tracker/package.xml /catkin_ws/src/neonavigation/trajectory_tracker/
 COPY ./obj_to_pointcloud/package.xml /catkin_ws/src/neonavigation/obj_to_pointcloud/
 COPY ./track_odometry/package.xml /catkin_ws/src/neonavigation/track_odometry/
+
+RUN cd /catkin_ws/src && git clone --depth=1 https://github.com/at-wat/neonavigation_msgs.git
 
 RUN apt-get -qq update \
   && rosdep install --from-paths /catkin_ws/src --ignore-src --rosdistro=${ROS_DISTRO} -y \

@@ -32,8 +32,8 @@
 
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <costmap_cspace/CSpace3D.h>
-#include <costmap_cspace/CSpace3DUpdate.h>
+#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/CSpace3DUpdate.h>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 
@@ -48,7 +48,7 @@ public:
   void loadConfig(XmlRpc::XmlRpcValue config)
   {
   }
-  void setMapMetaData(const MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
   {
   }
 
