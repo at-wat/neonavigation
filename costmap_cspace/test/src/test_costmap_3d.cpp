@@ -442,7 +442,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   // Overlay local map
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb = [&updated](
-      const costmap_cspace_msgs::CSpace3DMsg::Ptr map,
+      const costmap_cspace::CSpace3DMsg::Ptr map,
       const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
   {
     updated = update;
@@ -497,7 +497,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm_over->setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb_max = [&updated_max](
-      const costmap_cspace_msgs::CSpace3DMsg::Ptr map,
+      const costmap_cspace::CSpace3DMsg::Ptr map,
       const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
   {
     updated_max = update;

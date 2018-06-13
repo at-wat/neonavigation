@@ -68,7 +68,7 @@ private:
 
   nav_msgs::Path path_;
   std::string topic_path_;
-  trajectory_tracker::ChangePath::Request req_path_;
+  trajectory_tracker_msgs::ChangePath::Request req_path_;
   double hz_;
   boost::shared_array<uint8_t> buffer_;
   int serial_size_;
@@ -77,8 +77,8 @@ private:
 
   bool loadFile();
   void loadPath();
-  bool change(trajectory_tracker::ChangePath::Request &req,
-              trajectory_tracker::ChangePath::Response &res);
+  bool change(trajectory_tracker_msgs::ChangePath::Request &req,
+              trajectory_tracker_msgs::ChangePath::Response &res);
   void processFeedback(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
   void updateIM();
@@ -224,8 +224,8 @@ void ServerNode::updateIM()
   srv_im_fb_.applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker::ChangePath::Request &req,
-                        trajectory_tracker::ChangePath::Response &res)
+bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request &req,
+                        trajectory_tracker_msgs::ChangePath::Response &res)
 {
   req_path_ = req;
   res.success = false;

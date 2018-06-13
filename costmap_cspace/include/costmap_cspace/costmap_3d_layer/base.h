@@ -44,6 +44,8 @@
 
 namespace costmap_cspace
 {
+using namespace costmap_cspace_msgs;
+
 class CSpace3DMsg : public CSpace3D
 {
 public:

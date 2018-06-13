@@ -102,7 +102,7 @@ protected:
     ROS_DEBUG("C-Space costmap updated");
   }
   bool cbUpdateStatic(
-      const costmap_cspace_msgs::CSpace3DMsg::Ptr map,
+      const costmap_cspace::CSpace3DMsg::Ptr map,
       const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
   {
     publishDebug(*map);
@@ -110,7 +110,7 @@ protected:
     return true;
   }
   bool cbUpdate(
-      const costmap_cspace_msgs::CSpace3DMsg::Ptr map,
+      const costmap_cspace::CSpace3DMsg::Ptr map,
       const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
   {
     publishDebug(*map);
