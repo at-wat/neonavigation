@@ -24,6 +24,8 @@ COPY ./trajectory_tracker/package.xml /catkin_ws/src/neonavigation/trajectory_tr
 COPY ./obj_to_pointcloud/package.xml /catkin_ws/src/neonavigation/obj_to_pointcloud/
 COPY ./track_odometry/package.xml /catkin_ws/src/neonavigation/track_odometry/
 
+RUN cd /catkin_ws/src && git clone --depth=1 https://github.com/at-wat/neonavigation_msgs.git
+
 RUN apt-get -qq update \
   && rosdep install --from-paths /catkin_ws/src --ignore-src --rosdistro=${ROS_DISTRO} -y \
   && apt-get clean \
