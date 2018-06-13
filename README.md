@@ -2,6 +2,22 @@
 
 ROS meta-package for autonomous vehicle navigation.
 
+## Install
+
+**Note: neonavigation_msgs meta-package is required to build neonavigation meta-package.**
+
+```shell
+# clone
+cd /path/to/your/catkin_ws/src
+git clone https://github.com/at-wat/neonavigation.git
+git clone https://github.com/at-wat/neonavigation_msgs.git
+
+# build
+cd /path/to/your/catkin_ws
+# Release build is recommended
+catkin_make -DCMAKE_BUILD_TYPE=Release
+```
+
 ## Demo
 
 A quick demonstration with a simple simulated robot is available.
