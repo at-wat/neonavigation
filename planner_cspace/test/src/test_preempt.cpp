@@ -30,15 +30,15 @@
 #include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace/PlannerStatus.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
 
 #include <gtest/gtest.h>
 
 class PreemptTest : public ::testing::Test
 {
- public:
+public:
   PreemptTest()
-      : node_()
+    : node_()
   {
     move_base_ = std::make_shared<ActionClient>("/move_base");
     status_sub_ = node_.subscribe("/planner_3d/status",
@@ -51,13 +51,15 @@ class PreemptTest : public ::testing::Test
       exit(EXIT_FAILURE);
     }
   }
-  ~PreemptTest() {}
+  ~PreemptTest()
+  {
+  }
 
- protected:
+protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace::PlannerStatus& msg)
+  void StatusCallback(const planner_cspace::PlannerStatus &msg)
   {
     status_ = msg;
   }
@@ -81,7 +83,6 @@ class PreemptTest : public ::testing::Test
   ActionClientPtr move_base_;
   planner_cspace::PlannerStatus status_;
 };
-
 
 TEST_F(PreemptTest, testPreempt)
 {

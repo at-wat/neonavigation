@@ -29,9 +29,9 @@
 
 #include <ros/ros.h>
 #include <ros/console.h>
-#include <costmap_cspace/CSpace3D.h>
-#include <costmap_cspace/CSpace3DUpdate.h>
-#include <planner_cspace/PlannerStatus.h>
+#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>

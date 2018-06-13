@@ -29,7 +29,7 @@
 
 #include <ros/ros.h>
 
-#include <map_organizer/OccupancyGridArray.h>
+#include <map_organizer_msgs/OccupancyGridArray.h>
 #include <std_msgs/Int32.h>
 #include <tf/transform_broadcaster.h>
 

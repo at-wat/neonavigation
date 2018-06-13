@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="2.0"?>
 <package>
   <name>obj_to_pointcloud</name>
   <version>0.1.0</version>
@@ -10,24 +10,16 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>roscpp</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>eigen</build_depend>
-  <build_depend>eigen_conversions</build_depend>
-  <build_depend>tf_conversions</build_depend>
-  <build_depend>pcl_ros</build_depend>
-  <build_depend>rostest</build_depend>
-  <build_depend>roslint</build_depend>
+  <depend>roscpp</depend>
+  <test_depend>rostest</test_depend>
+  <test_depend>roslint</test_depend>
 
-  <run_depend>roscpp</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>eigen</run_depend>
-  <run_depend>eigen_conversions</run_depend>
-  <run_depend>tf_conversions</run_depend>
-  <run_depend>pcl_ros</run_depend>
+  <depend>eigen_conversions</depend>
+  <depend>geometry_msgs</depend>
+  <depend>pcl_ros</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf</depend>
+  <depend>tf_conversions</depend>
+
+  <depend>eigen</depend>
 </package>

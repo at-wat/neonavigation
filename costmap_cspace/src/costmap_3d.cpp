@@ -37,8 +37,8 @@
 #include <vector>
 
 #include <costmap_cspace/node_handle_float.h>
-#include <costmap_cspace/CSpace3D.h>
-#include <costmap_cspace/CSpace3DUpdate.h>
+#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/CSpace3DUpdate.h>
 
 #include <costmap_cspace/costmap_3d.h>
 

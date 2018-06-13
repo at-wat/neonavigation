@@ -32,8 +32,8 @@
 
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <costmap_cspace/CSpace3D.h>
-#include <costmap_cspace/CSpace3DUpdate.h>
+#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/CSpace3DUpdate.h>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 

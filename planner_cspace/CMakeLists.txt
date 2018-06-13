@@ -4,33 +4,36 @@ project(planner_cspace)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
+    roslint
+    rostest
+
     actionlib
-    sensor_msgs
     geometry_msgs
     move_base_msgs
     nav_msgs
+    sensor_msgs
     tf
-    message_generation
-    costmap_cspace
-    rostest
-    roslint
+
+    costmap_cspace_msgs
+    planner_cspace_msgs
 )
 
 find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
 
-add_message_files(FILES PlannerStatus.msg)
-generate_messages(DEPENDENCIES std_msgs)
-
 catkin_package(
   CATKIN_DEPENDS
     roscpp
-    sensor_msgs
+
+    actionlib
     geometry_msgs
     move_base_msgs
     nav_msgs
+    sensor_msgs
     tf
-    costmap_cspace
+
+    costmap_cspace_msgs
+    planner_cspace_msgs
 )
 
 include(CheckCXXCompilerFlag)
@@ -53,17 +56,19 @@ include_directories(${catkin_INCLUDE_DIRS} include)
 
 add_executable(planner_3d src/planner_3d.cpp)
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(planner_3d costmap_cspace_generate_messages planner_cspace_generate_messages)
+add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
 
 add_executable(planner_2dof_serial_joints src/planner_2dof_serial_joints.cpp)
 target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(planner_2dof_serial_joints planner_cspace_generate_messages)
+add_dependencies(planner_2dof_serial_joints ${catkin_EXPORTED_TARGETS})
 
 add_executable(dummy_robot src/dummy_robot.cpp)
 target_link_libraries(dummy_robot ${catkin_LIBRARIES})
+add_dependencies(dummy_robot ${catkin_EXPORTED_TARGETS})
 
 add_executable(patrol src/patrol.cpp)
 target_link_libraries(patrol ${catkin_LIBRARIES})
+add_dependencies(patrol ${catkin_EXPORTED_TARGETS})
 
 
 roslint_cpp()
@@ -82,4 +87,3 @@ install(TARGETS
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-

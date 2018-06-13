@@ -45,8 +45,8 @@
 #include <visualization_msgs/InteractiveMarkerUpdate.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
-#include <trajectory_tracker/ChangePath.h>
-#include <trajectory_tracker/TrajectoryServerStatus.h>
+#include <trajectory_tracker_msgs/ChangePath.h>
+#include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
 #include <interactive_markers/interactive_marker_server.h>
 
 #include <filter.h>

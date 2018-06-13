@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="2.0"?>
 <package>
   <name>neonavigation_launch</name>
   <version>0.0.0</version>
@@ -10,9 +10,10 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <run_depend>costmap_cspace</run_depend>
-  <run_depend>planner_cspace</run_depend>
-
-  <export>
-  </export>
+  <exec_depend>costmap_cspace</exec_depend>
+  <exec_depend>map_server</exec_depend>
+  <exec_depend>planner_cspace</exec_depend>
+  <exec_depend>safety_limiter</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>trajectory_tracker</exec_depend>
 </package>

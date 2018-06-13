@@ -28,7 +28,7 @@
  */
 
 #include <ros/ros.h>
-#include <planner_cspace/PlannerStatus.h>
+#include <planner_cspace_msg/PlannerStatus.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <sensor_msgs/JointState.h>
 #include <tf/transform_datatypes.h>

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="2.0"?>
 <package>
   <name>planner_cspace</name>
   <version>0.0.0</version>
@@ -10,30 +10,17 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>roscpp</build_depend>
-  <build_depend>actionlib</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>move_base_msgs</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>message_generation</build_depend>
-  <build_depend>message_runtime</build_depend>
-  <build_depend>costmap_cspace</build_depend>
-  <build_depend>rostest</build_depend>
-  <build_depend>roslint</build_depend>
+  <depend>roscpp</depend>
+  <test_depend>roslint</test_depend>
+  <test_depend>rostest</test_depend>
 
-  <run_depend>roscpp</run_depend>
-  <run_depend>actionlib</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>move_base_msgs</run_depend>
-  <run_depend>nav_msgs</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>message_generation</run_depend>
-  <run_depend>message_runtime</run_depend>
-  <run_depend>costmap_cspace</run_depend>
+  <depend>actionlib</depend>
+  <depend>geometry_msgs</depend>
+  <depend>move_base_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf</depend>
 
-  <export>
-  </export>
+  <depend>costmap_cspace_msgs</depend>
+  <depend>planner_cspace_msgs</depend>
 </package>

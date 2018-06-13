@@ -2,13 +2,38 @@ cmake_minimum_required(VERSION 2.8.3)
 project(obj_to_pointcloud)
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs tf sensor_msgs eigen_conversions pcl_ros tf_conversions rostest roslint)
+find_package(catkin REQUIRED
+  COMPONENTS
+    cmake_modules
+    roscpp
+    roslint
+    rostest
+
+    eigen_conversions
+    geometry_msgs
+    pcl_ros
+    sensor_msgs
+    tf
+    tf_conversions
+
+    eigen
+)
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 ## Declare a catkin package
 catkin_package(
-    DEPENDS roscpp geometry_msgs tf sensor_msgs eigen eigen_conversions pcl_ros
+  DEPENDS
+    roscpp
+
+    eigen_conversions
+    geometry_msgs
+    pcl_ros
+    sensor_msgs
+    tf
+    tf_conversions
+
+    eigen
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -32,6 +57,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
 add_executable(obj_to_pointcloud src/obj_to_pointcloud.cpp)
 target_link_libraries(obj_to_pointcloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_dependencies(obj_to_pointcloud ${catkin_EXPORTED_TARGETS})
 
 
 roslint_cpp()

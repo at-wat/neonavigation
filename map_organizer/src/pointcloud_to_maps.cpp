@@ -30,7 +30,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <map_organizer/OccupancyGridArray.h>
+#include <map_organizer_msgs/OccupancyGridArray.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <tf/transform_listener.h>

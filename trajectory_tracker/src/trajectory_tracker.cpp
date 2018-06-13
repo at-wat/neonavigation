@@ -44,7 +44,7 @@
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float32.h>
-#include <trajectory_tracker/TrajectoryTrackerStatus.h>
+#include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_listener.h>
