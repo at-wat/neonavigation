@@ -4,7 +4,6 @@ project(track_odometry)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
-    rostest
 
     geometry_msgs
     nav_msgs

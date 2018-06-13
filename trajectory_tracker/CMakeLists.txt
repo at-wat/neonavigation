@@ -5,7 +5,6 @@ project(trajectory_tracker)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
-    rostest
 
     geometry_msgs
     interactive_markers
@@ -61,6 +60,7 @@ target_link_libraries(trajectory_server ${catkin_LIBRARIES})
 add_dependencies(trajectory_server ${catkin_EXPORTED_TARGETS})
 
 if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
   find_package(roslint REQUIRED)
   roslint_cpp()
   roslint_add_test()

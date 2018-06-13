@@ -4,7 +4,6 @@ project(planner_cspace)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
-    rostest
 
     actionlib
     geometry_msgs
@@ -73,6 +72,7 @@ add_dependencies(patrol ${catkin_EXPORTED_TARGETS})
 
 
 if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
   add_subdirectory(test)
   find_package(roslint REQUIRED)
   roslint_cpp()

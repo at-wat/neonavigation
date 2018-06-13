@@ -6,7 +6,6 @@ find_package(catkin REQUIRED
   COMPONENTS
     cmake_modules
     roscpp
-    rostest
 
     geometry_msgs
     pcl_ros
@@ -52,6 +51,7 @@ target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
 if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
   add_subdirectory(test)
   find_package(roslint REQUIRED)
   roslint_cpp()
