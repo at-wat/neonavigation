@@ -14,6 +14,7 @@ find_package(catkin REQUIRED
     sensor_msgs
     tf
 
+    costmap_cspace
     costmap_cspace_msgs
     planner_cspace_msgs
 )
@@ -32,6 +33,7 @@ catkin_package(
     sensor_msgs
     tf
 
+    costmap_cspace
     costmap_cspace_msgs
     planner_cspace_msgs
 )
