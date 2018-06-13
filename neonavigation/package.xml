@@ -14,7 +14,7 @@
   <exec_depend>map_organizer</exec_depend>
   <exec_depend>neonavigation_launch</exec_depend>
   <exec_depend>obj_to_pointcloud</exec_depend>
-  <exec_depend>panner_cspace</exec_depend>
+  <exec_depend>planner_cspace</exec_depend>
   <exec_depend>safety_limiter</exec_depend>
   <exec_depend>track_odometry</exec_depend>
   <exec_depend>trajectory_tracker</exec_depend>
