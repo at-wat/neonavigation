@@ -59,7 +59,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace::PlannerStatus &msg)
+  void StatusCallback(const planner_cspace_msgs::PlannerStatus &msg)
   {
     status_ = msg;
   }
@@ -81,7 +81,7 @@ protected:
   ros::NodeHandle node_;
   ros::Subscriber status_sub_;
   ActionClientPtr move_base_;
-  planner_cspace::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus status_;
 };
 
 TEST_F(PreemptTest, testPreempt)
@@ -101,9 +101,9 @@ TEST_F(PreemptTest, testPreempt)
 
   ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
             move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace::PlannerStatus::GOING_WELL,
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
             status_.error);
-  ASSERT_EQ(planner_cspace::PlannerStatus::DONE,
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DONE,
             status_.status);
 }
 

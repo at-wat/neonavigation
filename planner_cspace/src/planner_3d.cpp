@@ -158,7 +158,7 @@ protected:
   std::vector<RotationCache> rotgm_;
   RotationCache *rot_cache_;
 
-  costmap_cspace::MapMetaData3D map_info_;
+  costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
   float max_vel_;
   float max_ang_vel_;
@@ -234,7 +234,7 @@ protected:
   };
   DebugMode debug_out_;
 
-  planner_cspace::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus status_;
 
   bool find_best_;
   float sw_wait_;
@@ -405,7 +405,7 @@ protected:
     ROS_WARN("Preempting the current goal.");
     act_->setPreempted(move_base_msgs::MoveBaseResult(), "Preempted.");
     has_goal_ = false;
-    status_.status = planner_cspace::PlannerStatus::DONE;
+    status_.status = planner_cspace_msgs::PlannerStatus::DONE;
   }
   bool setGoal(const geometry_msgs::PoseStamped &msg)
   {
@@ -426,7 +426,7 @@ protected:
         has_goal_ = false;
         return false;
       }
-      status_.status = planner_cspace::PlannerStatus::DOING;
+      status_.status = planner_cspace_msgs::PlannerStatus::DOING;
       pub_status_.publish(status_);
     }
     else
@@ -707,7 +707,7 @@ protected:
     }
     pub_debug_.publish(debug);
   }
-  void cbMapUpdate(const costmap_cspace::CSpace3DUpdate::ConstPtr &msg)
+  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr &msg)
   {
     if (!has_map_)
       return;
@@ -940,7 +940,7 @@ protected:
               boost::chrono::duration<float>(tnow - ts).count());
     publishCostmap();
   }
-  void cbMap(const costmap_cspace::CSpace3D::ConstPtr &msg)
+  void cbMap(const costmap_cspace_msgs::CSpace3D::ConstPtr &msg)
   {
     ROS_INFO("Map received");
     ROS_INFO(" linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
@@ -1120,7 +1120,7 @@ public:
     pub_hist_ = nh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
     pub_start_ = nh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
-    pub_status_ = nh_.advertise<planner_cspace::PlannerStatus>("status", 1, true);
+    pub_status_ = nh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
     srs_forget_ = nh_.advertiseService("forget", &Planner3d::cbForget, this);
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
@@ -1210,7 +1210,7 @@ public:
     nh_.param("num_search_task", num_task_, num_threads * 16);
     as_.setSearchTaskNum(num_task_);
 
-    status_.status = planner_cspace::PlannerStatus::DONE;
+    status_.status = planner_cspace_msgs::PlannerStatus::DONE;
 
     has_map_ = false;
     has_goal_ = false;
@@ -1289,7 +1289,7 @@ public:
           act_->publishFeedback(feedback);
         }
 
-        if (status_.status == planner_cspace::PlannerStatus::FINISHING)
+        if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
         {
           float yaw_s = tf::getYaw(start_.pose.orientation);
           float yaw_g;
@@ -1305,7 +1305,7 @@ public:
             yaw_diff += M_PI * 2.0;
           if (fabs(yaw_diff) < goal_tolerance_ang_finish_)
           {
-            status_.status = planner_cspace::PlannerStatus::DONE;
+            status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
             ROS_INFO("Path plan finished");
             act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
@@ -1315,12 +1315,12 @@ public:
         {
           if (escaping_)
           {
-            status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
           }
           else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
           {
-            status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
-            status_.status = planner_cspace::PlannerStatus::DONE;
+            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+            status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
             act_->setAborted(move_base_msgs::MoveBaseResult(),
                              "Goal is in Rock");
@@ -1329,7 +1329,7 @@ public:
           }
           else
           {
-            status_.error = planner_cspace::PlannerStatus::GOING_WELL;
+            status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
           }
           nav_msgs::Path path;
           path.header = map_header_;
@@ -1513,7 +1513,7 @@ protected:
       if (!searchAvailablePos(s, esc_range_, esc_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
-        status_.error = planner_cspace::PlannerStatus::IN_ROCK;
+        status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
         return false;
       }
       ROS_INFO("Start moved");
@@ -1523,7 +1523,7 @@ protected:
 
     if (cost_estim_cache_[s_rough] == FLT_MAX)
     {
-      status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable.");
       if (!escaping_ && temporary_escape_)
       {
@@ -1573,7 +1573,7 @@ protected:
       }
       else
       {
-        status_.status = planner_cspace::PlannerStatus::FINISHING;
+        status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
         ROS_INFO("Path plan finishing");
       }
       return true;
@@ -1602,7 +1602,7 @@ protected:
                     true))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
-      status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       if (!find_best_)
         return false;
     }

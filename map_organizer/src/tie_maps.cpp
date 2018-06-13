@@ -65,9 +65,9 @@ public:
     : pnh_("~")
     , nh_("")
   {
-    pub_map_array_ = nh_.advertise<map_organizer::OccupancyGridArray>("maps", 1, true);
+    pub_map_array_ = nh_.advertise<map_organizer_msgs::OccupancyGridArray>("maps", 1, true);
 
-    map_organizer::OccupancyGridArray maps;
+    map_organizer_msgs::OccupancyGridArray maps;
 
     std::string files_str;
     std::string mapfname;

@@ -102,7 +102,7 @@ ServerNode::ServerNode()
   pnh_.param("filter_step", filter_step_, 0.0);
 
   pub_path_ = pnh_.advertise<nav_msgs::Path>(topic_path_, 2, true);
-  pub_status_ = pnh_.advertise<trajectory_tracker::TrajectoryServerStatus>("status", 2);
+  pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryServerStatus>("status", 2);
   srv_change_path_ = pnh_.advertiseService("ChangePath", &ServerNode::change, this);
   update_num_ = 0;
   max_markers_ = 0;
@@ -268,7 +268,7 @@ bool ServerNode::change(trajectory_tracker::ChangePath::Request &req,
 void ServerNode::spin()
 {
   ros::Rate loop_rate(hz_);
-  trajectory_tracker::TrajectoryServerStatus status;
+  trajectory_tracker_msgs::TrajectoryServerStatus status;
 
   while (ros::ok())
   {

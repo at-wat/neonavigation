@@ -12,8 +12,8 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 
 ### Subscribed topics
 
-* ~/costmap (costmap_cspace::CSpace3D)
-* ~/costmap_update (costmap_cspace::CSpace3DUpdate)
+* ~/costmap (costmap_cspace_msgs::CSpace3D)
+* ~/costmap_update (costmap_cspace_msgs::CSpace3DUpdate)
 * ~/goal (geometry_msgs::PoseStamped)
 * /tf
 
@@ -23,7 +23,7 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 * ~/debug (sensor_msgs::PointCloud)
 * ~/path_start (geometry_msgs::PoseStamped)
 * ~/path_end (geometry_msgs::PoseStamped)
-* ~/status (planner_cspace::PlannerStatus)
+* ~/status (planner_cspace_msgs::PlannerStatus)
 
 ### Services
 
@@ -74,7 +74,7 @@ planner_2dof_serial_joints provides collision avoidance for 2-DOF serial joint (
 ### Published topics
 
 * ~/trajectory_out (trajectory_msgs::JointTrajectory)
-* ~/status (planner_cspace::PlannerStatus)
+* ~/status (planner_cspace_msgs::PlannerStatus)
 
 ### Services
 

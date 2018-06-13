@@ -140,7 +140,7 @@ trajectory_server node loads Path from file and publishes it.
 ### Published topics
 
 * ~/path (nav_msgs::Path)
-* ~/status (trajectory_tracker::TrajectoryServerStatus)
+* ~/status (trajectory_tracker_msgs::TrajectoryServerStatus)
 
 ### Services
 

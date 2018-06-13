@@ -55,7 +55,7 @@ public:
     map_sub_ = n.subscribe("maps", 1, &MapGenerator::mapsCallback, this);
   }
 
-  void mapsCallback(const map_organizer::OccupancyGridArrayConstPtr& maps)
+  void mapsCallback(const map_organizer_msgs::OccupancyGridArrayConstPtr& maps)
   {
     int i = 0;
     for (auto& map : maps->maps)

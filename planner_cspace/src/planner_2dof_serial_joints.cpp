@@ -173,7 +173,7 @@ private:
   };
   LinkBody links_[2];
 
-  planner_cspace::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus status_;
   sensor_msgs::JointState joint_;
   ros::Time replan_prev_;
   ros::Duration replan_interval_;
@@ -394,7 +394,7 @@ public:
     sub_trajectory_ = nh_home.subscribe("trajectory_in", 1, &planner2dofSerialJoints::cbTrajectory, this);
     sub_joint_ = nh_home.subscribe("joint", 1, &planner2dofSerialJoints::cbJoint, this);
 
-    pub_status_ = nh.advertise<planner_cspace::PlannerStatus>("status", 1, true);
+    pub_status_ = nh.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
 
     nh.param("resolution", resolution_, 128);
     nh_home.param("debug_aa", debug_aa_, false);
@@ -408,7 +408,7 @@ public:
     nh.param("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
 
-    status_.status = planner_cspace::PlannerStatus::DONE;
+    status_.status = planner_cspace_msgs::PlannerStatus::DONE;
 
     has_goal_ = false;
     has_start_ = false;
@@ -560,13 +560,13 @@ private:
     if (cm_[s] == 100)
     {
       ROS_WARN("Path plan failed (current status is in collision)");
-      status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     if (cm_[e] == 100)
     {
       ROS_WARN("Path plan failed (goal status is in collision)");
-      status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     Astar::Vec d = e - s;
@@ -604,7 +604,7 @@ private:
                     true))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
-      status_.error = planner_cspace::PlannerStatus::PATH_NOT_FOUND;
+      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     // const auto tnow = std::chrono::high_resolution_clock::now();

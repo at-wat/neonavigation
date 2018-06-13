@@ -59,7 +59,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace::PlannerStatus &msg)
+  void StatusCallback(const planner_cspace_msgs::PlannerStatus &msg)
   {
     status_ = msg;
   }
@@ -95,7 +95,7 @@ protected:
   ros::NodeHandle node_;
   ros::Subscriber status_sub_;
   ActionClientPtr move_base_;
-  planner_cspace::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus status_;
 };
 
 TEST_F(AbortTest, AbortByGoalInRock)
@@ -118,7 +118,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   // Abort after exceeding max_retry_num
   ASSERT_EQ(actionlib::SimpleClientGoalState::ABORTED,
             move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace::PlannerStatus::PATH_NOT_FOUND,
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND,
             status_.error);
 
   // Send another goal which is not in Rock
@@ -137,7 +137,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   // Succeed
   ASSERT_EQ(actionlib::SimpleClientGoalState::SUCCEEDED,
             move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace::PlannerStatus::GOING_WELL,
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
             status_.error);
 }
 
