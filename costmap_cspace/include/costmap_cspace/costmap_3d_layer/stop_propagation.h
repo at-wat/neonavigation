@@ -48,7 +48,7 @@ public:
   void loadConfig(XmlRpc::XmlRpcValue config)
   {
   }
-  void setMapMetaData(const MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
   {
   }
 

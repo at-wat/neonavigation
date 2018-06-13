@@ -44,9 +44,7 @@
 
 namespace costmap_cspace
 {
-using namespace costmap_cspace_msgs;
-
-class CSpace3DMsg : public CSpace3D
+class CSpace3DMsg : public costmap_cspace_msgs::CSpace3D
 {
 public:
   using Ptr = std::shared_ptr<CSpace3DMsg>;
@@ -235,7 +233,7 @@ public:
   }
 
   virtual void loadConfig(XmlRpc::XmlRpcValue config) = 0;
-  virtual void setMapMetaData(const MapMetaData3D &info) = 0;
+  virtual void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info) = 0;
 
   void setAngleResolution(
       const int ang_resolution)

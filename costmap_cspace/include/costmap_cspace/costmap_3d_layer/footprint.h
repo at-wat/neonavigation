@@ -112,7 +112,7 @@ public:
   {
     return cs_template_;
   }
-  void setMapMetaData(const MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
   {
     ROS_ASSERT(footprint_p_.v.size() > 2);
 

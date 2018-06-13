@@ -59,7 +59,7 @@ public:
       unknown_cost_ = static_cast<int>(config["unknown_cost"]);
     }
   }
-  void setMapMetaData(const MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
   {
   }
 

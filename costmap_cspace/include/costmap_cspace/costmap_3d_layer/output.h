@@ -43,7 +43,7 @@ class Costmap3dLayerOutput : public Costmap3dLayerBase
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
-  using Callback = boost::function<bool(const CSpace3DMsg::Ptr, const CSpace3DUpdate::Ptr)>;
+  using Callback = boost::function<bool(const CSpace3DMsg::Ptr, const costmap_cspace_msgs::CSpace3DUpdate::Ptr)>;
 
 protected:
   Callback cb_;
@@ -57,7 +57,7 @@ public:
   {
     cb_ = cb;
   }
-  void setMapMetaData(const MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
   {
   }
 
@@ -78,9 +78,9 @@ protected:
       const UpdatedRegion &region)
   {
   }
-  CSpace3DUpdate::Ptr generateUpdateMsg()
+  costmap_cspace_msgs::CSpace3DUpdate::Ptr generateUpdateMsg()
   {
-    CSpace3DUpdate::Ptr update_msg(new CSpace3DUpdate);
+    costmap_cspace_msgs::CSpace3DUpdate::Ptr update_msg(new costmap_cspace_msgs::CSpace3DUpdate);
     update_msg->header = map_->header;
     map_->header.stamp = region_.stamp_;
     int update_x = region_.x_;
