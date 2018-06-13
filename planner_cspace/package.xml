@@ -21,6 +21,7 @@
   <depend>sensor_msgs</depend>
   <depend>tf</depend>
 
+  <depend>costmap_cspace</depend>
   <depend>costmap_cspace_msgs</depend>
   <depend>planner_cspace_msgs</depend>
 </package>
