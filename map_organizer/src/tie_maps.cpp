@@ -52,7 +52,7 @@ void operator>>(const YAML::Node& node, T& i)
 }
 #endif
 
-class tie_maps_node
+class TieMapNode
 {
 private:
   ros::NodeHandle pnh_;
@@ -61,7 +61,7 @@ private:
   std::vector<ros::Publisher> pub_map_;
 
 public:
-  tie_maps_node()
+  TieMapNode()
     : pnh_("~")
     , nh_("")
   {
@@ -234,7 +234,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "tie_maps");
 
-  tie_maps_node tmn;
+  TieMapNode tmn;
   ros::spin();
 
   return 0;
