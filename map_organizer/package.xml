@@ -25,5 +25,6 @@
 
   <depend>map_organizer_msgs</depend>
 
+  <depend>cmake_modules</depend>
   <depend>eigen</depend>
 </package>

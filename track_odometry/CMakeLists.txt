@@ -4,8 +4,7 @@ project(track_odometry)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
-    roslint
-    rostest
+    cmake_modules
 
     geometry_msgs
     nav_msgs
@@ -52,14 +51,14 @@ target_link_libraries(tf_projection ${catkin_LIBRARIES})
 add_dependencies(tf_projection ${catkin_EXPORTED_TARGETS})
 
 
-roslint_cpp()
-
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
 
   catkin_add_gtest(tf_projection_test test/tf_projection_test.cpp)
   target_link_libraries(tf_projection_test ${catkin_LIBRARIES})
 
+  find_package(roslint REQUIRED)
+  roslint_cpp()
   roslint_add_test()
 endif()
 
