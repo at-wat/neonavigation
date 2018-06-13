@@ -2,10 +2,10 @@
 <package format="2">
   <name>obj_to_pointcloud</name>
   <version>0.1.0</version>
-  <description>OBJ file to pointcloud message</description>
+  <description>OBJ file to pointcloud message converter package</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
-  <license>FRL</license>
+  <license>BSD</license>
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
 
   <buildtool_depend>catkin</buildtool_depend>
