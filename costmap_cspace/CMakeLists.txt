@@ -4,8 +4,6 @@ project(costmap_cspace)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
-    roslint
-    rostest
     
     geometry_msgs
     laser_geometry
@@ -61,10 +59,12 @@ target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
 add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
 
 
-roslint_cpp()
-
 if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
   add_subdirectory(test)
+
+  find_package(roslint REQUIRED)
+  roslint_cpp()
   roslint_add_test()
 endif()
 

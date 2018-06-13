@@ -6,8 +6,6 @@ find_package(catkin REQUIRED
   COMPONENTS
     cmake_modules
     roscpp
-    roslint
-    rostest
 
     geometry_msgs
     pcl_ros
@@ -16,6 +14,7 @@ find_package(catkin REQUIRED
     tf_conversions
 )
 find_package(PCL REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 ## Declare a catkin package
 catkin_package(
@@ -52,11 +51,12 @@ add_executable(safety_limiter src/safety_limiter.cpp)
 target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
-roslint_cpp()
-
 if(CATKIN_ENABLE_TESTING)
-  roslint_add_test()
+  find_package(rostest REQUIRED)
   add_subdirectory(test)
+  find_package(roslint REQUIRED)
+  roslint_cpp()
+  roslint_add_test()
 endif()
 
 install(TARGETS

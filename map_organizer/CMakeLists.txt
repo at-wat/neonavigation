@@ -6,8 +6,6 @@ find_package(catkin REQUIRED
   COMPONENTS
     cmake_modules
     roscpp
-    roslint
-    rostest
 
     eigen_conversions
     geometry_msgs
@@ -86,9 +84,10 @@ target_link_libraries(pose_transform ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(pose_transform ${catkin_EXPORTED_TARGETS})
 
 
-roslint_cpp()
-
 if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  find_package(roslint REQUIRED)
+  roslint_cpp()
   roslint_add_test()
 endif()
 
