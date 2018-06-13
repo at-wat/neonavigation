@@ -29,17 +29,17 @@
 
 #include <ros/ros.h>
 
-#include <map_organizer/OccupancyGridArray.h>
+#include <map_organizer_msgs/OccupancyGridArray.h>
 #include <std_msgs/Int32.h>
 #include <tf/transform_broadcaster.h>
 
 #include <vector>
 
-map_organizer::OccupancyGridArray maps;
+map_organizer_msgs::OccupancyGridArray maps;
 std::vector<nav_msgs::MapMetaData> orig_mapinfos;
 int floor_cur = 0;
 
-void cbMaps(const map_organizer::OccupancyGridArray::Ptr &msg)
+void cbMaps(const map_organizer_msgs::OccupancyGridArray::Ptr &msg)
 {
   ROS_INFO("Map array received");
   maps = *msg;

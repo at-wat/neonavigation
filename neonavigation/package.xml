@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>neonavigation</name>
   <version>0.0.0</version>
   <description>The neonavigation package</description>
@@ -10,10 +10,14 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   
-  <run_depend>planner_cspace</run_depend>
-  <run_depend>costmap_cspace</run_depend>
-  <run_depend>neonavigation_launch</run_depend>
-  <run_depend>safety_limiter</run_depend>
+  <exec_depend>costmap_cspace</exec_depend>
+  <exec_depend>map_organizer</exec_depend>
+  <exec_depend>neonavigation_launch</exec_depend>
+  <exec_depend>obj_to_pointcloud</exec_depend>
+  <exec_depend>planner_cspace</exec_depend>
+  <exec_depend>safety_limiter</exec_depend>
+  <exec_depend>track_odometry</exec_depend>
+  <exec_depend>trajectory_tracker</exec_depend>
 
   <export>
     <metapackage/>

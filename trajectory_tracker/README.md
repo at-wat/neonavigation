@@ -19,7 +19,7 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 ### Published topics
 
 * ~/cmd_vel (geometry_msgs::Twist)
-* ~/status (trajectory_tracker::TrajectoryTrackerStatus)
+* ~/status (trajectory_tracker_msgs::TrajectoryTrackerStatus)
 * ~/tracking (geometry_msgs::PoseStamped)
 
 ### Services
@@ -140,11 +140,11 @@ trajectory_server node loads Path from file and publishes it.
 ### Published topics
 
 * ~/path (nav_msgs::Path)
-* ~/status (trajectory_tracker::TrajectoryServerStatus)
+* ~/status (trajectory_tracker_msgs::TrajectoryServerStatus)
 
 ### Services
 
-* ~/ChangePath (trajectory_tracker::ChangePath)
+* ~/ChangePath (trajectory_tracker_msgs::ChangePath)
 
 ### Called services
 

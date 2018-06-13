@@ -30,15 +30,15 @@
 #include <actionlib/client/simple_action_client.h>
 #include <gtest/gtest.h>
 #include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace/PlannerStatus.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
 #include <ros/ros.h>
 #include <memory>
 
 class AbortTest : public ::testing::Test
 {
- public:
+public:
   AbortTest()
-      : node_()
+    : node_()
   {
     move_base_ = std::make_shared<ActionClient>("/move_base");
     status_sub_ = node_.subscribe("/planner_3d/status",
@@ -51,13 +51,15 @@ class AbortTest : public ::testing::Test
       exit(EXIT_FAILURE);
     }
   }
-  ~AbortTest() {}
+  ~AbortTest()
+  {
+  }
 
- protected:
+protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace::PlannerStatus& msg)
+  void StatusCallback(const planner_cspace_msgs::PlannerStatus &msg)
   {
     status_ = msg;
   }
@@ -93,9 +95,8 @@ class AbortTest : public ::testing::Test
   ros::NodeHandle node_;
   ros::Subscriber status_sub_;
   ActionClientPtr move_base_;
-  planner_cspace::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus status_;
 };
-
 
 TEST_F(AbortTest, AbortByGoalInRock)
 {
@@ -117,7 +118,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   // Abort after exceeding max_retry_num
   ASSERT_EQ(actionlib::SimpleClientGoalState::ABORTED,
             move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace::PlannerStatus::PATH_NOT_FOUND,
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND,
             status_.error);
 
   // Send another goal which is not in Rock
@@ -136,7 +137,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   // Succeed
   ASSERT_EQ(actionlib::SimpleClientGoalState::SUCCEEDED,
             move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace::PlannerStatus::GOING_WELL,
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
             status_.error);
 }
 

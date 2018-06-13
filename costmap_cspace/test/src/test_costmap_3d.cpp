@@ -95,7 +95,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
   ASSERT_EQ(cm.getFootprintRadius(), 1.5);
 
   // Generate CSpace pattern around the robot
-  costmap_cspace::MapMetaData3D map_info;
+  costmap_cspace_msgs::MapMetaData3D map_info;
   map_info.width = 3;
   map_info.height = 3;
   map_info.angle = 4;
@@ -157,7 +157,7 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
   cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate CSpace pattern around the robot
-  costmap_cspace::MapMetaData3D map_info;
+  costmap_cspace_msgs::MapMetaData3D map_info;
   map_info.width = 1;
   map_info.height = 1;
   map_info.angle = 4;
@@ -440,10 +440,10 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm->setBaseMap(map);
 
   // Overlay local map
-  costmap_cspace::CSpace3DUpdate::Ptr updated(new costmap_cspace::CSpace3DUpdate);
+  costmap_cspace_msgs::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb = [&updated](
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace::CSpace3DUpdate::Ptr &update) -> bool
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
   {
     updated = update;
     return true;
@@ -495,10 +495,10 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   cm_over->setAngleResolution(4);
   cm_over->setExpansion(0.0, 0.0);
   cm_over->setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
-  costmap_cspace::CSpace3DUpdate::Ptr updated_max(new costmap_cspace::CSpace3DUpdate);
+  costmap_cspace_msgs::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb_max = [&updated_max](
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace::CSpace3DUpdate::Ptr &update) -> bool
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
   {
     updated_max = update;
     return true;
