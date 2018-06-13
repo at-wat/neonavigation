@@ -20,5 +20,7 @@
   <depend>tf</depend>
   <depend>tf_conversions</depend>
 
+  <depend>cmake_modules</depend>
+  <depend>eigen</depend>
   <depend>xmlrpcpp</depend>
 </package>

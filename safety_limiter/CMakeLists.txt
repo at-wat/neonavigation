@@ -14,6 +14,7 @@ find_package(catkin REQUIRED
     tf_conversions
 )
 find_package(PCL REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 ## Declare a catkin package
 catkin_package(

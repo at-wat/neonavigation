@@ -20,4 +20,7 @@
   <depend>std_msgs</depend>
   <depend>tf</depend>
   <depend>trajectory_msgs</depend>
+
+  <depend>cmake_modules</depend>
+  <depend>eigen</depend>
 </package>

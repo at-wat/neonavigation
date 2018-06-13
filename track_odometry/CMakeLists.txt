@@ -4,6 +4,7 @@ project(track_odometry)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
+    cmake_modules
 
     geometry_msgs
     nav_msgs
