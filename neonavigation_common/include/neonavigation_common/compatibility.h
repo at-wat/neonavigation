@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COMPATIBILITY_H
-#define COMPATIBILITY_H
+#ifndef NEONAVIGATION_COMMON_COMPATIBILITY_H
+#define NEONAVIGATION_COMMON_COMPATIBILITY_H
 
 #include <ros/ros.h>
 
@@ -95,6 +95,31 @@ std::string getSimplifiedNamespace(ros::NodeHandle &nh)
   if (nh.getUnresolvedNamespace() == std::string())
     return std::string();
   return nh.getNamespace() + "/";
+}
+template <class M>
+ros::Subscriber subscribe(
+    ros::NodeHandle &nh_new,
+    const std::string &topic_new,
+    ros::NodeHandle &nh_old,
+    const std::string &topic_old,
+    uint32_t queue_size,
+    void (*fp)(M),
+    const ros::TransportHints &transport_hints = ros::TransportHints())
+{
+  if (getCompat() != current_level)
+  {
+    ROS_ERROR(
+        "Use %s (%s%s) topic instead of %s (%s%s)",
+        nh_new.resolveName(topic_new, false).c_str(),
+        getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
+        nh_old.resolveName(topic_old, false).c_str(),
+        getSimplifiedNamespace(nh_old).c_str(), topic_old.c_str());
+    return nh_old.subscribe(topic_old, queue_size, fp, transport_hints);
+  }
+  else
+  {
+    return nh_new.subscribe(topic_new, queue_size, fp, transport_hints);
+  }
 }
 template <class M, class T>
 ros::Subscriber subscribe(
@@ -225,4 +250,4 @@ ros::ServiceServer advertiseService(
 }  // namespace compat
 }  // namespace neonavigation_common
 
-#endif  // COMPATIBILITY_H
+#endif  // NEONAVIGATION_COMMON_COMPATIBILITY_H
