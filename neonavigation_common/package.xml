@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>neonavigation_common</name>
+  <version>0.1.0</version>
+  <description>Common headers for neonavigation meta-package</description>
+
+  <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
+  <license>BSD</license>
+  <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <test_depend>roslint</test_depend>
+  <test_depend>rostest</test_depend>
+</package>
