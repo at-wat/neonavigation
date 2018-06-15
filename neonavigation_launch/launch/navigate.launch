@@ -22,6 +22,7 @@
 
   <arg name="goal_topic" default="/move_base_simple/goal" />
 
+  <param name="neonavigation_compatible" value="1" />
   <rosparam command="load" file="$(find neonavigation_launch)/config/navigate.yaml"/>
 
   <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d" output="$(arg output_info)" >
@@ -31,8 +32,8 @@
   
   <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="$(arg output_info)">
     <remap from="~/goal" to="$(arg goal_topic)" />
-    <remap from="~/costmap" to="/costmap_3d/costmap" />
-    <remap from="~/costmap_update" to="/costmap_3d/costmap_update" />
+    <remap from="~/costmap" to="costmap" />
+    <remap from="~/costmap_update" to="costmap_update" />
   </node>
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
