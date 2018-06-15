@@ -44,6 +44,8 @@
 
 #include <kalman_filter1.h>
 
+#include <neonavigation_common/compatibility.h>
+
 Eigen::Vector3f toEigen(const geometry_msgs::Vector3 &a)
 {
   return Eigen::Vector3f(a.x, a.y, a.z);
@@ -263,14 +265,18 @@ private:
 
 public:
   TrackOdometryNode()
-    : nh_("")
+    : nh_()
     , pnh_("~")
   {
     pnh_.param("without_odom", without_odom_, false);
     if (!without_odom_)
       sub_odom_ = nh_.subscribe("odom_raw", 64, &TrackOdometryNode::cbOdom, this);
-    sub_imu_ = nh_.subscribe("imu", 64, &TrackOdometryNode::cbImu, this);
-    sub_reset_z_ = pnh_.subscribe("reset_z", 1, &TrackOdometryNode::cbResetZ, this);
+    sub_imu_ = neonavigation_common::compat::subscribe(
+        nh_, "imu/data",
+        nh_, "imu", 64, &TrackOdometryNode::cbImu, this);
+    sub_reset_z_ = neonavigation_common::compat::subscribe(
+        nh_, "reset_odometry_z",
+        pnh_, "reset_z", 1, &TrackOdometryNode::cbResetZ, this);
     pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 8);
 
     if (!without_odom_)
