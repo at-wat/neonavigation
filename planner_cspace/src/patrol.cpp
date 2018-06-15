@@ -61,7 +61,7 @@ public:
     , pnh_("~")
   {
     sub_path_ = neonavigation_common::compat::subscribe(
-        nh_, "path",
+        nh_, "patrol_nodes",
         pnh_, "path", 1, &PatrolActionNode::cbPath, this);
     act_cli_.reset(new MoveBaseClient("move_base", false));
 
