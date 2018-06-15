@@ -247,6 +247,22 @@ ros::ServiceServer advertiseService(
     return nh_new.advertiseService(service_new, srv_func, obj);
   }
 }
+
+template <typename T>
+void deprecatedParam(
+    const ros::NodeHandle &nh,
+    const std::string &key,
+    T &param,
+    const T &default_value)
+{
+  if (nh.hasParam(key))
+  {
+    ROS_ERROR(
+        "Use of the parameter %s is deprecated. Don't use this.",
+        nh.resolveName(key, false).c_str());
+  }
+  nh.param(key, param, default_value);
+}
 }  // namespace compat
 }  // namespace neonavigation_common
 
