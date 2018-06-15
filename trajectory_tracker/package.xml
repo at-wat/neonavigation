@@ -20,5 +20,6 @@
   <depend>tf</depend>
   <depend>tf2_geometry_msgs</depend>
 
+  <depend>neonavigation_common</depend>
   <depend>trajectory_tracker_msgs</depend>
 </package>

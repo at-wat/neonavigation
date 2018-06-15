@@ -12,6 +12,8 @@ find_package(catkin REQUIRED
     std_msgs
     tf
     trajectory_msgs
+
+    neonavigation_common
 )
 
 catkin_package(
@@ -24,6 +26,8 @@ catkin_package(
     std_msgs
     tf
     trajectory_msgs
+
+    neonavigation_common
 )
 
 find_package(Eigen3 REQUIRED)

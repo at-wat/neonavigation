@@ -14,6 +14,7 @@ find_package(catkin REQUIRED
 
     costmap_cspace
     costmap_cspace_msgs
+    neonavigation_common
     planner_cspace_msgs
 )
 
@@ -33,6 +34,7 @@ catkin_package(
 
     costmap_cspace
     costmap_cspace_msgs
+    neonavigation_common
     planner_cspace_msgs
 )
 
