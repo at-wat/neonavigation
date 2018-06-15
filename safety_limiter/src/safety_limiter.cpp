@@ -178,12 +178,12 @@ public:
     tmax_ += tmargin_;
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!nh_.hasParam("footprint"))
+    if (!pnh_.hasParam("footprint"))
     {
       ROS_FATAL("Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified");
     }
-    nh_.getParam("footprint", footprint_xml);
+    pnh_.getParam("footprint", footprint_xml);
     if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
     {
       ROS_FATAL("Invalid footprint");
