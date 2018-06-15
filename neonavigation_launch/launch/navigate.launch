@@ -52,8 +52,8 @@
 
   </node>
   <node pkg="safety_limiter" type="safety_limiter" name="safety_limiter" if="$(arg use_safety_limiter)" output="screen">
-    <remap from="~/cmd_vel_in" to="/spur/cmd_vel" />
-    <remap from="~/cmd_vel_out" to="$(arg cmd_vel_output)" />
+    <remap from="cmd_vel_in" to="/spur/cmd_vel" />
+    <remap from="cmd_vel" to="$(arg cmd_vel_output)" />
     <rosparam param="footprint" if="$(arg simulate)">[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]</rosparam>
     <param name="allow_empty_cloud" value="true" />
     <param name="watchdog_interval" value="0.0" />
