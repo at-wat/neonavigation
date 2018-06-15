@@ -71,8 +71,8 @@ private:
 };
 
 RecorderNode::RecorderNode()
-  : pnh_("~")
-  , nh_()
+  : nh_()
+  , pnh_("~")
 {
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
   pnh_.param("frame_global", frame_global_, std::string("map"));
