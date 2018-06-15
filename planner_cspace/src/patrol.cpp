@@ -33,10 +33,15 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <nav_msgs/Path.h>
 
+#include <neonavigation_common/compatibility.h>
+
 class PatrolActionNode
 {
 protected:
   using MoveBaseClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
+
+  ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
 
   ros::Subscriber sub_path_;
   std::shared_ptr<MoveBaseClient> act_cli_;
@@ -52,10 +57,12 @@ protected:
 
 public:
   PatrolActionNode()
+    : nh_()
+    , pnh_("~")
   {
-    ros::NodeHandle nh("~");
-
-    sub_path_ = nh.subscribe("path", 1, &PatrolActionNode::cbPath, this);
+    sub_path_ = neonavigation_common::compat::subscribe(
+        nh_, "path",
+        pnh_, "path", 1, &PatrolActionNode::cbPath, this);
     act_cli_.reset(new MoveBaseClient("move_base", false));
 
     pos_ = 0;
