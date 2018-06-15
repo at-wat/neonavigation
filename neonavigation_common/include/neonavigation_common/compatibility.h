@@ -34,6 +34,8 @@
 
 #include <string>
 
+namespace neonavigation_common
+{
 namespace compat
 {
 #define STATIC_ASSERT(EXPR) static_assert(EXPR, #EXPR)
@@ -53,7 +55,7 @@ STATIC_ASSERT(supported_level <= default_level && default_level <= current_level
 int getCompat()
 {
   int compat(default_level);
-  ros::NodeHandle("~").param("compatible", compat, compat);
+  ros::NodeHandle("/").param("neonavigation_compatible", compat, compat);
 
   return compat;
 }
@@ -221,5 +223,6 @@ ros::ServiceServer advertiseService(
   }
 }
 }  // namespace compat
+}  // namespace neonavigation_common
 
 #endif  // COMPATIBILITY_H
