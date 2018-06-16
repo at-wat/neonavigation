@@ -24,12 +24,15 @@ add_rostest_gtest(test_navigate
   test/navigation_rostest.test
   src/test_navigate.cpp
 )
+target_link_libraries(test_navigate ${catkin_LIBRARIES})
+add_dependencies(test_navigate planner_3d)
+
 add_rostest_gtest(test_navigate_compat
   test/navigation_compat_rostest.test
   src/test_navigate.cpp
 )
-target_link_libraries(test_navigate ${catkin_LIBRARIES})
-add_dependencies(test_navigate planner_3d)
+target_link_libraries(test_navigate_compat ${catkin_LIBRARIES})
+add_dependencies(test_navigate_compat planner_3d)
 
 add_rostest_gtest(test_abort
   test/abort_rostest.test
