@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="0" />
+
+  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="30.0">
+    <remap from="cmd_vel_in" to="/safety_limiter/cmd_vel_in" />
+    <remap from="cloud" to="/safety_limiter/cloud" />
+    <remap from="watchdog_reset" to="/safety_limiter/watchdog_reset" />
+    <remap from="cmd_vel" to="/safety_limiter/cmd_vel_out" />
+  </test>
+
+  <node pkg="safety_limiter" type="safety_limiter" name="safety_limiter" output="screen">
+    <rosparam param="footprint">[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]</rosparam>
+    <param name="allow_empty_cloud" value="true" />
+    <param name="watchdog_interval" value="0.2" />
+    <param name="cloud_timeout" value="0.2" />
+    <param name="hz" value="10.0" />
+  </node>
+</launch>
