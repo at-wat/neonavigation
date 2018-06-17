@@ -35,8 +35,7 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 #### Subscribed topics
 
 * map [nav_msgs::OccupancyGrid]
-* **layer name** [nav_msgs::OccupancyGrid]
-  Subscribed topics is generated acoording to the layers parameters
+* **layer name** [nav_msgs::OccupancyGrid]: Subscribed topics are named according to the layers parameters
 
 #### Published topics
 
@@ -47,17 +46,14 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 
 #### Parameters
 
-Parameters for root layer:
-* "ang_resolution" (int, default: 16)
-* "linear_expand" (double, default: 0.2f)
-* "linear_spread" (double, default: 0.5f)
-* "footprint" (?, default: footprint_xml)
-
-Layers configurations:
+* "ang_resolution" (int, default: 16): for root layer
+* "linear_expand" (double, default: 0.2f): for root layer
+* "linear_spread" (double, default: 0.5f): for root layer
+* "footprint" (?, default: footprint_xml): for root layer
 * "static_layers": array of layer configurations
 * "layers": array of layer configurations
 
-Each layer configurations contains:
+Each layer configuration contains:
 * "name" (string) layer name
 * "type" (string) layer type name
 * "parameters" layer specific parameters
