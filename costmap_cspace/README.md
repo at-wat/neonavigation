@@ -55,36 +55,28 @@ Parameters for root layer:
 * "footprint" (?, default: footprint_xml)
 
 Layers configurations:
-* "static_layers:"
-  * **array of layer configurations**
-* "layers:"
-  * **array of layer configurations**
+* "static_layers": array of layer configurations
+* "layers": array of layer configurations
 
 Each layer configurations contains:
 * "name" (string) layer name
 * "type" (string) layer type name
 * "parameters" layer specific parameters
 
-Available layer types are:
-- Costmap3dLayerFootprint
-  - Configuration space costmap layer according to the given footprint.
-  - parameters:
-    - "linear_expand" (double)
-    - "linear_spread" (double)
-    - "footprint" (?, default: root layer's footprint)
-- Costmap3dLayerPlain
-  - Costmap layer without considering footpring.
-  - parameters:
-    - "linear_expand" (double)
-    - "linear_spread" (double)
-- Costmap3dLayerOutput
-  - Output generated costmap at this point. In most case, this is placed at the last layer.
-- Costmap3dLayerStopPropagation
-  - Stop propagating parent layer's cost to the child. This can be used at the beginning of layer to ignore changes in static layers.
-- Costmap3dLayerUnknownHandle
-  - Set unknown cell's cost.
-  - parameters:
-    - "unknown_cost" (int)
+Available layer types and parameters are:
+- **Costmap3dLayerFootprint**: Configuration space costmap layer according to the given footprint.
+  - "linear_expand" (double)
+  - "linear_spread" (double)
+  - "footprint" (?, default: root layer's footprint)
+- **Costmap3dLayerPlain**: Costmap layer without considering footpring.
+  - "linear_expand" (double)
+  - "linear_spread" (double)
+- **Costmap3dLayerOutput**: Output generated costmap at this point. In most case, this is placed at the last layer.
+- **Costmap3dLayerStopPropagation**: Stop propagating parent layer's cost to the child. This can be used at the beginning of layer to ignore changes in static layers.
+- **Costmap3dLayerUnknownHandle**: Set unknown cell's cost.
+  - "unknown_cost" (int)
+
+See [example parameters](https://github.com/at-wat/neonavigation/blob/master/neonavigation_launch/config/navigate.yaml).
 
 ----
 ## laserscan_to_map
