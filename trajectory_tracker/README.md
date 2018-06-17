@@ -1,26 +1,25 @@
 ----
 # trajectory_tracker package
 
+The topic names will be migrated to ROS recommended namespace model.
+Set `/neonavigation_compatible` parameter to `1` to use new topic names.
+
 ## trajectory_tracker
 
 trajectory_tracker node controls vehicle velocity to follow given path.
 
-### Sources
-
-* src/trajectory_tracker.cpp
-
 ### Subscribed topics
 
-* ~/path (nav_msgs::Path)
-* ~/odom (nav_msgs::Odometry)
-* ~/speed (std_msgs::Float32)
+* ~/path (new: path) [nav_msgs::Path]
+* ~/odom (new: odom) [nav_msgs::Odometry]
+* ~/speed (new: speed) [std_msgs::Float32]
 * /tf
 
 ### Published topics
 
-* ~/cmd_vel (geometry_msgs::Twist)
-* ~/status (trajectory_tracker_msgs::TrajectoryTrackerStatus)
-* ~/tracking (geometry_msgs::PoseStamped)
+* ~/cmd_vel (new: cmd_vel) [geometry_msgs::Twist]
+* ~/status [trajectory_tracker_msgs::TrajectoryTrackerStatus]
+* ~/tracking [geometry_msgs::PoseStamped]
 
 ### Services
 
@@ -31,9 +30,9 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 ### Parameters
 
 * "frame_robot" (string, default: std::string("base_link"))
-* "path" (string, default: std::string("path"))
-* "odom" (string, default: std::string("odom"))
-* "cmd_vel" (string, default: std::string("cmd_vel"))
+* "path" **deprecated** (string, default: std::string("path"))
+* "odom" **deprecated** (string, default: std::string("odom"))
+* "cmd_vel" **deprecated** (string, default: std::string("cmd_vel"))
 * "hz" (double, default: 50.0)
 * "look_forward" (double, default: 0.5)
 * "curv_forward" (double, default: 0.5)
@@ -67,17 +66,13 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 
 trajectory_recorder node generates Path message from TF.
 
-### Sources
-
-* src/trajectory_recorder.cpp
-
 ### Subscribed topics
 
 * /tf
 
 ### Published topics
 
-* ~/recpath (nav_msgs::Path)
+* ~/recpath (new: path) [nav_msgs::Path]
 
 ### Services
 
@@ -99,13 +94,9 @@ trajectory_recorder node generates Path message from TF.
 
 trajectory_saver node saves Path message to file.
 
-### Sources
-
-* src/trajectory_saver.cpp
-
 ### Subscribed topics
 
-* ~/recpath (nav_msgs::Path)
+* ~/recpath (new: path) [nav_msgs::Path]
 * /tf
 
 ### Published topics
@@ -119,7 +110,7 @@ trajectory_saver node saves Path message to file.
 
 ### Parameters
 
-* "path" (string, default: std::string("recpath"))
+* "path" **deprecated** (string, default: std::string("recpath"))
 * "file" (string, default: std::string("a.path"))
 
 ----
@@ -128,30 +119,25 @@ trajectory_saver node saves Path message to file.
 
 trajectory_server node loads Path from file and publishes it.
 
-### Sources
-
-* src/trajectory_server.cpp
-* src/filter.cpp
-
 ### Subscribed topics
 
 * /tf
 
 ### Published topics
 
-* ~/path (nav_msgs::Path)
-* ~/status (trajectory_tracker_msgs::TrajectoryServerStatus)
+* ~/path (new: path) [nav_msgs::Path]
+* ~/status [trajectory_tracker_msgs::TrajectoryServerStatus]
 
 ### Services
 
-* ~/ChangePath (trajectory_tracker_msgs::ChangePath)
+* ~/ChangePath (new: change_path) [trajectory_tracker_msgs::ChangePath]
 
 ### Called services
 
 
 ### Parameters
 
-* "path" (string, default: std::string("path"))
+* "path" **deprecated** (string, default: std::string("path"))
 * "file" (string, default: std::string("a.path"))
 * "hz" (?, default: double(5))
 * "filter_step" (double, default: 0.0)
@@ -167,4 +153,3 @@ This research was supported by a contract with the Ministry of Internal Affairs 
 This software was implemented to accomplish the above research.
 Original idea of the implemented control scheme was published on:  
 S. Iida, S. Yuta, "Vehicle command system and trajectory control for autonomous mobile robots," in *Proceedings of the 1991 IEEE/RSJ International Workshop on Intelligent Robots and Systems (IROS)*, 1991, pp. 212-217.
-

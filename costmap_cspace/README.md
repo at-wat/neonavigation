@@ -1,25 +1,24 @@
 ----
 # costmap_cspace package
 
+The topic names will be migrated to ROS recommended namespace model.
+Set `/neonavigation_compatible` parameter to `1` to use new topic names.
+
 ## costmap_3d
 
 costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) configuration space based on given footprint.
 
-### Sources
-
-* src/costmap_3d.cpp
-
 ### Subscribed topics
 
-* /map (nav_msgs::OccupancyGrid)
-* /map_overlay (nav_msgs::OccupancyGrid)
+* /map [nav_msgs::OccupancyGrid]
+* /map_overlay [nav_msgs::OccupancyGrid]
 
 ### Published topics
 
-* ~/costmap (costmap_cspace_msgs::CSpace3D)
-* ~/costmap_update (costmap_cspace_msgs::CSpace3DUpdate)
-* ~/footprint (geometry_msgs::PolygonStamped)
-* ~/debug (sensor_msgs::PointCloud)
+* ~/costmap (new: costmap) [costmap_cspace_msgs::CSpace3D]
+* ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::CSpace3DUpdate]
+* ~/footprint [geometry_msgs::PolygonStamped]
+* ~/debug [sensor_msgs::PointCloud]
 
 ### Services
 
@@ -37,4 +36,16 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "footprint" (?, default: footprint_xml)
 
 ----
+## laserscan_to_map
 
+stub
+
+----
+## pointcloud2_to_map
+
+stub
+
+----
+## largemap_to_map
+
+stub
