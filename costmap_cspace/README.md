@@ -8,25 +8,21 @@ Set `/neonavigation_compatible` parameter to `1` to use new topic names.
 
 costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) configuration space based on given footprint.
 
-### Subscribed topics
+### single layer mode (simple version)
 
-* /map [nav_msgs::OccupancyGrid]
-* /map_overlay [nav_msgs::OccupancyGrid]
+#### Subscribed topics
 
-### Published topics
+* map [nav_msgs::OccupancyGrid]
+* map_overlay [nav_msgs::OccupancyGrid]
+
+#### Published topics
 
 * ~/costmap (new: costmap) [costmap_cspace_msgs::CSpace3D]
 * ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::CSpace3DUpdate]
 * ~/footprint [geometry_msgs::PolygonStamped]
 * ~/debug [sensor_msgs::PointCloud]
 
-### Services
-
-
-### Called services
-
-
-### Parameters
+#### Parameters
 
 * "ang_resolution" (int, default: 16)
 * "linear_expand" (double, default: 0.2f)
@@ -34,6 +30,61 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "unknown_cost" (int, default: 0)
 * "overlay_mode" (string, default: std::string(""))
 * "footprint" (?, default: footprint_xml)
+
+### multiple layer mode
+
+#### Subscribed topics
+
+* map [nav_msgs::OccupancyGrid]
+* **layer name** [nav_msgs::OccupancyGrid]
+  Subscribed topics is generated acoording to the layers parameters
+
+#### Published topics
+
+* ~/costmap (new: costmap) [costmap_cspace_msgs::CSpace3D]
+* ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::CSpace3DUpdate]
+* ~/footprint [geometry_msgs::PolygonStamped]
+* ~/debug [sensor_msgs::PointCloud]
+
+#### Parameters
+
+Parameters for root layer:
+* "ang_resolution" (int, default: 16)
+* "linear_expand" (double, default: 0.2f)
+* "linear_spread" (double, default: 0.5f)
+* "footprint" (?, default: footprint_xml)
+
+Layers configurations:
+* "static_layers:"
+  * **array of layer configurations**
+* "layers:"
+  * **array of layer configurations**
+
+Each layer configurations contains:
+* "name" (string) layer name
+* "type" (string) layer type name
+* "parameters" layer specific parameters
+
+Available layer types are:
+- Costmap3dLayerFootprint
+  - Configuration space costmap layer according to the given footprint.
+  - parameters:
+    - "linear_expand" (double)
+    - "linear_spread" (double)
+    - "footprint" (?, default: root layer's footprint)
+- Costmap3dLayerPlain
+  - Costmap layer without considering footpring.
+  - parameters:
+    - "linear_expand" (double)
+    - "linear_spread" (double)
+- Costmap3dLayerOutput
+  - Output generated costmap at this point. In most case, this is placed at the last layer.
+- Costmap3dLayerStopPropagation
+  - Stop propagating parent layer's cost to the child. This can be used at the beginning of layer to ignore changes in static layers.
+- Costmap3dLayerUnknownHandle
+  - Set unknown cell's cost.
+  - parameters:
+    - "unknown_cost" (int)
 
 ----
 ## laserscan_to_map
