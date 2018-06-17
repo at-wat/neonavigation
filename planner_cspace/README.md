@@ -1,4 +1,3 @@
-----
 # planner_cspace package
 
 The topic names will be migrated to ROS recommended namespace model.

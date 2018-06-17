@@ -1,4 +1,3 @@
-----
 # obj_to_pointcloud package
 
 The topic names will be migrated to ROS recommended namespace model.

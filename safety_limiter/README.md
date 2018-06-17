@@ -1,4 +1,3 @@
-----
 # safety_limiter package
 
 The topic names will be migrated to ROS recommended namespace model.
