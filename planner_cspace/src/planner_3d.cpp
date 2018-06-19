@@ -33,6 +33,7 @@
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <std_srvs/Empty.h>
+#include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -80,6 +81,7 @@ protected:
   ros::Publisher pub_end_;
   ros::Publisher pub_status_;
   ros::ServiceServer srs_forget_;
+  ros::ServiceServer srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
   tf::TransformListener tfl_;
@@ -388,6 +390,22 @@ protected:
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
       cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+
+    return true;
+  }
+  bool cbMakePlan(nav_msgs::GetPlan::Request &req,
+                  nav_msgs::GetPlan::Response &res)
+  {
+    nav_msgs::Path path;
+    path.header = map_header_;
+    path.header.stamp = ros::Time::now();
+    makePlan(req.start.pose, req.goal.pose, path, false);
+
+    res.plan.poses.resize(path.poses.size());
+    for (size_t i = 0; i < path.poses.size(); ++i)
+    {
+      res.plan.poses[i] = path.poses[i];
+    }
 
     return true;
   }
@@ -1122,6 +1140,7 @@ public:
     pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status_ = nh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
     srs_forget_ = nh_.advertiseService("forget", &Planner3dNode::cbForget, this);
+    srs_make_plan_ = nh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
