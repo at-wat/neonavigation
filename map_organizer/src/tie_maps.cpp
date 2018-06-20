@@ -63,7 +63,7 @@ private:
 public:
   TieMapNode()
     : pnh_("~")
-    , nh_("")
+    , nh_()
   {
     pub_map_array_ = nh_.advertise<map_organizer_msgs::OccupancyGridArray>("maps", 1, true);
 

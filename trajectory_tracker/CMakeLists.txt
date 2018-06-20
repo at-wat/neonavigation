@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
     tf
     tf2_geometry_msgs
 
+    neonavigation_common
     trajectory_tracker_msgs
 )
 
@@ -26,6 +27,7 @@ catkin_package(
     tf
     tf2_geometry_msgs
 
+    neonavigation_common
     trajectory_tracker_msgs
 )
 

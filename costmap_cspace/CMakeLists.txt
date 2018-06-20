@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
     tf2_sensor_msgs
 
     costmap_cspace_msgs
+    neonavigation_common
 )
 
 catkin_package(
@@ -26,6 +27,7 @@ catkin_package(
     tf2_sensor_msgs
 
     costmap_cspace_msgs
+    neonavigation_common
 )
 
 include(CheckCXXCompilerFlag)

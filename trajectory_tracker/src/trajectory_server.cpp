@@ -51,6 +51,8 @@
 
 #include <filter.h>
 
+#include <neonavigation_common/compatibility.h>
+
 class ServerNode
 {
 public:
@@ -59,6 +61,7 @@ public:
   void spin();
 
 private:
+  ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   ros::Publisher pub_path_;
   ros::Publisher pub_status_;
@@ -92,18 +95,23 @@ private:
 };
 
 ServerNode::ServerNode()
-  : pnh_("~")
+  : nh_()
+  , pnh_("~")
   , srv_im_fb_("trajectory_server")
   , buffer_(new uint8_t[1024])
 {
-  pnh_.param("path", topic_path_, std::string("path"));
+  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
   pnh_.param("file", req_path_.filename, std::string("a.path"));
   pnh_.param("hz", hz_, 5.0);
   pnh_.param("filter_step", filter_step_, 0.0);
 
-  pub_path_ = pnh_.advertise<nav_msgs::Path>(topic_path_, 2, true);
+  pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
+      nh_, "path",
+      pnh_, topic_path_, 2, true);
   pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryServerStatus>("status", 2);
-  srv_change_path_ = pnh_.advertiseService("ChangePath", &ServerNode::change, this);
+  srv_change_path_ = neonavigation_common::compat::advertiseService(
+      nh_, "change_path",
+      pnh_, "ChangePath", &ServerNode::change, this);
   update_num_ = 0;
   max_markers_ = 0;
 }

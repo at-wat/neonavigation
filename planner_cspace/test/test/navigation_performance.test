@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <launch>
+  <param name="neonavigation_compatible" value="1" />
+
   <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
     <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
     <param name="ang_resolution" value="16"/>
@@ -7,9 +9,7 @@
     <param name="linear_spread" value="0.3"/>
   </node>
   <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="screen">
-    <remap from="~/goal" to="/goal" />
-    <remap from="~/costmap" to="/costmap_3d/costmap" />
-    <remap from="~/costmap_update" to="/costmap_3d/costmap_update" />
+    <remap from="move_base_simple/goal" to="goal" />
     <param name="print_planning_duration" value="true" />
   </node>
 

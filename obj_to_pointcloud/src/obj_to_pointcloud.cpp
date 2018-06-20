@@ -49,6 +49,8 @@
 #include <sstream>
 #include <vector>
 
+#include <neonavigation_common/compatibility.h>
+
 pcl::PointXYZ operator-(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
 {
   auto c = a;
@@ -91,10 +93,13 @@ class ObjToPointcloudNode
 {
 public:
   ObjToPointcloudNode()
-    : pnh_("~")
+    : nh_()
+    , pnh_("~")
     , engine_(seed_gen_())
   {
-    pub_cloud_ = pnh_.advertise<sensor_msgs::PointCloud2>("cloud", 1, true);
+    pub_cloud_ = neonavigation_common::compat::advertise<sensor_msgs::PointCloud2>(
+        nh_, "mapcloud",
+        pnh_, "cloud", 1, true);
 
     pnh_.param("frame_id", frame_id_, std::string("map"));
     pnh_.param("objs", file_, std::string(""));
@@ -116,6 +121,7 @@ public:
   }
 
 private:
+  ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   ros::Publisher pub_cloud_;
 
