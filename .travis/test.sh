@@ -43,7 +43,7 @@ else
 fi
 catkin_test_results || (gh-pr-comment FAILED "Test failed$result_text"; false)
 
-gh-pr-comment PASSED "All tests passed$result_text"
+gh-pr-comment PASSED "All tests passed$result_text" || true
 
 cd ..
 rm -rf /catkin_ws || true
