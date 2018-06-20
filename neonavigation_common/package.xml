@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>trajectory_tracker</name>
+  <name>neonavigation_common</name>
   <version>0.1.0</version>
-  <description>Path following control package for wheeled mobile robot</description>
+  <description>Common headers for neonavigation meta-package</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
   <license>BSD</license>
@@ -13,13 +13,4 @@
   <depend>roscpp</depend>
   <test_depend>roslint</test_depend>
   <test_depend>rostest</test_depend>
-
-  <depend>geometry_msgs</depend>
-  <depend>interactive_markers</depend>
-  <depend>nav_msgs</depend>
-  <depend>tf</depend>
-  <depend>tf2_geometry_msgs</depend>
-
-  <depend>neonavigation_common</depend>
-  <depend>trajectory_tracker_msgs</depend>
 </package>

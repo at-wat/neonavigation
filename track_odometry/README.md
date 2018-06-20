@@ -1,24 +1,19 @@
-----
 # track_odometry package
 
 ## track_odometry
 
 track_odometry node compensates translational slip based on angular slip estimation based on IMU data.
 
-### Sources
-
-* src/track_odometry.cpp
-
 ### Subscribed topics
 
-* /odom_raw (nav_msgs::Odometry)
-* /imu (sensor_msgs::Imu)
-* ~/reset_z (std_msgs::Float32)
+* /odom_raw (new: odom_raw) [nav_msgs::Odometry]
+* /imu (new: imu/data) [sensor_msgs::Imu]
+* ~/reset_z (new: reset_odometry_z) [std_msgs::Float32]
 * /tf
 
 ### Published topics
 
-* /odom (nav_msgs::Odometry)
+* /odom (new: odom) [nav_msgs::Odometry]
 * /tf
 
 ### Services
@@ -41,4 +36,6 @@ track_odometry node compensates translational slip based on angular slip estimat
 * "predict_filter_tc" (double, default: 1.0)
 
 ----
+## tf_projection
 
+stub

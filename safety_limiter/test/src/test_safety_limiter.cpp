@@ -46,10 +46,10 @@ TEST(SafetyLimiter, testSafetyTimeouts)
   {
     cmd_vel = msg;
   };
-  ros::Publisher pub_cmd_vel = nh.advertise<geometry_msgs::Twist>("/safety_limiter/cmd_vel_in", 1);
-  ros::Publisher pub_cloud = nh.advertise<sensor_msgs::PointCloud2>("/safety_limiter/cloud", 1);
-  ros::Publisher pub_watchdog = nh.advertise<std_msgs::Empty>("/safety_limiter/watchdog_reset", 1);
-  ros::Subscriber sub_cmd_vel = nh.subscribe("/safety_limiter/cmd_vel_out", 1, cb_cmd_vel);
+  ros::Publisher pub_cmd_vel = nh.advertise<geometry_msgs::Twist>("cmd_vel_in", 1);
+  ros::Publisher pub_cloud = nh.advertise<sensor_msgs::PointCloud2>("cloud", 1);
+  ros::Publisher pub_watchdog = nh.advertise<std_msgs::Empty>("watchdog_reset", 1);
+  ros::Subscriber sub_cmd_vel = nh.subscribe("cmd_vel", 1, cb_cmd_vel);
 
   ros::Rate wait(10.0);
 

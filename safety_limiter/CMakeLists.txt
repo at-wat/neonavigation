@@ -12,6 +12,8 @@ find_package(catkin REQUIRED
     sensor_msgs
     tf
     tf_conversions
+
+    neonavigation_common
 )
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -26,6 +28,8 @@ catkin_package(
     sensor_msgs
     tf
     tf_conversions
+
+    neonavigation_common
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})

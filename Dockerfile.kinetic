@@ -17,6 +17,7 @@ RUN rosdep update \
 
 COPY ./costmap_cspace/package.xml /catkin_ws/src/neonavigation/costmap_cspace/
 COPY ./map_organizer/package.xml /catkin_ws/src/neonavigation/map_organizer/
+COPY ./neonavigation_common/package.xml /catkin_ws/src/neonavigation/neonavigation_common/
 COPY ./neonavigation_launch/package.xml /catkin_ws/src/neonavigation/neonavigation_launch/
 COPY ./planner_cspace/package.xml /catkin_ws/src/neonavigation/planner_cspace/
 COPY ./safety_limiter/package.xml /catkin_ws/src/neonavigation/safety_limiter/

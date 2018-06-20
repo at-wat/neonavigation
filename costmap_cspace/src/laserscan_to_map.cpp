@@ -37,6 +37,7 @@
 #include <string>
 
 #include <costmap_cspace/pointcloud_accumulator/accumulator.h>
+#include <neonavigation_common/compatibility.h>
 
 class LaserscanToMapNode
 {
@@ -77,7 +78,9 @@ public:
     pnh_.param("accum_duration", accum_duration, 1.0);
     accum_.reset(ros::Duration(accum_duration));
 
-    pub_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
+        nh_, "map_local",
+        pnh_, "map", 1, true);
     sub_scan_ = nh_.subscribe("scan", 2, &LaserscanToMapNode::cbScan, this);
 
     int width_param;

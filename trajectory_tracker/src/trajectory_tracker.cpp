@@ -53,6 +53,8 @@
 #include <math.h>
 #include <string>
 
+#include <neonavigation_common/compatibility.h>
+
 class TrackerNode
 {
 public:
@@ -102,6 +104,7 @@ private:
   ros::Publisher pub_status_;
   ros::Publisher pub_tracking_;
   ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   tf::TransformListener tfl_;
 
   nav_msgs::Path path_;
@@ -143,44 +146,53 @@ private:
 TrackerNode::TrackerNode()
   : w_(0.0)
   , v_(0.0)
-  , nh_("~")
+  , nh_()
+  , pnh_("~")
 {
-  nh_.param("frame_robot", frame_robot_, std::string("base_link"));
-  nh_.param("frame_odom", frame_odom_, std::string("odom"));
-  nh_.param("path", topic_path_, std::string("path"));
-  nh_.param("odom", topic_odom_, std::string("odom"));
-  nh_.param("cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
-  nh_.param("hz", hz_, 50.0);
-  nh_.param("look_forward", look_forward_, 0.5);
-  nh_.param("curv_forward", curv_forward_, 0.5);
-  nh_.param("k_dist", k_[0], 1.0);
-  nh_.param("k_ang", k_[1], 1.0);
-  nh_.param("k_avel", k_[2], 1.0);
-  nh_.param("k_dcel", dec_, 0.2);
-  nh_.param("dist_lim", d_lim_, 0.5);
-  nh_.param("dist_stop", d_stop_, 2.0);
-  nh_.param("rotate_ang", rotate_ang_, M_PI / 4);
-  nh_.param("max_vel", vel_[0], 0.5);
-  nh_.param("max_angvel", vel_[1], 1.0);
-  nh_.param("max_acc", acc_[0], 1.0);
-  nh_.param("max_angacc", acc_[1], 2.0);
-  nh_.param("path_step", path_step_, 1);
-  nh_.param("distance_angle_factor", ang_factor_, 0.0);
-  nh_.param("switchback_dist", sw_dist_, 0.3);
-  nh_.param("goal_tolerance_dist", goal_tolerance_dist_, 0.2);
-  nh_.param("goal_tolerance_ang", goal_tolerance_ang_, 0.1);
-  nh_.param("stop_tolerance_dist", stop_tolerance_dist_, 0.1);
-  nh_.param("stop_tolerance_ang", stop_tolerance_ang_, 0.05);
-  nh_.param("no_position_control_dist", no_pos_cntl_dist_, 0.0);
-  nh_.param("min_tracking_path", min_track_path_, no_pos_cntl_dist_);
-  nh_.param("allow_backward", allow_backward_, true);
-  nh_.param("limit_vel_by_avel", limit_vel_by_avel_, false);
-  nh_.param("check_old_path", check_old_path_, false);
+  pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
+  pnh_.param("frame_odom", frame_odom_, std::string("odom"));
+  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
+  neonavigation_common::compat::deprecatedParam(pnh_, "odom", topic_odom_, std::string("odom"));
+  neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
+  pnh_.param("hz", hz_, 50.0);
+  pnh_.param("look_forward", look_forward_, 0.5);
+  pnh_.param("curv_forward", curv_forward_, 0.5);
+  pnh_.param("k_dist", k_[0], 1.0);
+  pnh_.param("k_ang", k_[1], 1.0);
+  pnh_.param("k_avel", k_[2], 1.0);
+  pnh_.param("k_dcel", dec_, 0.2);
+  pnh_.param("dist_lim", d_lim_, 0.5);
+  pnh_.param("dist_stop", d_stop_, 2.0);
+  pnh_.param("rotate_ang", rotate_ang_, M_PI / 4);
+  pnh_.param("max_vel", vel_[0], 0.5);
+  pnh_.param("max_angvel", vel_[1], 1.0);
+  pnh_.param("max_acc", acc_[0], 1.0);
+  pnh_.param("max_angacc", acc_[1], 2.0);
+  pnh_.param("path_step", path_step_, 1);
+  pnh_.param("distance_angle_factor", ang_factor_, 0.0);
+  pnh_.param("switchback_dist", sw_dist_, 0.3);
+  pnh_.param("goal_tolerance_dist", goal_tolerance_dist_, 0.2);
+  pnh_.param("goal_tolerance_ang", goal_tolerance_ang_, 0.1);
+  pnh_.param("stop_tolerance_dist", stop_tolerance_dist_, 0.1);
+  pnh_.param("stop_tolerance_ang", stop_tolerance_ang_, 0.05);
+  pnh_.param("no_position_control_dist", no_pos_cntl_dist_, 0.0);
+  pnh_.param("min_tracking_path", min_track_path_, no_pos_cntl_dist_);
+  pnh_.param("allow_backward", allow_backward_, true);
+  pnh_.param("limit_vel_by_avel", limit_vel_by_avel_, false);
+  pnh_.param("check_old_path", check_old_path_, false);
 
-  sub_path_ = nh_.subscribe(topic_path_, 2, &TrackerNode::cbPath, this);
-  sub_odom_ = nh_.subscribe(topic_odom_, 20, &TrackerNode::cbOdom, this);
-  sub_vel_ = nh_.subscribe("speed", 20, &TrackerNode::cbSpeed, this);
-  pub_vel_ = nh_.advertise<geometry_msgs::Twist>(topic_cmd_vel_, 10);
+  sub_path_ = neonavigation_common::compat::subscribe(
+      nh_, "path",
+      pnh_, topic_path_, 2, &TrackerNode::cbPath, this);
+  sub_odom_ = neonavigation_common::compat::subscribe(
+      nh_, "odom",
+      pnh_, topic_odom_, 20, &TrackerNode::cbOdom, this);
+  sub_vel_ = neonavigation_common::compat::subscribe(
+      nh_, "speed",
+      pnh_, "speed", 20, &TrackerNode::cbSpeed, this);
+  pub_vel_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
+      nh_, "cmd_vel",
+      pnh_, topic_cmd_vel_, 10);
   pub_status_ = nh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10);
   pub_tracking_ = nh_.advertise<geometry_msgs::PoseStamped>("tracking", 10);
 }

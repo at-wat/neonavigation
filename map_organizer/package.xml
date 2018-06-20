@@ -24,6 +24,7 @@
   <depend>tf_conversions</depend>
 
   <depend>map_organizer_msgs</depend>
+  <depend>neonavigation_common</depend>
 
   <depend>cmake_modules</depend>
   <depend>eigen</depend>

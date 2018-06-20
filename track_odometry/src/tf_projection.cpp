@@ -40,6 +40,7 @@ class TfProjectionNode : public TfProjection
 {
 private:
   ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   tf::TransformBroadcaster tf_broadcaster_;
   tf::TransformListener tf_listener_;
 
@@ -49,16 +50,17 @@ private:
 
 public:
   TfProjectionNode()
-    : nh_("~")
+    : nh_()
+    , pnh_("~")
   {
-    nh_.param("base_link_frame", frames_["base"], std::string("base_link"));
-    nh_.param("projection_frame", frames_["projection"], std::string("map"));
-    nh_.param("target_frame", frames_["target"], std::string("map"));
-    nh_.param("frame", frames_["frame"], std::string("base_link_projected"));
+    pnh_.param("base_link_frame", frames_["base"], std::string("base_link"));
+    pnh_.param("projection_frame", frames_["projection"], std::string("map"));
+    pnh_.param("target_frame", frames_["target"], std::string("map"));
+    pnh_.param("frame", frames_["frame"], std::string("base_link_projected"));
 
-    nh_.param("hz", rate_, 10.0);
-    nh_.param("tf_tolerance", tf_tolerance_, 0.1);
-    nh_.param("flat", flat_, false);
+    pnh_.param("hz", rate_, 10.0);
+    pnh_.param("tf_tolerance", tf_tolerance_, 0.1);
+    pnh_.param("flat", flat_, false);
   }
   void process()
   {

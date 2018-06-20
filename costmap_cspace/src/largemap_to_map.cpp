@@ -33,6 +33,7 @@
 #include <tf/transform_datatypes.h>
 
 #include <string>
+#include <neonavigation_common/compatibility.h>
 
 class LargeMapToMapNode
 {
@@ -53,11 +54,13 @@ private:
 public:
   LargeMapToMapNode()
     : pnh_("~")
-    , nh_("")
+    , nh_()
   {
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
-    pub_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
+        nh_, "map_local",
+        pnh_, "map", 1, true);
     sub_largemap_ = nh_.subscribe("map", 2, &LargeMapToMapNode::cbLargeMap, this);
 
     pnh_.param("width", width_, 30);
