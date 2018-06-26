@@ -396,11 +396,112 @@ protected:
   bool cbMakePlan(nav_msgs::GetPlan::Request &req,
                   nav_msgs::GetPlan::Response &res)
   {
+    if (!has_map_)
+      return false;
+
+    Astar::Vec s, e;
+    metric2Grid(s[0], s[1], s[2],
+                req.start.pose.position.x, req.start.pose.position.y, tf::getYaw(req.start.pose.orientation));
+    s.cycleUnsigned(s[2], map_info_.angle);
+    metric2Grid(e[0], e[1], e[2],
+                req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
+    e.cycleUnsigned(e[2], map_info_.angle);
+
+    const auto range_limit = - (local_range_ + range_) * ec_[0];
+
+    const auto cbCost = [this](
+        const Astar::Vec &s, Astar::Vec &e,
+        const Astar::Vec &v_goal, const Astar::Vec &v_start,
+        const bool hyst) -> float
+    {
+      Astar::Vec d_raw = e - s;
+      d_raw[2] = 0;
+      const Astar::Vec d = d_raw;
+      float cost = euclidCost(d);
+
+      int sum = 0;
+      int num = 0;
+      auto d_index = d;
+      int syaw = s[2];
+      d_index[2] = e[2];
+      d_index.cycleUnsigned(syaw, map_info_.angle);
+      d_index.cycleUnsigned(d_index[2], map_info_.angle);
+      const auto cache_page = motion_interp_cache_[syaw].find(d_index);
+      if (cache_page == motion_interp_cache_[syaw].end())
+        return -1;
+      for (const auto &pos_diff : cache_page->second)
+      {
+        const int posi[3] =
+            {
+              s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
+            };
+        const Astar::Vec pos(posi);
+        const auto c = cm_rough_[pos];
+        if (c > 99)
+          return -1;
+        sum += c;
+        num++;
+      }
+      const float &distf = distf_cache_[s[2]][d_index];
+      cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
+
+      return cost;
+    };
+    const auto cbCostEstim = [](const Astar::Vec &s, const Astar::Vec &e)
+    {
+      auto s2 = s;
+      s2[2] = 0;
+      auto cost = sqrtf((e - s2).sqlen());
+
+      if (cost == FLT_MAX)
+        return FLT_MAX;
+      return cost;
+    };
+    const auto cbSearch = [this](
+        const Astar::Vec &p,
+        const Astar::Vec &s, const Astar::Vec &e) -> std::vector<Astar::Vec>&
+    {
+      return search_list_rough_;
+    };
+    const auto cbProgress = [](const std::list<Astar::Vec> &path_grid)
+    {
+      return true;
+    };
+
+    const auto ts = boost::chrono::high_resolution_clock::now();
+    // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
+    //   s[0], s[1], s[2], e[0], e[1], e[2]);
+    std::list<Astar::Vec> path_grid;
+    if (!as_.search(s, e, path_grid,
+                    std::bind(cbCost,
+                              std::placeholders::_1, std::placeholders::_2,
+                              std::placeholders::_3, std::placeholders::_4, false),
+                    std::bind(cbCostEstim,
+                              std::placeholders::_1, std::placeholders::_2),
+                    std::bind(cbSearch,
+                              std::placeholders::_1,
+                              std::placeholders::_2, std::placeholders::_3),
+                    std::bind(cbProgress,
+                              std::placeholders::_1),
+                    range_limit,
+                    1.0f / freq_min_,
+                    find_best_))
+    {
+      ROS_WARN("Path plan failed (goal unreachable)");
+      if (!find_best_)
+        return false;
+    }
+    const auto tnow = boost::chrono::high_resolution_clock::now();
+    ROS_INFO("Path found (%0.4f sec.)",
+              boost::chrono::duration<float>(tnow - ts).count());
+
     nav_msgs::Path path;
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
-    makePlan(req.start.pose, req.goal.pose, path, false);
 
+    grid2Metric(path_grid, path, s);
+
+    res.plan.header = map_header_;
     res.plan.poses.resize(path.poses.size());
     for (size_t i = 0; i < path.poses.size(); ++i)
     {
@@ -409,6 +510,7 @@ protected:
 
     return true;
   }
+
   void cbGoal(const geometry_msgs::PoseStamped::ConstPtr &msg)
   {
     if (act_->isActive())
