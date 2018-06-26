@@ -407,8 +407,6 @@ protected:
                 req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
 
-    const auto range_limit = - (local_range_ + range_) * ec_[0];
-
     const auto cbCost = [this](
         const Astar::Vec &s, Astar::Vec &e,
         const Astar::Vec &v_goal, const Astar::Vec &v_start,
@@ -483,7 +481,7 @@ protected:
                               std::placeholders::_2, std::placeholders::_3),
                     std::bind(cbProgress,
                               std::placeholders::_1),
-                    range_limit,
+                    0,
                     1.0f / freq_min_,
                     find_best_))
     {
