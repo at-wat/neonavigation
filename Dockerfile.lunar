@@ -1,4 +1,4 @@
-FROM ros:kinetic-ros-core
+FROM ros:lunar-ros-core
 
 RUN apt-get -qq update \
   && apt-get install -y --no-install-recommends \

@@ -1,32 +1,30 @@
-----
 # planner_cspace package
+
+The topic names will be migrated to ROS recommended namespace model.
+Set `/neonavigation_compatible` parameter to `1` to use new topic names.
 
 ## planner_3d
 
 planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner.
 
-### Sources
-
-* src/planner_3d.cpp
-* include/grid_astar.h
-
 ### Subscribed topics
 
-* ~/costmap (costmap_cspace_msgs::CSpace3D)
-* ~/costmap_update (costmap_cspace_msgs::CSpace3DUpdate)
-* ~/goal (geometry_msgs::PoseStamped)
+* ~/costmap (new: costmap) [costmap_cspace_msgs::CSpace3D]
+* ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::CSpace3DUpdate]
+* ~/goal (new: move_base_simple/goal) [geometry_msgs::PoseStamped]
 * /tf
 
 ### Published topics
 
-* ~/path (nav_msgs::Path)
-* ~/debug (sensor_msgs::PointCloud)
-* ~/path_start (geometry_msgs::PoseStamped)
-* ~/path_end (geometry_msgs::PoseStamped)
-* ~/status (planner_cspace_msgs::PlannerStatus)
+* ~/path (new: path) [nav_msgs::Path]
+* ~/debug [sensor_msgs::PointCloud]
+* ~/path_start [geometry_msgs::PoseStamped]
+* ~/path_end [geometry_msgs::PoseStamped]
+* ~/status [planner_cspace_msgs::PlannerStatus]
 
 ### Services
 
+* ~/forget (new: forget_planning_cost) [std_srvs::Empty]
 
 ### Called services
 
@@ -60,21 +58,16 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 
 planner_2dof_serial_joints provides collision avoidance for 2-DOF serial joint (e.g. controlling interfering pairs of sub-tracks for tracked vehicle.)
 
-### Sources
-
-* src/planner_2dof_serial_joints.cpp
-* include/grid_astar.h
-
 ### Subscribed topics
 
-* ~/trajectory_in (trajectory_msgs::JointTrajectory)
-* ~/joint (sensor_msgs::JointState)
+* ~/trajectory_in (new: trajectory_in) [trajectory_msgs::JointTrajectory]
+* ~/joint (new: joint_states) [sensor_msgs::JointState]
 * /tf
 
 ### Published topics
 
-* ~/trajectory_out (trajectory_msgs::JointTrajectory)
-* ~/status (planner_cspace_msgs::PlannerStatus)
+* ~/trajectory_out (new: joint_trajectory) [trajectory_msgs::JointTrajectory]
+* ~/status [planner_cspace_msgs::PlannerStatus]
 
 ### Services
 
@@ -96,3 +89,12 @@ planner_2dof_serial_joints provides collision avoidance for 2-DOF serial joint (
 
 ----
 
+## dummy_robot
+
+stub
+
+----
+
+## patrol
+
+stub

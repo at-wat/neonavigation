@@ -2,6 +2,11 @@
 
 ROS meta-package for autonomous vehicle navigation.
 
+## Important notices
+
+- Topic/service namespace model is migrated to ROS recommended style.
+  See each package's README and runtime migration messages from the nodes.
+
 ## Install
 
 **Note: neonavigation_msgs meta-package is required to build neonavigation meta-package.**
@@ -70,4 +75,3 @@ A. Watanabe, D. Endo, G. Yamauchi and K. Nagatani, "*Neonavigation meta-package:
 ## License
 
 *neonavigation meta-package* is available under BSD license.
-

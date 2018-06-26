@@ -45,16 +45,26 @@
  */
 class MapGeneratorNode
 {
+protected:
+  ros::NodeHandle nh_;
+  std::string mapname_;
+  ros::Subscriber map_sub_;
+  bool saved_map_;
+
 public:
   explicit MapGeneratorNode(const std::string& mapname)
-    : mapname_(mapname)
+    : nh_()
+    , mapname_(mapname)
     , saved_map_(false)
   {
-    ros::NodeHandle n;
     ROS_INFO("Waiting for the map");
-    map_sub_ = n.subscribe("maps", 1, &MapGeneratorNode::mapsCallback, this);
+    map_sub_ = nh_.subscribe("maps", 1, &MapGeneratorNode::mapsCallback, this);
   }
 
+  bool done() const
+  {
+    return saved_map_;
+  }
   void mapsCallback(const map_organizer_msgs::OccupancyGridArrayConstPtr& maps)
   {
     int i = 0;
@@ -109,16 +119,6 @@ public:
     ROS_INFO("Writing map occupancy data to %s", mapmetadatafile.c_str());
     FILE* yaml = fopen(mapmetadatafile.c_str(), "w");
 
-    /*
-resolution: 0.100000
-origin: [0.000000, 0.000000, 0.000000]
-#
-negate: 0
-occupied_thresh: 0.65
-free_thresh: 0.196
-
-       */
-
     geometry_msgs::Quaternion orientation = map->info.origin.orientation;
     tf::Matrix3x3 mat(tf::Quaternion(orientation.x, orientation.y, orientation.z, orientation.w));
     double yaw, pitch, roll;
@@ -134,10 +134,6 @@ free_thresh: 0.196
 
     ROS_INFO("Done\n");
   }
-
-  std::string mapname_;
-  ros::Subscriber map_sub_;
-  bool saved_map_;
 };
 
 #define USAGE "Usage: \n"        \
@@ -175,7 +171,7 @@ int main(int argc, char** argv)
 
   MapGeneratorNode mg(mapname);
 
-  while (!mg.saved_map_ && ros::ok())
+  while (!mg.done() && ros::ok())
     ros::spinOnce();
 
   return 0;

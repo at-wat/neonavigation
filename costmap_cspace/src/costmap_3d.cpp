@@ -41,12 +41,13 @@
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 
 #include <costmap_cspace/costmap_3d.h>
+#include <neonavigation_common/compatibility.h>
 
 class Costmap3DOFNode
 {
 protected:
   ros::NodeHandle_f nh_;
-  ros::NodeHandle_f nhp_;
+  ros::NodeHandle_f pnh_;
   ros::Subscriber sub_map_;
   std::vector<ros::Subscriber> sub_map_overlay_;
   ros::Publisher pub_costmap_;
@@ -166,23 +167,27 @@ protected:
 public:
   Costmap3DOFNode()
     : nh_()
-    , nhp_("~")
+    , pnh_("~")
   {
-    pub_costmap_ = nhp_.advertise<costmap_cspace_msgs::CSpace3D>("costmap", 1, true);
-    pub_costmap_update_ = nhp_.advertise<costmap_cspace_msgs::CSpace3DUpdate>("costmap_update", 1, true);
-    pub_footprint_ = nhp_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
-    pub_debug_ = nhp_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+    pub_costmap_ = neonavigation_common::compat::advertise<costmap_cspace_msgs::CSpace3D>(
+        nh_, "costmap",
+        pnh_, "costmap", 1, true);
+    pub_costmap_update_ = neonavigation_common::compat::advertise<costmap_cspace_msgs::CSpace3DUpdate>(
+        nh_, "costmap_update",
+        pnh_, "costmap_update", 1, true);
+    pub_footprint_ = pnh_.advertise<geometry_msgs::PolygonStamped>("footprint", 2, true);
+    pub_debug_ = pnh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
 
     int ang_resolution;
-    nhp_.param("ang_resolution", ang_resolution, 16);
+    pnh_.param("ang_resolution", ang_resolution, 16);
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!nhp_.hasParam("footprint"))
+    if (!pnh_.hasParam("footprint"))
     {
       ROS_FATAL("Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified.");
     }
-    nhp_.getParam("footprint", footprint_xml);
+    pnh_.getParam("footprint", footprint_xml);
     costmap_cspace::Polygon footprint;
     try
     {
@@ -199,15 +204,15 @@ public:
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
     float linear_expand;
     float linear_spread;
-    nhp_.param("linear_expand", linear_expand, 0.2f);
-    nhp_.param("linear_spread", linear_spread, 0.5f);
+    pnh_.param("linear_expand", linear_expand, 0.2f);
+    pnh_.param("linear_spread", linear_spread, 0.5f);
     root_layer->setExpansion(linear_expand, linear_spread);
     root_layer->setFootprint(footprint);
 
-    if (nhp_.hasParam("static_layers"))
+    if (pnh_.hasParam("static_layers"))
     {
       XmlRpc::XmlRpcValue layers_xml;
-      nhp_.getParam("static_layers", layers_xml);
+      pnh_.getParam("static_layers", layers_xml);
 
       if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {
@@ -270,10 +275,10 @@ public:
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
 
-    if (nhp_.hasParam("layers"))
+    if (pnh_.hasParam("layers"))
     {
       XmlRpc::XmlRpcValue layers_xml;
-      nhp_.getParam("layers", layers_xml);
+      pnh_.getParam("layers", layers_xml);
 
       if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {
@@ -333,7 +338,7 @@ public:
       // Single layer mode for backward-compatibility
       costmap_cspace::MapOverlayMode overlay_mode;
       std::string overlay_mode_str;
-      nhp_.param("overlay_mode", overlay_mode_str, std::string("max"));
+      pnh_.param("overlay_mode", overlay_mode_str, std::string("max"));
       if (overlay_mode_str.compare("overwrite") == 0)
         overlay_mode = costmap_cspace::MapOverlayMode::OVERWRITE;
       else if (overlay_mode_str.compare("max") == 0)

@@ -6,11 +6,11 @@
   </include>
 
   <node pkg="map_server" type="map_server" name="map_server_local" args="$(find neonavigation_launch)/map/demo_map_local.yaml">
-    <remap from="map" to="local_map" />
+    <remap from="map" to="map_with_local_objects" />
   </node>
   <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
-    <remap from="map" to="local_map" />
-    <remap from="~/map" to="overlay1" />
+    <remap from="map" to="map_with_local_objects" />
+    <remap from="map_local" to="overlay1" />
     <param name="width" value="60" />
     <param name="hz" value="1.5" />
   </node>

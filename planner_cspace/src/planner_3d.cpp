@@ -51,6 +51,8 @@
 #include <grid_astar.h>
 #include <bbf.h>
 
+#include <neonavigation_common/compatibility.h>
+
 #include <omp.h>
 
 float signf(float a)
@@ -70,7 +72,8 @@ public:
 protected:
   using Planner3DActionServer = actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction>;
 
-  ros::NodeHandle_f nh_;
+  ros::NodeHandle nh_;
+  ros::NodeHandle_f pnh_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_update_;
   ros::Subscriber sub_goal_;
@@ -1230,77 +1233,88 @@ protected:
 
 public:
   Planner3dNode()
-    : nh_("~")
+    : nh_()
+    , pnh_("~")
   {
-    sub_map_ = nh_.subscribe("costmap", 1, &Planner3dNode::cbMap, this);
-    sub_map_update_ = nh_.subscribe("costmap_update", 1, &Planner3dNode::cbMapUpdate, this);
-    sub_goal_ = nh_.subscribe("goal", 1, &Planner3dNode::cbGoal, this);
-    pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
-    pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
-    pub_hist_ = nh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
-    pub_start_ = nh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
-    pub_end_ = nh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
-    pub_status_ = nh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
-    srs_forget_ = nh_.advertiseService("forget", &Planner3dNode::cbForget, this);
-    srs_make_plan_ = nh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
+    sub_map_ = neonavigation_common::compat::subscribe(
+        nh_, "costmap",
+        pnh_, "costmap", 1, &Planner3dNode::cbMap, this);
+    sub_map_update_ = neonavigation_common::compat::subscribe(
+        nh_, "costmap_update",
+        pnh_, "costmap_update", 1, &Planner3dNode::cbMapUpdate, this);
+    sub_goal_ = neonavigation_common::compat::subscribe(
+        nh_, "move_base_simple/goal",
+        pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
+    pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
+        nh_, "path",
+        pnh_, "path", 1, true);
+    pub_debug_ = pnh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+    pub_hist_ = pnh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
+    pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
+    pub_end_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
+    pub_status_ = pnh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
+    srs_forget_ = neonavigation_common::compat::advertiseService(
+        nh_, "forget_planning_cost",
+        pnh_, "forget", &Planner3dNode::cbForget, this);
+    srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
     act_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
 
-    nh_.param_cast("freq", freq_, 4.0f);
-    nh_.param_cast("freq_min", freq_min_, 2.0f);
-    nh_.param_cast("search_range", search_range_, 0.4f);
+    pnh_.param_cast("freq", freq_, 4.0f);
+    pnh_.param_cast("freq_min", freq_min_, 2.0f);
+    pnh_.param_cast("search_range", search_range_, 0.4f);
 
-    nh_.param_cast("max_vel", max_vel_, 0.3f);
-    nh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
+    pnh_.param_cast("max_vel", max_vel_, 0.3f);
+    pnh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
 
-    nh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
-    nh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
-    nh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
-    nh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
-    nh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
-    nh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
-    nh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
-    nh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
+    pnh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
+    pnh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
+    pnh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
+    pnh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
+    pnh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
+    pnh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
+    pnh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
+    pnh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
-    nh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
-    nh_.param("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
-    nh_.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
+    pnh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
+    pnh_.param("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
+    pnh_.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
 
-    nh_.param("unknown_cost", unknown_cost_, 100);
-    nh_.param("overwrite_cost", overwrite_cost_, false);
+    pnh_.param("unknown_cost", unknown_cost_, 100);
+    pnh_.param("overwrite_cost", overwrite_cost_, false);
 
-    nh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
-    nh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
-    nh_.param("remember_updates", remember_updates_, false);
+    pnh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
+    pnh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
+    pnh_.param("remember_updates", remember_updates_, false);
     double remember_hit_prob, remember_miss_prob;
-    nh_.param("remember_hit_prob", remember_hit_prob, 0.6);
-    nh_.param("remember_miss_prob", remember_miss_prob, 0.3);
+    pnh_.param("remember_hit_prob", remember_hit_prob, 0.6);
+    pnh_.param("remember_miss_prob", remember_miss_prob, 0.3);
     remember_hit_odds_ = bbf::probabilityToOdds(remember_hit_prob);
     remember_miss_odds_ = bbf::probabilityToOdds(remember_miss_prob);
 
-    nh_.param("local_range", local_range_f_, 2.5);
-    nh_.param("longcut_range", longcut_range_f_, 0.0);
-    nh_.param("esc_range", esc_range_f_, 0.25);
+    pnh_.param("local_range", local_range_f_, 2.5);
+    pnh_.param("longcut_range", longcut_range_f_, 0.0);
+    pnh_.param("esc_range", esc_range_f_, 0.25);
 
-    nh_.param_cast("sw_wait", sw_wait_, 2.0f);
-    nh_.param("find_best", find_best_, true);
+    pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
+    pnh_.param("find_best", find_best_, true);
 
-    nh_.param("pos_jump", pos_jump_, 1.0);
-    nh_.param("yaw_jump", yaw_jump_, 1.5);
+    pnh_.param("pos_jump", pos_jump_, 1.0);
+    pnh_.param("yaw_jump", yaw_jump_, 1.5);
 
-    nh_.param("force_goal_orientation", force_goal_orientation_, true);
+    pnh_.param("force_goal_orientation", force_goal_orientation_, true);
 
-    nh_.param("temporary_escape", temporary_escape_, true);
+    pnh_.param("temporary_escape", temporary_escape_, true);
 
-    nh_.param("fast_map_update", fast_map_update_, false);
+    pnh_.param("fast_map_update", fast_map_update_, false);
     if (fast_map_update_)
     {
       ROS_WARN("planner_3d: Experimental fast_map_update is enabled. ");
     }
     std::string debug_mode;
-    nh_.param("debug_mode", debug_mode, std::string("cost_estim"));
+    pnh_.param("debug_mode", debug_mode, std::string("cost_estim"));
     if (debug_mode == "hyst")
       debug_out_ = DEBUG_HYSTERESIS;
     else if (debug_mode == "hist")
@@ -1309,7 +1323,7 @@ public:
       debug_out_ = DEBUG_COST_ESTIM;
 
     bool print_planning_duration;
-    nh_.param("print_planning_duration", print_planning_duration, false);
+    pnh_.param("print_planning_duration", print_planning_duration, false);
     if (print_planning_duration)
     {
       if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
@@ -1318,17 +1332,17 @@ public:
       }
     }
 
-    nh_.param("max_retry_num", max_retry_num_, -1);
+    pnh_.param("max_retry_num", max_retry_num_, -1);
 
     int queue_size_limit;
-    nh_.param("queue_size_limit", queue_size_limit, 0);
+    pnh_.param("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
 
     int num_threads;
-    nh_.param("num_threads", num_threads, 1);
+    pnh_.param("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
 
-    nh_.param("num_search_task", num_task_, num_threads * 16);
+    pnh_.param("num_search_task", num_task_, num_threads * 16);
     as_.setSearchTaskNum(num_task_);
 
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;

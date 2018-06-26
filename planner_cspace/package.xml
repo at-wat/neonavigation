@@ -23,5 +23,6 @@
 
   <depend>costmap_cspace</depend>
   <depend>costmap_cspace_msgs</depend>
+  <depend>neonavigation_common</depend>
   <depend>planner_cspace_msgs</depend>
 </package>

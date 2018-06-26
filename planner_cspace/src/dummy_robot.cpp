@@ -35,9 +35,14 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
+#include <neonavigation_common/compatibility.h>
+
 class DummyRobotNode
 {
 protected:
+  ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
+
   double x_;
   double y_;
   double yaw_;
@@ -78,19 +83,18 @@ protected:
 
 public:
   DummyRobotNode()
+    : nh_()
+    , pnh_("~")
   {
-    ros::NodeHandle nh("");
-    ros::NodeHandle pnh("~");
-
-    pnh.param("initial_x", x_, 0.0);
-    pnh.param("initial_y", y_, 0.0);
-    pnh.param("initial_yaw", yaw_, 0.0);
+    pnh_.param("initial_x", x_, 0.0);
+    pnh_.param("initial_y", y_, 0.0);
+    pnh_.param("initial_yaw", yaw_, 0.0);
     v_ = 0.0;
     w_ = 0.0;
 
-    pub_odom_ = nh.advertise<nav_msgs::Odometry>("odom", 1, true);
-    sub_twist_ = nh.subscribe("cmd_vel", 1, &DummyRobotNode::cbTwist, this);
-    sub_init_ = nh.subscribe("initialpose", 1, &DummyRobotNode::cbInit, this);
+    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 1, true);
+    sub_twist_ = nh_.subscribe("cmd_vel", 1, &DummyRobotNode::cbTwist, this);
+    sub_init_ = nh_.subscribe("initialpose", 1, &DummyRobotNode::cbInit, this);
   }
   void spin()
   {

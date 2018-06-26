@@ -61,6 +61,8 @@
 #include <utility>
 #include <vector>
 
+#include <neonavigation_common/compatibility.h>
+
 pcl::PointXYZ operator-(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
 {
   auto c = a;
@@ -98,9 +100,11 @@ private:
 public:
   PointcloudToMapsNode()
     : pnh_("~")
-    , nh_("")
+    , nh_()
   {
-    sub_points_ = pnh_.subscribe("map_cloud", 1, &PointcloudToMapsNode::cbPoints, this);
+    sub_points_ = neonavigation_common::compat::subscribe(
+        nh_, "mapcloud",
+        pnh_, "map_cloud", 1, &PointcloudToMapsNode::cbPoints, this);
     pub_map_array_ = nh_.advertise<map_organizer_msgs::OccupancyGridArray>("maps", 1, true);
   }
   void cbPoints(const sensor_msgs::PointCloud2::Ptr &msg)
