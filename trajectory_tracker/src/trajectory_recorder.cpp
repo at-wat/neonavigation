@@ -45,6 +45,8 @@
 #include <math.h>
 #include <string>
 
+#include <neonavigation_common/compatibility.h>
+
 class RecorderNode
 {
 public:
@@ -60,6 +62,7 @@ private:
   double ang_interval_;
   bool store_time_;
 
+  ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   ros::Publisher pub_path_;
   tf::TransformListener tfl_;
@@ -68,16 +71,19 @@ private:
 };
 
 RecorderNode::RecorderNode()
-  : pnh_("~")
+  : nh_()
+  , pnh_("~")
 {
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
   pnh_.param("frame_global", frame_global_, std::string("map"));
-  pnh_.param("path", topic_path_, std::string("recpath"));
+  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
   pnh_.param("dist_interval", dist_interval_, 0.3);
   pnh_.param("ang_interval", ang_interval_, 1.0);
   pnh_.param("store_time", store_time_, false);
 
-  pub_path_ = pnh_.advertise<nav_msgs::Path>(topic_path_, 10, true);
+  pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
+      nh_, "path",
+      pnh_, topic_path_, 10, true);
 }
 RecorderNode::~RecorderNode()
 {

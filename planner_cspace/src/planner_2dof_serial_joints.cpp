@@ -43,6 +43,8 @@
 #include <costmap_cspace/node_handle_float.h>
 #include <grid_astar.h>
 
+#include <neonavigation_common/compatibility.h>
+
 #include <omp.h>
 
 float signf(float a)
@@ -60,6 +62,9 @@ public:
   using Astar = GridAstar<2, 2>;
 
 private:
+  ros::NodeHandle_f nh_;
+  ros::NodeHandle_f pnh_;
+
   ros::Publisher pub_status_;
   ros::Publisher pub_trajectory_;
   ros::Subscriber sub_trajectory_;
@@ -385,27 +390,34 @@ private:
 
 public:
   explicit planner2dofSerialJointsNode(const std::string group_name)
+    : nh_()
+    , pnh_("~")
   {
     group_ = group_name;
-    ros::NodeHandle_f nh("~/" + group_);
-    ros::NodeHandle_f nh_home("~");
+    ros::NodeHandle_f nh_group("~/" + group_);
 
-    pub_trajectory_ = nh_home.advertise<trajectory_msgs::JointTrajectory>("trajectory_out", 1, true);
-    sub_trajectory_ = nh_home.subscribe("trajectory_in", 1, &planner2dofSerialJointsNode::cbTrajectory, this);
-    sub_joint_ = nh_home.subscribe("joint", 1, &planner2dofSerialJointsNode::cbJoint, this);
+    pub_trajectory_ = neonavigation_common::compat::advertise<trajectory_msgs::JointTrajectory>(
+        nh_, "joint_trajectory",
+        pnh_, "trajectory_out", 1, true);
+    sub_trajectory_ = neonavigation_common::compat::subscribe(
+        nh_, "trajectory_in",
+        pnh_, "trajectory_in", 1, &planner2dofSerialJointsNode::cbTrajectory, this);
+    sub_joint_ = neonavigation_common::compat::subscribe(
+        nh_, "joint_states",
+        pnh_, "joint", 1, &planner2dofSerialJointsNode::cbJoint, this);
 
-    pub_status_ = nh.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
+    pub_status_ = nh_group.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
 
-    nh.param("resolution", resolution_, 128);
-    nh_home.param("debug_aa", debug_aa_, false);
+    nh_group.param("resolution", resolution_, 128);
+    pnh_.param("debug_aa", debug_aa_, false);
 
     double interval;
-    nh_home.param("replan_interval", interval, 0.2);
+    pnh_.param("replan_interval", interval, 0.2);
     replan_interval_ = ros::Duration(interval);
     replan_prev_ = ros::Time(0);
 
     int queue_size_limit;
-    nh.param("queue_size_limit", queue_size_limit, 0);
+    nh_group.param("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
 
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -418,24 +430,24 @@ public:
     as_.reset(Astar::Vec(size));
     cm_.clear(0);
 
-    nh.param("link0_name", links_[0].name_, std::string("link0"));
-    nh.param_cast("link0_joint_radius", links_[0].radius_[0], 0.07f);
-    nh.param_cast("link0_end_radius", links_[0].radius_[1], 0.07f);
-    nh.param_cast("link0_length", links_[0].length_, 0.135);
-    nh.param_cast("link0_x", links_[0].origin_.x_, 0.22f);
-    nh.param_cast("link0_y", links_[0].origin_.y_, 0.0f);
-    nh.param_cast("link0_th", links_[0].origin_.th_, 0.0f);
-    nh.param_cast("link0_gain_th", links_[0].gain_.th_, -1.0f);
-    nh.param_cast("link0_vmax", links_[0].vmax_, 0.5f);
-    nh.param("link1_name", links_[1].name_, std::string("link1"));
-    nh.param_cast("link1_joint_radius", links_[1].radius_[0], 0.07f);
-    nh.param_cast("link1_end_radius", links_[1].radius_[1], 0.07f);
-    nh.param_cast("link1_length", links_[1].length_, 0.27f);
-    nh.param_cast("link1_x", links_[1].origin_.x_, -0.22f);
-    nh.param_cast("link1_y", links_[1].origin_.y_, 0.0f);
-    nh.param_cast("link1_th", links_[1].origin_.th_, 0.0f);
-    nh.param_cast("link1_gain_th", links_[1].gain_.th_, 1.0f);
-    nh.param_cast("link1_vmax", links_[1].vmax_, 0.5f);
+    nh_group.param("link0_name", links_[0].name_, std::string("link0"));
+    nh_group.param_cast("link0_joint_radius", links_[0].radius_[0], 0.07f);
+    nh_group.param_cast("link0_end_radius", links_[0].radius_[1], 0.07f);
+    nh_group.param_cast("link0_length", links_[0].length_, 0.135);
+    nh_group.param_cast("link0_x", links_[0].origin_.x_, 0.22f);
+    nh_group.param_cast("link0_y", links_[0].origin_.y_, 0.0f);
+    nh_group.param_cast("link0_th", links_[0].origin_.th_, 0.0f);
+    nh_group.param_cast("link0_gain_th", links_[0].gain_.th_, -1.0f);
+    nh_group.param_cast("link0_vmax", links_[0].vmax_, 0.5f);
+    nh_group.param("link1_name", links_[1].name_, std::string("link1"));
+    nh_group.param_cast("link1_joint_radius", links_[1].radius_[0], 0.07f);
+    nh_group.param_cast("link1_end_radius", links_[1].radius_[1], 0.07f);
+    nh_group.param_cast("link1_length", links_[1].length_, 0.27f);
+    nh_group.param_cast("link1_x", links_[1].origin_.x_, -0.22f);
+    nh_group.param_cast("link1_y", links_[1].origin_.y_, 0.0f);
+    nh_group.param_cast("link1_th", links_[1].origin_.th_, 0.0f);
+    nh_group.param_cast("link1_gain_th", links_[1].gain_.th_, 1.0f);
+    nh_group.param_cast("link1_vmax", links_[1].vmax_, 0.5f);
 
     links_[0].current_th_ = 0.0;
     links_[1].current_th_ = 0.0;
@@ -444,14 +456,14 @@ public:
     ROS_INFO(" - link0: %s", links_[0].name_.c_str());
     ROS_INFO(" - link1: %s", links_[1].name_.c_str());
 
-    nh.param_cast("link0_coef", euclid_cost_coef_[0], 1.0f);
-    nh.param_cast("link1_coef", euclid_cost_coef_[1], 1.5f);
+    nh_group.param_cast("link0_coef", euclid_cost_coef_[0], 1.0f);
+    nh_group.param_cast("link1_coef", euclid_cost_coef_[1], 1.5f);
 
-    nh.param_cast("weight_cost", weight_cost_, 4.0f);
-    nh.param_cast("expand", expand_, 0.1);
+    nh_group.param_cast("weight_cost", weight_cost_, 4.0f);
+    nh_group.param_cast("expand", expand_, 0.1);
 
     std::string point_vel_mode;
-    nh.param("point_vel_mode", point_vel_mode, std::string("prev"));
+    nh_group.param("point_vel_mode", point_vel_mode, std::string("prev"));
     std::transform(point_vel_mode.begin(), point_vel_mode.end(), point_vel_mode.begin(), ::tolower);
     if (point_vel_mode.compare("prev") == 0)
       point_vel_ = VEL_PREV;
@@ -506,7 +518,7 @@ public:
     }
 
     int range;
-    nh.param("range", range, 8);
+    nh_group.param("range", range, 8);
     for (p[0] = -range; p[0] <= range; p[0]++)
     {
       for (p[1] = -range; p[1] <= range; p[1]++)
@@ -516,7 +528,7 @@ public:
     }
 
     int num_threads;
-    nh.param("num_threads", num_threads, 1);
+    nh_group.param("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
 
     has_start_ = has_goal_ = true;
@@ -732,16 +744,16 @@ private:
 int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "planner_2dof_serial_joints");
-  ros::NodeHandle_f nh("~");
+  ros::NodeHandle_f pnh("~");
 
   std::vector<std::shared_ptr<planner2dofSerialJointsNode>> jys;
   int n;
-  nh.param("num_groups", n, 1);
+  pnh.param("num_groups", n, 1);
   for (int i = 0; i < n; i++)
   {
     std::string name;
-    nh.param("group" + std::to_string(i) + "_name",
-             name, std::string("group") + std::to_string(i));
+    pnh.param("group" + std::to_string(i) + "_name",
+              name, std::string("group") + std::to_string(i));
     std::shared_ptr<planner2dofSerialJointsNode> jy;
 
     jy.reset(new planner2dofSerialJointsNode(name));

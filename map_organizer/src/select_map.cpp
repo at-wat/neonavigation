@@ -35,6 +35,8 @@
 
 #include <vector>
 
+#include <neonavigation_common/compatibility.h>
+
 map_organizer_msgs::OccupancyGridArray maps;
 std::vector<nav_msgs::MapMetaData> orig_mapinfos;
 int floor_cur = 0;
@@ -58,11 +60,18 @@ void cbFloor(const std_msgs::Int32::Ptr &msg)
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "select_map");
-  ros::NodeHandle nh("~");
+  ros::NodeHandle pnh("~");
+  ros::NodeHandle nh("");
 
-  auto subMaps = nh.subscribe("/maps", 1, cbMaps);
-  auto subFloor = nh.subscribe("floor", 1, cbFloor);
-  auto pubMap = nh.advertise<nav_msgs::OccupancyGrid>("/map", 1, true);
+  auto subMaps = neonavigation_common::compat::subscribe(
+      nh, "maps",
+      nh, "/maps", 1, cbMaps);
+  auto subFloor = neonavigation_common::compat::subscribe(
+      nh, "floor",
+      pnh, "floor", 1, cbFloor);
+  auto pubMap = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
+      nh, "map",
+      nh, "/map", 1, true);
 
   tf::TransformBroadcaster tfb;
   geometry_msgs::TransformStamped trans;

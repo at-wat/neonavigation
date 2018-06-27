@@ -1,21 +1,19 @@
-----
 # obj_to_pointcloud package
+
+The topic names will be migrated to ROS recommended namespace model.
+Set `/neonavigation_compatible` parameter to `1` to use new topic names.
 
 ## obj_to_pointcloud
 
 obj_to_pointcloud node converts obj file (surface data) to pointcloud.
 This node can be used to load CAD based map for 3-D localization.
 
-### Sources
-
-* src/obj_to_pointcloud.cpp
-
 ### Subscribed topics
 
 
 ### Published topics
 
-* ~/cloud (sensor_msgs::PointCloud2)
+* ~/cloud (new: cloud) [sensor_msgs::PointCloud2]
 
 ### Services
 
@@ -33,6 +31,3 @@ This node can be used to load CAD based map for 3-D localization.
 * "offset_y" (double, default: 0.0)
 * "offset_z" (double, default: 0.0)
 * "scale" (double, default: 1.0)
-
-----
-

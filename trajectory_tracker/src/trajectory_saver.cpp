@@ -46,6 +46,8 @@
 #include <fstream>
 #include <string>
 
+#include <neonavigation_common/compatibility.h>
+
 class SaverNode
 {
 public:
@@ -54,6 +56,7 @@ public:
   void save();
 
 private:
+  ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   ros::Subscriber sub_path_;
   tf::TransformListener tfl_;
@@ -65,13 +68,16 @@ private:
 };
 
 SaverNode::SaverNode()
-  : pnh_("~")
+  : nh_()
+  , pnh_("~")
   , saved_(false)
 {
-  pnh_.param("path", topic_path_, std::string("recpath"));
+  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
   pnh_.param("file", filename_, std::string("a.path"));
 
-  sub_path_ = pnh_.subscribe(topic_path_, 10, &SaverNode::cbPath, this);
+  sub_path_ = neonavigation_common::compat::subscribe(
+      nh_, "path",
+      pnh_, topic_path_, 10, &SaverNode::cbPath, this);
 }
 SaverNode::~SaverNode()
 {

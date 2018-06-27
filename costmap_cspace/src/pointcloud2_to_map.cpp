@@ -39,6 +39,7 @@
 #include <vector>
 
 #include <costmap_cspace/pointcloud_accumulator/accumulator.h>
+#include <neonavigation_common/compatibility.h>
 
 class Pointcloud2ToMapNode
 {
@@ -81,7 +82,9 @@ public:
     accums_[0].reset(ros::Duration(accum_duration));
     accums_[1].reset(ros::Duration(0.0));
 
-    pub_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
+        nh_, "map_local",
+        pnh_, "map", 1, true);
     sub_cloud_ = nh_.subscribe<sensor_msgs::PointCloud2>(
         "cloud", 100,
         boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, false));

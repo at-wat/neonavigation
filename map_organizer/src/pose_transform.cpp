@@ -34,6 +34,8 @@
 
 #include <string>
 
+#include <neonavigation_common/compatibility.h>
+
 std::string to;
 std::shared_ptr<tf::TransformListener> tfl;
 
@@ -65,11 +67,16 @@ void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "pose_transform");
-  ros::NodeHandle nh("~");
+  ros::NodeHandle pnh("~");
+  ros::NodeHandle nh("");
 
-  auto subPose = nh.subscribe("pose_in", 1, cbPose);
-  pub_pose = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_out", 1, false);
-  nh.param("to_frame", to, std::string("map"));
+  auto subPose = neonavigation_common::compat::subscribe(
+      nh, "pose_in",
+      pnh, "pose_in", 1, cbPose);
+  pub_pose = neonavigation_common::compat::advertise<geometry_msgs::PoseWithCovarianceStamped>(
+      nh, "pose_out",
+      pnh, "pose_out", 1, false);
+  pnh.param("to_frame", to, std::string("map"));
 
   tfl.reset(new tf::TransformListener);
   ros::spin();

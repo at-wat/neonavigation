@@ -47,10 +47,10 @@ TEST(Navigate, testNavigate)
     std::cerr << "Map received." << std::endl;
   };
 
-  ros::NodeHandle nh("~");
+  ros::NodeHandle nh("");
   tf::TransformListener tfl;
-  ros::Publisher pub_path = nh.advertise<nav_msgs::Path>("/patrol/path", 1, true);
-  ros::Subscriber sub_map = nh.subscribe("/map", 1, cb_map);
+  ros::Publisher pub_path = nh.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
+  ros::Subscriber sub_map = nh.subscribe("map", 1, cb_map);
 
   ros::Duration(2.0).sleep();
   nav_msgs::Path path;

@@ -51,6 +51,8 @@
 #include <sstream>
 #include <vector>
 
+#include <neonavigation_common/compatibility.h>
+
 pcl::PointXYZ operator-(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
 {
   auto c = a;
@@ -80,6 +82,7 @@ class SafetyLimiterNode
 {
 private:
   ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   ros::Publisher pub_twist_;
   ros::Publisher pub_cloud_;
   ros::Publisher pub_debug_;
@@ -118,40 +121,51 @@ private:
 
 public:
   SafetyLimiterNode()
-    : nh_("~")
+    : nh_()
+    , pnh_("~")
     , last_disable_cmd_(0)
     , watchdog_stop_(false)
     , has_cloud_(false)
     , has_twist_(true)
   {
-    pub_twist_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_out", 1, true);
+    pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
+        nh_, "cmd_vel",
+        pnh_, "cmd_vel_out", 1, true);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
     pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
-    sub_twist_ = nh_.subscribe("cmd_vel_in", 1, &SafetyLimiterNode::cbTwist, this);
-    sub_cloud_ = nh_.subscribe("cloud", 1, &SafetyLimiterNode::cbCloud, this);
-    sub_disable_ = nh_.subscribe("disable", 1, &SafetyLimiterNode::cbDisable, this);
-    sub_watchdog_ = nh_.subscribe("watchdog_reset", 1, &SafetyLimiterNode::cbWatchdogReset, this);
+    sub_twist_ = neonavigation_common::compat::subscribe(
+        nh_, "cmd_vel_in",
+        pnh_, "cmd_vel_in", 1, &SafetyLimiterNode::cbTwist, this);
+    sub_cloud_ = neonavigation_common::compat::subscribe(
+        nh_, "cloud",
+        pnh_, "cloud", 1, &SafetyLimiterNode::cbCloud, this);
+    sub_disable_ = neonavigation_common::compat::subscribe(
+        nh_, "disable_safety",
+        pnh_, "disable", 1, &SafetyLimiterNode::cbDisable, this);
+    sub_watchdog_ = neonavigation_common::compat::subscribe(
+        nh_, "watchdog_reset",
+        pnh_, "watchdog_reset", 1, &SafetyLimiterNode::cbWatchdogReset, this);
 
-    nh_.param("freq", hz_, 6.0);
-    nh_.param("cloud_timeout", timeout_, 0.8);
-    nh_.param("disable_timeout", disable_timeout_, 0.1);
-    nh_.param("lin_vel", vel_[0], 0.5);
-    nh_.param("lin_acc", acc_[0], 1.0);
-    nh_.param("ang_vel", vel_[1], 0.8);
-    nh_.param("ang_acc", acc_[1], 1.6);
-    nh_.param("z_range_min", z_range_[0], 0.0);
-    nh_.param("z_range_max", z_range_[1], 0.5);
-    nh_.param("dt", dt_, 0.1);
-    nh_.param("t_margin", tmargin_, 0.2);
-    nh_.param("downsample_grid", downsample_grid_, 0.05);
-    nh_.param("frame_id", frame_id_, std::string("base_link"));
+    pnh_.param("freq", hz_, 6.0);
+    pnh_.param("cloud_timeout", timeout_, 0.8);
+    pnh_.param("disable_timeout", disable_timeout_, 0.1);
+    pnh_.param("lin_vel", vel_[0], 0.5);
+    pnh_.param("lin_acc", acc_[0], 1.0);
+    pnh_.param("ang_vel", vel_[1], 0.8);
+    pnh_.param("ang_acc", acc_[1], 1.6);
+    pnh_.param("z_range_min", z_range_[0], 0.0);
+    pnh_.param("z_range_max", z_range_[1], 0.5);
+    pnh_.param("dt", dt_, 0.1);
+    pnh_.param("t_margin", tmargin_, 0.2);
+    pnh_.param("downsample_grid", downsample_grid_, 0.05);
+    pnh_.param("frame_id", frame_id_, std::string("base_link"));
     double hold_d;
-    nh_.param("hold", hold_d, 0.0);
+    pnh_.param("hold", hold_d, 0.0);
     hold_ = ros::Duration(hold_d);
     double watchdog_interval_d;
-    nh_.param("watchdog_interval", watchdog_interval_d, 0.0);
+    pnh_.param("watchdog_interval", watchdog_interval_d, 0.0);
     watchdog_interval_ = ros::Duration(watchdog_interval_d);
-    nh_.param("allow_empty_cloud", allow_empty_cloud_, false);
+    pnh_.param("allow_empty_cloud", allow_empty_cloud_, false);
 
     tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
@@ -164,12 +178,12 @@ public:
     tmax_ += tmargin_;
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!nh_.hasParam("footprint"))
+    if (!pnh_.hasParam("footprint"))
     {
       ROS_FATAL("Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified");
     }
-    nh_.getParam("footprint", footprint_xml);
+    pnh_.getParam("footprint", footprint_xml);
     if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
     {
       ROS_FATAL("Invalid footprint");
