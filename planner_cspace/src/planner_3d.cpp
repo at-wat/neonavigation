@@ -511,8 +511,7 @@ protected:
                     find_best_))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
-      if (!find_best_)
-        return false;
+      return false;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_INFO("Path found (%0.4f sec.)",
