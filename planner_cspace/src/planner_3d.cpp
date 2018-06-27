@@ -277,14 +277,13 @@ protected:
   {
     int yaw_limit = (linear)? 1 : map_info_.angle;
 
-    ROS_INFO("initMotionInterpCache: (range: %d, angle: %d)", range_, yaw_limit);
+    ROS_DEBUG("initMotionInterpCache: (range: %d, angle: %d)", range_, yaw_limit);
     motion_interp_cache.clear();
 
     for (int syaw = 0; syaw < yaw_limit; syaw++)
     {
       const float yaw = syaw * map_info_.angular_resolution;
       Astar::Vec d;
-
       for (d[0] = -range_; d[0] <= range_; d[0]++)
       {
         for (d[1] = -range_; d[1] <= range_; d[1]++)
@@ -293,7 +292,6 @@ protected:
             continue;
           if (d.sqlen() > range_ * range_)
             continue;
-
           for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
           {
             const float yaw_e = d[2] * map_info_.angular_resolution;
@@ -305,7 +303,6 @@ protected:
                 };
 
             std::unordered_map<Astar::Vec, bool, Astar::Vec> registered;
-
             Astar::Vecf motion(diff_val);
             rotate(motion, -syaw * map_info_.angular_resolution);
             const float cos_v = cosf(motion[2]);
