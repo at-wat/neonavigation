@@ -275,7 +275,7 @@ protected:
                                                  float,
                                                  Astar::Vec>>& distf_cache)
   {
-    int yaw_limit = (linear)? 1 : map_info_.angle;
+    const int yaw_limit = (linear)? 1 : map_info_.angle;
 
     ROS_DEBUG("initMotionInterpCache: (range: %d, angle: %d)", range_, yaw_limit);
     motion_interp_cache.clear();
@@ -439,7 +439,7 @@ protected:
 
     const Astar::Vecf euclid_cost_coef = ec_rough_;
 
-    const auto cbCost = [this, &euclid_cost_coef](
+    const auto cb_cost = [this, &euclid_cost_coef](
         const Astar::Vec &s, Astar::Vec &e,
         const Astar::Vec &v_goal, const Astar::Vec &v_start,
         const bool hyst) -> float
@@ -470,7 +470,7 @@ protected:
 
       return cost;
     };
-    const auto cbCostEstim = [](const Astar::Vec &s, const Astar::Vec &e)
+    const auto cb_cost_estim = [](const Astar::Vec &s, const Astar::Vec &e)
     {
       auto s2 = s;
       s2[2] = 0;
@@ -480,13 +480,13 @@ protected:
         return FLT_MAX;
       return cost;
     };
-    const auto cbSearch = [this](
+    const auto cb_search = [this](
         const Astar::Vec &p,
         const Astar::Vec &s, const Astar::Vec &e) -> std::vector<Astar::Vec>&
     {
       return search_list_rough_;
     };
-    const auto cbProgress = [](const std::list<Astar::Vec> &path_grid)
+    const auto cb_progress = [](const std::list<Astar::Vec> &path_grid)
     {
       return true;
     };
@@ -496,15 +496,15 @@ protected:
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
     std::list<Astar::Vec> path_grid;
     if (!as_.search(s, e, path_grid,
-                    std::bind(cbCost,
+                    std::bind(cb_cost,
                               std::placeholders::_1, std::placeholders::_2,
                               std::placeholders::_3, std::placeholders::_4, false),
-                    std::bind(cbCostEstim,
+                    std::bind(cb_cost_estim,
                               std::placeholders::_1, std::placeholders::_2),
-                    std::bind(cbSearch,
+                    std::bind(cb_search,
                               std::placeholders::_1,
                               std::placeholders::_2, std::placeholders::_3),
-                    std::bind(cbProgress,
+                    std::bind(cb_progress,
                               std::placeholders::_1),
                     0,
                     1.0f / freq_min_,
