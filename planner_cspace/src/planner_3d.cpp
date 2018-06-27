@@ -429,6 +429,17 @@ protected:
                 req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
     e[2] = 0;
 
+    if (!(cm_rough_.validate(s) && cm_rough_.validate(e)))
+    {
+      ROS_ERROR("Given start or goal is not on the map.");
+      return false;
+    }
+    else if (cm_rough_[s] == 100 || cm_rough_[e] == 100)
+    {
+      ROS_ERROR("Given start or goal is in Rock.");
+      return false;
+    }
+
     const auto cbCost = [this](
         const Astar::Vec &s, Astar::Vec &e,
         const Astar::Vec &v_goal, const Astar::Vec &v_start,
