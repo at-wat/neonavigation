@@ -301,8 +301,8 @@ protected:
                   d[1] * map_info_.linear_resolution,
                   d[2] * map_info_.angular_resolution
                 };
-
             std::unordered_map<Astar::Vec, bool, Astar::Vec> registered;
+
             Astar::Vecf motion(diff_val);
             rotate(motion, -syaw * map_info_.angular_resolution);
             const float cos_v = cosf(motion[2]);
@@ -418,9 +418,6 @@ protected:
     if (!has_map_)
       return false;
 
-    if (rough_cost_max_ < 0.01)
-      return false;
-
     Astar::Vec s, e;
     metric2Grid(s[0], s[1], s[2],
                 req.start.pose.position.x, req.start.pose.position.y, tf::getYaw(req.start.pose.orientation));
@@ -440,13 +437,15 @@ protected:
       return false;
     }
 
-    const auto cbCost = [this](
+    const Astar::Vecf euclid_cost_coef = ec_rough_;
+
+    const auto cbCost = [this, &euclid_cost_coef](
         const Astar::Vec &s, Astar::Vec &e,
         const Astar::Vec &v_goal, const Astar::Vec &v_start,
         const bool hyst) -> float
     {
       const Astar::Vec d = e - s;
-      float cost = euclidCost(d);
+      float cost = euclidCost(d, euclid_cost_coef);
 
       int sum = 0;
       int num = 0;
