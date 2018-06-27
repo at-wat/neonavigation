@@ -33,6 +33,7 @@
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <std_srvs/Empty.h>
+#include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -83,6 +84,7 @@ protected:
   ros::Publisher pub_end_;
   ros::Publisher pub_status_;
   ros::ServiceServer srs_forget_;
+  ros::ServiceServer srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
   tf::TransformListener tfl_;
@@ -258,11 +260,27 @@ protected:
                                              float,
                                              Astar::Vec>> distf_cache_;
 
-  void initMotionInterpCache()
+  std::unordered_map<int, std::unordered_map<Astar::Vec,
+                                             std::vector<Astar::Vec>,
+                                             Astar::Vec>> linear_interp_cache_;
+  std::unordered_map<int, std::unordered_map<Astar::Vec,
+                                             float,
+                                             Astar::Vec>> linear_distf_cache_;
+
+  void initMotionInterpCache(const bool linear,
+      std::unordered_map<int, std::unordered_map<Astar::Vec,
+                                                 std::vector<Astar::Vec>,
+                                                 Astar::Vec>>& motion_interp_cache,
+      std::unordered_map<int, std::unordered_map<Astar::Vec,
+                                                 float,
+                                                 Astar::Vec>>& distf_cache)
   {
-    ROS_DEBUG("initMotionInterpCache: (range: %d, angle: %d)", range_, map_info_.angle);
-    motion_interp_cache_.clear();
-    for (int syaw = 0; syaw < static_cast<int>(map_info_.angle); syaw++)
+    const int yaw_limit = (linear)? 1 : map_info_.angle;
+
+    ROS_DEBUG("initMotionInterpCache: (range: %d, angle: %d)", range_, yaw_limit);
+    motion_interp_cache.clear();
+
+    for (int syaw = 0; syaw < yaw_limit; syaw++)
     {
       const float yaw = syaw * map_info_.angular_resolution;
       Astar::Vec d;
@@ -309,11 +327,11 @@ protected:
                 pos.cycleUnsigned(pos[2], map_info_.angle);
                 if (registered.find(pos) == registered.end())
                 {
-                  motion_interp_cache_[syaw][d].push_back(pos);
+                  motion_interp_cache[syaw][d].push_back(pos);
                   registered[pos] = true;
                 }
               }
-              distf_cache_[syaw][d] = d.len();
+              distf_cache[syaw][d] = d.len();
               continue;
             }
 
@@ -355,18 +373,18 @@ protected:
               pos.cycleUnsigned(pos[2], map_info_.angle);
               if (registered.find(pos) == registered.end())
               {
-                motion_interp_cache_[syaw][d].push_back(pos);
+                motion_interp_cache[syaw][d].push_back(pos);
                 registered[pos] = true;
               }
               distf += (posf - posf_prev).len();
               posf_prev = posf;
             }
-            distf_cache_[syaw][d] = distf;
+            distf_cache[syaw][d] = distf;
           }
         }
       }
       // Sort to improve cache hit rate
-      for (auto &cache : motion_interp_cache_[syaw])
+      for (auto &cache : motion_interp_cache[syaw])
       {
         auto comp = [this](const Astar::Vec a, const Astar::Vec b)
         {
@@ -394,6 +412,127 @@ protected:
 
     return true;
   }
+  bool cbMakePlan(nav_msgs::GetPlan::Request &req,
+                  nav_msgs::GetPlan::Response &res)
+  {
+    if (!has_map_)
+      return false;
+
+    Astar::Vec s, e;
+    metric2Grid(s[0], s[1], s[2],
+                req.start.pose.position.x, req.start.pose.position.y, tf::getYaw(req.start.pose.orientation));
+    s[2] = 0;
+    metric2Grid(e[0], e[1], e[2],
+                req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
+    e[2] = 0;
+
+    if (!(cm_rough_.validate(s) && cm_rough_.validate(e)))
+    {
+      ROS_ERROR("Given start or goal is not on the map.");
+      return false;
+    }
+    else if (cm_rough_[s] == 100 || cm_rough_[e] == 100)
+    {
+      ROS_ERROR("Given start or goal is in Rock.");
+      return false;
+    }
+
+    const Astar::Vecf euclid_cost_coef = ec_rough_;
+
+    const auto cb_cost = [this, &euclid_cost_coef](
+        const Astar::Vec &s, Astar::Vec &e,
+        const Astar::Vec &v_goal, const Astar::Vec &v_start,
+        const bool hyst) -> float
+    {
+      const Astar::Vec d = e - s;
+      float cost = euclidCost(d, euclid_cost_coef);
+
+      int sum = 0;
+      int num = 0;
+      const auto cache_page = linear_interp_cache_[0].find(d);
+      if (cache_page == linear_interp_cache_[0].end())
+        return -1;
+      for (const auto &pos_diff : cache_page->second)
+      {
+        const int posi[3] =
+            {
+              s[0] + pos_diff[0], s[1] + pos_diff[1], 0
+            };
+        const Astar::Vec pos(posi);
+        const auto c = cm_rough_[pos];
+        if (c > 99)
+          return -1;
+        sum += c;
+        num++;
+      }
+      const float &distf = linear_distf_cache_[0][d];
+      cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
+
+      return cost;
+    };
+    const auto cb_cost_estim = [](const Astar::Vec &s, const Astar::Vec &e)
+    {
+      auto s2 = s;
+      s2[2] = 0;
+      auto cost = sqrtf((e - s2).sqlen());
+
+      if (cost == FLT_MAX)
+        return FLT_MAX;
+      return cost;
+    };
+    const auto cb_search = [this](
+        const Astar::Vec &p,
+        const Astar::Vec &s, const Astar::Vec &e) -> std::vector<Astar::Vec>&
+    {
+      return search_list_rough_;
+    };
+    const auto cb_progress = [](const std::list<Astar::Vec> &path_grid)
+    {
+      return true;
+    };
+
+    const auto ts = boost::chrono::high_resolution_clock::now();
+    // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
+    //   s[0], s[1], s[2], e[0], e[1], e[2]);
+    std::list<Astar::Vec> path_grid;
+    if (!as_.search(s, e, path_grid,
+                    std::bind(cb_cost,
+                              std::placeholders::_1, std::placeholders::_2,
+                              std::placeholders::_3, std::placeholders::_4, false),
+                    std::bind(cb_cost_estim,
+                              std::placeholders::_1, std::placeholders::_2),
+                    std::bind(cb_search,
+                              std::placeholders::_1,
+                              std::placeholders::_2, std::placeholders::_3),
+                    std::bind(cb_progress,
+                              std::placeholders::_1),
+                    0,
+                    1.0f / freq_min_,
+                    find_best_))
+    {
+      ROS_WARN("Path plan failed (goal unreachable)");
+      return false;
+    }
+    const auto tnow = boost::chrono::high_resolution_clock::now();
+    ROS_INFO("Path found (%0.4f sec.)",
+              boost::chrono::duration<float>(tnow - ts).count());
+
+    nav_msgs::Path path;
+    path.header = map_header_;
+    path.header.stamp = ros::Time::now();
+
+    grid2Metric(path_grid, path, s);
+
+    res.plan.header = map_header_;
+    res.plan.poses.resize(path.poses.size());
+    for (size_t i = 0; i < path.poses.size(); ++i)
+    {
+      res.plan.poses[i] = path.poses[i];
+    }
+
+    return true;
+  }
+
   void cbGoal(const geometry_msgs::PoseStamped::ConstPtr &msg)
   {
     if (act_->isActive())
@@ -972,7 +1111,8 @@ protected:
       map_info_ = msg->info;
       Astar::Vec d;
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
-      initMotionInterpCache();
+      initMotionInterpCache(false, motion_interp_cache_, distf_cache_);
+      initMotionInterpCache(true, linear_interp_cache_, linear_distf_cache_);
 
       search_list_.clear();
       for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -1136,6 +1276,7 @@ public:
     srs_forget_ = neonavigation_common::compat::advertiseService(
         nh_, "forget_planning_cost",
         pnh_, "forget", &Planner3dNode::cbForget, this);
+    srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
