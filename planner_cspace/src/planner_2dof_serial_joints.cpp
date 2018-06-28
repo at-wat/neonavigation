@@ -393,6 +393,7 @@ public:
     : nh_()
     , pnh_("~")
   {
+    checkCompatMode();
     group_ = group_name;
     ros::NodeHandle_f nh_group("~/" + group_);
 

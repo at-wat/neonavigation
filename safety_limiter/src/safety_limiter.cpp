@@ -128,6 +128,7 @@ public:
     , has_cloud_(false)
     , has_twist_(true)
   {
+    checkCompatMode();
     pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
         nh_, "cmd_vel",
         pnh_, "cmd_vel_out", 1, true);

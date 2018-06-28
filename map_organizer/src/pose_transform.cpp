@@ -70,6 +70,7 @@ int main(int argc, char **argv)
   ros::NodeHandle pnh("~");
   ros::NodeHandle nh("");
 
+  checkCompatMode();
   auto subPose = neonavigation_common::compat::subscribe(
       nh, "pose_in",
       pnh, "pose_in", 1, cbPose);

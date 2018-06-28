@@ -72,6 +72,7 @@ SaverNode::SaverNode()
   , pnh_("~")
   , saved_(false)
 {
+  checkCompatMode();
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
   pnh_.param("file", filename_, std::string("a.path"));
 

@@ -86,6 +86,7 @@ public:
     : nh_()
     , pnh_("~")
   {
+    checkCompatMode();
     pnh_.param("initial_x", x_, 0.0);
     pnh_.param("initial_y", y_, 0.0);
     pnh_.param("initial_yaw", yaw_, 0.0);

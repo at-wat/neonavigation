@@ -63,6 +63,7 @@ int main(int argc, char **argv)
   ros::NodeHandle pnh("~");
   ros::NodeHandle nh("");
 
+  checkCompatMode();
   auto subMaps = neonavigation_common::compat::subscribe(
       nh, "maps",
       nh, "/maps", 1, cbMaps);
