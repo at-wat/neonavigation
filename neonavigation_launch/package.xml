@@ -12,6 +12,7 @@
 
   <exec_depend>costmap_cspace</exec_depend>
   <exec_depend>map_server</exec_depend>
+  <exec_depend>joystick_interrupt</exec_depend>
   <exec_depend>planner_cspace</exec_depend>
   <exec_depend>safety_limiter</exec_depend>
   <exec_depend>tf</exec_depend>
