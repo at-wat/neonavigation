@@ -8,6 +8,8 @@ find_package(catkin REQUIRED
     geometry_msgs
     sensor_msgs
     topic_tools
+
+    neonavigation_common
 )
 
 catkin_package(
@@ -17,6 +19,8 @@ catkin_package(
     geometry_msgs
     sensor_msgs
     topic_tools
+
+    neonavigation_common
 )
 
 include(CheckCXXCompilerFlag)
