@@ -56,6 +56,7 @@ public:
     : pnh_("~")
     , nh_()
   {
+    neonavigation_common::compat::checkCompatMode();
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
     pub_map_ = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(

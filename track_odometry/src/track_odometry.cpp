@@ -268,6 +268,7 @@ public:
     : nh_()
     , pnh_("~")
   {
+    neonavigation_common::compat::checkCompatMode();
     pnh_.param("without_odom", without_odom_, false);
     if (!without_odom_)
       sub_odom_ = nh_.subscribe("odom_raw", 64, &TrackOdometryNode::cbOdom, this);
