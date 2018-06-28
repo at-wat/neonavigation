@@ -94,6 +94,7 @@ public:
     : nh_("")
     , pnh_("~")
   {
+    neonavigation_common::compat::checkCompatMode();
     sub_joy_ = nh_.subscribe("joy", 1, &JoystickMux::cbJoy, this);
     sub_topics_[0] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
         nh_, "mux_input0",

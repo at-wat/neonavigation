@@ -151,6 +151,7 @@ public:
     : nh_("")
     , pnh_("~")
   {
+    neonavigation_common::compat::checkCompatMode();
     sub_joy_ = nh_.subscribe("joy", 1, &JoystickInterrupt::cbJoy, this);
     sub_twist_ = neonavigation_common::compat::subscribe(
         nh_, "cmd_vel_input",
