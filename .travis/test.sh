@@ -20,11 +20,11 @@ sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror -O2")' \
 CM_OPTIONS=""
 
 catkin_make ${CM_OPTIONS} \
-  || (gh-pr-comment FAILED '```catkin_make``` failed'; false)
+  || (gh-pr-comment "FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)
 catkin_make tests ${CM_OPTIONS} \
-  || (gh-pr-comment FAILED '```catkin_make tests``` failed'; false)
+  || (gh-pr-comment "FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
 catkin_make run_tests ${CM_OPTIONS} \
-  || (gh-pr-comment FAILED '```catkin_make run_tests``` failed'; false)
+  || (gh-pr-comment "FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
 
 if [ catkin_test_results ];
 then
@@ -41,9 +41,9 @@ else
 `find build/test_results/ -name *.xml | xargs -n 1 -- bash -c 'echo; echo \#\#\# $0; echo; echo \\\`\\\`\\\`; xmllint --format $0; echo \\\`\\\`\\\`;'`
 "
 fi
-catkin_test_results || (gh-pr-comment FAILED "Test failed$result_text"; false)
+catkin_test_results || (gh-pr-comment "FAILED on ${ROS_DISTRO}" "Test failed$result_text"; false)
 
-gh-pr-comment PASSED "All tests passed$result_text" || true
+gh-pr-comment "PASSED on ${ROS_DISTRO}" "All tests passed$result_text" || true
 
 cd ..
 rm -rf /catkin_ws || true
