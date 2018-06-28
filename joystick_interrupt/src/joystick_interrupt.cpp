@@ -32,6 +32,8 @@
 #include <sensor_msgs/Joy.h>
 #include <std_msgs/Bool.h>
 
+#include <neonavigation_common/compatibility.h>
+
 class JoystickInterrupt
 {
 private:
@@ -150,8 +152,12 @@ public:
     , pnh_("~")
   {
     sub_joy_ = nh_.subscribe("joy", 1, &JoystickInterrupt::cbJoy, this);
-    sub_twist_ = pnh_.subscribe("cmd_vel_input", 1, &JoystickInterrupt::cbTwist, this);
-    pub_twist_ = pnh_.advertise<geometry_msgs::Twist>("cmd_vel", 2);
+    sub_twist_ = neonavigation_common::compat::subscribe(
+        nh_, "cmd_vel_input",
+        pnh_, "cmd_vel_input", 1, &JoystickInterrupt::cbTwist, this);
+    pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
+        nh_, "cmd_vel",
+        pnh_, "cmd_vel", 2);
     pub_int_ = pnh_.advertise<std_msgs::Bool>("interrupt_status", 2);
 
     pnh_.param("linear_vel", linear_vel_, 0.5);

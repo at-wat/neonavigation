@@ -32,6 +32,8 @@
 
 #include <topic_tools/shape_shifter.h>
 
+#include <neonavigation_common/compatibility.h>
+
 class JoystickMux
 {
 private:
@@ -65,7 +67,23 @@ private:
       if (!advertised_)
       {
         advertised_ = true;
-        pub_topic_ = msg->advertise(pnh_, "output", 1, false);
+        if (neonavigation_common::compat::getCompat() !=
+            neonavigation_common::compat::current_level)
+        {
+          ROS_ERROR(
+              "Use %s (%s%s) topic instead of %s (%s%s)",
+              nh_.resolveName("mux_output", false).c_str(),
+              neonavigation_common::compat::getSimplifiedNamespace(nh_).c_str(),
+              "mux_output",
+              pnh_.resolveName("output", false).c_str(),
+              neonavigation_common::compat::getSimplifiedNamespace(pnh_).c_str(),
+              "output");
+          pub_topic_ = msg->advertise(pnh_, "output", 1, false);
+        }
+        else
+        {
+          pub_topic_ = msg->advertise(nh_, "mux_output", 1, false);
+        }
       }
       pub_topic_.publish(*msg);
     }
@@ -77,10 +95,12 @@ public:
     , pnh_("~")
   {
     sub_joy_ = nh_.subscribe("joy", 1, &JoystickMux::cbJoy, this);
-    sub_topics_[0] = pnh_.subscribe<topic_tools::ShapeShifter>(
-        "input0", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));
-    sub_topics_[1] = pnh_.subscribe<topic_tools::ShapeShifter>(
-        "input1", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
+    sub_topics_[0] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
+        nh_, "mux_input0",
+        pnh_, "input0", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));
+    sub_topics_[1] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
+        nh_, "mux_input1",
+        pnh_, "input1", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
 
     pnh_.param("interrupt_button", interrupt_button_, 5);
     pnh_.param("timeout", timeout_, 0.5);

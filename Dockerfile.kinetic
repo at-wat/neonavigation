@@ -16,6 +16,7 @@ RUN rosdep update \
   && bash -c ". /opt/ros/${ROS_DISTRO}/setup.bash && catkin_init_workspace && cd .. && catkin_make"
 
 COPY ./costmap_cspace/package.xml /catkin_ws/src/neonavigation/costmap_cspace/
+COPY ./joystick_interrupt/package.xml /catkin_ws/src/neonavigation/joystick_interrupt/
 COPY ./map_organizer/package.xml /catkin_ws/src/neonavigation/map_organizer/
 COPY ./neonavigation_common/package.xml /catkin_ws/src/neonavigation/neonavigation_common/
 COPY ./neonavigation_launch/package.xml /catkin_ws/src/neonavigation/neonavigation_launch/

@@ -11,6 +11,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   
   <exec_depend>costmap_cspace</exec_depend>
+  <exec_depend>joystick_interrupt</exec_depend>
   <exec_depend>map_organizer</exec_depend>
   <exec_depend>neonavigation_common</exec_depend>
   <exec_depend>neonavigation_launch</exec_depend>
