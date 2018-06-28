@@ -100,7 +100,7 @@ ServerNode::ServerNode()
   , srv_im_fb_("trajectory_server")
   , buffer_(new uint8_t[1024])
 {
-  checkCompatMode();
+  neonavigation_common::compat::checkCompatMode();
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
   pnh_.param("file", req_path_.filename, std::string("a.path"));
   pnh_.param("hz", hz_, 5.0);

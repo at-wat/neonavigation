@@ -1256,7 +1256,7 @@ public:
     : nh_()
     , pnh_("~")
   {
-    checkCompatMode();
+    neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
         nh_, "costmap",
         pnh_, "costmap", 1, &Planner3dNode::cbMap, this);

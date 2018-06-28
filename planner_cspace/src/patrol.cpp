@@ -60,7 +60,7 @@ public:
     : nh_()
     , pnh_("~")
   {
-    checkCompatMode();
+    neonavigation_common::compat::checkCompatMode();
     sub_path_ = neonavigation_common::compat::subscribe(
         nh_, "patrol_nodes",
         pnh_, "path", 1, &PatrolActionNode::cbPath, this);

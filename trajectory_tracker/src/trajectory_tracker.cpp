@@ -149,7 +149,7 @@ TrackerNode::TrackerNode()
   , nh_()
   , pnh_("~")
 {
-  checkCompatMode();
+  neonavigation_common::compat::checkCompatMode();
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
   pnh_.param("frame_odom", frame_odom_, std::string("odom"));
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));

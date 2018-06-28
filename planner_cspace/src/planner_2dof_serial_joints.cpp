@@ -393,7 +393,7 @@ public:
     : nh_()
     , pnh_("~")
   {
-    checkCompatMode();
+    neonavigation_common::compat::checkCompatMode();
     group_ = group_name;
     ros::NodeHandle_f nh_group("~/" + group_);
 

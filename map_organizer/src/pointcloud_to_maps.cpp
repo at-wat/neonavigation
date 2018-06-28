@@ -102,7 +102,7 @@ public:
     : pnh_("~")
     , nh_()
   {
-    checkCompatMode();
+    neonavigation_common::compat::checkCompatMode();
     sub_points_ = neonavigation_common::compat::subscribe(
         nh_, "mapcloud",
         pnh_, "map_cloud", 1, &PointcloudToMapsNode::cbPoints, this);

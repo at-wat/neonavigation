@@ -72,7 +72,7 @@ public:
     , pnh_("~")
     , accums_(2)
   {
-    checkCompatMode();
+    neonavigation_common::compat::checkCompatMode();
     pnh_.param("z_min", z_min_, 0.1);
     pnh_.param("z_max", z_max_, 1.0);
     pnh_.param("global_frame", global_frame_, std::string("map"));
