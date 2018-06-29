@@ -473,12 +473,8 @@ protected:
     const auto cb_cost_estim = [this, &euclid_cost_coef](
         const Astar::Vec &s, const Astar::Vec &e)
     {
-      auto s2 = s;
-      s2[2] = 0;
-      auto e2 = e;
-      e2[2] = 0;
-
-      const auto cost = euclidCost(e2 - s2, euclid_cost_coef);
+      const Astar::Vec d = e - s;
+      const float cost = euclidCost(d, euclid_cost_coef);
 
       if (cost == FLT_MAX)
         return FLT_MAX;
