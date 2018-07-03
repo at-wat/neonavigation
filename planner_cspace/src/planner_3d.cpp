@@ -470,14 +470,15 @@ protected:
 
       return cost;
     };
-    const auto cb_cost_estim = [](const Astar::Vec &s, const Astar::Vec &e)
+    const auto cb_cost_estim = [this, &euclid_cost_coef](
+        const Astar::Vec &s, const Astar::Vec &e)
     {
-      auto s2 = s;
-      s2[2] = 0;
-      auto cost = sqrtf((e - s2).sqlen());
+      const Astar::Vec d = e - s;
+      const float cost = euclidCost(d, euclid_cost_coef);
 
       if (cost == FLT_MAX)
         return FLT_MAX;
+
       return cost;
     };
     const auto cb_search = [this](
