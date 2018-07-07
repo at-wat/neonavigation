@@ -114,6 +114,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   {
     ros::Duration(1.0).sleep();
   }
+  ros::Duration(1.0).sleep();
 
   // Abort after exceeding max_retry_num
   ASSERT_EQ(actionlib::SimpleClientGoalState::ABORTED,
@@ -133,6 +134,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   {
     ros::Duration(1.0).sleep();
   }
+  ros::Duration(1.0).sleep();
 
   // Succeed
   ASSERT_EQ(actionlib::SimpleClientGoalState::SUCCEEDED,

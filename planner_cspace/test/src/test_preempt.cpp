@@ -95,8 +95,8 @@ TEST_F(PreemptTest, testPreempt)
   while (move_base_->getState().state_ ==
          actionlib::SimpleClientGoalState::ACTIVE)
   {
-    ros::Duration(1.0).sleep();
     move_base_->cancelAllGoals();
+    ros::Duration(1.0).sleep();
   }
 
   ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
