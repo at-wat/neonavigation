@@ -41,7 +41,7 @@ catkin_make ${CM_OPTIONS} \
   || (gh-pr-comment "FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)
 catkin_make tests ${CM_OPTIONS} \
   || (gh-pr-comment "FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
-catkin_make run_tests ${CM_OPTIONS} \
+catkin_make run_tests ${CM_OPTIONS} --make-args -j1 \
   || (gh-pr-comment "FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
 
 if [ x${COVERAGE_TEST} == "xtrue" ]
