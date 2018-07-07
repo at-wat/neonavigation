@@ -27,7 +27,6 @@ COPY ./obj_to_pointcloud/package.xml /catkin_ws/src/neonavigation/obj_to_pointcl
 COPY ./track_odometry/package.xml /catkin_ws/src/neonavigation/track_odometry/
 
 RUN cd /catkin_ws/src && git clone --depth=1 https://github.com/at-wat/neonavigation_msgs.git
-RUN cd /tmp && git clone --depth=1 https://github.com/ros-planning/navigation.git && cp -r navigation/map_server /catkin_ws/src && rm -rf /tmp/navigation
 
 RUN apt-get -qq update \
   && rosdep install --from-paths /catkin_ws/src --ignore-src --rosdistro=${ROS_DISTRO} -y \
