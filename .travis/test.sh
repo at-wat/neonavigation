@@ -1,20 +1,19 @@
 #!/bin/bash
 
 set -o errexit
-set -o verbose
 
 pip install gh-pr-comment
 
 source /opt/ros/${ROS_DISTRO}/setup.bash
 source /catkin_ws/devel/setup.bash
 
+set -o verbose
+
 cd /catkin_ws
 
-sync
-
-sed -i -e '5a set(CMAKE_C_FLAGS "-Wall -Werror -O2")' \
+sed -i -e '5a set(CMAKE_C_FLAGS "-Wall -Werror -O2 -coverage")' \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
-sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror -O2")' \
+sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror -O2 -coverage")' \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
 
 CM_OPTIONS=""
@@ -41,10 +40,12 @@ else
 `find build/test_results/ -name *.xml | xargs -n 1 -- bash -c 'echo; echo \#\#\# $0; echo; echo \\\`\\\`\\\`; xmllint --format $0; echo \\\`\\\`\\\`;'`
 "
 fi
-catkin_test_results || (gh-pr-comment "FAILED on ${ROS_DISTRO}" "Test failed$result_text"; false)
+catkin_test_results || (gh-pr-comment "FAILED on ${ROS_DISTRO}" "<details><summary>Test failed</summary>
 
-gh-pr-comment "PASSED on ${ROS_DISTRO}" "All tests passed$result_text" || true
+$result_text</details>"; false)
 
-cd ..
-rm -rf /catkin_ws || true
+(cd src/neonavigation/; cp -r /catkin_ws/build ./; bash <(curl -s https://codecov.io/bash) -y .codecov.yml)
 
+gh-pr-comment "PASSED on ${ROS_DISTRO}" "<details><summary>All tests passed</summary>
+
+$result_text</details>" || true
