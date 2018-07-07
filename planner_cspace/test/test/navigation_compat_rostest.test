@@ -22,9 +22,9 @@
     <remap from="~/cmd_vel" to="/cmd_vel" />
     <param name="odom" value="/odom" />
 
-    <param name="max_vel" value="0.2" />
+    <param name="max_vel" value="0.1" />
     <param name="max_acc" value="0.4" />
-    <param name="max_angvel" value="0.3" />
+    <param name="max_angvel" value="0.4" />
     <param name="max_angacc" value="0.6" />
 
     <param name="curv_forward" value="0.1" />
