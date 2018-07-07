@@ -12,22 +12,6 @@ set -o verbose
 cd /catkin_ws
 
 
-# Workaround: Ubuntu Xenial uses quite old gcc with a bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65831
-# Install newer gcc to get correct coverage
-if [ x${COVERAGE_TEST} == "xtrue" ]
-then
-  unset TRAVIS_BOT_GITHUB_TOKEN
-
-  apt-get update -qq
-  apt-get install --no-install-recommends build-essential software-properties-common -y
-  add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  apt-get update -qq
-  apt-get install --no-install-recommends gcc-6 g++-6 -y
-  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-6 --slave /usr/bin/gcov gcov /usr/bin/gcov-6
-
-  gcov -v
-fi
-
 COVERAGE_OPTION=
 if [ x${COVERAGE_TEST} == "xtrue" ]
 then
