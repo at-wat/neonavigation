@@ -1,5 +1,10 @@
 # neonavigation meta-package
 
+[![codecov](https://codecov.io/gh/at-wat/neonavigation/branch/master/graph/badge.svg)](https://codecov.io/gh/at-wat/neonavigation)
+[![Build Status](https://travis-ci.org/at-wat/neonavigation.svg?branch=master)](https://travis-ci.org/at-wat/neonavigation)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+
+
 ROS meta-package for autonomous vehicle navigation.
 
 ## Important notices
