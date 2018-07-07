@@ -38,4 +38,4 @@ script:
     -e GITHUB_API_URL_BASE
     `bash <(curl -s https://codecov.io/env)`
     ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET} /catkin_ws/src/${PACKAGE_NAME}/.travis/test.sh
-  - [ x${COVERAGE_TEST} != "xtrue" ] && .travis/save_cache.sh || true
+  - bash -c "[ x${COVERAGE_TEST} != xtrue ] && .travis/save_cache.sh || true"
