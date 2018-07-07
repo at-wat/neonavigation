@@ -52,15 +52,6 @@ void operator>>(const YAML::Node& node, T& i)
 }
 #endif
 
-#if ROS_DISTRO_indigo
-enum MapMode
-{
-  TRINARY,
-  SCALE,
-  RAW
-};
-#endif
-
 class TieMapNode
 {
 private:
@@ -219,21 +210,8 @@ public:
       ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
 
       nav_msgs::GetMap::Response map_resp;
-#if ROS_DISTRO_indigo
-      if (mode == SCALE || mode == RAW)
-      {
-        ROS_ERROR("Indigo only supports TRINARY map.");
-        ros::shutdown();
-        return;
-      }
-      map_server::loadMapFromFile(
-          &map_resp,
-          mapfname.c_str(), res, negate, occ_th, free_th, origin);
-#else
-      map_server::loadMapFromFile(
-          &map_resp,
-          mapfname.c_str(), res, negate, occ_th, free_th, origin, mode);
-#endif
+      map_server::loadMapFromFile(&map_resp,
+                                  mapfname.c_str(), res, negate, occ_th, free_th, origin, mode);
       map_resp.map.info.origin.position.z = height;
       map_resp.map.info.map_load_time = ros::Time::now();
       map_resp.map.header.frame_id = frame_id;
