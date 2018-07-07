@@ -15,8 +15,21 @@ cd /catkin_ws
 COVERAGE_OPTION=
 if [ x${COVERAGE_TEST} == "xtrue" ]
 then
+  # Workaround: Ubuntu Trusty and Xenial uses quite old gcc with a bug.
+  #   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65831
+  #   Install newer gcc to get correct coverage
+  apt-get update -qq
+  apt-get install --no-install-recommends software-properties-common -y
+  add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  apt-get update -qq
+  apt-get install --no-install-recommends gcc-5 g++-5 -y
+  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5 --slave /usr/bin/gcov gcov /usr/bin/gcov-5
+
+  gcov -v
+
   COVERAGE_OPTION=-coverage
 fi
+
 sed -i -e "5a set(CMAKE_C_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
 sed -i -e "5a set(CMAKE_CXX_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
