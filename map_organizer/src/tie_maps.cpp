@@ -219,7 +219,7 @@ public:
       ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
 
       nav_msgs::GetMap::Response map_resp;
-#if ROS_DISTRO_INDIGO
+#if ROS_DISTRO_indigo
       if (mode == SCALE || mode == RAW)
       {
         ROS_ERROR("Indigo only supports TRINARY map.");
