@@ -13,7 +13,7 @@ env:
   matrix:
     - ROS_DISTRO_TARGET=kinetic
     - ROS_DISTRO_TARGET=lunar
-      # - ROS_DISTRO_TARGET=melodic
+    - ROS_DISTRO_TARGET=melodic
 branches:
   only:
     - master

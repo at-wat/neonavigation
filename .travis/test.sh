@@ -44,7 +44,12 @@ catkin_test_results || (gh-pr-comment "FAILED on ${ROS_DISTRO}" "<details><summa
 
 $result_text</details>"; false)
 
-(cd src/neonavigation/; cp -r /catkin_ws/build ./; bash <(curl -s https://codecov.io/bash) -y .codecov.yml)
+# Workaround: Ubuntu Xenial uses quite old gcc with a bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65831
+# Run coverage check only on Melodic
+if [ x${ROS_DISTRO} == "xmelodic" ]
+then
+  (cd src/neonavigation/; cp -r /catkin_ws/build ./; bash <(curl -s https://codecov.io/bash) -y .codecov.yml)
+fi
 
 gh-pr-comment "PASSED on ${ROS_DISTRO}" "<details><summary>All tests passed</summary>
 
