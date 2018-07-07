@@ -11,9 +11,16 @@ set -o verbose
 
 cd /catkin_ws
 
-sed -i -e '5a set(CMAKE_C_FLAGS "-Wall -Werror -O2 -coverage")' \
+C_FLAGS="-Wall -Werror -O2 -coverage"
+# Workaround: g++ on Ubuntu Bionic causes false-positive warnings. Disable -Werror on Melodic.
+if [ x${ROS_DISTRO} == "xmelodic" ]
+then
+  C_FLAGS="-Wall -O2 -coverage"
+fi
+
+sed -i -e "5a set(CMAKE_C_FLAGS \"${C_FLAGS}\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
-sed -i -e '5a set(CMAKE_CXX_FLAGS "-Wall -Werror -O2 -coverage")' \
+sed -i -e "5a set(CMAKE_CXX_FLAGS \"${C_FLAGS}\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
 
 CM_OPTIONS=""
