@@ -215,6 +215,7 @@ protected:
     float weight_hysteresis_;
     float in_place_turn_;
     float hysteresis_max_dist_;
+    float hysteresis_expand_;
   };
   CostCoeff cc_;
 
@@ -253,29 +254,27 @@ protected:
 
   int cnt_stuck_;
 
-  std::unordered_map<int, std::unordered_map<Astar::Vec,
-                                             std::vector<Astar::Vec>,
-                                             Astar::Vec>> motion_interp_cache_;
-  std::unordered_map<int, std::unordered_map<Astar::Vec,
-                                             float,
-                                             Astar::Vec>> distf_cache_;
+  using MotionInterpCache = std::unordered_map<
+      int,
+      std::unordered_map<
+          Astar::Vec, std::vector<Astar::Vec>, Astar::Vec>>;
+  using DistanceCache = std::unordered_map<
+      int,
+      std::unordered_map<
+          Astar::Vec, float, Astar::Vec>>;
 
-  std::unordered_map<int, std::unordered_map<Astar::Vec,
-                                             std::vector<Astar::Vec>,
-                                             Astar::Vec>> linear_interp_cache_;
-  std::unordered_map<int, std::unordered_map<Astar::Vec,
-                                             float,
-                                             Astar::Vec>> linear_distf_cache_;
+  MotionInterpCache motion_interp_cache_;
+  DistanceCache distf_cache_;
 
-  void initMotionInterpCache(const bool linear,
-      std::unordered_map<int, std::unordered_map<Astar::Vec,
-                                                 std::vector<Astar::Vec>,
-                                                 Astar::Vec>>& motion_interp_cache,
-      std::unordered_map<int, std::unordered_map<Astar::Vec,
-                                                 float,
-                                                 Astar::Vec>>& distf_cache)
+  MotionInterpCache linear_interp_cache_;
+  DistanceCache linear_distf_cache_;
+
+  void initMotionInterpCache(
+      const bool linear,
+      MotionInterpCache &motion_interp_cache,
+      DistanceCache &distf_cache)
   {
-    const int yaw_limit = (linear)? 1 : map_info_.angle;
+    const int yaw_limit = (linear) ? 1 : map_info_.angle;
 
     ROS_DEBUG("initMotionInterpCache: (range: %d, angle: %d)", range_, yaw_limit);
     motion_interp_cache.clear();
@@ -483,7 +482,7 @@ protected:
     };
     const auto cb_search = [this](
         const Astar::Vec &p,
-        const Astar::Vec &s, const Astar::Vec &e) -> std::vector<Astar::Vec>&
+        const Astar::Vec &s, const Astar::Vec &e) -> std::vector<Astar::Vec> &
     {
       return search_list_rough_;
     };
@@ -516,7 +515,7 @@ protected:
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_INFO("Path found (%0.4f sec.)",
-              boost::chrono::duration<float>(tnow - ts).count());
+             boost::chrono::duration<float>(tnow - ts).count());
 
     nav_msgs::Path path;
     path.header = map_header_;
@@ -1298,6 +1297,7 @@ public:
     pnh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
     pnh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
     pnh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
+    pnh_.param_cast("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
     pnh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
     pnh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
@@ -1772,8 +1772,9 @@ protected:
     if (hyst)
     {
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
-      float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
-      int path_range = range_ + max_dist + 1;
+      const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
+      const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
+      const int path_range = range_ + max_dist + expand_dist + 1;
       for (auto &p : path_grid)
       {
         Astar::Vec d;
@@ -1808,11 +1809,13 @@ protected:
           }
           it_prev = it;
         }
-        if (d_min < 0)
+        if (d_min < expand_dist)
           d_min = 0;
-        if (d_min > max_dist)
+        else if (d_min > max_dist + expand_dist)
           d_min = max_dist;
-        cm_hyst_[p] = d_min * 100.0 / max_dist;
+        else
+          d_min -= expand_dist;
+        cm_hyst_[p] = (d_min - expand_dist) * 100.0 / max_dist;
       }
       // const auto tnow = boost::chrono::high_resolution_clock::now();
       // ROS_INFO("Hysteresis map generated (%0.3f sec.)",
@@ -1988,8 +1991,9 @@ protected:
     {
       if (motion_grid[0] == 0)
         return -1;  // side slip
-      float aspect = motion[0] / motion[1];
-      if (fabs(aspect) < angle_resolution_aspect_ * 2.0)
+      const float aspect = motion[0] / motion[1];
+      if (fabs(aspect) < angle_resolution_aspect_ * 2.0 &&
+          fabs(motion[1]) > map_info_.linear_resolution)
         return -1;  // large y offset
 
       // Go-straight
