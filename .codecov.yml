@@ -1,3 +1,9 @@
+coverage:
+  status:
+    project:
+      default:
+        threshold: 2
+
 ignore:
   - "*/test/*"
   - "*/test/**/*"

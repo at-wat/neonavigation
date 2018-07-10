@@ -10,5 +10,7 @@
     <param name="watchdog_interval" value="0.2" />
     <param name="cloud_timeout" value="0.2" />
     <param name="hz" value="10.0" />
+    <param name="lin_acc" value="1.0" />
+    <param name="t_margin" value="0.0" />
   </node>
 </launch>

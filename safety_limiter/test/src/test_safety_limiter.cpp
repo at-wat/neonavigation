@@ -32,9 +32,31 @@
 #include <nav_msgs/Path.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Empty.h>
 
 #include <gtest/gtest.h>
+
+void GenerateSinglePointPointcloud2(
+    sensor_msgs::PointCloud2 &cloud,
+    const float x,
+    const float y,
+    const float z)
+{
+  cloud.height = 1;
+  cloud.width = 1;
+  cloud.is_bigendian = false;
+  cloud.is_dense = false;
+  sensor_msgs::PointCloud2Modifier modifier(cloud);
+  modifier.setPointCloud2FieldsByString(1, "xyz");
+  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+  modifier.resize(1);
+  *iter_x = x;
+  *iter_y = y;
+  *iter_z = z;
+}
 
 TEST(SafetyLimiter, testSafetyTimeouts)
 {
@@ -59,6 +81,7 @@ TEST(SafetyLimiter, testSafetyTimeouts)
     {
       ros::Duration(0.3).sleep();
 
+      cmd_vel.reset();
       for (size_t i = 0; i < 20; ++i)
       {
         ASSERT_TRUE(ros::ok());
@@ -72,12 +95,13 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         if (with_cloud > 0)
         {
           sensor_msgs::PointCloud2 cloud;
+          cloud.header.frame_id = "base_link";
           if (with_cloud > 1)
           {
             // cloud must have timestamp, otherwise the robot stops
             cloud.header.stamp = ros::Time::now();
-            cloud.header.frame_id = "base_link";
           }
+          GenerateSinglePointPointcloud2(cloud, 1000.0, 1000., 1000.);
           pub_cloud.publish(cloud);
         }
 
@@ -89,7 +113,7 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         wait.sleep();
         ros::spinOnce();
 
-        if (i > 5)
+        if (i > 5 && cmd_vel)
         {
           if (with_watchdog_reset > 0 && with_cloud > 1)
           {
@@ -112,6 +136,52 @@ TEST(SafetyLimiter, testSafetyTimeouts)
         }
       }
     }
+  }
+}
+
+TEST(SafetyLimiter, testCloudBuffering)
+{
+  return;
+  ros::NodeHandle nh("");
+  ros::Rate wait(35.0);
+
+  ros::Publisher pub_cmd_vel = nh.advertise<geometry_msgs::Twist>("cmd_vel_in", 1);
+  ros::Publisher pub_cloud = nh.advertise<sensor_msgs::PointCloud2>("cloud", 1);
+  ros::Publisher pub_watchdog = nh.advertise<std_msgs::Empty>("watchdog_reset", 1);
+
+  // Skip initial state
+  for (size_t i = 0; i < 30 && ros::ok(); ++i)
+  {
+    sensor_msgs::PointCloud2 cloud;
+    cloud.header.stamp = ros::Time::now();
+    cloud.header.frame_id = "base_link";
+    GenerateSinglePointPointcloud2(cloud, 0.5, 0, 0);
+    pub_cloud.publish(cloud);
+
+    wait.sleep();
+    ros::spinOnce();
+  }
+
+  // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s (t_margin: 0)
+  const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
+      [](const geometry_msgs::Twist::ConstPtr &msg) -> void
+  {
+    ASSERT_NEAR(msg->linear.x, 0.5, 1e-3);
+  };
+  ros::Subscriber sub_cmd_vel = nh.subscribe("cmd_vel", 1, cb_cmd_vel);
+
+  for (size_t i = 0; i < 35 * 6 && ros::ok(); ++i)
+  {
+    // safety_limiter: 10 hz, cloud publish: 31 hz
+    geometry_msgs::Twist cmd_vel_out;
+    if ((i % 3) == 0)
+      cmd_vel_out.linear.x = 2.0;
+    pub_cmd_vel.publish(cmd_vel_out);
+    // 1/3 of pointclouds have collision point
+    // safety_limiter must check 3 buffered clouds
+
+    wait.sleep();
+    ros::spinOnce();
   }
 }
 
