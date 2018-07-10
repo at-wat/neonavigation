@@ -87,14 +87,15 @@ private:
   ros::Publisher pub_cloud_;
   ros::Publisher pub_debug_;
   ros::Subscriber sub_twist_;
-  ros::Subscriber sub_cloud_;
+  std::vector<ros::Subscriber> sub_clouds_;
   ros::Subscriber sub_disable_;
   ros::Subscriber sub_watchdog_;
   ros::Timer watchdog_timer_;
   tf::TransformListener tfl_;
 
   geometry_msgs::Twist twist_;
-  sensor_msgs::PointCloud2 cloud_;
+  ros::Time last_cloud_stamp_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
   double hz_;
   double timeout_;
   double disable_timeout_;
@@ -123,6 +124,7 @@ public:
   SafetyLimiterNode()
     : nh_()
     , pnh_("~")
+    , cloud_(new pcl::PointCloud<pcl::PointXYZ>)
     , last_disable_cmd_(0)
     , watchdog_stop_(false)
     , has_cloud_(false)
@@ -137,15 +139,29 @@ public:
     sub_twist_ = neonavigation_common::compat::subscribe(
         nh_, "cmd_vel_in",
         pnh_, "cmd_vel_in", 1, &SafetyLimiterNode::cbTwist, this);
-    sub_cloud_ = neonavigation_common::compat::subscribe(
-        nh_, "cloud",
-        pnh_, "cloud", 1, &SafetyLimiterNode::cbCloud, this);
     sub_disable_ = neonavigation_common::compat::subscribe(
         nh_, "disable_safety",
         pnh_, "disable", 1, &SafetyLimiterNode::cbDisable, this);
     sub_watchdog_ = neonavigation_common::compat::subscribe(
         nh_, "watchdog_reset",
         pnh_, "watchdog_reset", 1, &SafetyLimiterNode::cbWatchdogReset, this);
+
+    int num_input_clouds;
+    pnh_.param("num_input_clouds", num_input_clouds, 1);
+    if (num_input_clouds == 1)
+    {
+      sub_clouds_.push_back(neonavigation_common::compat::subscribe(
+          nh_, "cloud",
+          pnh_, "cloud", 1, &SafetyLimiterNode::cbCloud, this));
+    }
+    else
+    {
+      for (int i = 0; i < num_input_clouds; ++i)
+      {
+        sub_clouds_.push_back(nh_.subscribe(
+            "cloud" + std::to_string(i), 1, &SafetyLimiterNode::cbCloud, this));
+      }
+    }
 
     pnh_.param("freq", hz_, 6.0);
     pnh_.param("cloud_timeout", timeout_, 0.8);
@@ -246,16 +262,18 @@ protected:
     if (!has_cloud_)
       return;
 
-    if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_))
+    if (ros::Time::now() - last_cloud_stamp_ > ros::Duration(timeout_))
     {
       ROS_WARN_THROTTLE(1.0, "Safety Limit: PointCloud timed-out");
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
+
+      cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
       return;
     }
 
     ros::Time now = ros::Time::now();
-    const double t_col_current = predict(twist_, cloud_);
+    const double t_col_current = predict(twist_);
 
     if (t_col_current != DBL_MAX)
     {
@@ -264,32 +282,15 @@ protected:
 
       hold_off_ = now + hold_;
     }
+    cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
   }
-  double predict(const geometry_msgs::Twist &in,
-                 const sensor_msgs::PointCloud2 &cloud_)
+  double predict(const geometry_msgs::Twist &in)
   {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::fromROSMsg(cloud_, *pc);
-
-    try
-    {
-      tfl_.waitForTransform(frame_id_, cloud_.header.frame_id, cloud_.header.stamp,
-                            ros::Duration(0.1));
-      pcl_ros::transformPointCloud(frame_id_, *pc, *pc, tfl_);
-    }
-    catch (tf::TransformException &e)
-    {
-      ROS_WARN_THROTTLE(1.0, "Safety Limit: Transform failed");
-      geometry_msgs::Twist cmd_vel;
-      return 0.0;
-    }
-
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc_ds(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
-    ds.setInputCloud(pc);
+    ds.setInputCloud(cloud_);
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
-    ds.filter(*pc_ds);
-    *pc = *pc_ds;
+    ds.filter(*pc);
 
     auto filter_z = [this](pcl::PointXYZ &p)
     {
@@ -532,7 +533,7 @@ protected:
     {
       pub_twist_.publish(twist_);
     }
-    else if (ros::Time::now() - cloud_.header.stamp > ros::Duration(timeout_) || watchdog_stop_)
+    else if (ros::Time::now() - last_cloud_stamp_ > ros::Duration(timeout_) || watchdog_stop_)
     {
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
@@ -549,7 +550,23 @@ protected:
   }
   void cbCloud(const sensor_msgs::PointCloud2::ConstPtr &msg)
   {
-    cloud_ = *msg;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::fromROSMsg(*msg, *pc);
+
+    try
+    {
+      tfl_.waitForTransform(frame_id_, msg->header.frame_id, msg->header.stamp,
+                            ros::Duration(0.1));
+      pcl_ros::transformPointCloud(frame_id_, *pc, *pc, tfl_);
+    }
+    catch (tf::TransformException &e)
+    {
+      ROS_WARN_THROTTLE(1.0, "Safety Limit: Transform failed: %s", e.what());
+      return;
+    }
+
+    *cloud_ += *pc;
+    last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
   }
   void cbDisable(const std_msgs::Bool::ConstPtr &msg)
