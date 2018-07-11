@@ -35,6 +35,8 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Empty.h>
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 void GenerateSinglePointPointcloud2(

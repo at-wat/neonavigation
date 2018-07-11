@@ -44,6 +44,7 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/filters/voxel_grid.h>
 
+#include <algorithm>
 #include <cmath>
 #include <random>
 #include <string>
@@ -289,7 +290,6 @@ protected:
 
     if (r_lim_current < r_lim_)
       r_lim_ = r_lim_current;
-    //ROS_ERROR("r_lim: %0.3f, r_lim_current: %0.3f", r_lim_, r_lim_current);
 
     if (r_lim_current < 1.0)
       hold_off_ = now + hold_;
@@ -400,8 +400,6 @@ protected:
       yaw_r = 1.0;
 
     const auto r = std::min(d_r, yaw_r);
-    //ROS_ERROR("d_col: %0.3f, yaw_col: %0.3f", d_col, yaw_col);
-    //ROS_ERROR("d_r: %0.3f, yaw_r: %0.3f, r: %0.3f", d_r, yaw_r, r);
 
     return r;
   }
@@ -418,7 +416,6 @@ protected:
         1.0, "safety_limiter: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
         in.linear.x, in.angular.z,
         out.linear.x, out.angular.z);
-    //}
     return out;
   }
 
