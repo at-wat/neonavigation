@@ -77,10 +77,15 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   c.z *= b;
   return c;
 }
+bool XmlRpc_isNumber(XmlRpc::XmlRpcValue &value)
+{
+  return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
+         value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
+}
 
 class SafetyLimiterNode
 {
-private:
+protected:
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   ros::Publisher pub_twist_;
@@ -103,8 +108,9 @@ private:
   double acc_[2];
   double tmax_;
   double dt_;
-  double tmargin_;
-  double t_col_;
+  double d_margin_;
+  double yaw_margin_;
+  double r_lim_;
   double z_range_[2];
   float footprint_radius_;
   double downsample_grid_;
@@ -119,6 +125,8 @@ private:
   bool watchdog_stop_;
   bool has_cloud_;
   bool has_twist_;
+
+  constexpr static float EPSILON = 1e-6;
 
 public:
   SafetyLimiterNode()
@@ -173,12 +181,15 @@ public:
     pnh_.param("z_range_min", z_range_[0], 0.0);
     pnh_.param("z_range_max", z_range_[1], 0.5);
     pnh_.param("dt", dt_, 0.1);
-    pnh_.param("t_margin", tmargin_, 0.2);
+    if (pnh_.hasParam("t_margin"))
+      ROS_WARN("safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
+    pnh_.param("d_margin", d_margin_, 0.2);
+    pnh_.param("yaw_margin", yaw_margin_, 0.2);
     pnh_.param("downsample_grid", downsample_grid_, 0.05);
     pnh_.param("frame_id", frame_id_, std::string("base_link"));
     double hold_d;
     pnh_.param("hold", hold_d, 0.0);
-    hold_ = ros::Duration(hold_d);
+    hold_ = ros::Duration(std::max(hold_d, 1.0 / hz_));
     double watchdog_interval_d;
     pnh_.param("watchdog_interval", watchdog_interval_d, 0.0);
     watchdog_interval_ = ros::Duration(watchdog_interval_d);
@@ -192,7 +203,8 @@ public:
         tmax_ = t;
     }
     tmax_ *= 1.5;
-    tmax_ += tmargin_;
+    tmax_ += std::max(d_margin_ / vel_[0], yaw_margin_ / vel_[1]);
+    r_lim_ = 1.0;
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!pnh_.hasParam("footprint"))
@@ -250,7 +262,7 @@ protected:
   }
   void cbWatchdogTimer(const ros::TimerEvent &event)
   {
-    ROS_WARN_THROTTLE(1.0, "Safety Limit: Watchdog timed-out");
+    ROS_WARN_THROTTLE(1.0, "safety_limiter: Watchdog timed-out");
     watchdog_stop_ = true;
     geometry_msgs::Twist cmd_vel;
     pub_twist_.publish(cmd_vel);
@@ -264,7 +276,7 @@ protected:
 
     if (ros::Time::now() - last_cloud_stamp_ > ros::Duration(timeout_))
     {
-      ROS_WARN_THROTTLE(1.0, "Safety Limit: PointCloud timed-out");
+      ROS_WARN_THROTTLE(1.0, "safety_limiter: PointCloud timed-out");
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
 
@@ -273,18 +285,17 @@ protected:
     }
 
     ros::Time now = ros::Time::now();
-    const double t_col_current = predict(twist_);
+    const double r_lim_current = predict(twist_);
 
-    if (t_col_current != DBL_MAX)
-    {
-      if (t_col_current < t_col_)
-        t_col_ = t_col_current;
+    if (r_lim_current < r_lim_)
+      r_lim_ = r_lim_current;
+    //ROS_ERROR("r_lim: %0.3f, r_lim_current: %0.3f", r_lim_, r_lim_current);
 
+    if (r_lim_current < 1.0)
       hold_off_ = now + hold_;
-    }
     cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
   }
-  double predict(const geometry_msgs::Twist &in)
+  double predict(const geometry_msgs::Twist &in) const
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
@@ -302,13 +313,13 @@ protected:
     pc->erase(std::remove_if(pc->points.begin(), pc->points.end(), filter_z),
               pc->points.end());
 
-    if (pc->width == 0)
+    if (pc->size() == 0)
     {
       if (allow_empty_cloud_)
       {
         return 60.0;
       }
-      ROS_WARN_THROTTLE(1.0, "Safety Limit: Empty pointcloud passed.");
+      ROS_WARN_THROTTLE(1.0, "safety_limiter: Empty pointcloud passed.");
       return DBL_MAX;
     }
 
@@ -325,15 +336,18 @@ protected:
         Eigen::AngleAxisf(twist_.angular.z * dt_, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
-    double t_col_estim = DBL_MAX;
     sensor_msgs::PointCloud col_points;
     sensor_msgs::PointCloud debug_points;
     col_points.header.frame_id = frame_id_;
     col_points.header.stamp = ros::Time::now();
     debug_points.header = col_points.header;
 
+    float d_col = 0;
+    float yaw_col = 0;
     for (float t = 0; t < tmax_; t += dt_)
     {
+      d_col += twist_.linear.x * dt_;
+      yaw_col += twist_.angular.z * dt_;
       move = move * motion;
       move_inv = move_inv * motion_inv;
       pcl::PointXYZ center;
@@ -368,57 +382,46 @@ protected:
         }
       }
       if (col)
-      {
-        t_col_estim = t;
         break;
-      }
     }
     pub_debug_.publish(debug_points);
     pub_cloud_.publish(col_points);
 
-    t_col_estim -= tmargin_;
-    if (t_col_estim < 0)
-      t_col_estim = 0;
+    d_col = std::max<float>(std::abs(d_col) - d_margin_, 0.0);
+    yaw_col = std::max<float>(std::abs(yaw_col) - yaw_margin_, 0.0);
 
-    return t_col_estim;
+    float d_r =
+        (sqrtf(std::abs(2 * acc_[0] * d_col)) + EPSILON) / std::abs(twist_.linear.x);
+    float yaw_r =
+        (sqrtf(std::abs(2 * acc_[1] * yaw_col)) + EPSILON) / std::abs(twist_.angular.z);
+    if (!std::isfinite(d_r))
+      d_r = 1.0;
+    if (!std::isfinite(yaw_r))
+      yaw_r = 1.0;
+
+    const auto r = std::min(d_r, yaw_r);
+    //ROS_ERROR("d_col: %0.3f, yaw_col: %0.3f", d_col, yaw_col);
+    //ROS_ERROR("d_r: %0.3f, yaw_r: %0.3f, r: %0.3f", d_r, yaw_r, r);
+
+    return r;
   }
 
   geometry_msgs::Twist limit(const geometry_msgs::Twist &in)
   {
     auto out = in;
-    const float lin_vel_lim = t_col_ * acc_[0];
-    const float ang_vel_lim = t_col_ * acc_[1];
-
-    bool col = false;
-    if (fabs(out.linear.x) > lin_vel_lim)
+    if (r_lim_ < 1.0)
     {
-      float r = lin_vel_lim / fabs(out.linear.x);
-      out.linear.x *= r;
-      out.angular.z *= r;
-      col = true;
+      out.linear.x *= r_lim_;
+      out.angular.z *= r_lim_;
     }
-    if (fabs(out.angular.z) > ang_vel_lim)
-    {
-      const float r = ang_vel_lim / fabs(out.angular.z);
-      out.linear.x *= r;
-      out.angular.z *= r;
-      col = true;
-    }
-    if (col)
-    {
-      ROS_WARN_THROTTLE(
-          1.0, "Safety Limit: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
-          in.linear.x, in.angular.z,
-          out.linear.x, out.angular.z);
-    }
+    ROS_WARN_THROTTLE(
+        1.0, "safety_limiter: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
+        in.linear.x, in.angular.z,
+        out.linear.x, out.angular.z);
+    //}
     return out;
   }
 
-  bool XmlRpc_isNumber(XmlRpc::XmlRpcValue &value)
-  {
-    return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
-           value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
-  }
   class vec
   {
   public:
@@ -478,16 +481,16 @@ protected:
     std::vector<vec> v;
     void move(const float &x, const float &y, const float &yaw)
     {
-      float cos_v = cosf(yaw);
-      float sin_v = sinf(yaw);
+      const float cos_v = cosf(yaw);
+      const float sin_v = sinf(yaw);
       for (auto &p : v)
       {
-        auto tmp = p;
+        const auto tmp = p;
         p[0] = cos_v * tmp[0] - sin_v * tmp[1] + x;
         p[1] = sin_v * tmp[0] + cos_v * tmp[1] + y;
       }
     }
-    bool inside(const vec &a)
+    bool inside(const vec &a) const
     {
       int cn = 0;
       for (size_t i = 0; i < v.size() - 1; i++)
@@ -505,7 +508,7 @@ protected:
       }
       return ((cn & 1) == 1);
     }
-    float dist(const vec &a)
+    float dist(const vec &a) const
     {
       float dist = FLT_MAX;
       for (size_t i = 0; i < v.size() - 1; i++)
@@ -538,14 +541,13 @@ protected:
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
     }
-    else if (now <= hold_off_)
+    else
     {
       geometry_msgs::Twist cmd_vel = limit(twist_);
       pub_twist_.publish(cmd_vel);
-    }
-    else
-    {
-      pub_twist_.publish(twist_);
+
+      if (now > hold_off_)
+        r_lim_ = 1.0;
     }
   }
   void cbCloud(const sensor_msgs::PointCloud2::ConstPtr &msg)
@@ -561,7 +563,7 @@ protected:
     }
     catch (tf::TransformException &e)
     {
-      ROS_WARN_THROTTLE(1.0, "Safety Limit: Transform failed: %s", e.what());
+      ROS_WARN_THROTTLE(1.0, "safety_limiter: Transform failed: %s", e.what());
       return;
     }
 
