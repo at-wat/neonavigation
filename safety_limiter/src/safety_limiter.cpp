@@ -414,8 +414,8 @@ protected:
     {
       out.linear.x *= r_lim_;
       out.angular.z *= r_lim_;
-      if (fabs(in.linear.x - out.linear.x) > EPSILON ||
-          fabs(in.angular.z - out.angular.z) > EPSILON)
+      if (std::abs(in.linear.x - out.linear.x) > EPSILON ||
+          std::abs(in.angular.z - out.angular.z) > EPSILON)
       {
         ROS_WARN_THROTTLE(
             1.0, "safety_limiter: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
@@ -476,7 +476,7 @@ protected:
         return this->dist(a);
       if ((a - b).dot((*this) - b) <= 0)
         return this->dist(b);
-      return fabs(this->dist_line(a, b));
+      return std::abs(this->dist_line(a, b));
     }
   };
   class polygon
