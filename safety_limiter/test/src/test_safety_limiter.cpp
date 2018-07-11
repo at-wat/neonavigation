@@ -211,7 +211,7 @@ TEST(SafetyLimiter, CloudBuffering)
   ASSERT_TRUE(received);
 }
 
-TEST(SafetyLimiter, SafetyLimit)
+TEST(SafetyLimiter, SafetyLimitLinear)
 {
   ros::NodeHandle nh("");
   ros::Rate wait(20.0);
@@ -236,9 +236,9 @@ TEST(SafetyLimiter, SafetyLimit)
     ros::spinOnce();
   }
 
-  for (float vel = 0.0; vel < 2.0; vel += 0.2)
+  for (float vel = 0.0; vel < 2.0; vel += 0.4)
   {
-    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s (t_margin: 0)
+    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
     bool received = false;
     bool failed = false;
     bool en = false;
@@ -270,6 +270,75 @@ TEST(SafetyLimiter, SafetyLimit)
 
       geometry_msgs::Twist cmd_vel_out;
       cmd_vel_out.linear.x = vel;
+      pub_cmd_vel.publish(cmd_vel_out);
+
+      wait.sleep();
+      ros::spinOnce();
+    }
+    ASSERT_TRUE(received);
+    sub_cmd_vel.shutdown();
+  }
+}
+
+TEST(SafetyLimiter, SafetyLimitAngular)
+{
+  ros::NodeHandle nh("");
+  ros::Rate wait(20.0);
+
+  ros::Publisher pub_cmd_vel = nh.advertise<geometry_msgs::Twist>("cmd_vel_in", 1);
+  ros::Publisher pub_cloud = nh.advertise<sensor_msgs::PointCloud2>("cloud", 1);
+  ros::Publisher pub_watchdog = nh.advertise<std_msgs::Empty>("watchdog_reset", 1);
+
+  // Skip initial state
+  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  {
+    sensor_msgs::PointCloud2 cloud;
+    cloud.header.stamp = ros::Time::now();
+    cloud.header.frame_id = "base_link";
+    GenerateSinglePointPointcloud2(cloud, -1, -1, 0);
+    pub_cloud.publish(cloud);
+
+    std_msgs::Empty watchdog_reset;
+    pub_watchdog.publish(watchdog_reset);
+
+    wait.sleep();
+    ros::spinOnce();
+  }
+
+  for (float vel = 0.0; vel < M_PI; vel += M_PI / 10)
+  {
+    // pi/2 rad/ss, obstacle at pi/4 rad: limited to pi/2 rad/s
+    bool received = false;
+    bool failed = false;
+    bool en = false;
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
+        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+    {
+      if (!en)
+        return;
+      const float expected_vel = std::min<float>(vel, M_PI / 2);
+      received = true;
+      failed = true;
+      ASSERT_NEAR(msg->angular.z, expected_vel, M_PI / 20);
+      failed = false;
+    };
+    ros::Subscriber sub_cmd_vel = nh.subscribe("cmd_vel", 1, cb_cmd_vel);
+
+    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    {
+      if (i > 5)
+        en = true;
+      sensor_msgs::PointCloud2 cloud;
+      cloud.header.stamp = ros::Time::now();
+      cloud.header.frame_id = "base_link";
+      GenerateSinglePointPointcloud2(cloud, -1, -1, 0);
+      pub_cloud.publish(cloud);
+
+      std_msgs::Empty watchdog_reset;
+      pub_watchdog.publish(watchdog_reset);
+
+      geometry_msgs::Twist cmd_vel_out;
+      cmd_vel_out.angular.z = vel;
       pub_cmd_vel.publish(cmd_vel_out);
 
       wait.sleep();
