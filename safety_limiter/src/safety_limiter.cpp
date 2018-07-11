@@ -414,11 +414,11 @@ protected:
     {
       out.linear.x *= r_lim_;
       out.angular.z *= r_lim_;
+      ROS_WARN_THROTTLE(
+          1.0, "safety_limiter: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
+          in.linear.x, in.angular.z,
+          out.linear.x, out.angular.z);
     }
-    ROS_WARN_THROTTLE(
-        1.0, "safety_limiter: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
-        in.linear.x, in.angular.z,
-        out.linear.x, out.angular.z);
     return out;
   }
 
