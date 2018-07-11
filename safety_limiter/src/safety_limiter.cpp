@@ -344,6 +344,7 @@ protected:
 
     float d_col = 0;
     float yaw_col = 0;
+    bool col = false;
     for (float t = 0; t < tmax_; t += dt_)
     {
       d_col += twist_.linear.x * dt_;
@@ -364,7 +365,6 @@ protected:
       if (num == 0)
         continue;
 
-      bool col = false;
       for (auto &i : indices)
       {
         auto &p = pc->points[i];
@@ -387,6 +387,9 @@ protected:
     pub_debug_.publish(debug_points);
     pub_cloud_.publish(col_points);
 
+    if (!col)
+      return 1.0;
+
     d_col = std::max<float>(std::abs(d_col) - d_margin_, 0.0);
     yaw_col = std::max<float>(std::abs(yaw_col) - yaw_margin_, 0.0);
 
@@ -407,7 +410,7 @@ protected:
   geometry_msgs::Twist limit(const geometry_msgs::Twist &in)
   {
     auto out = in;
-    if (r_lim_ < 1.0)
+    if (r_lim_ < 1.0 - EPSILON)
     {
       out.linear.x *= r_lim_;
       out.angular.z *= r_lim_;
