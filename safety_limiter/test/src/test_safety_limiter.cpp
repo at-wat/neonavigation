@@ -270,6 +270,7 @@ TEST(SafetyLimiter, SafetyLimitLinear)
 
       geometry_msgs::Twist cmd_vel_out;
       cmd_vel_out.linear.x = vel;
+      cmd_vel_out.angular.z = (i % 3) * 0.01;
       pub_cmd_vel.publish(cmd_vel_out);
 
       wait.sleep();
@@ -338,6 +339,7 @@ TEST(SafetyLimiter, SafetyLimitAngular)
       pub_watchdog.publish(watchdog_reset);
 
       geometry_msgs::Twist cmd_vel_out;
+      cmd_vel_out.linear.x = (i % 3) * 0.01;
       cmd_vel_out.angular.z = vel;
       pub_cmd_vel.publish(cmd_vel_out);
 
