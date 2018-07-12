@@ -127,30 +127,32 @@ public:
     queue_size_limit_ = size;
   }
 
-  bool search(const Vec &s, const Vec &e,
-              std::list<Vec> &path,
-              std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
-              std::function<float(const Vec &, const Vec &)> cb_cost_estim,
-              std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
-              std::function<bool(const std::list<Vec> &)> cb_progress,
-              const float cost_leave,
-              const float progress_interval,
-              const bool return_best = false)
+  bool search(
+      const Vec &s, const Vec &e,
+      std::list<Vec> &path,
+      std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
+      std::function<float(const Vec &, const Vec &)> cb_cost_estim,
+      std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
+      std::function<bool(const std::list<Vec> &)> cb_progress,
+      const float cost_leave,
+      const float progress_interval,
+      const bool return_best = false)
   {
     return searchImpl(g_, s, e, path,
                       cb_cost, cb_cost_estim, cb_search, cb_progress,
                       cost_leave, progress_interval, return_best);
   }
-  bool searchImpl(Gridmap<float> &g,
-                  const Vec &st, const Vec &en,
-                  std::list<Vec> &path,
-                  std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
-                  std::function<float(const Vec &, const Vec &)> cb_cost_estim,
-                  std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
-                  std::function<bool(const std::list<Vec> &)> cb_progress,
-                  const float cost_leave,
-                  const float progress_interval,
-                  const bool return_best = false)
+  bool searchImpl(
+      Gridmap<float> &g,
+      const Vec &st, const Vec &en,
+      std::list<Vec> &path,
+      std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
+      std::function<float(const Vec &, const Vec &)> cb_cost_estim,
+      std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
+      std::function<bool(const std::list<Vec> &)> cb_progress,
+      const float cost_leave,
+      const float progress_interval,
+      const bool return_best = false)
   {
     if (st == en)
     {

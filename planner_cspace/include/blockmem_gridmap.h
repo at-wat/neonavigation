@@ -30,6 +30,8 @@
 #ifndef BLOCKMEM_GRIDMAP_H
 #define BLOCKMEM_GRIDMAP_H
 
+#include <limits>
+
 #include <cyclic_vec.h>
 
 template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20>
@@ -42,6 +44,7 @@ protected:
   size_t ser_size_;
   size_t block_ser_size_;
   size_t block_num_;
+  T dummy_;
 
 public:
   void block_addr(const CyclicVecInt<DIM, NONCYCLIC> &pos, size_t &baddr, size_t &addr) const
@@ -128,17 +131,29 @@ public:
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
+    if (addr > block_ser_size_ || baddr > block_num_)
+    {
+      dummy_ = std::numeric_limits<T>::max();
+      return dummy_;
+    }
     return c_[baddr * block_ser_size_ + addr];
   }
   const T operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos) const
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
+    if (addr > block_ser_size_ || baddr > block_num_)
+      return std::numeric_limits<T>::max();
     return c_[baddr * block_ser_size_ + addr];
   }
-  bool validate(const CyclicVecInt<DIM, NONCYCLIC> &pos) const
+  bool validate(const CyclicVecInt<DIM, NONCYCLIC> &pos, const int tolerance = 0) const
   {
-    for (int i = 0; i < DIM; i++)
+    for (int i = 0; i < NONCYCLIC; i++)
+    {
+      if (pos[i] < tolerance || this->size_[i] - tolerance <= pos[i])
+        return false;
+    }
+    for (int i = NONCYCLIC; i < DIM; i++)
     {
       if (pos[i] < 0 || this->size_[i] <= pos[i])
         return false;
