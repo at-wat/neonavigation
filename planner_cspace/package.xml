@@ -19,6 +19,7 @@
   <depend>move_base_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>tf</depend>
 
   <depend>costmap_cspace</depend>
