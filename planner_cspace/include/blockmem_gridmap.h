@@ -30,6 +30,8 @@
 #ifndef BLOCKMEM_GRIDMAP_H
 #define BLOCKMEM_GRIDMAP_H
 
+#include <limits>
+
 #include <cyclic_vec.h>
 
 template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20>
@@ -42,9 +44,11 @@ protected:
   size_t ser_size_;
   size_t block_ser_size_;
   size_t block_num_;
+  T dummy_;
 
 public:
-  void block_addr(const CyclicVecInt<DIM, NONCYCLIC> &pos, size_t &baddr, size_t &addr) const
+  void block_addr(
+      const CyclicVecInt<DIM, NONCYCLIC> &pos, size_t &baddr, size_t &addr) const
   {
     addr = 0;
     baddr = 0;
@@ -84,14 +88,14 @@ public:
         c_[i] = zero;
     }
   }
-  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size_)
+  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size)
   {
-    this->size_ = size_;
+    auto size_tmp = size;
 
     for (int i = 0; i < NONCYCLIC; i++)
     {
-      if (this->size_[i] < static_cast<int>(BLOCK_WIDTH))
-        this->size_[i] = BLOCK_WIDTH;
+      if (size_tmp[i] < BLOCK_WIDTH)
+        size_tmp[i] = BLOCK_WIDTH;
     }
 
     block_ser_size_ = 1;
@@ -102,11 +106,11 @@ public:
       if (i < NONCYCLIC)
       {
         width = BLOCK_WIDTH;
-        block_size_[i] = (this->size_[i] + width - 1) / width;
+        block_size_[i] = (size_tmp[i] + width - 1) / width;
       }
       else
       {
-        width = this->size_[i];
+        width = size_tmp[i];
         block_size_[i] = 1;
       }
 
@@ -116,6 +120,7 @@ public:
     ser_size_ = block_ser_size_ * block_num_;
 
     c_.reset(new T[ser_size_]);
+    size_ = size;
   }
   explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC> &size_)
   {
@@ -128,19 +133,31 @@ public:
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
+    if (addr >= block_ser_size_ || baddr >= block_num_)
+    {
+      dummy_ = std::numeric_limits<T>::max();
+      return dummy_;
+    }
     return c_[baddr * block_ser_size_ + addr];
   }
   const T operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos) const
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
+    if (addr >= block_ser_size_ || baddr >= block_num_)
+      return std::numeric_limits<T>::max();
     return c_[baddr * block_ser_size_ + addr];
   }
-  bool validate(const CyclicVecInt<DIM, NONCYCLIC> &pos) const
+  bool validate(const CyclicVecInt<DIM, NONCYCLIC> &pos, const int tolerance = 0) const
   {
-    for (int i = 0; i < DIM; i++)
+    for (int i = 0; i < NONCYCLIC; i++)
     {
-      if (pos[i] < 0 || this->size_[i] <= pos[i])
+      if (pos[i] < tolerance || size_[i] - tolerance <= pos[i])
+        return false;
+    }
+    for (int i = NONCYCLIC; i < DIM; i++)
+    {
+      if (pos[i] < 0 || size_[i] <= pos[i])
         return false;
     }
     return true;

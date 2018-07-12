@@ -425,7 +425,7 @@ protected:
                 req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
     e[2] = 0;
 
-    if (!(cm_rough_.validate(s) && cm_rough_.validate(e)))
+    if (!(cm_rough_.validate(s, range_) && cm_rough_.validate(e, range_)))
     {
       ROS_ERROR("Given start or goal is not on the map.");
       return false;
@@ -748,12 +748,21 @@ protected:
                 goal_.pose.position.x, goal_.pose.position.y,
                 tf::getYaw(goal_.pose.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
-    ROS_INFO("New goal received (%d, %d, %d)",
-             e[0], e[1], e[2]);
+    if (goal_changed)
+    {
+      ROS_INFO(
+          "New goal received (%d, %d, %d)",
+          e[0], e[1], e[2]);
+    }
 
-    if (!cm_.validate(e))
+    if (!cm_.validate(e, range_))
     {
       ROS_ERROR("Given goal is not on the map.");
+      return false;
+    }
+    if (!cm_.validate(s, range_))
+    {
+      ROS_ERROR("You are on the edge of the world.");
       return false;
     }
 
