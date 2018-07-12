@@ -1968,9 +1968,6 @@ protected:
     const Astar::Vecf motion = (*rot_cache_)[d2];
 
     const Astar::Vecf motion_grid = motion * resolution_;
-    // motion_grid[0] /= map_info_.linear_resolution;
-    // motion_grid[1] /= map_info_.linear_resolution;
-    // motion_grid[2] /= map_info_.angular_resolution;
 
     if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
     {
@@ -2001,8 +1998,7 @@ protected:
       if (motion_grid[0] == 0)
         return -1;  // side slip
       const float aspect = motion[0] / motion[1];
-      if (fabs(aspect) < angle_resolution_aspect_ * 2.0 &&
-          fabs(motion[1]) > map_info_.linear_resolution)
+      if (fabs(aspect) < angle_resolution_aspect_)
         return -1;  // large y offset
 
       // Go-straight
