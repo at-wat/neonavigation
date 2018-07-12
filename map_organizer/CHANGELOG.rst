@@ -2,8 +2,8 @@
 Changelog for package map_organizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2018-07-12)
+------------------
 * Fix build on Indigo (`#180 <https://github.com/at-wat/neonavigation/issues/180>`_)
 * Fix namespace migration messages (`#174 <https://github.com/at-wat/neonavigation/issues/174>`_)
 * Fix topic/service namespace model (`#168 <https://github.com/at-wat/neonavigation/issues/168>`_)

@@ -2,8 +2,8 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2018-07-12)
+------------------
 * Fix namespace migration messages (`#174 <https://github.com/at-wat/neonavigation/issues/174>`_)
 * Fix topic/service namespace model (`#168 <https://github.com/at-wat/neonavigation/issues/168>`_)
 * Fix package dependencies (`#167 <https://github.com/at-wat/neonavigation/issues/167>`_)

@@ -2,8 +2,8 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2018-07-12)
+------------------
 * safety_limiter: update document (`#192 <https://github.com/at-wat/neonavigation/issues/192>`_)
 * safety_limiter: fix safety limit logic (`#187 <https://github.com/at-wat/neonavigation/issues/187>`_)
 * safety_limiter: fix input cloud buffering (`#184 <https://github.com/at-wat/neonavigation/issues/184>`_)

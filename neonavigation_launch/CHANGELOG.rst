@@ -2,8 +2,8 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2018-07-12)
+------------------
 * Fix topic/service namespace model (`#168 <https://github.com/at-wat/neonavigation/issues/168>`_)
 * Update package descriptions and unify license and version (`#165 <https://github.com/at-wat/neonavigation/issues/165>`_)
 * Use neonavigation_msgs package (`#164 <https://github.com/at-wat/neonavigation/issues/164>`_)

@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2018-07-12)
+------------------
 * planner_cspace: fix restriction of path segment connection (`#191 <https://github.com/at-wat/neonavigation/issues/191>`_)
 * planner_cspace: fix boundary check (`#190 <https://github.com/at-wat/neonavigation/issues/190>`_)
 * planner_cspace: fix unconverged switching back vibration (`#183 <https://github.com/at-wat/neonavigation/issues/183>`_)
