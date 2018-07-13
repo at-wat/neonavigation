@@ -53,6 +53,12 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
+# Binary installed pcl provided by Linux distro is built with -march=native
+# which causes a lot of compatibility problems.
+# Define PCL_NO_PRECOMPILE to disable using the binary version.
+add_definitions(-DPCL_NO_PRECOMPILE)
+
+
 add_executable(obj_to_pointcloud src/obj_to_pointcloud.cpp)
 target_link_libraries(obj_to_pointcloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(obj_to_pointcloud ${catkin_EXPORTED_TARGETS})
