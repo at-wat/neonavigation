@@ -29,7 +29,6 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <tf/transform_listener.h>
