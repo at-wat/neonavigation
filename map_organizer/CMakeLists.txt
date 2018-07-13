@@ -65,6 +65,12 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -DROS_DISTRO_$ENV{ROS_DISTRO}=1")
 
+# Binary installed pcl provided by Linux distro is built with -march=native
+# which causes a lot of compatibility problems.
+# Define PCL_NO_PRECOMPILE to disable using the binary version.
+add_definitions(-DPCL_NO_PRECOMPILE)
+
+
 add_executable(pointcloud_to_maps src/pointcloud_to_maps.cpp)
 target_link_libraries(pointcloud_to_maps ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(pointcloud_to_maps ${catkin_EXPORTED_TARGETS})

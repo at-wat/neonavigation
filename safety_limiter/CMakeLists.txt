@@ -51,6 +51,12 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
+# Binary installed pcl provided by Linux distro is built with -march=native
+# which causes a lot of compatibility problems.
+# Define PCL_NO_PRECOMPILE to disable using the binary version.
+add_definitions(-DPCL_NO_PRECOMPILE)
+
+
 add_executable(safety_limiter src/safety_limiter.cpp)
 target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
