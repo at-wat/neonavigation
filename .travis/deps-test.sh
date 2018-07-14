@@ -11,7 +11,7 @@ do
 
   echo "# $pkg ($dir)"
   echo
-  docker build -t neonavigation-$pkg -f ./Dockerfile.${ROS_DISTRO:-kinetic}.deps-test \
+  docker build -t neonavigation-$pkg:${ROS_DISTRO:-kinetic} -f ./Dockerfile.${ROS_DISTRO:-kinetic}.deps-test \
     --build-arg PACKAGE=$pkg ../
   echo
 done
