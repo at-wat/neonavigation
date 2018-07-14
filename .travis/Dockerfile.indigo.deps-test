@@ -1,3 +1,17 @@
+FROM alpine:3.7 as prebuild
+
+ARG PACKAGE=planner_cspace
+
+COPY . /pkgs
+COPY ${PACKAGE}/package.xml /
+COPY ${PACKAGE} /target_pkg
+
+RUN cat /package.xml | grep "<depend>" | sed "s/\s*//g" | sed "s/<[^<]*>//g" | while read pkg; do [ -d /pkgs/$pkg ] && echo $pkg || true; done | tee /localdeps \
+  && mkdir -p localdeps_ws/src \
+  && cat /localdeps | xargs -n1 -i mv /pkgs/{} /localdeps_ws/src/
+
+
+# =========================
 FROM ros:indigo-ros-core
 
 SHELL ["bash", "-c"]
@@ -10,33 +24,27 @@ RUN apt-get update -qq \
 RUN echo "deb http://packages.ros.org/ros-shadow-fixed/ubuntu `lsb_release -sc` main" > /etc/apt/sources.list.d/ros-latest.list \
   && rosdep update
 
-COPY package.xml /
+COPY --from=prebuild /localdeps_ws /localdeps_ws
 
-ARG NEONAVIGATION_VERSION="0.2.0"
-RUN cd /tmp \
-  && mkdir -p /ws/src \
-  && wget -q https://github.com/at-wat/neonavigation/archive/${NEONAVIGATION_VERSION}.tar.gz \
-  && tar xzfv ${NEONAVIGATION_VERSION}.tar.gz \
-  && cat /package.xml | grep depend | sed -s "s/\s*//g" | sed -s "s/<[^<]*>//g" | while read pkg; do [ -d neonavigation-${NEONAVIGATION_VERSION}/$pkg ] && echo $pkg || true; done | tee /ws/deps \
-  && cat /ws/deps | xargs -n1 -i mv neonavigation-${NEONAVIGATION_VERSION}/{} /ws/src/ \
-  && rm -rf /tmp/neonavigation-${NEONAVIGATION_VERSION} \
-  && cd /ws \
+RUN cd /localdeps_ws \
   && apt-get update -qq \
   && rosdep install -y --from-paths src --ignore-src \
   && apt-get clean && rm -rf /var/lib/apt/lists/* \
   && source /opt/ros/${ROS_DISTRO}/setup.bash \
   && catkin_make_isolated --install --install-space /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release \
-  && rm -rf src/* devel_isolated build_isolated
+  && rm -rf devel_isolated build_isolated
 
 WORKDIR /ws
 
-COPY . /ws/src/self
+COPY --from=prebuild /localdeps /localdeps
+COPY --from=prebuild /target_pkg/package.xml /ws/src/target_pkg/
 
 RUN apt-get update -qq \
-  && rosdep install -y --from-paths src --ignore-src --skip-keys "`cat /ws/deps | tr "\n" " "`" \
+  && rosdep install -y --from-paths src --ignore-src --skip-keys "`cat /localdeps | tr "\n" " "`" \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-COPY . /ws/src/self
+COPY --from=prebuild /target_pkg /ws/src/target_pkg
 
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
   && catkin_make_isolated --install --install-space /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release
+
