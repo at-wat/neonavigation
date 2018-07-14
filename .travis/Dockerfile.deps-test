@@ -32,7 +32,7 @@ WORKDIR /ws
 COPY . /ws/src/self
 
 RUN apt-get update -qq \
-  && rosdep install -y --from-paths src --ignore-src --skip-keys "`cat /ws/deps`" \
+  && rosdep install -y --from-paths src --ignore-src --skip-keys "`cat /ws/deps | tr "\n" " "`" \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY . /ws/src/self
