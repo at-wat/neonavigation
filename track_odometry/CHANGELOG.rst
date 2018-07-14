@@ -2,6 +2,9 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.1 (2018-07-14)
+------------------
+
 0.2.0 (2018-07-12)
 ------------------
 * Fix build on Indigo (`#180 <https://github.com/at-wat/neonavigation/issues/180>`_)

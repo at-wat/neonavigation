@@ -2,6 +2,9 @@
 Changelog for package neonavigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.1 (2018-07-14)
+------------------
+
 0.2.0 (2018-07-12)
 ------------------
 * joystick_interrupt: fix topic ns and meta-package dep (`#173 <https://github.com/at-wat/neonavigation/issues/173>`_)
