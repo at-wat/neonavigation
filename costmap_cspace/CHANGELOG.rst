@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2018-07-14)
+------------------
 * Fix missing package dependencies (`#194 <https://github.com/at-wat/neonavigation/issues/194>`_)
 * Contributors: Atsushi Watanabe
 
