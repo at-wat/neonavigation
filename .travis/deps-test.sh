@@ -2,6 +2,8 @@
 
 set -e
 
+cd $(dirname $0)
+
 find ../ -name package.xml | grep -v neonavigation | while read target
 do
   dir=$(dirname $target)
