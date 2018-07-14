@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix missing package dependencies (`#194 <https://github.com/at-wat/neonavigation/issues/194>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.0 (2018-07-12)
 ------------------
 * planner_cspace: fix restriction of path segment connection (`#191 <https://github.com/at-wat/neonavigation/issues/191>`_)

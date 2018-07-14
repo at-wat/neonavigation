@@ -2,6 +2,11 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Compile with PCL_NO_PRECOMPILE (`#195 <https://github.com/at-wat/neonavigation/issues/195>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.0 (2018-07-12)
 ------------------
 * safety_limiter: update document (`#192 <https://github.com/at-wat/neonavigation/issues/192>`_)

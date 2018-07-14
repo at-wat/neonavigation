@@ -2,6 +2,11 @@
 Changelog for package map_organizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Compile with PCL_NO_PRECOMPILE (`#195 <https://github.com/at-wat/neonavigation/issues/195>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.0 (2018-07-12)
 ------------------
 * Fix build on Indigo (`#180 <https://github.com/at-wat/neonavigation/issues/180>`_)

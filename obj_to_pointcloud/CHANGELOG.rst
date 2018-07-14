@@ -2,6 +2,12 @@
 Changelog for package obj_to_pointcloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Compile with PCL_NO_PRECOMPILE (`#195 <https://github.com/at-wat/neonavigation/issues/195>`_)
+* Fix missing package dependencies (`#194 <https://github.com/at-wat/neonavigation/issues/194>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.0 (2018-07-12)
 ------------------
 * Fix namespace migration messages (`#174 <https://github.com/at-wat/neonavigation/issues/174>`_)
