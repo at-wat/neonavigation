@@ -2,6 +2,11 @@
 Changelog for package obj_to_pointcloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.2 (2018-07-17)
+------------------
+* Workaround for debian stretch build problem (`#199 <https://github.com/at-wat/neonavigation/issues/199>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.1 (2018-07-14)
 ------------------
 * Compile with PCL_NO_PRECOMPILE (`#195 <https://github.com/at-wat/neonavigation/issues/195>`_)
