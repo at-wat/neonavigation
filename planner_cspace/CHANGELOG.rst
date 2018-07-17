@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.2 (2018-07-17)
+------------------
+
 0.2.1 (2018-07-14)
 ------------------
 * Fix missing package dependencies (`#194 <https://github.com/at-wat/neonavigation/issues/194>`_)
