@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.3 (2018-07-19)
+------------------
 * Fix test names (`#202 <https://github.com/at-wat/neonavigation/issues/202>`_)
 * Install sample files and nodes for demo (`#201 <https://github.com/at-wat/neonavigation/issues/201>`_)
 * Contributors: Atsushi Watanabe
