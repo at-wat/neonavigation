@@ -2,6 +2,11 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix test names (`#202 <https://github.com/at-wat/neonavigation/issues/202>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.2 (2018-07-17)
 ------------------
 
