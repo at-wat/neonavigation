@@ -30,7 +30,7 @@
 #include <tf_projection.h>
 #include <gtest/gtest.h>
 
-void test_transform(
+void testTransform(
     const tf::StampedTransform proj2base,
     const tf::StampedTransform targ2proj,
     const tf::StampedTransform truth)
@@ -49,9 +49,9 @@ void test_transform(
   ASSERT_LT(fabs(error_q.getAngle()), 0.001);
 }
 
-TEST(tf_projection_test, projection_test)
+TEST(TfProjection, ProjectionTransform)
 {
-  test_transform(
+  testTransform(
       tf::StampedTransform(
           tf::Transform(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), M_PI / 2.0),
                         tf::Vector3(1.0, 3.0, 10.0)),
@@ -71,7 +71,7 @@ TEST(tf_projection_test, projection_test)
           ros::Time(0),
           "odom", "base_link"));
 
-  test_transform(
+  testTransform(
       tf::StampedTransform(
           tf::Transform(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), 0.0),
                         tf::Vector3(1.0, 1.0, 100.0)),

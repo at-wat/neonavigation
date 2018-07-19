@@ -65,7 +65,7 @@ const char temp_dir[4][2] =
       0, 1
     };
 
-TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
+TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 {
   costmap_cspace::Costmap3dLayerFootprint cm;
 
@@ -147,7 +147,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceTemplate)
   }
 }
 
-TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
+TEST(Costmap3dLayerPlain, CSpaceTemplate)
 {
   costmap_cspace::Costmap3dLayerPlain cm;
 
@@ -189,7 +189,7 @@ TEST(Costmap3dLayerPlainTest, testCSpaceTemplate)
   }
 }
 
-TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
+TEST(Costmap3dLayerFootprint, CSpaceGenerate)
 {
   costmap_cspace::Costmap3dLayerFootprint cm;
 
@@ -301,7 +301,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceGenerate)
   }
 }
 
-TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
+TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
 {
   costmap_cspace::Costmap3dLayerFootprint cm;
 
@@ -371,7 +371,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceExpandSpread)
   }
 }
 
-TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
+TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
 {
   costmap_cspace::Costmap3dLayerFootprint cm_ref;
   costmap_cspace::Costmap3dLayerFootprint cm_base;
@@ -550,7 +550,7 @@ TEST(Costmap3dLayerFootprintTest, testCSpaceOverwrite)
   }
 }
 
-TEST(Costmap3dLayerFootprintTest, testCSpaceOverlayMove)
+TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
 {
   // Set example footprint
   int footprint_offset = 0;
