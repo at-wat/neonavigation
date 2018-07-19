@@ -84,7 +84,7 @@ protected:
   planner_cspace_msgs::PlannerStatus status_;
 };
 
-TEST_F(PreemptTest, testPreempt)
+TEST_F(PreemptTest, Preempt)
 {
   move_base_->sendGoal(CreateGoalInFree());
   while (move_base_->getState().state_ !=

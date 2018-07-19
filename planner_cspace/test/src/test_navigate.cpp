@@ -36,7 +36,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(Navigate, testNavigate)
+TEST(Navigate, Navigate)
 {
   nav_msgs::OccupancyGrid map;
 

@@ -34,7 +34,7 @@
 
 #include <blockmem_gridmap.h>
 
-TEST(BlockmemGridmapTest, ResetClear)
+TEST(BlockmemGridmap, ResetClear)
 {
   BlockMemGridmap<float, 3, 3, 0x20> gm;
 
@@ -73,7 +73,7 @@ TEST(BlockmemGridmapTest, ResetClear)
   }
 }
 
-TEST(BlockmemGridmapTest, WriteRead)
+TEST(BlockmemGridmap, WriteRead)
 {
   BlockMemGridmap<float, 3, 3, 0x20> gm;
 
@@ -108,7 +108,7 @@ TEST(BlockmemGridmapTest, WriteRead)
   }
 }
 
-TEST(BlockmemGridmapTest, OuterBoundery)
+TEST(BlockmemGridmap, OuterBoundery)
 {
   BlockMemGridmap<float, 3, 2, 0x20> gm;
 
