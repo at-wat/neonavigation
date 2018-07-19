@@ -59,8 +59,8 @@ add_dependencies(tf_projection ${catkin_EXPORTED_TARGETS})
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
 
-  catkin_add_gtest(tf_projection_test test/tf_projection_test.cpp)
-  target_link_libraries(tf_projection_test ${catkin_LIBRARIES})
+  catkin_add_gtest(test_tf_projection test/src/test_tf_projection.cpp)
+  target_link_libraries(test_tf_projection ${catkin_LIBRARIES})
 
   find_package(roslint REQUIRED)
   roslint_cpp()

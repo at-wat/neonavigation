@@ -33,16 +33,16 @@
 
 #include <blockmem_gridmap.h>
 
-TEST(BlockmemGridmapTest, testSpacialAccessPerformance)
+TEST(BlockmemGridmap, SpacialAccessPerformance)
 {
   constexpr int size[3] =
-  {
-    0x420, 0x420, 0x28
-  };
+      {
+        0x420, 0x420, 0x28
+      };
   constexpr int pad[3] =
-  {
-    0x200, 0x200, 0x10
-  };
+      {
+        0x200, 0x200, 0x10
+      };
   constexpr int range = 0x10;
 
   BlockMemGridmap<float, 3, 2, 0x20> gm;
