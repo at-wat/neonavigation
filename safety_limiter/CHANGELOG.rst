@@ -2,6 +2,9 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.3 (2018-07-19)
+------------------
+
 0.2.2 (2018-07-17)
 ------------------
 * Workaround for debian stretch build problem (`#199 <https://github.com/at-wat/neonavigation/issues/199>`_)

@@ -2,6 +2,11 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.3 (2018-07-19)
+------------------
+* Install sample files and nodes for demo (`#201 <https://github.com/at-wat/neonavigation/issues/201>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.2 (2018-07-17)
 ------------------
 
