@@ -28,41 +28,35 @@
  */
 
 #include <ros/ros.h>
-#include <ros/console.h>
+
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <std_srvs/Empty.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
+#include <sensor_msgs/PointCloud.h>
+#include <std_srvs/Empty.h>
+
+#include <ros/console.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
-#include <sensor_msgs/PointCloud.h>
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
 
-#include <string>
-#include <list>
-#include <vector>
 #include <algorithm>
+#include <list>
+#include <string>
+#include <vector>
 
 #include <costmap_cspace/node_handle_float.h>
-#include <grid_astar.h>
-#include <bbf.h>
-
 #include <neonavigation_common/compatibility.h>
 
-#include <omp.h>
+#include <bbf.h>
+#include <grid_astar.h>
+#include <rotation_cache.h>
 
-float signf(float a)
-{
-  if (a < 0)
-    return -1;
-  else if (a > 0)
-    return 1;
-  return 0;
-}
+#include <omp.h>
 
 class Planner3dNode
 {
@@ -101,7 +95,7 @@ protected:
 
   Astar::Vecf euclid_cost_coef_;
 
-  float euclidCost(const Astar::Vec &v, const Astar::Vecf coef)
+  float euclidCost(const Astar::Vec &v, const Astar::Vecf coef) const
   {
     Astar::Vec vc = v;
     float cost = 0;
@@ -117,51 +111,13 @@ protected:
     }
     return cost;
   }
-  float euclidCost(const Astar::Vec &v)
+  float euclidCost(const Astar::Vec &v) const
   {
     return euclidCost(v, euclid_cost_coef_);
   }
 
-  class RotationCache
-  {
-  protected:
-    std::unique_ptr<Astar::Vecf[]> c_;
-    Astar::Vec size_;
-    int ser_size_;
-
-  public:
-    void reset(const Astar::Vec &size)
-    {
-      size_t ser_size = 1;
-      for (int i = 0; i < 3; i++)
-      {
-        ser_size *= size[i];
-      }
-      this->size_ = size;
-      this->ser_size_ = ser_size;
-
-      c_.reset(new Astar::Vecf[ser_size]);
-    }
-    explicit RotationCache(const Astar::Vec &size)
-    {
-      reset(size);
-    }
-    RotationCache()
-    {
-    }
-    Astar::Vecf &operator[](const Astar::Vec &pos)
-    {
-      size_t addr = pos[2];
-      for (int i = 1; i >= 0; i--)
-      {
-        addr *= size_[i];
-        addr += pos[i];
-      }
-      return c_[addr];
-    }
-  };
-  std::vector<RotationCache> rotgm_;
-  RotationCache *rot_cache_;
+  std::vector<RotationCache<3, 2>> rotgm_;
+  RotationCache<3, 2> *rot_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -336,21 +292,20 @@ protected:
 
             float distf = 0.0;
             const float r1 = motion[1] + motion[0] * cos_v / sin_v;
-            float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
-            if (motion[0] * sin_v < 0)
-              r2 = -r2;
+            const float r2 = std::copysign(
+                sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
+                motion[0] * sin_v);
 
-            float cx, cy, cx_s, cy_s, dyaw;
-            dyaw = yaw_e - yaw;
+            float dyaw = yaw_e - yaw;
             if (dyaw < -M_PI)
               dyaw += 2 * M_PI;
             else if (dyaw > M_PI)
               dyaw -= 2 * M_PI;
 
-            cx = d[0] * map_info_.linear_resolution + r2 * cosf(yaw_e + M_PI / 2);
-            cy = d[1] * map_info_.linear_resolution + r2 * sinf(yaw_e + M_PI / 2);
-            cx_s = r1 * cosf(yaw + M_PI / 2);
-            cy_s = r1 * sinf(yaw + M_PI / 2);
+            const float cx = d[0] * map_info_.linear_resolution + r2 * cosf(yaw_e + M_PI / 2);
+            const float cy = d[1] * map_info_.linear_resolution + r2 * sinf(yaw_e + M_PI / 2);
+            const float cx_s = r1 * cosf(yaw + M_PI / 2);
+            const float cy_s = r1 * sinf(yaw + M_PI / 2);
 
             Astar::Vecf posf_prev;
 
@@ -453,11 +408,8 @@ protected:
         return -1;
       for (const auto &pos_diff : cache_page->second)
       {
-        const int posi[3] =
-            {
-              s[0] + pos_diff[0], s[1] + pos_diff[1], 0
-            };
-        const Astar::Vec pos(posi);
+        // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+        const Astar::Vec pos({ s[0] + pos_diff[0], s[1] + pos_diff[1], 0 });  // NOLINT(whitespace/braces)
         const auto c = cm_rough_[pos];
         if (c > 99)
           return -1;
@@ -474,9 +426,6 @@ protected:
     {
       const Astar::Vec d = e - s;
       const float cost = euclidCost(d, euclid_cost_coef);
-
-      if (cost == FLT_MAX)
-        return FLT_MAX;
 
       return cost;
     };
@@ -553,7 +502,7 @@ protected:
   {
     goal_raw_ = goal_ = msg;
 
-    double len2 =
+    const double len2 =
         goal_.pose.orientation.x * goal_.pose.orientation.x +
         goal_.pose.orientation.y * goal_.pose.orientation.y +
         goal_.pose.orientation.z * goal_.pose.orientation.z +
@@ -578,12 +527,13 @@ protected:
     }
     return true;
   }
-  void fillCostmap(reservable_priority_queue<Astar::PriorityVec> &open,
-                   Astar::Gridmap<float> &g,
-                   const Astar::Vec &s, const Astar::Vec &e)
+  void fillCostmap(
+      reservable_priority_queue<Astar::PriorityVec> &open,
+      Astar::Gridmap<float> &g,
+      const Astar::Vec &s, const Astar::Vec &e)
   {
-    Astar::Vec s_rough = s;
-    s_rough[2] = 0;
+    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+    const Astar::Vec s_rough({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
 
     while (true)
     {
@@ -595,7 +545,7 @@ protected:
       {
         if (open.size() < 1)
           break;
-        auto center = open.top();
+        const auto center = open.top();
         open.pop();
         if (center.p_raw_ > g[center.v_])
           continue;
@@ -633,34 +583,29 @@ protected:
             float cost = 0;
 
             {
-              float v[3], dp[3], sum = 0, sum_hist = 0;
-              float distf = d.len();
-              const int dist = distf;
-              distf /= dist;
-              v[0] = p[0];
-              v[1] = p[1];
-              v[2] = 0;
-              dp[0] = static_cast<float>(d[0]) / dist;
-              dp[1] = static_cast<float>(d[1]) / dist;
-              Astar::Vec pos(v);
-              char c = 0;
-              for (int i = 0; i < dist; i++)
+              float sum = 0, sum_hist = 0;
+              const float grid_to_len = d.gridToLenFactor();
+              const int dist = d.len();
+              const float dpx = static_cast<float>(d[0]) / dist;
+              const float dpy = static_cast<float>(d[1]) / dist;
+              // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+              Astar::Vec pos({ static_cast<int>(p[0]), static_cast<int>(p[1]), 0 });  // NOLINT(whitespace/braces)
+              int i = 0;
+              for (; i < dist; i++)
               {
-                pos[0] = static_cast<int>(v[0]);
-                pos[1] = static_cast<int>(v[1]);
-                c = cm_rough_[pos];
+                const char c = cm_rough_[pos];
                 if (c > 99)
                   break;
                 sum += c;
 
                 sum_hist += cm_hist_[pos];
-                v[0] += dp[0];
-                v[1] += dp[1];
+                pos[0] += dpx;
+                pos[1] += dpy;
               }
-              if (c > 99)
+              if (i != dist)
                 continue;
               cost +=
-                  (map_info_.linear_resolution * distf / 100.0) *
+                  (map_info_.linear_resolution * grid_to_len / 100.0) *
                   (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
             }
             cost += euclidCost(d, ec_rough_);
@@ -707,7 +652,7 @@ protected:
           s2.cycleUnsigned(s2[2], map_info_.angle);
           if (cm_[s2] >= cost_acceptable)
             continue;
-          auto cost = euclidCost(d, ec_);
+          const auto cost = euclidCost(d, ec_);
           if (cost < range_min)
           {
             range_min = cost;
@@ -768,9 +713,8 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
     reservable_priority_queue<Astar::PriorityVec> open;
-    auto &g = cost_estim_cache_;
 
-    g.clear(FLT_MAX);
+    cost_estim_cache_.clear(FLT_MAX);
     if (cm_[e] == 100)
     {
       if (!searchAvailablePos(e, esc_range_, esc_angle_))
@@ -797,13 +741,13 @@ protected:
     }
 
     e[2] = 0;
-    g[e] = -ec_rough_[0] * 0.5;  // Decrement to reduce calculation error
-    open.push(Astar::PriorityVec(g[e], g[e], e));
-    fillCostmap(open, g, s, e);
+    cost_estim_cache_[e] = -ec_rough_[0] * 0.5;  // Decrement to reduce calculation error
+    open.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
+    fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.3f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
-    g[e] = 0;
+    cost_estim_cache_[e] = 0;
 
     if (goal_changed)
       cm_hyst_.clear(0);
@@ -913,8 +857,8 @@ protected:
       gp[0] = msg->x;
       gp[1] = msg->y;
       gp[2] = msg->yaw;
-      Astar::Vec gp_rough = gp;
-      gp_rough[2] = 0;
+      // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+      const Astar::Vec gp_rough({ gp[0], gp[1], 0 });  // NOLINT(whitespace/braces)
       const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
       const int hist_ignore_range_max_sq =
           hist_ignore_range_max_ * hist_ignore_range_max_;
@@ -926,7 +870,7 @@ protected:
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
-            char c = msg->data[addr];
+            const char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
           }
@@ -940,8 +884,8 @@ protected:
           pos[2] = 0;
           if (cost_min == 100)
           {
-            Astar::Vec p2 = p - center;
-            float sqlen = p2.sqlen();
+            const Astar::Vec p2 = p - center;
+            const float sqlen = p2.sqlen();
             if (sqlen > hist_ignore_range_sq &&
                 sqlen < hist_ignore_range_max_sq)
             {
@@ -950,8 +894,8 @@ protected:
           }
           else if (cost_min >= 0)
           {
-            Astar::Vec p2 = p - center;
-            float sqlen = p2.sqlen();
+            const Astar::Vec p2 = p - center;
+            const float sqlen = p2.sqlen();
             if (sqlen < hist_ignore_range_max_sq)
             {
               cm_hist_bbf_[pos].update(remember_miss_odds_);
@@ -961,7 +905,7 @@ protected:
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
-            char c = msg->data[addr];
+            const char c = msg->data[addr];
             if (overwrite_cost_)
             {
               if (c >= 0)
@@ -1004,7 +948,6 @@ protected:
     e[2] = 0;
 
     const auto ts = boost::chrono::high_resolution_clock::now();
-    auto &g = cost_estim_cache_;
 
     Astar::Vec p, p_cost_min;
     p[2] = 0;
@@ -1013,10 +956,10 @@ protected:
     {
       for (p[0] = static_cast<int>(msg->x); p[0] < static_cast<int>(msg->x + msg->width); p[0]++)
       {
-        if (cost_min > g[p])
+        if (cost_min > cost_estim_cache_[p])
         {
           p_cost_min = p;
-          cost_min = g[p];
+          cost_min = cost_estim_cache_[p];
         }
       }
     }
@@ -1036,9 +979,9 @@ protected:
       const Astar::Vec p = center.v_;
       erase.pop();
 
-      if (g[p] == FLT_MAX)
+      if (cost_estim_cache_[p] == FLT_MAX)
         continue;
-      g[p] = FLT_MAX;
+      cost_estim_cache_[p] = FLT_MAX;
 
       Astar::Vec d;
       d[2] = 0;
@@ -1052,7 +995,7 @@ protected:
           if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
-          float &gn = g[next];
+          const float &gn = cost_estim_cache_[next];
           if (gn == FLT_MAX)
             continue;
           if (gn < cost_min)
@@ -1070,13 +1013,12 @@ protected:
     }
     {
       Astar::Vec p;
-      auto &g = cost_estim_cache_;
       p[2] = 0;
       for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
       {
         for (p[1] = 0; p[1] < static_cast<int>(map_info_.height); p[1]++)
         {
-          auto &gp = g[p];
+          const auto &gp = cost_estim_cache_[p];
           if (gp > rough_cost_max_)
           {
             open.push(Astar::PriorityVec(gp, gp, p));
@@ -1085,7 +1027,7 @@ protected:
       }
     }
 
-    fillCostmap(open, g, s, e);
+    fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache updated (%0.3f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
@@ -1109,7 +1051,6 @@ protected:
           1.0f / max_vel_,
           1.0f * cc_.weight_ang_vel_ / max_ang_vel_
         };
-
     ec_ = Astar::Vecf(ec_val);
     ec_val[2] = 0;
     ec_rough_ = Astar::Vecf(ec_val);
@@ -1457,7 +1398,7 @@ public:
 
         if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
         {
-          float yaw_s = tf::getYaw(start_.pose.orientation);
+          const float yaw_s = tf::getYaw(start_.pose.orientation);
           float yaw_g;
           if (force_goal_orientation_)
             yaw_g = tf::getYaw(goal_raw_.pose.orientation);
@@ -1538,8 +1479,8 @@ protected:
   {
     // static int cnt = 0;
     // cnt ++;
-    float x_ = 0, y_ = 0, yaw_ = 0;
-    Astar::Vec p_;
+    float x_prev = 0, y_prev = 0, yaw_prev = 0;
+    Astar::Vec p_prev;
     bool init = false;
     for (auto &p : path_grid)
     {
@@ -1551,22 +1492,22 @@ protected:
       // printf("%d %d %d  %f\n", p[0], p[1], p[2], as_.g[p]);
       if (init)
       {
-        auto ds = v_start - p;
-        auto d = p - p_;
-        float diff_val[3] =
+        const auto ds = v_start - p;
+        const auto d = p - p_prev;
+        const float diff_val[3] =
             {
               d[0] * map_info_.linear_resolution,
               d[1] * map_info_.linear_resolution,
               p[2] * map_info_.angular_resolution
             };
-        Astar::Vecf motion_(diff_val);
-        rotate(motion_, -p_[2] * map_info_.angular_resolution);
+        Astar::Vecf motion_r(diff_val);
+        rotate(motion_r, -p_prev[2] * map_info_.angular_resolution);
 
         float inter = 0.1 / d.len();
 
-        const Astar::Vecf motion = motion_;
-        float cos_v = cosf(motion[2]);
-        float sin_v = sinf(motion[2]);
+        const Astar::Vecf motion = motion_r;
+        const float cos_v = cosf(motion[2]);
+        const float sin_v = sinf(motion[2]);
         if (d[0] == 0 && d[1] == 0)
         {
           ps.pose.position.x = x;
@@ -1581,10 +1522,9 @@ protected:
         {
           for (float i = 0; i < 1.0; i += inter)
           {
-            float x2, y2, yaw2;
-            x2 = x_ * (1 - i) + x * i;
-            y2 = y_ * (1 - i) + y * i;
-            yaw2 = yaw_ * (1 - i) + yaw * i;
+            const float x2 = x_prev * (1 - i) + x * i;
+            const float y2 = y_prev * (1 - i) + y * i;
+            const float yaw2 = yaw_prev * (1 - i) + yaw * i;
             ps.pose.position.x = x2;
             ps.pose.position.y = y2;
             ps.pose.position.z = 0;
@@ -1595,34 +1535,32 @@ protected:
         }
         else
         {
-          float r1 = motion[1] + motion[0] * cos_v / sin_v;
-          float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
-          if (motion[0] * sin_v < 0)
-            r2 = -r2;
+          const float r1 = motion[1] + motion[0] * cos_v / sin_v;
+          const float r2 = std::copysign(
+              sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
+              motion[0] * sin_v < 0);
 
-          float cx, cy, cx_, cy_, dyaw;
-          dyaw = yaw - yaw_;
+          float dyaw = yaw - yaw_prev;
           if (dyaw < -M_PI)
             dyaw += 2 * M_PI;
           else if (dyaw > M_PI)
             dyaw -= 2 * M_PI;
 
-          cx = x + r2 * cosf(yaw + M_PI / 2);
-          cy = y + r2 * sinf(yaw + M_PI / 2);
-          cx_ = x_ + r1 * cosf(yaw_ + M_PI / 2);
-          cy_ = y_ + r1 * sinf(yaw_ + M_PI / 2);
+          const float cx = x + r2 * cosf(yaw + M_PI / 2);
+          const float cy = y + r2 * sinf(yaw + M_PI / 2);
+          const float cx_prev = x_prev + r1 * cosf(yaw_prev + M_PI / 2);
+          const float cy_prev = y_prev + r1 * sinf(yaw_prev + M_PI / 2);
 
           for (float i = 0; i < 1.0; i += inter)
           {
-            float r = r1 * (1.0 - i) + r2 * i;
-            float cx2 = cx_ * (1.0 - i) + cx * i;
-            float cy2 = cy_ * (1.0 - i) + cy * i;
-            float cyaw = yaw_ + i * dyaw;
+            const float r = r1 * (1.0 - i) + r2 * i;
+            const float cx2 = cx_prev * (1.0 - i) + cx * i;
+            const float cy2 = cy_prev * (1.0 - i) + cy * i;
+            const float cyaw = yaw_prev + i * dyaw;
 
-            float x2, y2, yaw2;
-            x2 = cx2 - r * cosf(cyaw + M_PI / 2);
-            y2 = cy2 - r * sinf(cyaw + M_PI / 2);
-            yaw2 = cyaw;
+            const float x2 = cx2 - r * cosf(cyaw + M_PI / 2);
+            const float y2 = cy2 - r * sinf(cyaw + M_PI / 2);
+            const float yaw2 = cyaw;
             ps.pose.position.x = x2;
             ps.pose.position.y = y2;
             ps.pose.position.z = 0;
@@ -1639,10 +1577,10 @@ protected:
         }
       }
 
-      x_ = x;
-      y_ = y;
-      yaw_ = yaw;
-      p_ = p;
+      x_prev = x;
+      y_prev = y;
+      yaw_prev = yaw;
+      p_prev = p;
       init = true;
     }
   }
@@ -1684,8 +1622,8 @@ protected:
       }
       ROS_INFO("Start moved");
     }
-    auto s_rough = s;
-    s_rough[2] = 0;
+    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+    const Astar::Vec s_rough({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
 
     if (cost_estim_cache_[s_rough] == FLT_MAX)
     {
@@ -1877,8 +1815,8 @@ protected:
   }
   float cbCostEstim(const Astar::Vec &s, const Astar::Vec &e)
   {
-    auto s2 = s;
-    s2[2] = 0;
+    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+    Astar::Vec s2({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
     auto cost = cost_estim_cache_[s2];
     if (cost == FLT_MAX)
       return FLT_MAX;
@@ -1896,22 +1834,20 @@ protected:
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
-    for (auto &p : path.poses)
+    for (const auto &p : path.poses)
     {
       if (!first)
       {
-        float len = hypotf(
+        const float len = hypotf(
             p.pose.position.y - p_prev.position.y,
             p.pose.position.x - p_prev.position.x);
         if (len > 0.001)
         {
-          float yaw = tf::getYaw(p.pose.orientation);
-          float vel_yaw = atan2f(
+          const float yaw = tf::getYaw(p.pose.orientation);
+          const float vel_yaw = atan2f(
               p.pose.position.y - p_prev.position.y,
               p.pose.position.x - p_prev.position.x);
-          bool dir = false;
-          if (cosf(yaw) * cosf(vel_yaw) + sinf(yaw) * sinf(vel_yaw) < 0)
-            dir = true;
+          const bool dir = (cosf(yaw) * cosf(vel_yaw) + sinf(yaw) * sinf(vel_yaw) < 0);
 
           if (dir_set && (dir_prev ^ dir))
           {
@@ -1940,9 +1876,7 @@ protected:
     {
       // In-place turn
       int sum = 0;
-      int dir = 1;
-      if (d[2] > static_cast<int>(map_info_.angle) / 2)
-        dir = -1;
+      const int dir = d[2] > static_cast<int>(map_info_.angle) / 2 ? -1 : 1;
       Astar::Vec pos = s;
       for (int i = 0; i < abs(d[2]); i++)
       {
@@ -1957,7 +1891,7 @@ protected:
         sum += c;
       }
 
-      float cost = sum * map_info_.angular_resolution * ec_[2] / ec_[0];
+      const float cost = sum * map_info_.angular_resolution * ec_[2] / ec_[0];
       return cc_.in_place_turn_ + cost;
     }
 
@@ -1984,12 +1918,9 @@ protected:
 
     const float dist = motion.len();
 
-    bool forward(true);
     if (motion[0] < 0)
-      forward = false;
-
-    if (!forward)
     {
+      // Going backward
       cost *= 1.0 + cc_.weight_backward_;
     }
 
@@ -2014,18 +1945,16 @@ protected:
         return -1;
       for (const auto &pos_diff : cache_page->second)
       {
-        const int posi[3] =
-            {
-              s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
-            };
-        const Astar::Vec pos(posi);
+        // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+        const Astar::Vec pos(
+            { s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2] });  // NOLINT(whitespace/braces)
         const auto c = cm_[pos];
         if (c > 99)
           return -1;
         if (hyst)
         {
-          auto pos_rough = pos;
-          pos_rough[2] = 0;
+          // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+          const Astar::Vec pos_rough({ pos[0], pos[1], 0 });  // NOLINT(whitespace/braces)
           sum_hyst += cm_hyst_[pos_rough];
         }
         sum += c;
@@ -2049,9 +1978,9 @@ protected:
       const float sin_v = sinf(motion[2]);
 
       const float r1 = motion[1] + motion[0] * cos_v / sin_v;
-      float r2 = sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0));
-      if (motion[0] * sin_v < 0)
-        r2 = -r2;
+      const float r2 = std::copysign(
+          sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
+          motion[0] * sin_v);
 
       // curveture at the start_ pose and the end pose must be same
       if (fabs(r1 - r2) >= map_info_.linear_resolution * 1.5)
@@ -2066,7 +1995,7 @@ protected:
       float ang_vel = cos_v * vel / (cos_v * motion[0] + sin_v * motion[1]);
       if (fabs(ang_vel) > max_ang_vel_)
       {
-        ang_vel = signf(ang_vel) * max_ang_vel_;
+        ang_vel = std::copysign(1.0f, ang_vel) * max_ang_vel_;
         vel = fabs(curv_radius) * max_ang_vel_;
 
         // Curve deceleration penalty
@@ -2086,11 +2015,9 @@ protected:
           return -1;
         for (const auto &pos_diff : cache_page->second)
         {
-          const int posi[3] =
-              {
-                s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
-              };
-          const Astar::Vec pos(posi);
+          // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+          const Astar::Vec pos(
+              { s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2] });  // NOLINT(whitespace/braces)
           const auto c = cm_[pos];
           if (c > 99)
             return -1;
@@ -2098,8 +2025,8 @@ protected:
           num++;
           if (hyst)
           {
-            auto pos_rough = pos;
-            pos_rough[2] = 0;
+            // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+            const Astar::Vec pos_rough({ pos[0], pos[1], 0 });  // NOLINT(whitespace/braces)
             sum_hyst += cm_hyst_[pos_rough];
           }
         }
