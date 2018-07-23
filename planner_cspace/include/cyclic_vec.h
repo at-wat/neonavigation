@@ -34,6 +34,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <cfloat>
+#include <initializer_list>
 #include <list>
 #include <map>
 #include <unordered_map>
@@ -50,12 +51,19 @@ protected:
   T e_[DIM];
 
 public:
-  explicit CyclicVecBase(const T *v)
+  explicit CyclicVecBase(const T *v) noexcept
   {
     for (int i = 0; i < DIM; i++)
       e_[i] = v[i];
   }
-  CyclicVecBase()
+  explicit CyclicVecBase(const std::initializer_list<T> vl) noexcept
+  {
+    assert(vl.size() == DIM);
+    auto it = vl.begin();
+    for (int i = 0; i < DIM; ++i, ++it)
+      e_[i] = *it;
+  }
+  CyclicVecBase() noexcept
   {
   }
   template <typename C>
@@ -125,7 +133,7 @@ public:
     auto to_b = (*this) - b;
     if ((a - b).dot2d(to_b) <= 0)
       return to_b.len();
-    return fabs(this->distLine2d(a, b));
+    return fabs(distLine2d(a, b));
   }
   T &operator[](const int &x)
   {
@@ -154,6 +162,11 @@ public:
   float len() const
   {
     return sqrtf(sqlen());
+  }
+  float gridToLenFactor() const
+  {
+    const auto l = len();
+    return l / static_cast<int>(l);
   }
   float norm() const
   {
@@ -202,15 +215,15 @@ public:
   using CyclicVecBase<DIM, NONCYCLIC, int>::CyclicVecBase;
 
 public:
-  CyclicVecInt()
+  CyclicVecInt() noexcept
   {
   }
-  explicit CyclicVecInt(const float *v)
+  explicit CyclicVecInt(const float *v) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = v[i];
   }
-  explicit CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int> &c)
+  explicit CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int> &c) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = c[i];
@@ -224,10 +237,10 @@ public:
   using CyclicVecBase<DIM, NONCYCLIC, float>::CyclicVecBase;
 
 public:
-  CyclicVecFloat()
+  CyclicVecFloat() noexcept
   {
   }
-  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, float> &c)
+  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, float> &c) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = c[i];

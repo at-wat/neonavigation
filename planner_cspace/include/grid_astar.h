@@ -73,14 +73,14 @@ public:
     }
     PriorityVec(const float &p, const float &p_raw, const Vec &v)
     {
-      this->p_ = p;
-      this->p_raw_ = p_raw;
-      this->v_ = v;
+      p_ = p;
+      p_raw_ = p_raw;
+      v_ = v;
     }
     bool operator<(const PriorityVec &b) const
     {
       // smaller first
-      return this->p_ > b.p_;
+      return p_ > b.p_;
     }
   };
 
@@ -92,11 +92,11 @@ protected:
   size_t search_task_num_;
 
 public:
-  const int getDim()
+  constexpr int getDim() const
   {
     return DIM;
   }
-  const int getNoncyclic()
+  constexpr int getNoncyclic() const
   {
     return NONCYCLIC;
   }
