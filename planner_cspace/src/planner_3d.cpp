@@ -538,7 +538,7 @@ protected:
       Astar::Gridmap<float> &g,
       const Astar::Vec &s, const Astar::Vec &e)
   {
-    // FIXME(at-wat): fix after clang-format or roslint supports it
+    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
     const Astar::Vec s_rough({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
 
     while (true)
@@ -867,7 +867,7 @@ protected:
       gp[0] = msg->x;
       gp[1] = msg->y;
       gp[2] = msg->yaw;
-      // FIXME(at-wat): fix after clang-format or roslint supports it
+      // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
       const Astar::Vec gp_rough({ gp[0], gp[1], 0 });  // NOLINT(whitespace/braces)
       const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
       const int hist_ignore_range_max_sq =
@@ -1632,7 +1632,7 @@ protected:
       }
       ROS_INFO("Start moved");
     }
-    // FIXME(at-wat): fix after clang-format or roslint supports it
+    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
     const Astar::Vec s_rough({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
 
     if (cost_estim_cache_[s_rough] == FLT_MAX)
@@ -1965,7 +1965,7 @@ protected:
           return -1;
         if (hyst)
         {
-          // FIXME(at-wat): fix after clang-format or roslint supports it
+          // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
           const Astar::Vec pos_rough({ pos[0], pos[1], 0 });  // NOLINT(whitespace/braces)
           sum_hyst += cm_hyst_[pos_rough];
         }
@@ -2027,7 +2027,7 @@ protected:
           return -1;
         for (const auto &pos_diff : cache_page->second)
         {
-          // FIXME(at-wat): fix after clang-format or roslint supports it
+          // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
           const Astar::Vec pos(
               { s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2] });  // NOLINT(whitespace/braces)
           const auto c = cm_[pos];
@@ -2037,7 +2037,7 @@ protected:
           num++;
           if (hyst)
           {
-            // FIXME(at-wat): fix after clang-format or roslint supports it
+            // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
             const Astar::Vec pos_rough({ pos[0], pos[1], 0 });  // NOLINT(whitespace/braces)
             sum_hyst += cm_hyst_[pos_rough];
           }
