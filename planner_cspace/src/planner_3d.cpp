@@ -408,11 +408,8 @@ protected:
         return -1;
       for (const auto &pos_diff : cache_page->second)
       {
-        const int posi[3] =
-            {
-              s[0] + pos_diff[0], s[1] + pos_diff[1], 0
-            };
-        const Astar::Vec pos(posi);
+        // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+        const Astar::Vec pos({ s[0] + pos_diff[0], s[1] + pos_diff[1], 0 });  // NOLINT(whitespace/braces)
         const auto c = cm_rough_[pos];
         if (c > 99)
           return -1;
@@ -429,9 +426,6 @@ protected:
     {
       const Astar::Vec d = e - s;
       const float cost = euclidCost(d, euclid_cost_coef);
-
-      if (cost == FLT_MAX)
-        return FLT_MAX;
 
       return cost;
     };
@@ -589,30 +583,26 @@ protected:
             float cost = 0;
 
             {
-              float v[3], dp[3], sum = 0, sum_hist = 0;
+              float sum = 0, sum_hist = 0;
               const float grid_to_len = d.gridToLenFactor();
               const int dist = d.len();
-              v[0] = p[0];
-              v[1] = p[1];
-              v[2] = 0;
-              dp[0] = static_cast<float>(d[0]) / dist;
-              dp[1] = static_cast<float>(d[1]) / dist;
-              Astar::Vec pos(v);
-              char c = 0;
-              for (int i = 0; i < dist; i++)
+              const float dpx = static_cast<float>(d[0]) / dist;
+              const float dpy = static_cast<float>(d[1]) / dist;
+              // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+              Astar::Vec pos({ static_cast<int>(p[0]), static_cast<int>(p[1]), 0 });  // NOLINT(whitespace/braces)
+              int i = 0;
+              for (; i < dist; i++)
               {
-                pos[0] = static_cast<int>(v[0]);
-                pos[1] = static_cast<int>(v[1]);
-                c = cm_rough_[pos];
+                const char c = cm_rough_[pos];
                 if (c > 99)
                   break;
                 sum += c;
 
                 sum_hist += cm_hist_[pos];
-                v[0] += dp[0];
-                v[1] += dp[1];
+                pos[0] += dpx;
+                pos[1] += dpy;
               }
-              if (c > 99)
+              if (i != dist)
                 continue;
               cost +=
                   (map_info_.linear_resolution * grid_to_len / 100.0) *
@@ -1825,8 +1815,8 @@ protected:
   }
   float cbCostEstim(const Astar::Vec &s, const Astar::Vec &e)
   {
-    auto s2 = s;
-    s2[2] = 0;
+    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+    Astar::Vec s2({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
     auto cost = cost_estim_cache_[s2];
     if (cost == FLT_MAX)
       return FLT_MAX;
@@ -1844,7 +1834,7 @@ protected:
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
-    for (auto &p : path.poses)
+    for (const auto &p : path.poses)
     {
       if (!first)
       {
@@ -1955,11 +1945,9 @@ protected:
         return -1;
       for (const auto &pos_diff : cache_page->second)
       {
-        const int posi[3] =
-            {
-              s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]
-            };
-        const Astar::Vec pos(posi);
+        // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+        const Astar::Vec pos(
+            { s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2] });  // NOLINT(whitespace/braces)
         const auto c = cm_[pos];
         if (c > 99)
           return -1;
