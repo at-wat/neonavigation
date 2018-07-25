@@ -1205,25 +1205,29 @@ protected:
 
   void updateStart()
   {
-    start_.header.frame_id = "base_link";
-    start_.header.stamp = ros::Time(0);
-    start_.pose.orientation.x = 0.0;
-    start_.pose.orientation.y = 0.0;
-    start_.pose.orientation.z = 0.0;
-    start_.pose.orientation.w = 1.0;
-    start_.pose.position.x = 0;
-    start_.pose.position.y = 0;
-    start_.pose.position.z = 0;
+    geometry_msgs::PoseStamped start;
+    start.header.frame_id = "base_link";
+    start.header.stamp = ros::Time(0);
+    start.pose.orientation.x = 0.0;
+    start.pose.orientation.y = 0.0;
+    start.pose.orientation.z = 0.0;
+    start.pose.orientation.w = 1.0;
+    start.pose.position.x = 0;
+    start.pose.position.y = 0;
+    start.pose.position.z = 0;
     try
     {
       tfl_.waitForTransform(
           map_header_.frame_id, "base_link", map_header_.stamp, ros::Duration(0.1));
-      tfl_.transformPose(map_header_.frame_id, start_, start_);
+      tfl_.transformPose(map_header_.frame_id, start, start);
     }
     catch (tf::TransformException &e)
     {
+      has_start_ = false;
       return;
     }
+    start_ = start;
+    has_start_ = true;
   }
   void detectJump()
   {
@@ -1240,6 +1244,7 @@ protected:
       return;
     }
     const auto diff = jump_detect_trans_prev_.inverse() * jump_detect_trans;
+    jump_detect_trans_prev_ = jump_detect_trans;
 
     if (diff.getOrigin().length2() > powf(pos_jump_, 2.0) ||
         fabs(tf::getYaw(diff.getRotation())) > yaw_jump_)
@@ -1248,7 +1253,6 @@ protected:
                 diff.getOrigin().length(), tf::getYaw(diff.getRotation()));
       cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
     }
-    jump_detect_trans_prev_ = jump_detect_trans;
   }
 
 public:
@@ -1396,7 +1400,6 @@ public:
         updateStart();
         detectJump();
 
-        has_start_ = true;
         if (!goal_updated_ && has_goal_)
           updateGoal();
       }
