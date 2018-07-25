@@ -154,6 +154,8 @@ protected:
 
   double pos_jump_;
   double yaw_jump_;
+  std::string jump_detect_frame_;
+  tf::Transform jump_detect_trans_prev_;
 
   int max_retry_num_;
 
@@ -1201,10 +1203,59 @@ protected:
     }
   }
 
+  void updateStart()
+  {
+    start_.header.frame_id = "base_link";
+    start_.header.stamp = ros::Time(0);
+    start_.pose.orientation.x = 0.0;
+    start_.pose.orientation.y = 0.0;
+    start_.pose.orientation.z = 0.0;
+    start_.pose.orientation.w = 1.0;
+    start_.pose.position.x = 0;
+    start_.pose.position.y = 0;
+    start_.pose.position.z = 0;
+    try
+    {
+      tfl_.waitForTransform(
+          map_header_.frame_id, "base_link", map_header_.stamp, ros::Duration(0.1));
+      tfl_.transformPose(map_header_.frame_id, start_, start_);
+    }
+    catch (tf::TransformException &e)
+    {
+      return;
+    }
+  }
+  void detectJump()
+  {
+    tf::StampedTransform jump_detect_trans;
+    try
+    {
+      tfl_.waitForTransform(
+          map_header_.frame_id, jump_detect_frame_, map_header_.stamp, ros::Duration(0.1));
+      tfl_.lookupTransform(
+          map_header_.frame_id, jump_detect_frame_, map_header_.stamp, jump_detect_trans);
+    }
+    catch (tf::TransformException &e)
+    {
+      return;
+    }
+    const auto diff = jump_detect_trans_prev_.inverse() * jump_detect_trans;
+
+    if (diff.getOrigin().length2() > powf(pos_jump_, 2.0) ||
+        fabs(tf::getYaw(diff.getRotation())) > yaw_jump_)
+    {
+      ROS_ERROR("Position jumped (%f, %f); clearing history",
+                diff.getOrigin().length(), tf::getYaw(diff.getRotation()));
+      cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+    }
+    jump_detect_trans_prev_ = jump_detect_trans;
+  }
+
 public:
   Planner3dNode()
     : nh_()
     , pnh_("~")
+    , jump_detect_trans_prev_(tf::Quaternion(0, 0, 0, 1))
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
@@ -1275,6 +1326,7 @@ public:
 
     pnh_.param("pos_jump", pos_jump_, 1.0);
     pnh_.param("yaw_jump", yaw_jump_, 1.5);
+    pnh_.param("jump_detect_frame", jump_detect_frame_, std::string("base_link"));
 
     pnh_.param("force_goal_orientation", force_goal_orientation_, true);
 
@@ -1334,9 +1386,6 @@ public:
     ros::Rate wait(freq_);
     ROS_DEBUG("Initialized");
 
-    geometry_msgs::PoseStamped start_prev;
-    start_prev.pose.orientation.w = 1.0;
-
     while (ros::ok())
     {
       wait.sleep();
@@ -1344,43 +1393,8 @@ public:
 
       if (has_map_)
       {
-        start_.header.frame_id = "base_link";
-        start_.header.stamp = ros::Time(0);
-        start_.pose.orientation.x = 0.0;
-        start_.pose.orientation.y = 0.0;
-        start_.pose.orientation.z = 0.0;
-        start_.pose.orientation.w = 1.0;
-        start_.pose.position.x = 0;
-        start_.pose.position.y = 0;
-        start_.pose.position.z = 0;
-        try
-        {
-          tfl_.waitForTransform(map_header_.frame_id, "base_link",
-                                map_header_.stamp, ros::Duration(0.1));
-          tfl_.transformPose(map_header_.frame_id, start_, start_);
-        }
-        catch (tf::TransformException &e)
-        {
-          // ROS_INFO("planner_cspace: Transform failed %s", e.what());
-          continue;
-        }
-        {
-          const float x_diff = start_.pose.position.x - start_prev.pose.position.x;
-          const float y_diff = start_.pose.position.y - start_prev.pose.position.y;
-          float yaw_diff = tf::getYaw(start_.pose.orientation) - tf::getYaw(start_prev.pose.orientation);
-          if (yaw_diff > M_PI)
-            yaw_diff -= M_PI * 2;
-          else if (yaw_diff < -M_PI)
-            yaw_diff += M_PI * 2;
-
-          if (powf(x_diff, 2.0) + powf(y_diff, 2.0) > powf(pos_jump_, 2.0) ||
-              fabs(yaw_diff) > yaw_jump_)
-          {
-            ROS_ERROR("Position jumped (%f, %f, %f); clearing history", x_diff, y_diff, yaw_diff);
-            cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-          }
-          start_prev = start_;
-        }
+        updateStart();
+        detectJump();
 
         has_start_ = true;
         if (!goal_updated_ && has_goal_)
