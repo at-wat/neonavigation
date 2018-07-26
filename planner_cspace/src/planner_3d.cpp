@@ -1218,7 +1218,7 @@ protected:
     try
     {
       tfl_.waitForTransform(
-          map_header_.frame_id, "base_link", map_header_.stamp, ros::Duration(0.1));
+          map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
       tfl_.transformPose(map_header_.frame_id, start, start);
     }
     catch (tf::TransformException &e)
@@ -1235,9 +1235,9 @@ protected:
     try
     {
       tfl_.waitForTransform(
-          map_header_.frame_id, jump_detect_frame_, map_header_.stamp, ros::Duration(0.1));
+          map_header_.frame_id, jump_detect_frame_, ros::Time(), ros::Duration(0.1));
       tfl_.lookupTransform(
-          map_header_.frame_id, jump_detect_frame_, map_header_.stamp, jump_detect_trans);
+          map_header_.frame_id, jump_detect_frame_, ros::Time(), jump_detect_trans);
     }
     catch (tf::TransformException &e)
     {
