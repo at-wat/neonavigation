@@ -54,6 +54,7 @@
 
 #include <bbf.h>
 #include <grid_astar.h>
+#include <jump_detector.h>
 #include <rotation_cache.h>
 
 #include <omp.h>
@@ -152,10 +153,7 @@ protected:
   float remember_hit_odds_;
   float remember_miss_odds_;
 
-  double pos_jump_;
-  double yaw_jump_;
-  std::string jump_detect_frame_;
-  tf::Transform jump_detect_trans_prev_;
+  JumpDetector jump_;
 
   int max_retry_num_;
 
@@ -1133,6 +1131,7 @@ protected:
       map_info_ = msg->info;
     }
     map_header_ = msg->header;
+    jump_.setMapFrame(map_header_.frame_id);
 
     resolution_[0] = 1.0 / map_info_.linear_resolution;
     resolution_[1] = 1.0 / map_info_.linear_resolution;
@@ -1229,37 +1228,12 @@ protected:
     start_ = start;
     has_start_ = true;
   }
-  void detectJump()
-  {
-    tf::StampedTransform jump_detect_trans;
-    try
-    {
-      tfl_.waitForTransform(
-          map_header_.frame_id, jump_detect_frame_, ros::Time(), ros::Duration(0.1));
-      tfl_.lookupTransform(
-          map_header_.frame_id, jump_detect_frame_, ros::Time(), jump_detect_trans);
-    }
-    catch (tf::TransformException &e)
-    {
-      return;
-    }
-    const auto diff = jump_detect_trans_prev_.inverse() * jump_detect_trans;
-    jump_detect_trans_prev_ = jump_detect_trans;
-
-    if (diff.getOrigin().length2() > powf(pos_jump_, 2.0) ||
-        fabs(tf::getYaw(diff.getRotation())) > yaw_jump_)
-    {
-      ROS_ERROR("Position jumped (%f, %f); clearing history",
-                diff.getOrigin().length(), tf::getYaw(diff.getRotation()));
-      cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-    }
-  }
 
 public:
   Planner3dNode()
     : nh_()
     , pnh_("~")
-    , jump_detect_trans_prev_(tf::Quaternion(0, 0, 0, 1))
+    , jump_(tfl_)
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
@@ -1328,9 +1302,13 @@ public:
     pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
 
-    pnh_.param("pos_jump", pos_jump_, 1.0);
-    pnh_.param("yaw_jump", yaw_jump_, 1.5);
-    pnh_.param("jump_detect_frame", jump_detect_frame_, std::string("base_link"));
+    double pos_jump, yaw_jump;
+    std::string jump_detect_frame;
+    pnh_.param("pos_jump", pos_jump, 1.0);
+    pnh_.param("yaw_jump", yaw_jump, 1.5);
+    pnh_.param("jump_detect_frame", jump_detect_frame, std::string("base_link"));
+    jump_.setBaseFrame(jump_detect_frame);
+    jump_.setThresholds(pos_jump, yaw_jump);
 
     pnh_.param("force_goal_orientation", force_goal_orientation_, true);
 
@@ -1398,7 +1376,10 @@ public:
       if (has_map_)
       {
         updateStart();
-        detectJump();
+        if (jump_.detectJump())
+        {
+          cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+        }
 
         if (!goal_updated_ && has_goal_)
           updateGoal();
