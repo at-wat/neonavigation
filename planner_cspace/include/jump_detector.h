@@ -55,6 +55,7 @@ public:
   explicit JumpDetector(tf::TransformListener &tfl)
     : tfl_(tfl)
     , base_trans_prev_(tf::Quaternion(0, 0, 0, 1))
+    , map_trans_prev_(tf::Quaternion(0, 0, 0, 1))
     , init_(false)
   {
   }
