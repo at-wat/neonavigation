@@ -54,6 +54,7 @@
 
 #include <bbf.h>
 #include <grid_astar.h>
+#include <jump_detector.h>
 #include <rotation_cache.h>
 
 #include <omp.h>
@@ -152,8 +153,7 @@ protected:
   float remember_hit_odds_;
   float remember_miss_odds_;
 
-  double pos_jump_;
-  double yaw_jump_;
+  JumpDetector jump_;
 
   int max_retry_num_;
 
@@ -1131,6 +1131,7 @@ protected:
       map_info_ = msg->info;
     }
     map_header_ = msg->header;
+    jump_.setMapFrame(map_header_.frame_id);
 
     resolution_[0] = 1.0 / map_info_.linear_resolution;
     resolution_[1] = 1.0 / map_info_.linear_resolution;
@@ -1201,10 +1202,38 @@ protected:
     }
   }
 
+  void updateStart()
+  {
+    geometry_msgs::PoseStamped start;
+    start.header.frame_id = "base_link";
+    start.header.stamp = ros::Time(0);
+    start.pose.orientation.x = 0.0;
+    start.pose.orientation.y = 0.0;
+    start.pose.orientation.z = 0.0;
+    start.pose.orientation.w = 1.0;
+    start.pose.position.x = 0;
+    start.pose.position.y = 0;
+    start.pose.position.z = 0;
+    try
+    {
+      tfl_.waitForTransform(
+          map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
+      tfl_.transformPose(map_header_.frame_id, start, start);
+    }
+    catch (tf::TransformException &e)
+    {
+      has_start_ = false;
+      return;
+    }
+    start_ = start;
+    has_start_ = true;
+  }
+
 public:
   Planner3dNode()
     : nh_()
     , pnh_("~")
+    , jump_(tfl_)
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
@@ -1273,8 +1302,13 @@ public:
     pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
 
-    pnh_.param("pos_jump", pos_jump_, 1.0);
-    pnh_.param("yaw_jump", yaw_jump_, 1.5);
+    double pos_jump, yaw_jump;
+    std::string jump_detect_frame;
+    pnh_.param("pos_jump", pos_jump, 1.0);
+    pnh_.param("yaw_jump", yaw_jump, 1.5);
+    pnh_.param("jump_detect_frame", jump_detect_frame, std::string("base_link"));
+    jump_.setBaseFrame(jump_detect_frame);
+    jump_.setThresholds(pos_jump, yaw_jump);
 
     pnh_.param("force_goal_orientation", force_goal_orientation_, true);
 
@@ -1334,9 +1368,6 @@ public:
     ros::Rate wait(freq_);
     ROS_DEBUG("Initialized");
 
-    geometry_msgs::PoseStamped start_prev;
-    start_prev.pose.orientation.w = 1.0;
-
     while (ros::ok())
     {
       wait.sleep();
@@ -1344,45 +1375,12 @@ public:
 
       if (has_map_)
       {
-        start_.header.frame_id = "base_link";
-        start_.header.stamp = ros::Time(0);
-        start_.pose.orientation.x = 0.0;
-        start_.pose.orientation.y = 0.0;
-        start_.pose.orientation.z = 0.0;
-        start_.pose.orientation.w = 1.0;
-        start_.pose.position.x = 0;
-        start_.pose.position.y = 0;
-        start_.pose.position.z = 0;
-        try
+        updateStart();
+        if (jump_.detectJump())
         {
-          tfl_.waitForTransform(map_header_.frame_id, "base_link",
-                                map_header_.stamp, ros::Duration(0.1));
-          tfl_.transformPose(map_header_.frame_id, start_, start_);
-        }
-        catch (tf::TransformException &e)
-        {
-          // ROS_INFO("planner_cspace: Transform failed %s", e.what());
-          continue;
-        }
-        {
-          const float x_diff = start_.pose.position.x - start_prev.pose.position.x;
-          const float y_diff = start_.pose.position.y - start_prev.pose.position.y;
-          float yaw_diff = tf::getYaw(start_.pose.orientation) - tf::getYaw(start_prev.pose.orientation);
-          if (yaw_diff > M_PI)
-            yaw_diff -= M_PI * 2;
-          else if (yaw_diff < -M_PI)
-            yaw_diff += M_PI * 2;
-
-          if (powf(x_diff, 2.0) + powf(y_diff, 2.0) > powf(pos_jump_, 2.0) ||
-              fabs(yaw_diff) > yaw_jump_)
-          {
-            ROS_ERROR("Position jumped (%f, %f, %f); clearing history", x_diff, y_diff, yaw_diff);
-            cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-          }
-          start_prev = start_;
+          cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
         }
 
-        has_start_ = true;
         if (!goal_updated_ && has_goal_)
           updateGoal();
       }
