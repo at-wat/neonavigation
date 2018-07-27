@@ -17,10 +17,11 @@ find_package(catkin REQUIRED
 )
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(xmlrpcpp REQUIRED)
 
 ## Declare a catkin package
 catkin_package(
-  DEPENDS
+  CATKIN_DEPENDS
     roscpp
 
     geometry_msgs
@@ -32,7 +33,6 @@ catkin_package(
     neonavigation_common
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 # Workaround for debian stretch build (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=894656)
