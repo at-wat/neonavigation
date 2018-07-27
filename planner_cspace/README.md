@@ -46,6 +46,7 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 * "find_best" (bool, default: true)
 * "pos_jump" (double, default: 1.0)
 * "yaw_jump" (double, default: 1.5)
+* "jump_detect_frame" (string, default: base_link)
 * "force_goal_orientation" (bool, default: true)
 * "temporary_escape" (bool, default: true)
 * "fast_map_update" (bool, default: false)
