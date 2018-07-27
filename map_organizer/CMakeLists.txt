@@ -25,12 +25,12 @@ find_package(Eigen3 REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
 if(NEW_YAMLCPP_FOUND)
-add_definitions(-DHAVE_NEW_YAMLCPP)
-endif(NEW_YAMLCPP_FOUND)
+  add_definitions(-DHAVE_NEW_YAMLCPP)
+endif()
 
 ## Declare a catkin package
 catkin_package(
-  DEPENDS
+  CATKIN_DEPENDS
     roscpp
 
     eigen_conversions
@@ -46,7 +46,6 @@ catkin_package(
     neonavigation_common
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 # Workaround for debian stretch build (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=894656)
@@ -112,10 +111,10 @@ endif()
 
 install(TARGETS
     pointcloud_to_maps
-    tie_maps
+    pose_transform
     save_maps
     select_map
-    pose_transform
+    tie_maps
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
