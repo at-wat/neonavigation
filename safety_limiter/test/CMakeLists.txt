@@ -1,14 +1,3 @@
-cmake_minimum_required(VERSION 2.8.3)
-
-find_package(catkin REQUIRED
-  COMPONENTS
-    roscpp
-    rostest
-    geometry_msgs
-    sensor_msgs
-    tf
-)
-
 add_rostest_gtest(test_safety_limiter
   test/safety_limiter_rostest.test
   src/test_safety_limiter.cpp

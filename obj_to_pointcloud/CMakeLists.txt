@@ -4,7 +4,6 @@ project(obj_to_pointcloud)
 ## Find catkin and any catkin packages
 find_package(catkin REQUIRED
   COMPONENTS
-    cmake_modules
     roscpp
 
     eigen_conversions
@@ -21,7 +20,7 @@ find_package(Eigen3 REQUIRED)
 
 ## Declare a catkin package
 catkin_package(
-  DEPENDS
+  CATKIN_DEPENDS
     roscpp
 
     eigen_conversions
@@ -34,7 +33,6 @@ catkin_package(
     neonavigation_common
 )
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 # Workaround for debian stretch build (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=894656)
