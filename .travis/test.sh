@@ -2,7 +2,7 @@
 
 set -o errexit
 
-pip install gh-pr-comment
+pip install gh-pr-comment catkin_lint
 
 source /opt/ros/${ROS_DISTRO}/setup.bash
 source /catkin_ws/devel/setup.bash
@@ -10,6 +10,17 @@ source /catkin_ws/devel/setup.bash
 set -o verbose
 
 cd /catkin_ws
+
+
+pkgs=`find . -name package.xml | xargs -n1 dirname`
+catkin_lint $pkgs \
+  || (gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}] FAILED on ${ROS_DISTRO}" \
+      "<details><summary>catkin_lint failed</summary>
+
+\`\`\`
+`catkin_lint $pkgs 2>&1`
+\`\`\`
+</details>"; false)
 
 
 COVERAGE_OPTION=
