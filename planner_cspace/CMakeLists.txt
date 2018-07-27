@@ -10,7 +10,9 @@ find_package(catkin REQUIRED
     move_base_msgs
     nav_msgs
     sensor_msgs
+    std_srvs
     tf
+    trajectory_msgs
 
     costmap_cspace
     costmap_cspace_msgs
@@ -30,7 +32,9 @@ catkin_package(
     move_base_msgs
     nav_msgs
     sensor_msgs
+    std_srvs
     tf
+    trajectory_msgs
 
     costmap_cspace
     costmap_cspace_msgs
@@ -75,6 +79,7 @@ add_dependencies(patrol ${catkin_EXPORTED_TARGETS})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
+  find_package(rosunit REQUIRED)
   add_subdirectory(test)
   find_package(roslint REQUIRED)
   roslint_cpp()
@@ -82,10 +87,10 @@ if(CATKIN_ENABLE_TESTING)
 endif()
 
 install(TARGETS
-    planner_3d
-    planner_2dof_serial_joints
-    patrol
     dummy_robot
+    patrol
+    planner_2dof_serial_joints
+    planner_3d
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
