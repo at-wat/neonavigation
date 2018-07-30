@@ -36,14 +36,14 @@
 class Filter
 {
 public:
-  enum type_t
+  enum Type
   {
     FILTER_HPF,
     FILTER_LPF
   };
 
 protected:
-  type_t type_;
+  Type type_;
   float time_const_;
   float x_;
   float out_;
@@ -51,7 +51,7 @@ protected:
   bool angle_;
 
 public:
-  Filter(const enum type_t type, const float tc, const float out0, const bool angle = false)
+  Filter(const enum Type type, const float tc, const float out0, const bool angle = false)
   {
     angle_ = angle;
     time_const_ = tc;
