@@ -95,7 +95,7 @@ TEST(TrackOdometry, OdomImuFusion)
   // Turn 90 degrees with 10% of odometry errors
   ros::Duration(1).sleep();
   imu.angular_velocity.z = M_PI * 0.25;
-  odom_raw.twist.twist.angular.z = imu.angular_velocity.z * 0.9;  // Odometry with error
+  odom_raw.twist.twist.angular.z = imu.angular_velocity.z * 1.1;  // Odometry with error
   cnt = 0;
   rate.sleep();
   while (ros::ok())
