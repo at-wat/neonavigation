@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <test test-name="test_trajectory_recorder" pkg="trajectory_tracker" type="test_trajectory_recorder" />
+
+  <node pkg="trajectory_tracker" type="trajectory_recorder" name="trajectory_recorder" output="screen" />
+</launch>

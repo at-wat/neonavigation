@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2016-2017, the mcl_3dl authors
  * Copyright (c) 2014-2017, the neonavigation authors
  * All rights reserved.
  *
@@ -30,6 +31,8 @@
 #ifndef FILTER_H
 #define FILTER_H
 
+#include <cmath>
+
 class Filter
 {
 public:
@@ -39,14 +42,63 @@ public:
     FILTER_LPF
   };
 
-private:
-  double time_const_;
-  double x_;
-  double k_[4];
+protected:
+  Type type_;
+  float time_const_;
+  float x_;
+  float out_;
+  float k_[4];
+  bool angle_;
 
 public:
-  Filter(const Type type, const double tc, const double out0);
-  double in(const double i);
+  Filter(const enum Type type, const float tc, const float out0, const bool angle = false)
+  {
+    angle_ = angle;
+    time_const_ = tc;
+    type_ = type;
+    switch (type_)
+    {
+      case FILTER_LPF:
+        k_[3] = -1 / (1.0 + 2 * time_const_);
+        k_[2] = -k_[3];
+        k_[1] = (1.0 - 2 * time_const_) * k_[3];
+        k_[0] = -k_[1] - 1.0;
+        x_ = (1 - k_[2]) * out0 / k_[3];
+        break;
+      case FILTER_HPF:
+        k_[3] = -1 / (1.0 + 2 * time_const_);
+        k_[2] = -k_[3] * 2 * time_const_;
+        k_[1] = (1.0 - 2 * time_const_) * k_[3];
+        k_[0] = 2 * time_const_ * (-k_[1] + 1.0);
+        x_ = (1 - k_[2]) * out0 / k_[3];
+        break;
+    }
+    out_ = out0;
+  }
+  void set(const float &out0)
+  {
+    x_ = (1 - k_[2]) * out0 / k_[3];
+    out_ = out0;
+  }
+  float in(const float &i)
+  {
+    float in = i;
+    assert(std::isfinite(in));
+
+    if (angle_)
+    {
+      in = out_ + remainder(in - out_, M_PI * 2.0);
+    }
+    x_ = k_[0] * in + k_[1] * x_;
+    out_ = k_[2] * in + k_[3] * x_;
+
+    assert(std::isfinite(out_));
+    return out_;
+  }
+  float get()
+  {
+    return out_;
+  }
 };
 
 #endif  // FILTER_H

@@ -57,12 +57,15 @@ add_executable(trajectory_saver src/trajectory_saver.cpp)
 target_link_libraries(trajectory_saver ${catkin_LIBRARIES})
 add_dependencies(trajectory_saver ${catkin_EXPORTED_TARGETS})
 
-add_executable(trajectory_server src/filter.cpp src/trajectory_server.cpp)
+add_executable(trajectory_server src/trajectory_server.cpp)
 target_link_libraries(trajectory_server ${catkin_LIBRARIES})
 add_dependencies(trajectory_server ${catkin_EXPORTED_TARGETS})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
+  find_package(rosunit REQUIRED)
+  add_subdirectory(test)
+
   find_package(roslint REQUIRED)
   roslint_cpp()
   roslint_add_test()
