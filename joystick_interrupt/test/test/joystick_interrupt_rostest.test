@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <test test-name="test_joystick_interrupt" pkg="joystick_interrupt" type="test_joystick_interrupt" />
+
+  <node pkg="joystick_interrupt" type="joystick_interrupt" name="joystick_interrupt">
+    <param name="interrupt_button" value="0" type="int" />
+    <param name="high_speed_button" value="1" type="int" />
+    <param name="linear_axis" value="0" type="int" />
+    <param name="angular_axis" value="1" type="int" />
+    <param name="linear_axis2" value="2" type="int" />
+    <param name="angular_axis2" value="3" type="int" />
+    <param name="linear_vel" value="1.0" type="double" />
+    <param name="angular_vel" value="1.0" type="double" />
+    <param name="linear_high_speed_ratio" value="2.0" type="double" />
+    <param name="angular_high_speed_ratio" value="2.0" type="double" />
+  </node>
+</launch>
