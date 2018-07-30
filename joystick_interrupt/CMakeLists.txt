@@ -45,6 +45,9 @@ target_link_libraries(joystick_mux ${catkin_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
+  find_package(rosunit REQUIRED)
+  add_subdirectory(test)
+
   find_package(roslint REQUIRED)
   roslint_cpp()
   roslint_add_test()
