@@ -1304,7 +1304,7 @@ public:
     pnh_.param("local_range", local_range_f_, 2.5);
     pnh_.param("longcut_range", longcut_range_f_, 0.0);
     pnh_.param("esc_range", esc_range_f_, 0.25);
-    pnh_.param("tolerance_range", tolerance_range_f_, 0.1);
+    pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
     pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
