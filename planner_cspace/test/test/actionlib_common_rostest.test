@@ -10,7 +10,8 @@
   </node>
   <node pkg="planner_cspace" type="planner_3d" name="planner_3d">
     <param name="max_retry_num" value="5" />
-    <param name="esc_range" value="0.0" />
+    <param name="tolerance_range" value="0.0" />
+    <param name="temporary_escape" value="false" />
     <remap from="move_base_simple/goal" to="/goal" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
