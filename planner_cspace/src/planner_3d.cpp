@@ -135,6 +135,10 @@ protected:
   int esc_range_;
   int esc_angle_;
   double esc_range_f_;
+  int tolerance_range_;
+  int tolerance_angle_;
+  double tolerance_range_f_;
+  double tolerance_angle_f_;
   int unknown_cost_;
   bool overwrite_cost_;
   bool has_map_;
@@ -718,7 +722,7 @@ protected:
     cost_estim_cache_.clear(FLT_MAX);
     if (cm_[e] == 100)
     {
-      if (!searchAvailablePos(e, esc_range_, esc_angle_))
+      if (!searchAvailablePos(e, tolerance_range_, tolerance_angle_))
       {
         ROS_WARN("Oops! Goal is in Rock!");
         ++cnt_stuck_;
@@ -734,7 +738,7 @@ protected:
     }
     if (cm_[s] == 100)
     {
-      if (!searchAvailablePos(s, esc_range_, esc_angle_))
+      if (!searchAvailablePos(s, tolerance_range_, tolerance_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
         return true;
@@ -1144,6 +1148,8 @@ protected:
     longcut_range_ = lroundf(longcut_range_f_ / map_info_.linear_resolution);
     esc_range_ = lroundf(esc_range_f_ / map_info_.linear_resolution);
     esc_angle_ = map_info_.angle / 8;
+    tolerance_range_ = lroundf(tolerance_range_f_ / map_info_.linear_resolution);
+    tolerance_angle_ = lroundf(tolerance_angle_f_ / map_info_.angular_resolution);
     goal_tolerance_lin_ = lroundf(goal_tolerance_lin_f_ / map_info_.linear_resolution);
     goal_tolerance_ang_ = lroundf(goal_tolerance_ang_f_ / map_info_.angular_resolution);
 
@@ -1300,6 +1306,8 @@ public:
     pnh_.param("local_range", local_range_f_, 2.5);
     pnh_.param("longcut_range", longcut_range_f_, 0.0);
     pnh_.param("esc_range", esc_range_f_, 0.25);
+    pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
+    pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
     pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
@@ -1614,7 +1622,7 @@ protected:
 
     if (cm_[s] == 100)
     {
-      if (!searchAvailablePos(s, esc_range_, esc_angle_))
+      if (!searchAvailablePos(s, tolerance_range_, tolerance_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
         status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
