@@ -171,6 +171,7 @@ protected:
     float weight_backward_;
     float weight_ang_vel_;
     float weight_costmap_;
+    float weight_costmap_turn_;
     float weight_remembered_;
     float weight_hysteresis_;
     float in_place_turn_;
@@ -1279,6 +1280,7 @@ public:
     pnh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
     pnh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
     pnh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
+    pnh_.param_cast("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
     pnh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
     pnh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
     pnh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
@@ -1897,7 +1899,10 @@ protected:
         sum += c;
       }
 
-      const float cost = sum * map_info_.angular_resolution * ec_[2] / ec_[0];
+      const float cost =
+          sum * map_info_.angular_resolution * ec_[2] / ec_[0] +
+          sum * map_info_.angular_resolution * cc_.weight_costmap_turn_ / 100.0;
+      // simplified from sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * abs(d[2]))
       return cc_.in_place_turn_ + cost;
     }
 
@@ -2010,7 +2015,6 @@ protected:
 
       {
         int sum = 0, sum_hyst = 0;
-        int num = 0;
         auto d_index = d;
         int syaw = s[2];
         d_index[2] = e[2];
@@ -2019,6 +2023,7 @@ protected:
         const auto cache_page = motion_interp_cache_[syaw].find(d_index);
         if (cache_page == motion_interp_cache_[syaw].end())
           return -1;
+        const int num = cache_page->second.size();
         for (const auto &pos_diff : cache_page->second)
         {
           // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
@@ -2028,7 +2033,6 @@ protected:
           if (c > 99)
             return -1;
           sum += c;
-          num++;
           if (hyst)
           {
             // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
@@ -2038,6 +2042,7 @@ protected:
         }
         const float &distf = distf_cache_[s[2]][d_index];
         cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
+        cost += sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * num);
         cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
       }
     }
