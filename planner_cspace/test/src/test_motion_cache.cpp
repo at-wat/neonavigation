@@ -38,7 +38,7 @@
 
 TEST(MotionCache, Generate)
 {
-  const int range = 3;
+  const int range = 4;
   costmap_cspace_msgs::MapMetaData3D map_info;
   map_info.angle = 4;
   map_info.angular_resolution = M_PI * 2 / map_info.angle;
@@ -100,13 +100,13 @@ TEST(MotionCache, Generate)
       };
   for (auto &xy_syaw_gyaw : xy_syaw_gyaw_90)
   {
-    for (int i = 1; i <= range; ++i)
+    for (int i = 1; i <= range + 1; ++i)
     {
       // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
       const CyclicVecInt<3, 2> goal(
           { i * xy_syaw_gyaw[0], i * xy_syaw_gyaw[1], xy_syaw_gyaw[3] });  // NOLINT(whitespace/braces)
       const auto c = cache.find(xy_syaw_gyaw[2], goal);
-      if (i * i >= range * range)
+      if (i * sqrt(2) >= range)
       {
         ASSERT_EQ(c, cache.end(xy_syaw_gyaw[2]));
         continue;
@@ -120,8 +120,8 @@ TEST(MotionCache, Generate)
         ASSERT_GE(p[1] * xy_syaw_gyaw[1], 0);
       }
 
-      EXPECT_GT(c->second.getDistance(), i);
-      EXPECT_LT(c->second.getDistance(), i * 2);
+      const float arc_length = i * 2 * M_PI / 4;
+      EXPECT_NEAR(c->second.getDistance(), arc_length, 0.1);
     }
   }
 }
