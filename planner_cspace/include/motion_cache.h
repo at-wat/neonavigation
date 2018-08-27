@@ -123,7 +123,7 @@ public:
 
             if (fabs(sin_v) < 0.1)
             {
-              for (float i = 0; i <= 1.0; i += inter)
+              for (float i = 0; i < 1.0; i += inter)
               {
                 const float x = diff_val[0] * i;
                 const float y = diff_val[1] * i;
@@ -167,7 +167,7 @@ public:
             // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
             VEC_FLT posf_prev({ 0, 0, 0 });  // NOLINT(whitespace/braces)
 
-            for (float i = 0; i <= 1.0; i += inter)
+            for (float i = 0; i < 1.0; i += inter)
             {
               const float r = r1 * (1.0 - i) + r2 * i;
               const float cx2 = cx_s * (1.0 - i) + cx * i;
