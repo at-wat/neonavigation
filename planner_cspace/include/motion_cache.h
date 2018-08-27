@@ -71,13 +71,13 @@ protected:
 
 public:
   const typename Cache::iterator find(
-      const int start_yaw,
+      const size_t start_yaw,
       const VEC_INT &goal)
   {
     return cache_[start_yaw].find(goal);
   }
   const typename Cache::iterator end(
-      const int start_yaw)
+      const size_t start_yaw)
   {
     return cache_[start_yaw].end();
   }
@@ -89,7 +89,7 @@ public:
       const GRIDMAP &gm_optimize)
   {
     cache_.resize(map_info.angle);
-    for (int syaw = 0; syaw < map_info.angle; syaw++)
+    for (size_t syaw = 0; syaw < map_info.angle; syaw++)
     {
       const float yaw = syaw * map_info.angular_resolution;
       VEC_INT d;
