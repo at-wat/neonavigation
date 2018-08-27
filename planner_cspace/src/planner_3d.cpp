@@ -925,7 +925,7 @@ protected:
 
       costmap_cspace_msgs::MapMetaData3D map_info_linear(map_info_);
       map_info_linear.angle = 1;
-      motion_cache_linear_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_linear, range_, cm_));
+      motion_cache_linear_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_linear, range_, cm_rough_));
       motion_cache_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_, range_, cm_));
 
       search_list_.clear();
