@@ -245,6 +245,20 @@ public:
     for (int i = 0; i < DIM; i++)
       this->e_[i] = c[i];
   }
+  void rotate(const float ang)
+  {
+    const auto tmp = *this;
+    const float cos_v = cosf(ang);
+    const float sin_v = sinf(ang);
+
+    this->e_[0] = cos_v * tmp[0] - sin_v * tmp[1];
+    this->e_[1] = sin_v * tmp[0] + cos_v * tmp[1];
+    this->e_[2] = tmp[2] + ang;
+    if (this->e_[2] > M_PI)
+      this->e_[2] -= 2 * M_PI;
+    else if (this->e_[2] < -M_PI)
+      this->e_[2] += 2 * M_PI;
+  }
 };
 
 #endif  // CYCLIC_VEC_H
