@@ -89,7 +89,7 @@ public:
       const GRIDMAP &gm_optimize)
   {
     cache_.resize(map_info.angle);
-    for (size_t syaw = 0; syaw < map_info.angle; syaw++)
+    for (int syaw = 0; syaw < static_cast<int>(map_info.angle); syaw++)
     {
       const float yaw = syaw * map_info.angular_resolution;
       VEC_INT d;
@@ -112,6 +112,7 @@ public:
                   d[2] * map_info.angular_resolution
                 };
             std::unordered_map<VEC_INT, bool, VEC_INT> registered;
+            registered[d] = true;
 
             VEC_FLT motion(diff_val);
             motion.rotate(-syaw * map_info.angular_resolution);
@@ -122,7 +123,7 @@ public:
 
             if (fabs(sin_v) < 0.1)
             {
-              for (float i = 0; i < 1.0; i += inter)
+              for (float i = 0; i <= 1.0; i += inter)
               {
                 const float x = diff_val[0] * i;
                 const float y = diff_val[1] * i;
@@ -163,9 +164,10 @@ public:
             const float cx_s = r1 * cosf(yaw + M_PI / 2);
             const float cy_s = r1 * sinf(yaw + M_PI / 2);
 
-            VEC_FLT posf_prev;
+            // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
+            VEC_FLT posf_prev({ 0, 0, 0 });  // NOLINT(whitespace/braces)
 
-            for (float i = 0; i < 1.0; i += inter)
+            for (float i = 0; i <= 1.0; i += inter)
             {
               const float r = r1 * (1.0 - i) + r2 * i;
               const float cx2 = cx_s * (1.0 - i) + cx * i;
@@ -178,7 +180,7 @@ public:
                     (cy2 - r * sinf(cyaw + M_PI / 2)) / map_info.linear_resolution,
                     cyaw / map_info.angular_resolution
                   };
-              VEC_FLT posf(posf_raw);
+              const VEC_FLT posf(posf_raw);
               VEC_INT pos(posf_raw);
               pos.cycleUnsigned(pos[2], map_info.angle);
               if (registered.find(pos) == registered.end())
@@ -189,6 +191,7 @@ public:
               distf += (posf - posf_prev).len();
               posf_prev = posf;
             }
+            distf += (VEC_FLT(d) - posf_prev).len();
             page.distance_ = distf;
             cache_[syaw][d] = page;
           }

@@ -221,7 +221,7 @@ public:
   explicit CyclicVecInt(const float *v) noexcept
   {
     for (int i = 0; i < DIM; i++)
-      this->e_[i] = v[i];
+      this->e_[i] = lroundf(v[i]);
   }
   explicit CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int> &c) noexcept
   {
@@ -241,6 +241,11 @@ public:
   {
   }
   explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, float> &c) noexcept
+  {
+    for (int i = 0; i < DIM; i++)
+      this->e_[i] = c[i];
+  }
+  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, int> &c) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = c[i];
