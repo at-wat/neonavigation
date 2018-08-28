@@ -27,13 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GRID_METRIC_CONVERTER_H
-#define GRID_METRIC_CONVERTER_H
+#ifndef PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
+#define PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <nav_msgs/Path.h>
 
 #include <planner_cspace/cyclic_vec.h>
+
+#include <list>
 
 namespace grid_metric_converter
 {
@@ -169,4 +171,4 @@ void grid2MetricPath(
 }
 }  // namespace grid_metric_converter
 
-#endif  // GRID_METRIC_CONVERTER_H
+#endif  // PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H

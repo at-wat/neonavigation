@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MOTION_CACHE_H
-#define MOTION_CACHE_H
+#ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
+#define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 
@@ -217,4 +217,4 @@ public:
   }
 };
 
-#endif  // MOTION_CACHE_H
+#endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H

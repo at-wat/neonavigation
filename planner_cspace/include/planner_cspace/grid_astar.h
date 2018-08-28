@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GRID_ASTAR_H
-#define GRID_ASTAR_H
+#ifndef PLANNER_CSPACE_GRID_ASTAR_H
+#define PLANNER_CSPACE_GRID_ASTAR_H
 
 #include <memory>
 #define _USE_MATH_DEFINES
@@ -307,4 +307,4 @@ public:
   }
 };
 
-#endif  // GRID_ASTAR_H
+#endif  // PLANNER_CSPACE_GRID_ASTAR_H

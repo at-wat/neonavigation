@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROTATION_CACHE_H
-#define ROTATION_CACHE_H
+#ifndef PLANNER_CSPACE_ROTATION_CACHE_H
+#define PLANNER_CSPACE_ROTATION_CACHE_H
 
 #include <planner_cspace/cyclic_vec.h>
 
@@ -72,4 +72,4 @@ public:
   }
 };
 
-#endif  // ROTATION_CACHE_H
+#endif  // PLANNER_CSPACE_ROTATION_CACHE_H

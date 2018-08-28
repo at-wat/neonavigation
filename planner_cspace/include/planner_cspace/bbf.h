@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BBF_H
-#define BBF_H
+#ifndef PLANNER_CSPACE_BBF_H
+#define PLANNER_CSPACE_BBF_H
 
 namespace bbf
 {
@@ -82,4 +82,4 @@ public:
 };
 };  // namespace bbf
 
-#endif  // BBF_H
+#endif  // PLANNER_CSPACE_BBF_H
