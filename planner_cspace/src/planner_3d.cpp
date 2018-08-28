@@ -55,6 +55,7 @@
 #include <bbf.h>
 #include <grid_astar.h>
 #include <jump_detector.h>
+#include <motion_cache.h>
 #include <rotation_cache.h>
 
 #include <omp.h>
@@ -215,152 +216,8 @@ protected:
 
   int cnt_stuck_;
 
-  using MotionInterpCache = std::unordered_map<
-      int,
-      std::unordered_map<
-          Astar::Vec, std::vector<Astar::Vec>, Astar::Vec>>;
-  using DistanceCache = std::unordered_map<
-      int,
-      std::unordered_map<
-          Astar::Vec, float, Astar::Vec>>;
-
-  MotionInterpCache motion_interp_cache_;
-  DistanceCache distf_cache_;
-
-  MotionInterpCache linear_interp_cache_;
-  DistanceCache linear_distf_cache_;
-
-  void initMotionInterpCache(
-      const bool linear,
-      MotionInterpCache &motion_interp_cache,
-      DistanceCache &distf_cache)
-  {
-    const int yaw_limit = (linear) ? 1 : map_info_.angle;
-
-    ROS_DEBUG("initMotionInterpCache: (range: %d, angle: %d)", range_, yaw_limit);
-    motion_interp_cache.clear();
-
-    for (int syaw = 0; syaw < yaw_limit; syaw++)
-    {
-      const float yaw = syaw * map_info_.angular_resolution;
-      Astar::Vec d;
-      for (d[0] = -range_; d[0] <= range_; d[0]++)
-      {
-        for (d[1] = -range_; d[1] <= range_; d[1]++)
-        {
-          if (d[0] == 0 && d[1] == 0)
-            continue;
-          if (d.sqlen() > range_ * range_)
-            continue;
-          for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
-          {
-            const float yaw_e = d[2] * map_info_.angular_resolution;
-            const float diff_val[3] =
-                {
-                  d[0] * map_info_.linear_resolution,
-                  d[1] * map_info_.linear_resolution,
-                  d[2] * map_info_.angular_resolution
-                };
-            std::unordered_map<Astar::Vec, bool, Astar::Vec> registered;
-
-            Astar::Vecf motion(diff_val);
-            rotate(motion, -syaw * map_info_.angular_resolution);
-            const float cos_v = cosf(motion[2]);
-            const float sin_v = sinf(motion[2]);
-
-            const float inter = 1.0 / d.len();
-
-            if (fabs(sin_v) < 0.1)
-            {
-              for (float i = 0; i < 1.0; i += inter)
-              {
-                const float x = diff_val[0] * i;
-                const float y = diff_val[1] * i;
-
-                const float pos_raw[3] =
-                    {
-                      roundf(x / map_info_.linear_resolution),
-                      roundf(y / map_info_.linear_resolution),
-                      roundf(yaw / map_info_.angular_resolution)
-                    };
-                Astar::Vec pos(pos_raw);
-                pos.cycleUnsigned(pos[2], map_info_.angle);
-                if (registered.find(pos) == registered.end())
-                {
-                  motion_interp_cache[syaw][d].push_back(pos);
-                  registered[pos] = true;
-                }
-              }
-              distf_cache[syaw][d] = d.len();
-              continue;
-            }
-
-            float distf = 0.0;
-            const float r1 = motion[1] + motion[0] * cos_v / sin_v;
-            const float r2 = std::copysign(
-                sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
-                motion[0] * sin_v);
-
-            float dyaw = yaw_e - yaw;
-            if (dyaw < -M_PI)
-              dyaw += 2 * M_PI;
-            else if (dyaw > M_PI)
-              dyaw -= 2 * M_PI;
-
-            const float cx = d[0] * map_info_.linear_resolution + r2 * cosf(yaw_e + M_PI / 2);
-            const float cy = d[1] * map_info_.linear_resolution + r2 * sinf(yaw_e + M_PI / 2);
-            const float cx_s = r1 * cosf(yaw + M_PI / 2);
-            const float cy_s = r1 * sinf(yaw + M_PI / 2);
-
-            Astar::Vecf posf_prev;
-
-            for (float i = 0; i < 1.0; i += inter)
-            {
-              const float r = r1 * (1.0 - i) + r2 * i;
-              const float cx2 = cx_s * (1.0 - i) + cx * i;
-              const float cy2 = cy_s * (1.0 - i) + cy * i;
-              const float cyaw = yaw + i * dyaw;
-
-              const float posf_raw[3] =
-                  {
-                    (cx2 - r * cosf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
-                    (cy2 - r * sinf(cyaw + M_PI / 2)) / map_info_.linear_resolution,
-                    cyaw / map_info_.angular_resolution
-                  };
-              Astar::Vecf posf(posf_raw);
-              Astar::Vec pos(posf_raw);
-              pos.cycleUnsigned(pos[2], map_info_.angle);
-              if (registered.find(pos) == registered.end())
-              {
-                motion_interp_cache[syaw][d].push_back(pos);
-                registered[pos] = true;
-              }
-              distf += (posf - posf_prev).len();
-              posf_prev = posf;
-            }
-            distf_cache[syaw][d] = distf;
-          }
-        }
-      }
-      // Sort to improve cache hit rate
-      for (auto &cache : motion_interp_cache[syaw])
-      {
-        auto comp = [this](const Astar::Vec a, const Astar::Vec b)
-        {
-          size_t a_baddr, a_addr;
-          size_t b_baddr, b_addr;
-          cm_.block_addr(a, a_baddr, a_addr);
-          cm_.block_addr(b, b_baddr, b_addr);
-          if (a_baddr == b_baddr)
-          {
-            return (a_addr < b_addr);
-          }
-          return (a_baddr < b_baddr);
-        };
-        std::sort(cache.second.begin(), cache.second.end(), comp);
-      }
-    }
-  }
+  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_;
+  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_linear_;
 
   bool cbForget(std_srvs::EmptyRequest &req,
                 std_srvs::EmptyResponse &res)
@@ -407,11 +264,11 @@ protected:
       float cost = euclidCost(d, euclid_cost_coef);
 
       int sum = 0;
-      int num = 0;
-      const auto cache_page = linear_interp_cache_[0].find(d);
-      if (cache_page == linear_interp_cache_[0].end())
+      const auto cache_page = motion_cache_linear_->find(0, d);
+      if (cache_page == motion_cache_linear_->end(0))
         return -1;
-      for (const auto &pos_diff : cache_page->second)
+      const int num = cache_page->second.getMotion().size();
+      for (const auto &pos_diff : cache_page->second.getMotion())
       {
         // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
         const Astar::Vec pos({ s[0] + pos_diff[0], s[1] + pos_diff[1], 0 });  // NOLINT(whitespace/braces)
@@ -419,9 +276,8 @@ protected:
         if (c > 99)
           return -1;
         sum += c;
-        num++;
       }
-      const float &distf = linear_distf_cache_[0][d];
+      const float distf = cache_page->second.getDistance();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
 
       return cost;
@@ -1066,8 +922,11 @@ protected:
       map_info_ = msg->info;
       Astar::Vec d;
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
-      initMotionInterpCache(false, motion_interp_cache_, distf_cache_);
-      initMotionInterpCache(true, linear_interp_cache_, linear_distf_cache_);
+
+      costmap_cspace_msgs::MapMetaData3D map_info_linear(map_info_);
+      map_info_linear.angle = 1;
+      motion_cache_linear_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_linear, range_, cm_rough_));
+      motion_cache_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_, range_, cm_));
 
       search_list_.clear();
       for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -1123,7 +982,7 @@ protected:
                     d[2] * map_info_.angular_resolution
                   };
               auto v = Astar::Vecf(val);
-              rotate(v, -i * map_info_.angular_resolution);
+              v.rotate(-i * map_info_.angular_resolution);
               r[d] = v;
             }
           }
@@ -1509,7 +1368,7 @@ protected:
               p[2] * map_info_.angular_resolution
             };
         Astar::Vecf motion_r(diff_val);
-        rotate(motion_r, -p_prev[2] * map_info_.angular_resolution);
+        motion_r.rotate(-p_prev[2] * map_info_.angular_resolution);
 
         float inter = 0.1 / d.len();
 
@@ -1807,20 +1666,7 @@ protected:
     ROS_WARN("Search timed out");
     return true;
   }
-  void rotate(Astar::Vecf &v, const float &ang)
-  {
-    const Astar::Vecf tmp = v;
-    const float cos_v = cosf(ang);
-    const float sin_v = sinf(ang);
 
-    v[0] = cos_v * tmp[0] - sin_v * tmp[1];
-    v[1] = sin_v * tmp[0] + cos_v * tmp[1];
-    v[2] = v[2] + ang;
-    if (v[2] > M_PI)
-      v[2] -= 2 * M_PI;
-    else if (v[2] < -M_PI)
-      v[2] += 2 * M_PI;
-  }
   float cbCostEstim(const Astar::Vec &s, const Astar::Vec &e)
   {
     // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
@@ -1945,16 +1791,16 @@ protected:
 
       // Go-straight
       int sum = 0, sum_hyst = 0;
-      int num = 0;
       auto d_index = d;
       int syaw = s[2];
       d_index[2] = e[2];
       d_index.cycleUnsigned(syaw, map_info_.angle);
       d_index.cycleUnsigned(d_index[2], map_info_.angle);
-      const auto cache_page = motion_interp_cache_[syaw].find(d_index);
-      if (cache_page == motion_interp_cache_[syaw].end())
+      const auto cache_page = motion_cache_->find(syaw, d_index);
+      if (cache_page == motion_cache_->end(syaw))
         return -1;
-      for (const auto &pos_diff : cache_page->second)
+      const int num = cache_page->second.getMotion().size();
+      for (const auto &pos_diff : cache_page->second.getMotion())
       {
         // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
         const Astar::Vec pos(
@@ -1969,9 +1815,8 @@ protected:
           sum_hyst += cm_hyst_[pos_rough];
         }
         sum += c;
-        num++;
       }
-      const float &distf = distf_cache_[s[2]][d_index];
+      const float distf = cache_page->second.getDistance();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
       cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
     }
@@ -2020,11 +1865,11 @@ protected:
         d_index[2] = e[2];
         d_index.cycleUnsigned(syaw, map_info_.angle);
         d_index.cycleUnsigned(d_index[2], map_info_.angle);
-        const auto cache_page = motion_interp_cache_[syaw].find(d_index);
-        if (cache_page == motion_interp_cache_[syaw].end())
+        const auto cache_page = motion_cache_->find(syaw, d_index);
+        if (cache_page == motion_cache_->end(syaw))
           return -1;
-        const int num = cache_page->second.size();
-        for (const auto &pos_diff : cache_page->second)
+        const int num = cache_page->second.getMotion().size();
+        for (const auto &pos_diff : cache_page->second.getMotion())
         {
           // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
           const Astar::Vec pos(
@@ -2040,7 +1885,7 @@ protected:
             sum_hyst += cm_hyst_[pos_rough];
           }
         }
-        const float &distf = distf_cache_[s[2]][d_index];
+        const float distf = cache_page->second.getDistance();
         cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
         cost += sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * num);
         cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
