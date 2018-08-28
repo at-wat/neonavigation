@@ -32,7 +32,7 @@
 
 #include <limits>
 
-#include <cyclic_vec.h>
+#include <planner_cspace/cyclic_vec.h>
 
 template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20>
 class BlockMemGridmap

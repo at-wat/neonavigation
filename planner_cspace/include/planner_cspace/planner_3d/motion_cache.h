@@ -36,8 +36,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <blockmem_gridmap.h>
-#include <grid_astar.h>
+#include <planner_cspace/blockmem_gridmap.h>
 
 template <class VEC_INT, class VEC_FLT>
 class MotionCache

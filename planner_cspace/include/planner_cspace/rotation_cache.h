@@ -30,7 +30,7 @@
 #ifndef ROTATION_CACHE_H
 #define ROTATION_CACHE_H
 
-#include <cyclic_vec.h>
+#include <planner_cspace/cyclic_vec.h>
 
 template <int DIM, int NONCYCLIC>
 class RotationCache

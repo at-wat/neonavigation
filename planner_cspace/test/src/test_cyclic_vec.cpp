@@ -31,7 +31,7 @@
 
 #include <gtest/gtest.h>
 
-#include <cyclic_vec.h>
+#include <planner_cspace/cyclic_vec.h>
 
 TEST(CyclicVec, InitFloat)
 {

@@ -52,11 +52,12 @@
 #include <costmap_cspace/node_handle_float.h>
 #include <neonavigation_common/compatibility.h>
 
-#include <bbf.h>
-#include <grid_astar.h>
-#include <jump_detector.h>
-#include <motion_cache.h>
-#include <rotation_cache.h>
+#include <planner_cspace/bbf.h>
+#include <planner_cspace/grid_astar.h>
+#include <planner_cspace/planner_3d/grid_metric_converter.h>
+#include <planner_cspace/planner_3d/jump_detector.h>
+#include <planner_cspace/planner_3d/motion_cache.h>
+#include <planner_cspace/rotation_cache.h>
 
 #include <omp.h>
 
@@ -235,11 +236,13 @@ protected:
       return false;
 
     Astar::Vec s, e;
-    metric2Grid(s[0], s[1], s[2],
-                req.start.pose.position.x, req.start.pose.position.y, tf::getYaw(req.start.pose.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, s[0], s[1], s[2],
+        req.start.pose.position.x, req.start.pose.position.y, tf::getYaw(req.start.pose.orientation));
     s[2] = 0;
-    metric2Grid(e[0], e[1], e[2],
-                req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, e[0], e[1], e[2],
+        req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
     e[2] = 0;
 
     if (!(cm_rough_.validate(s, range_) && cm_rough_.validate(e, range_)))
@@ -331,7 +334,7 @@ protected:
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
 
-    grid2Metric(path_grid, path, s);
+    grid_metric_converter::grid2MetricPath(map_info_, 0.0, path_grid, path, s);
 
     res.plan.header = map_header_;
     res.plan.poses.resize(path.poses.size());
@@ -546,13 +549,15 @@ protected:
     }
 
     Astar::Vec s, e;
-    metric2Grid(s[0], s[1], s[2],
-                start_.pose.position.x, start_.pose.position.y,
-                tf::getYaw(start_.pose.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, s[0], s[1], s[2],
+        start_.pose.position.x, start_.pose.position.y,
+        tf::getYaw(start_.pose.orientation));
     s.cycleUnsigned(s[2], map_info_.angle);
-    metric2Grid(e[0], e[1], e[2],
-                goal_.pose.position.x, goal_.pose.position.y,
-                tf::getYaw(goal_.pose.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, e[0], e[1], e[2],
+        goal_.pose.position.x, goal_.pose.position.y,
+        tf::getYaw(goal_.pose.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
     if (goal_changed)
     {
@@ -587,7 +592,7 @@ protected:
       ROS_INFO("Goal moved (%d, %d, %d)",
                e[0], e[1], e[2]);
       float x, y, yaw;
-      grid2Metric(e[0], e[1], e[2], x, y, yaw);
+      grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
       goal_.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
       goal_.pose.position.x = x;
       goal_.pose.position.y = y;
@@ -635,7 +640,7 @@ protected:
         {
           p[2] = 0;
           float x, y, yaw;
-          grid2Metric(p[0], p[1], p[2], x, y, yaw);
+          grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
           geometry_msgs::Point32 point;
           point.x = x;
           point.y = y;
@@ -686,7 +691,7 @@ protected:
             if (cm_hist_bbf_[p].get() > bbf::probabilityToOdds(0.1))
             {
               float x, y, yaw;
-              grid2Metric(p[0], p[1], p[2], x, y, yaw);
+              grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
               geometry_msgs::Point32 point;
               point.x = x;
               point.y = y;
@@ -791,13 +796,15 @@ protected:
     }
 
     Astar::Vec s, e;
-    metric2Grid(s[0], s[1], s[2],
-                start_.pose.position.x, start_.pose.position.y,
-                tf::getYaw(start_.pose.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, s[0], s[1], s[2],
+        start_.pose.position.x, start_.pose.position.y,
+        tf::getYaw(start_.pose.orientation));
     s.cycleUnsigned(s[2], map_info_.angle);
-    metric2Grid(e[0], e[1], e[2],
-                goal_.pose.position.x, goal_.pose.position.y,
-                tf::getYaw(goal_.pose.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, e[0], e[1], e[2],
+        goal_.pose.position.x, goal_.pose.position.y,
+        tf::getYaw(goal_.pose.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
 
     if (cm_[e] == 100)
@@ -1333,147 +1340,23 @@ public:
   }
 
 protected:
-  void grid2Metric(
-      const int x, const int y, const int yaw,
-      float &gx, float &gy, float &gyaw)
-  {
-    gx = (x + 0.5) * map_info_.linear_resolution + map_info_.origin.position.x;
-    gy = (y + 0.5) * map_info_.linear_resolution + map_info_.origin.position.y;
-    gyaw = yaw * map_info_.angular_resolution;
-  }
-  void grid2Metric(const std::list<Astar::Vec> &path_grid,
-                   nav_msgs::Path &path, const Astar::Vec &v_start)
-  {
-    // static int cnt = 0;
-    // cnt ++;
-    float x_prev = 0, y_prev = 0, yaw_prev = 0;
-    Astar::Vec p_prev;
-    bool init = false;
-    for (auto &p : path_grid)
-    {
-      float x, y, yaw;
-      grid2Metric(p[0], p[1], p[2], x, y, yaw);
-      geometry_msgs::PoseStamped ps;
-      ps.header = path.header;
-
-      // printf("%d %d %d  %f\n", p[0], p[1], p[2], as_.g[p]);
-      if (init)
-      {
-        const auto ds = v_start - p;
-        const auto d = p - p_prev;
-        const float diff_val[3] =
-            {
-              d[0] * map_info_.linear_resolution,
-              d[1] * map_info_.linear_resolution,
-              p[2] * map_info_.angular_resolution
-            };
-        Astar::Vecf motion_r(diff_val);
-        motion_r.rotate(-p_prev[2] * map_info_.angular_resolution);
-
-        float inter = 0.1 / d.len();
-
-        const Astar::Vecf motion = motion_r;
-        const float cos_v = cosf(motion[2]);
-        const float sin_v = sinf(motion[2]);
-        if (d[0] == 0 && d[1] == 0)
-        {
-          ps.pose.position.x = x;
-          ps.pose.position.y = y;
-          ps.pose.position.z = 0;
-          ps.pose.orientation =
-              tf::createQuaternionMsgFromYaw(yaw);
-          path.poses.push_back(ps);
-        }
-        else if (fabs(sin_v) < 0.001 ||
-                 ds.sqlen() > local_range_ * local_range_)
-        {
-          for (float i = 0; i < 1.0; i += inter)
-          {
-            const float x2 = x_prev * (1 - i) + x * i;
-            const float y2 = y_prev * (1 - i) + y * i;
-            const float yaw2 = yaw_prev * (1 - i) + yaw * i;
-            ps.pose.position.x = x2;
-            ps.pose.position.y = y2;
-            ps.pose.position.z = 0;
-            ps.pose.orientation =
-                tf::createQuaternionMsgFromYaw(yaw2);
-            path.poses.push_back(ps);
-          }
-        }
-        else
-        {
-          const float r1 = motion[1] + motion[0] * cos_v / sin_v;
-          const float r2 = std::copysign(
-              sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
-              motion[0] * sin_v < 0);
-
-          float dyaw = yaw - yaw_prev;
-          if (dyaw < -M_PI)
-            dyaw += 2 * M_PI;
-          else if (dyaw > M_PI)
-            dyaw -= 2 * M_PI;
-
-          const float cx = x + r2 * cosf(yaw + M_PI / 2);
-          const float cy = y + r2 * sinf(yaw + M_PI / 2);
-          const float cx_prev = x_prev + r1 * cosf(yaw_prev + M_PI / 2);
-          const float cy_prev = y_prev + r1 * sinf(yaw_prev + M_PI / 2);
-
-          for (float i = 0; i < 1.0; i += inter)
-          {
-            const float r = r1 * (1.0 - i) + r2 * i;
-            const float cx2 = cx_prev * (1.0 - i) + cx * i;
-            const float cy2 = cy_prev * (1.0 - i) + cy * i;
-            const float cyaw = yaw_prev + i * dyaw;
-
-            const float x2 = cx2 - r * cosf(cyaw + M_PI / 2);
-            const float y2 = cy2 - r * sinf(cyaw + M_PI / 2);
-            const float yaw2 = cyaw;
-            ps.pose.position.x = x2;
-            ps.pose.position.y = y2;
-            ps.pose.position.z = 0;
-            ps.pose.orientation =
-                tf::createQuaternionMsgFromYaw(yaw2);
-            path.poses.push_back(ps);
-          }
-          ps.pose.position.x = x;
-          ps.pose.position.y = y;
-          ps.pose.position.z = 0;
-          ps.pose.orientation =
-              tf::createQuaternionMsgFromYaw(yaw);
-          path.poses.push_back(ps);
-        }
-      }
-
-      x_prev = x;
-      y_prev = y;
-      yaw_prev = yaw;
-      p_prev = p;
-      init = true;
-    }
-  }
-  void metric2Grid(
-      int &x, int &y, int &yaw,
-      const float gx, const float gy, const float gyaw)
-  {
-    x = static_cast<int>((gx - map_info_.origin.position.x) / map_info_.linear_resolution);
-    y = static_cast<int>((gy - map_info_.origin.position.y) / map_info_.linear_resolution);
-    yaw = lroundf(gyaw / map_info_.angular_resolution);
-  }
   bool makePlan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge,
                 nav_msgs::Path &path, bool hyst)
   {
     Astar::Vec s, e;
-    metric2Grid(s[0], s[1], s[2],
-                gs.position.x, gs.position.y, tf::getYaw(gs.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, s[0], s[1], s[2],
+        gs.position.x, gs.position.y, tf::getYaw(gs.orientation));
     s.cycleUnsigned(s[2], map_info_.angle);
-    metric2Grid(e[0], e[1], e[2],
-                ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
+    grid_metric_converter::metric2Grid(
+        map_info_, e[0], e[1], e[2],
+        ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
 
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
     float x, y, yaw;
-    grid2Metric(e[0], e[1], e[2], x, y, yaw);
+    grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
     p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
     p.pose.position.x = x;
     p.pose.position.y = y;
@@ -1505,7 +1388,7 @@ protected:
           ROS_INFO("Temporary goal (%d, %d, %d)",
                    e[0], e[1], e[2]);
           float x, y, yaw;
-          grid2Metric(e[0], e[1], e[2], x, y, yaw);
+          grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
           goal_.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
           goal_.pose.position.x = x;
           goal_.pose.position.y = y;
@@ -1517,7 +1400,7 @@ protected:
       return false;
     }
 
-    grid2Metric(s[0], s[1], s[2], x, y, yaw);
+    grid_metric_converter::grid2Metric(map_info_, s[0], s[1], s[2], x, y, yaw);
     p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
     p.pose.position.x = x;
     p.pose.position.y = y;
@@ -1581,7 +1464,7 @@ protected:
     ROS_DEBUG("Path found (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
 
-    grid2Metric(path_grid, path, s);
+    grid_metric_converter::grid2MetricPath(map_info_, local_range_, path_grid, path, s);
 
     if (hyst)
     {
@@ -1661,7 +1544,6 @@ protected:
     nav_msgs::Path path;
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
-    // grid2Metric(path_grid, path);
     pub_path_.publish(path);
     ROS_WARN("Search timed out");
     return true;

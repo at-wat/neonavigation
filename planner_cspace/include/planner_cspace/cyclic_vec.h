@@ -42,7 +42,7 @@
 
 #include <boost/chrono.hpp>
 
-#include <reservable_priority_queue.h>
+#include <planner_cspace/reservable_priority_queue.h>
 
 template <int DIM, int NONCYCLIC, typename T>
 class CyclicVecBase
