@@ -37,6 +37,7 @@
 #include <planner_cspace/cyclic_vec.h>
 
 #include <list>
+#include <memory>
 
 namespace grid_metric_converter
 {
