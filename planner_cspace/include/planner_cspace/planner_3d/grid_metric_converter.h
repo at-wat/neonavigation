@@ -32,6 +32,7 @@
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <nav_msgs/Path.h>
+#include <tf/transform_datatypes.h>
 
 #include <planner_cspace/cyclic_vec.h>
 
@@ -58,10 +59,11 @@ void metric2Grid(
   yaw = lroundf(gyaw / map_info.angular_resolution);
 }
 
+template <template <class, class> class STL_CONTAINER = std::list>
 void grid2MetricPath(
     const costmap_cspace_msgs::MapMetaData3D &map_info,
     const float local_range,
-    const std::list<CyclicVecInt<3, 2>> &path_grid,
+    const STL_CONTAINER<CyclicVecInt<3, 2>, std::allocator<CyclicVecInt<3, 2>>> &path_grid,
     nav_msgs::Path &path, const CyclicVecInt<3, 2> &v_start)
 {
   float x_prev = 0, y_prev = 0, yaw_prev = 0;
