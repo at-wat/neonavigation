@@ -54,8 +54,8 @@ void metric2Grid(
     int &x, int &y, int &yaw,
     const float gx, const float gy, const float gyaw)
 {
-  x = static_cast<int>((gx - map_info.origin.position.x) / map_info.linear_resolution);
-  y = static_cast<int>((gy - map_info.origin.position.y) / map_info.linear_resolution);
+  x = static_cast<int>(floor((gx - map_info.origin.position.x) / map_info.linear_resolution));
+  y = static_cast<int>(floor((gy - map_info.origin.position.y) / map_info.linear_resolution));
   yaw = lroundf(gyaw / map_info.angular_resolution);
 }
 
