@@ -27,59 +27,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BBF_H
-#define BBF_H
+#ifndef PLANNER_CSPACE_ROTATION_CACHE_H
+#define PLANNER_CSPACE_ROTATION_CACHE_H
 
-namespace bbf
-{
-constexpr float oddsToProbability(const float &o)
-{
-  return o / (1.0 + o);
-}
+#include <planner_cspace/cyclic_vec.h>
 
-constexpr float probabilityToOdds(const float &p)
-{
-  return p / (1.0 - p);
-}
-
-const float MIN_PROBABILITY = 0.1;
-const float MAX_PROBABILITY = 1.0 - MIN_PROBABILITY;
-const float MIN_ODDS = probabilityToOdds(MIN_PROBABILITY);
-const float MAX_ODDS = probabilityToOdds(MAX_PROBABILITY);
-
-class BinaryBayesFilter
+template <int DIM, int NONCYCLIC>
+class RotationCache
 {
 protected:
-  float odds_;
+  std::unique_ptr<CyclicVecFloat<DIM, NONCYCLIC>[]> c_;
+  CyclicVecInt<DIM, NONCYCLIC> size_;
+  int ser_size_;
 
 public:
-  explicit BinaryBayesFilter(
-      const float &initial_odds = 1.0) noexcept
-      : odds_(initial_odds)
+  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size)
+  {
+    size_t ser_size = 1;
+    for (int i = 0; i < 3; i++)
+    {
+      ser_size *= size[i];
+    }
+    size_ = size;
+    ser_size_ = ser_size;
+
+    c_.reset(new CyclicVecFloat<DIM, NONCYCLIC>[ser_size]);
+  }
+  explicit RotationCache(const CyclicVecInt<DIM, NONCYCLIC> &size)
+  {
+    reset(size);
+  }
+  RotationCache()
   {
   }
-  float update(const float &odds)
+  CyclicVecFloat<DIM, NONCYCLIC> &operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos)
   {
-    odds_ *= odds;
-    if (odds_ < MIN_ODDS)
-      odds_ = MIN_ODDS;
-    else if (odds_ > MAX_ODDS)
-      odds_ = MAX_ODDS;
-    return odds_;
-  }
-  float get() const
-  {
-    return odds_;
-  }
-  float getProbability() const
-  {
-    return oddsToProbability(odds_);
-  }
-  float getNormalizedProbability() const
-  {
-    return (getProbability() - MIN_PROBABILITY) / (MAX_PROBABILITY - MIN_PROBABILITY);
+    size_t addr = pos[2];
+    for (int i = 1; i >= 0; i--)
+    {
+      addr *= size_[i];
+      addr += pos[i];
+    }
+    return c_[addr];
   }
 };
-};  // namespace bbf
 
-#endif  // BBF_H
+#endif  // PLANNER_CSPACE_ROTATION_CACHE_H

@@ -33,8 +33,8 @@
 
 #include <gtest/gtest.h>
 
-#include <cyclic_vec.h>
-#include <motion_cache.h>
+#include <planner_cspace/cyclic_vec.h>
+#include <planner_cspace/planner_3d/motion_cache.h>
 
 TEST(MotionCache, Generate)
 {

@@ -31,7 +31,7 @@
 
 #include <gtest/gtest.h>
 
-#include <blockmem_gridmap.h>
+#include <planner_cspace/blockmem_gridmap.h>
 
 TEST(BlockmemGridmap, SpacialAccessPerformance)
 {

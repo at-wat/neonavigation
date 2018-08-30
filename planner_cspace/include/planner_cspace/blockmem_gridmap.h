@@ -27,12 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BLOCKMEM_GRIDMAP_H
-#define BLOCKMEM_GRIDMAP_H
+#ifndef PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
+#define PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
 
 #include <limits>
 
-#include <cyclic_vec.h>
+#include <planner_cspace/cyclic_vec.h>
 
 template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20>
 class BlockMemGridmap
@@ -172,4 +172,4 @@ public:
   }
 };
 
-#endif  // BLOCKMEM_GRIDMAP_H
+#endif  // PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H

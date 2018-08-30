@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GRID_ASTAR_H
-#define GRID_ASTAR_H
+#ifndef PLANNER_CSPACE_GRID_ASTAR_H
+#define PLANNER_CSPACE_GRID_ASTAR_H
 
 #include <memory>
 #define _USE_MATH_DEFINES
@@ -41,9 +41,9 @@
 
 #include <boost/chrono.hpp>
 
-#include <reservable_priority_queue.h>
-#include <cyclic_vec.h>
-#include <blockmem_gridmap.h>
+#include <planner_cspace/reservable_priority_queue.h>
+#include <planner_cspace/cyclic_vec.h>
+#include <planner_cspace/blockmem_gridmap.h>
 
 #include <omp.h>
 
@@ -307,4 +307,4 @@ public:
   }
 };
 
-#endif  // GRID_ASTAR_H
+#endif  // PLANNER_CSPACE_GRID_ASTAR_H

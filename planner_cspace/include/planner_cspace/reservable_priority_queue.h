@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2014-2017, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,49 +27,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROTATION_CACHE_H
-#define ROTATION_CACHE_H
+#ifndef PLANNER_CSPACE_RESERVABLE_PRIORITY_QUEUE_H
+#define PLANNER_CSPACE_RESERVABLE_PRIORITY_QUEUE_H
 
-#include <cyclic_vec.h>
+#include <queue>
 
-template <int DIM, int NONCYCLIC>
-class RotationCache
+template <class T>
+class reservable_priority_queue : public std::priority_queue<T>
 {
-protected:
-  std::unique_ptr<CyclicVecFloat<DIM, NONCYCLIC>[]> c_;
-  CyclicVecInt<DIM, NONCYCLIC> size_;
-  int ser_size_;
-
 public:
-  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size)
+  typedef typename std::priority_queue<T>::size_type size_type;
+  explicit reservable_priority_queue(const size_type capacity = 0)
   {
-    size_t ser_size = 1;
-    for (int i = 0; i < 3; i++)
-    {
-      ser_size *= size[i];
-    }
-    size_ = size;
-    ser_size_ = ser_size;
-
-    c_.reset(new CyclicVecFloat<DIM, NONCYCLIC>[ser_size]);
+    reserve(capacity);
   }
-  explicit RotationCache(const CyclicVecInt<DIM, NONCYCLIC> &size)
+  void reserve(const size_type capacity)
   {
-    reset(size);
+    this->c.reserve(capacity);
   }
-  RotationCache()
+  size_type capacity() const
   {
+    return this->c.capacity();
   }
-  CyclicVecFloat<DIM, NONCYCLIC> &operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos)
+  void clear()
   {
-    size_t addr = pos[2];
-    for (int i = 1; i >= 0; i--)
-    {
-      addr *= size_[i];
-      addr += pos[i];
-    }
-    return c_[addr];
+    this->c.clear();
+  }
+  void pop_back()
+  {
+    this->c.pop_back();
   }
 };
 
-#endif  // ROTATION_CACHE_H
+#endif  // PLANNER_CSPACE_RESERVABLE_PRIORITY_QUEUE_H
