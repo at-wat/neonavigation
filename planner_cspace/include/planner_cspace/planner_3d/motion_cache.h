@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MOTION_CACHE_H
-#define MOTION_CACHE_H
+#ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
+#define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 
@@ -36,8 +36,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <blockmem_gridmap.h>
-#include <grid_astar.h>
+#include <planner_cspace/blockmem_gridmap.h>
 
 template <class VEC_INT, class VEC_FLT>
 class MotionCache
@@ -218,4 +217,4 @@ public:
   }
 };
 
-#endif  // MOTION_CACHE_H
+#endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H

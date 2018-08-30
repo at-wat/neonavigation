@@ -41,7 +41,7 @@
 #include <vector>
 
 #include <costmap_cspace/node_handle_float.h>
-#include <grid_astar.h>
+#include <planner_cspace/grid_astar.h>
 
 #include <neonavigation_common/compatibility.h>
 

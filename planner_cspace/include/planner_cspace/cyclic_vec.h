@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CYCLIC_VEC_H
-#define CYCLIC_VEC_H
+#ifndef PLANNER_CSPACE_CYCLIC_VEC_H
+#define PLANNER_CSPACE_CYCLIC_VEC_H
 
 #include <memory>
 #define _USE_MATH_DEFINES
@@ -42,7 +42,7 @@
 
 #include <boost/chrono.hpp>
 
-#include <reservable_priority_queue.h>
+#include <planner_cspace/reservable_priority_queue.h>
 
 template <int DIM, int NONCYCLIC, typename T>
 class CyclicVecBase
@@ -266,4 +266,4 @@ public:
   }
 };
 
-#endif  // CYCLIC_VEC_H
+#endif  // PLANNER_CSPACE_CYCLIC_VEC_H

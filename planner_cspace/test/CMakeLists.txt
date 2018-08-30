@@ -4,6 +4,9 @@ target_link_libraries(test_blockmem_gridmap ${catkin_LIBRARIES} ${Boost_LIBRARIE
 catkin_add_gtest(test_cyclic_vec src/test_cyclic_vec.cpp)
 target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+catkin_add_gtest(test_grid_metric_converter src/test_grid_metric_converter.cpp)
+target_link_libraries(test_grid_metric_converter ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 catkin_add_gtest(test_motion_cache src/test_motion_cache.cpp)
 target_link_libraries(test_motion_cache ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 

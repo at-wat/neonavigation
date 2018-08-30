@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,36 +27,59 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RESERVABLE_PRIORITY_QUEUE_H
-#define RESERVABLE_PRIORITY_QUEUE_H
+#ifndef PLANNER_CSPACE_BBF_H
+#define PLANNER_CSPACE_BBF_H
 
-#include <queue>
-
-template <class T>
-class reservable_priority_queue : public std::priority_queue<T>
+namespace bbf
 {
+constexpr float oddsToProbability(const float &o)
+{
+  return o / (1.0 + o);
+}
+
+constexpr float probabilityToOdds(const float &p)
+{
+  return p / (1.0 - p);
+}
+
+const float MIN_PROBABILITY = 0.1;
+const float MAX_PROBABILITY = 1.0 - MIN_PROBABILITY;
+const float MIN_ODDS = probabilityToOdds(MIN_PROBABILITY);
+const float MAX_ODDS = probabilityToOdds(MAX_PROBABILITY);
+
+class BinaryBayesFilter
+{
+protected:
+  float odds_;
+
 public:
-  typedef typename std::priority_queue<T>::size_type size_type;
-  explicit reservable_priority_queue(const size_type capacity = 0)
+  explicit BinaryBayesFilter(
+      const float &initial_odds = 1.0) noexcept
+      : odds_(initial_odds)
   {
-    reserve(capacity);
   }
-  void reserve(const size_type capacity)
+  float update(const float &odds)
   {
-    this->c.reserve(capacity);
+    odds_ *= odds;
+    if (odds_ < MIN_ODDS)
+      odds_ = MIN_ODDS;
+    else if (odds_ > MAX_ODDS)
+      odds_ = MAX_ODDS;
+    return odds_;
   }
-  size_type capacity() const
+  float get() const
   {
-    return this->c.capacity();
+    return odds_;
   }
-  void clear()
+  float getProbability() const
   {
-    this->c.clear();
+    return oddsToProbability(odds_);
   }
-  void pop_back()
+  float getNormalizedProbability() const
   {
-    this->c.pop_back();
+    return (getProbability() - MIN_PROBABILITY) / (MAX_PROBABILITY - MIN_PROBABILITY);
   }
 };
+};  // namespace bbf
 
-#endif  // RESERVABLE_PRIORITY_QUEUE_H
+#endif  // PLANNER_CSPACE_BBF_H
