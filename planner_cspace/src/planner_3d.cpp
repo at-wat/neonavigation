@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2014-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -912,6 +912,12 @@ protected:
              msg->info.origin.position.x,
              msg->info.origin.position.y,
              tf::getYaw(msg->info.origin.orientation));
+
+    // Stop robot motion until next planning step
+    nav_msgs::Path path;
+    path.header = map_header_;
+    path.header.stamp = ros::Time::now();
+    pub_path_.publish(path);
 
     float ec_val[3] =
         {
