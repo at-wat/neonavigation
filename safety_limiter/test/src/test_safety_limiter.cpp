@@ -277,6 +277,54 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
   }
 }
 
+TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
+{
+  ros::Rate wait(20.0);
+
+  // Skip initial state
+  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  {
+    publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", ros::Time::now());
+    publishWatchdogReset();
+
+    wait.sleep();
+    ros::spinOnce();
+  }
+
+  for (float vel = -0.5; vel > -1.0; vel -= 0.2)
+  {
+    // 1.0 m/ss, obstacle at -0.05 m (already in collision): escape motion must be allowed
+    bool received = false;
+    bool failed = false;
+    bool en = false;
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
+        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+    {
+      if (!en)
+        return;
+      received = true;
+      failed = true;
+      ASSERT_NEAR(msg->linear.x, vel, 1e-1);
+      failed = false;
+    };
+    ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
+
+    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    {
+      if (i > 5)
+        en = true;
+      publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", ros::Time::now());
+      publishWatchdogReset();
+      publishTwist(vel, 0.0);
+
+      wait.sleep();
+      ros::spinOnce();
+    }
+    ASSERT_TRUE(received);
+    sub_cmd_vel.shutdown();
+  }
+}
+
 TEST_F(SafetyLimiterTest, SafetyLimitAngular)
 {
   ros::Rate wait(20.0);
