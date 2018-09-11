@@ -52,7 +52,7 @@ catkin_make ${CM_OPTIONS} \
   || (gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}] FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)
 catkin_make tests ${CM_OPTIONS} \
   || (gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}] FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
-catkin_make run_tests ${CM_OPTIONS} --make-args -j1 \
+catkin_make run_tests ${CM_OPTIONS} --make-args -j1 -l1 \
   || (gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}] FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
 
 if [ x${COVERAGE_TEST} == "xtrue" ]
