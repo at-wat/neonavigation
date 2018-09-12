@@ -110,7 +110,9 @@ protected:
   double tmax_;
   double dt_;
   double d_margin_;
+  double d_escape_;
   double yaw_margin_;
+  double yaw_escape_;
   double r_lim_;
   double z_range_[2];
   float footprint_radius_;
@@ -185,7 +187,9 @@ public:
     if (pnh_.hasParam("t_margin"))
       ROS_WARN("safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
     pnh_.param("d_margin", d_margin_, 0.2);
+    pnh_.param("d_escape", d_escape_, 0.05);
     pnh_.param("yaw_margin", yaw_margin_, 0.2);
+    pnh_.param("yaw_escape", yaw_escape_, 0.05);
     pnh_.param("downsample_grid", downsample_grid_, 0.05);
     pnh_.param("frame_id", frame_id_, std::string("base_link"));
     double hold_d;
@@ -344,13 +348,19 @@ protected:
 
     float d_col = 0;
     float yaw_col = 0;
-    bool col = false;
+    bool has_collision = false;
+    bool has_collision_at_now = false;
+    float d_escape_remain = 0;
+    float yaw_escape_remain = 0;
+
     for (float t = 0; t < tmax_; t += dt_)
     {
       if (t != 0)
       {
         d_col += twist_.linear.x * dt_;
+        d_escape_remain -= twist_.linear.x * dt_;
         yaw_col += twist_.angular.z * dt_;
+        yaw_escape_remain -= twist_.angular.z * dt_;
         move = move * motion;
         move_inv = move_inv * motion_inv;
       }
@@ -365,10 +375,11 @@ protected:
 
       std::vector<int> indices;
       std::vector<float> dist;
-      int num = kdtree.radiusSearch(center, footprint_radius_, indices, dist);
+      const int num = kdtree.radiusSearch(center, footprint_radius_, indices, dist);
       if (num == 0)
         continue;
 
+      bool colliding = false;
       for (auto &i : indices)
       {
         auto &p = pc->points[i];
@@ -381,17 +392,37 @@ protected:
           pos.y = p.y;
           pos.z = p.z;
           col_points.points.push_back(pos);
-          col = true;
+          colliding = true;
           break;
         }
       }
-      if (col)
-        break;
+      if (colliding)
+      {
+        if (t == 0)
+        {
+          // The robot is already in collision.
+          // Allow movement under d_escape_ and yaw_escape_
+          d_escape_remain = d_escape_;
+          yaw_escape_remain = yaw_escape_;
+          has_collision_at_now = true;
+        }
+        if (d_escape_remain <= 0 || yaw_escape_remain <= 0)
+        {
+          if (has_collision_at_now)
+          {
+            // It's not possible to escape from collision; stop completely.
+            d_col = yaw_col = 0;
+          }
+
+          has_collision = true;
+          break;
+        }
+      }
     }
     pub_debug_.publish(debug_points);
     pub_cloud_.publish(col_points);
 
-    if (!col)
+    if (!has_collision)
       return 1.0;
 
     d_col = std::max<float>(std::abs(d_col) - d_margin_, 0.0);
