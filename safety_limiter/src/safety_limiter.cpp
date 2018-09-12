@@ -409,8 +409,10 @@ protected:
         if (d_escape_remain <= 0 || yaw_escape_remain <= 0)
         {
           if (has_collision_at_now)
+          {
             // It's not possible to escape from collision; stop completely.
             d_col = yaw_col = 0;
+          }
 
           has_collision = true;
           break;
