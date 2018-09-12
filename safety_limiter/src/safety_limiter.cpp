@@ -347,10 +347,14 @@ protected:
     bool col = false;
     for (float t = 0; t < tmax_; t += dt_)
     {
-      d_col += twist_.linear.x * dt_;
-      yaw_col += twist_.angular.z * dt_;
-      move = move * motion;
-      move_inv = move_inv * motion_inv;
+      if (t != 0)
+      {
+        d_col += twist_.linear.x * dt_;
+        yaw_col += twist_.angular.z * dt_;
+        move = move * motion;
+        move_inv = move_inv * motion_inv;
+      }
+
       pcl::PointXYZ center;
       center = pcl::transformPoint(center, move_inv);
       geometry_msgs::Point32 p;
