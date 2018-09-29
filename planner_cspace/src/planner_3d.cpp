@@ -915,7 +915,7 @@ protected:
 
     // Stop robot motion until next planning step
     nav_msgs::Path path;
-    path.header = map_header_;
+    path.header = msg->header;
     path.header.stamp = ros::Time::now();
     pub_path_.publish(path);
 
