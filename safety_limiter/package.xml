@@ -14,6 +14,7 @@
   <test_depend>rostest</test_depend>
   <test_depend>roslint</test_depend>
 
+  <depend>diagnostic_updater</depend>
   <depend>geometry_msgs</depend>
   <depend>pcl_ros</depend>
   <depend>sensor_msgs</depend>

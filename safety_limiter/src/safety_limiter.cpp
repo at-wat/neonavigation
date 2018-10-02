@@ -28,6 +28,7 @@
  */
 
 #include <ros/ros.h>
+#include <diagnostic_updater/diagnostic_updater.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_msgs/Bool.h>
@@ -102,6 +103,7 @@ protected:
   geometry_msgs::Twist twist_;
   ros::Time last_cloud_stamp_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
+  sensor_msgs::PointCloud col_points_;
   double hz_;
   double timeout_;
   double disable_timeout_;
@@ -130,6 +132,8 @@ protected:
   bool has_twist_;
 
   constexpr static float EPSILON = 1e-6;
+
+  diagnostic_updater::Updater diag_updater_;
 
 public:
   SafetyLimiterNode()
@@ -244,6 +248,9 @@ public:
     }
     footprint_p.v.push_back(footprint_p.v.front());
     ROS_INFO("footprint radius: %0.3f", footprint_radius_);
+
+    diag_updater_.setHardwareID("none");
+    diag_updater_.add("Collision", this, &SafetyLimiterNode::diagnoseCollision);
   }
   void spin()
   {
@@ -298,8 +305,10 @@ protected:
     if (r_lim_current < 1.0)
       hold_off_ = now + hold_;
     cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+
+    diag_updater_.force_update();
   }
-  double predict(const geometry_msgs::Twist &in) const
+  double predict(const geometry_msgs::Twist &in)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
@@ -340,11 +349,10 @@ protected:
         Eigen::AngleAxisf(twist_.angular.z * dt_, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
-    sensor_msgs::PointCloud col_points;
     sensor_msgs::PointCloud debug_points;
-    col_points.header.frame_id = frame_id_;
-    col_points.header.stamp = ros::Time::now();
-    debug_points.header = col_points.header;
+    col_points_.header.frame_id = frame_id_;
+    col_points_.header.stamp = ros::Time::now();
+    debug_points.header = col_points_.header;
 
     float d_col = 0;
     float yaw_col = 0;
@@ -391,7 +399,7 @@ protected:
           pos.x = p.x;
           pos.y = p.y;
           pos.z = p.z;
-          col_points.points.push_back(pos);
+          col_points_.points.push_back(pos);
           colliding = true;
           break;
         }
@@ -420,7 +428,7 @@ protected:
       }
     }
     pub_debug_.publish(debug_points);
-    pub_cloud_.publish(col_points);
+    pub_cloud_.publish(col_points_);
 
     if (!has_collision)
       return 1.0;
@@ -616,6 +624,15 @@ protected:
     {
       last_disable_cmd_ = ros::Time::now();
     }
+  }
+
+  void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper &stat)
+  {
+    if (col_points_.points.size() > 0)
+      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Collision in footprint.");
+    else
+      stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "No collision.");
+    stat.addf("collision", "%d", col_points_.points.size());
   }
 };
 
