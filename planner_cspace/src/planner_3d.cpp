@@ -386,6 +386,7 @@ protected:
       }
       status_.status = planner_cspace_msgs::PlannerStatus::DOING;
       pub_status_.publish(status_);
+      diag_updater_.update();
     }
     else
     {
@@ -1348,7 +1349,7 @@ public:
         pub_path_.publish(path);
       }
       pub_status_.publish(status_);
-      diag_updater_.force_update();
+      diag_updater_.update();
     }
   }
 
