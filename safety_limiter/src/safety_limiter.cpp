@@ -629,10 +629,10 @@ protected:
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper &stat)
   {
     if (col_points_.points.size() > 0)
-      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Collision in footprint.");
+      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Collision inside of the footprint.");
     else
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "No collision.");
-    stat.addf("collision", "%d", col_points_.points.size());
+    stat.addf("Collision points", "%u", col_points_.points.size());
   }
 };
 
