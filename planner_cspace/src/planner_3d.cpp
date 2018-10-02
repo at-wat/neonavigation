@@ -1349,7 +1349,7 @@ public:
         pub_path_.publish(path);
       }
       pub_status_.publish(status_);
-      diag_updater_.update();
+      diag_updater_.force_update();
     }
   }
 
