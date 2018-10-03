@@ -6,6 +6,7 @@ find_package(catkin REQUIRED
     roscpp
 
     actionlib
+    diagnostic_updater
     geometry_msgs
     move_base_msgs
     nav_msgs
@@ -28,6 +29,7 @@ catkin_package(
     roscpp
 
     actionlib
+    diagnostic_updater
     geometry_msgs
     move_base_msgs
     nav_msgs

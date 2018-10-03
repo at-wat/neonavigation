@@ -16,6 +16,7 @@
   <test_depend>rosunit</test_depend>
 
   <depend>actionlib</depend>
+  <depend>diagnostic_updater</depend>
   <depend>geometry_msgs</depend>
   <depend>move_base_msgs</depend>
   <depend>nav_msgs</depend>
