@@ -1248,7 +1248,7 @@ public:
     cnt_stuck_ = 0;
 
     diag_updater_.setHardwareID("none");
-    diag_updater_.add("Status", this, &Planner3dNode::diagnoseStatus);
+    diag_updater_.add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
 
     act_->start();
   }
