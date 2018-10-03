@@ -31,6 +31,7 @@
 
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <diagnostic_updater/diagnostic_updater.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
@@ -220,6 +221,8 @@ protected:
   MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_;
   MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_linear_;
 
+  diagnostic_updater::Updater diag_updater_;
+
   bool cbForget(std_srvs::EmptyRequest &req,
                 std_srvs::EmptyResponse &res)
   {
@@ -383,6 +386,7 @@ protected:
       }
       status_.status = planner_cspace_msgs::PlannerStatus::DOING;
       pub_status_.publish(status_);
+      diag_updater_.update();
     }
     else
     {
@@ -1243,6 +1247,9 @@ public:
     escaping_ = false;
     cnt_stuck_ = 0;
 
+    diag_updater_.setHardwareID("none");
+    diag_updater_.add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
+
     act_->start();
   }
   void spin()
@@ -1342,6 +1349,7 @@ public:
         pub_path_.publish(path);
       }
       pub_status_.publish(status_);
+      diag_updater_.force_update();
     }
   }
 
@@ -1781,6 +1789,24 @@ protected:
     }
 
     return cost;
+  }
+
+  void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper &stat)
+  {
+    if (status_.error == planner_cspace_msgs::PlannerStatus::IN_ROCK)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "The robot is in rock.");
+    }
+    else if (status_.error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Path not found.");
+    }
+    else
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Going well.");
+    }
+    stat.addf("status", "%u", status_.status);
+    stat.addf("error", "%u", status_.error);
   }
 };
 
