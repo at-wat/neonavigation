@@ -349,9 +349,10 @@ protected:
         Eigen::AngleAxisf(twist_.angular.z * dt_, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
-    sensor_msgs::PointCloud debug_points;
     col_points_.header.frame_id = frame_id_;
     col_points_.header.stamp = ros::Time::now();
+    col_points_.points.clear();
+    sensor_msgs::PointCloud debug_points;
     debug_points.header = col_points_.header;
 
     float d_col = 0;
