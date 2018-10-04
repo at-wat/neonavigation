@@ -630,10 +630,16 @@ protected:
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper &stat)
   {
     if (col_points_.points.size() > 0)
-      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Collision points exist inside of the footprint.");
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
+                   "There are points that are predicted to collide in the future.");
+    }
     else
-      stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "No collision point exists.");
-    stat.addf("Collision points", "%u", col_points_.points.size());
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
+                   "No points that are predicted to collide in the future.");
+    }
+    stat.addf("Points", "%u", col_points_.points.size());
   }
 };
 
