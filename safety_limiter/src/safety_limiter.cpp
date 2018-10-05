@@ -643,12 +643,6 @@ protected:
                      "There are points that are predicted to collide in the future, "
                      "and the robot is escaping from the collision.");
       }
-      else  // for debug
-      {
-        stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
-                     "There are points that are predicted to collide in the future. "
-                     "(Unexpected)");
-      }
     }
     else
     {
