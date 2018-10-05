@@ -631,15 +631,31 @@ protected:
   {
     if (col_points_.points.size() > 0)
     {
-      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
-                   "There are points that are predicted to collide in the future.");
+      if (r_lim_ == 0)
+      {
+        stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
+                     "There are points that are predicted to collide in the future, "
+                     "but the robot can't escape from the collision.");
+      }
+      else if (r_lim_ > 0)
+      {
+        stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
+                     "There are points that are predicted to collide in the future, "
+                     "and the robot is escaping from the collision.");
+      }
+      else  // for debug
+      {
+        stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
+                     "There are points that are predicted to collide in the future. "
+                     "(Unexpected)");
+      }
     }
     else
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
                    "No points that are predicted to collide in the future.");
     }
-    stat.addf("Points", "%u", col_points_.points.size());
+    stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
   }
 };
 
