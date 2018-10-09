@@ -28,6 +28,7 @@
  */
 
 #include <ros/ros.h>
+#include <diagnostic_updater/diagnostic_updater.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_msgs/Bool.h>
@@ -128,8 +129,11 @@ protected:
   bool watchdog_stop_;
   bool has_cloud_;
   bool has_twist_;
+  bool has_collision_at_now_;
 
   constexpr static float EPSILON = 1e-6;
+
+  diagnostic_updater::Updater diag_updater_;
 
 public:
   SafetyLimiterNode()
@@ -140,6 +144,7 @@ public:
     , watchdog_stop_(false)
     , has_cloud_(false)
     , has_twist_(true)
+    , has_collision_at_now_(false)
   {
     neonavigation_common::compat::checkCompatMode();
     pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
@@ -244,6 +249,9 @@ public:
     }
     footprint_p.v.push_back(footprint_p.v.front());
     ROS_INFO("footprint radius: %0.3f", footprint_radius_);
+
+    diag_updater_.setHardwareID("none");
+    diag_updater_.add("Collision", this, &SafetyLimiterNode::diagnoseCollision);
   }
   void spin()
   {
@@ -298,8 +306,10 @@ protected:
     if (r_lim_current < 1.0)
       hold_off_ = now + hold_;
     cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+
+    diag_updater_.force_update();
   }
-  double predict(const geometry_msgs::Twist &in) const
+  double predict(const geometry_msgs::Twist &in)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
@@ -349,9 +359,9 @@ protected:
     float d_col = 0;
     float yaw_col = 0;
     bool has_collision = false;
-    bool has_collision_at_now = false;
     float d_escape_remain = 0;
     float yaw_escape_remain = 0;
+    has_collision_at_now_ = false;
 
     for (float t = 0; t < tmax_; t += dt_)
     {
@@ -404,11 +414,11 @@ protected:
           // Allow movement under d_escape_ and yaw_escape_
           d_escape_remain = d_escape_;
           yaw_escape_remain = yaw_escape_;
-          has_collision_at_now = true;
+          has_collision_at_now_ = true;
         }
         if (d_escape_remain <= 0 || yaw_escape_remain <= 0)
         {
-          if (has_collision_at_now)
+          if (has_collision_at_now_)
           {
             // It's not possible to escape from collision; stop completely.
             d_col = yaw_col = 0;
@@ -616,6 +626,29 @@ protected:
     {
       last_disable_cmd_ = ros::Time::now();
     }
+  }
+
+  void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper &stat)
+  {
+    if (r_lim_ == 1.0)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
+    }
+    else if (r_lim_ == 0.0)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
+                   (has_collision_at_now_) ?
+                   "Cannot escape from collision." :
+                   "Trying to avoid collision, but cannot move anymore.");
+    }
+    else
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
+                   (has_collision_at_now_) ?
+                   "Escaping from collision." :
+                   "Reducing velocity to avoid collision.");
+    }
+    stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
   }
 };
 
