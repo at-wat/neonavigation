@@ -637,7 +637,9 @@ protected:
     else if (r_lim_ == 0.0)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
-                   "Cannot escape from collision.");
+                   (has_collision_at_now_) ?
+                   "Cannot escape from collision." :
+                   "Trying to avoid collision, but cannot move anymore.");
     }
     else
     {
