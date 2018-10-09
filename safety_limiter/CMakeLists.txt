@@ -7,6 +7,7 @@ find_package(catkin REQUIRED
     cmake_modules
     roscpp
 
+    diagnostic_updater
     geometry_msgs
     pcl_ros
     sensor_msgs
@@ -24,6 +25,7 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp
 
+    diagnostic_updater
     geometry_msgs
     pcl_ros
     sensor_msgs
