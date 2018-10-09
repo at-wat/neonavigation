@@ -634,26 +634,17 @@ protected:
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
+    else if (r_lim_ == 0)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
+                   "Cannot escape from collision.");
+    }
     else
     {
-      if (has_collision_at_now_)
-      {
-        if (r_lim_ == 0)
-        {
-          stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
-                       "Cannot escape from collision.");
-        }
-        else if (r_lim_ > 0)
-        {
-          stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
-                       "Escaping from collision.");
-        }
-      }
-      else
-      {
-        stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
-                     "Reducing velocity to avoid collision.");
-      }
+      stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
+                   (has_collision_at_now_) ?
+                   "Escaping from collision." :
+                   "Reducing velocity to avoid collision.");
     }
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
   }
