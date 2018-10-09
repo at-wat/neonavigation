@@ -354,7 +354,6 @@ protected:
     sensor_msgs::PointCloud debug_points;
     col_points.header.frame_id = frame_id_;
     col_points.header.stamp = ros::Time::now();
-    col_points.points.clear();
     debug_points.header = col_points.header;
 
     float d_col = 0;
@@ -642,18 +641,18 @@ protected:
         if (r_lim_ == 0)
         {
           stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
-                       "The robot can't escape from the collision.");
+                       "Cannot escape from collision.");
         }
         else if (r_lim_ > 0)
         {
           stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
-                       "The robot is escaping from the collision.");
+                       "Escaping from collision.");
         }
       }
       else
       {
         stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
-                     "The robot is reducing velocity to avoid collision.");
+                     "Reducing velocity to avoid collision.");
       }
     }
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
