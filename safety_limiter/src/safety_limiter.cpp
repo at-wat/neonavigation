@@ -634,7 +634,7 @@ protected:
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
-    else if (r_lim_ == 0)
+    else if (r_lim_ == 0.0)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
                    "Cannot escape from collision.");
