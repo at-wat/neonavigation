@@ -103,7 +103,6 @@ protected:
   geometry_msgs::Twist twist_;
   ros::Time last_cloud_stamp_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
-  sensor_msgs::PointCloud col_points_;
   double hz_;
   double timeout_;
   double disable_timeout_;
@@ -130,6 +129,7 @@ protected:
   bool watchdog_stop_;
   bool has_cloud_;
   bool has_twist_;
+  bool has_collision_at_now_;
 
   constexpr static float EPSILON = 1e-6;
 
@@ -144,6 +144,7 @@ public:
     , watchdog_stop_(false)
     , has_cloud_(false)
     , has_twist_(true)
+    , has_collision_at_now_(false)
   {
     neonavigation_common::compat::checkCompatMode();
     pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
@@ -349,18 +350,19 @@ protected:
         Eigen::AngleAxisf(twist_.angular.z * dt_, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
-    col_points_.header.frame_id = frame_id_;
-    col_points_.header.stamp = ros::Time::now();
-    col_points_.points.clear();
+    sensor_msgs::PointCloud col_points;
     sensor_msgs::PointCloud debug_points;
-    debug_points.header = col_points_.header;
+    col_points.header.frame_id = frame_id_;
+    col_points.header.stamp = ros::Time::now();
+    col_points.points.clear();
+    debug_points.header = col_points.header;
 
     float d_col = 0;
     float yaw_col = 0;
     bool has_collision = false;
-    bool has_collision_at_now = false;
     float d_escape_remain = 0;
     float yaw_escape_remain = 0;
+    has_collision_at_now_ = false;
 
     for (float t = 0; t < tmax_; t += dt_)
     {
@@ -400,7 +402,7 @@ protected:
           pos.x = p.x;
           pos.y = p.y;
           pos.z = p.z;
-          col_points_.points.push_back(pos);
+          col_points.points.push_back(pos);
           colliding = true;
           break;
         }
@@ -413,11 +415,11 @@ protected:
           // Allow movement under d_escape_ and yaw_escape_
           d_escape_remain = d_escape_;
           yaw_escape_remain = yaw_escape_;
-          has_collision_at_now = true;
+          has_collision_at_now_ = true;
         }
         if (d_escape_remain <= 0 || yaw_escape_remain <= 0)
         {
-          if (has_collision_at_now)
+          if (has_collision_at_now_)
           {
             // It's not possible to escape from collision; stop completely.
             d_col = yaw_col = 0;
@@ -429,7 +431,7 @@ protected:
       }
     }
     pub_debug_.publish(debug_points);
-    pub_cloud_.publish(col_points_);
+    pub_cloud_.publish(col_points);
 
     if (!has_collision)
       return 1.0;
@@ -629,25 +631,30 @@ protected:
 
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper &stat)
   {
-    if (col_points_.points.size() > 0)
+    if (r_lim_ == 1.0)
     {
-      if (r_lim_ == 0)
-      {
-        stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
-                     "There are points that are predicted to collide in the future, "
-                     "but the robot can't escape from the collision.");
-      }
-      else if (r_lim_ > 0)
-      {
-        stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
-                     "There are points that are predicted to collide in the future, "
-                     "and the robot is escaping from the collision.");
-      }
+      stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
     else
     {
-      stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
-                   "No points that are predicted to collide in the future.");
+      if (has_collision_at_now_)
+      {
+        if (r_lim_ == 0)
+        {
+          stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
+                       "The robot can't escape from the collision.");
+        }
+        else if (r_lim_ > 0)
+        {
+          stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
+                       "The robot is escaping from the collision.");
+        }
+      }
+      else
+      {
+        stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
+                     "The robot is reducing velocity to avoid collision.");
+      }
     }
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
   }
