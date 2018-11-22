@@ -40,7 +40,8 @@
 
 #include <ros/console.h>
 #include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -85,7 +86,8 @@ protected:
   ros::ServiceServer srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
@@ -1099,11 +1101,11 @@ protected:
     start.pose.position.z = 0;
     try
     {
-      tfl_.waitForTransform(
-          map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
-      tfl_.transformPose(map_header_.frame_id, start, start);
+      geometry_msgs::TransformStamped trans =
+          tfbuf_.lookupTransform(map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
+      tf2::doTransform(start, start, trans);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       has_start_ = false;
       return;
@@ -1116,7 +1118,8 @@ public:
   Planner3dNode()
     : nh_()
     , pnh_("~")
-    , jump_(tfl_)
+    , tfl_(tfbuf_)
+    , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(

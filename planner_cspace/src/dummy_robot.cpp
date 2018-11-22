@@ -32,8 +32,9 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -52,8 +53,9 @@ protected:
   ros::Publisher pub_odom_;
   ros::Subscriber sub_twist_;
   ros::Subscriber sub_init_;
-  tf::TransformBroadcaster tfb_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformBroadcaster tfb_;
+  tf2_ros::TransformListener tfl_;
 
   void cbTwist(const geometry_msgs::Twist::ConstPtr &msg)
   {
@@ -67,10 +69,11 @@ protected:
     pose_in.pose = msg->pose.pose;
     try
     {
-      tfl_.waitForTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(1.0));
-      tfl_.transformPose("odom", pose_in, pose_out);
+      geometry_msgs::TransformStamped trans =
+        tfbuf_.lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(1.0));
+      tf2::doTransform(pose_in, pose_out, trans);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN("%s", e.what());
       return;
@@ -85,6 +88,7 @@ public:
   DummyRobotNode()
     : nh_()
     , pnh_("~")
+    , tfl_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
     pnh_.param("initial_x", x_, 0.0);
@@ -112,12 +116,12 @@ public:
       x_ += cosf(yaw_) * v_ * dt;
       y_ += sinf(yaw_) * v_ * dt;
 
-      tf::StampedTransform trans;
-      trans.stamp_ = current_time;
-      trans.frame_id_ = "odom";
-      trans.child_frame_id_ = "base_link";
-      trans.setOrigin(tf::Vector3(x_, y_, 0.0));
-      trans.setRotation(tf::createQuaternionFromYaw(yaw_));
+      geometry_msgs::TransformStamped trans;
+      trans.header.stamp = current_time;
+      trans.header.frame_id = "odom";
+      trans.child_frame_id = "base_link";
+      tf::vector3TFToMsg(tf::Vector3(x_, y_, 0.0), trans.transform.translation);
+      tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw_), trans.transform.rotation);
       tfb_.sendTransform(trans);
 
       nav_msgs::Odometry odom;

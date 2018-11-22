@@ -32,16 +32,19 @@
 
 #include <ros/ros.h>
 
-#include <tf/transform_listener.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <string>
 
 class JumpDetector
 {
 protected:
-  tf::TransformListener &tfl_;
-  tf::Transform base_trans_prev_;
-  tf::Transform map_trans_prev_;
+  tf2_ros::Buffer &tfbuf_;
+  tf2_ros::TransformListener tfl_;
+  tf2::Transform base_trans_prev_;
+  tf2::Transform map_trans_prev_;
 
   std::string jump_detect_frame_;
   std::string map_frame_;
@@ -52,10 +55,11 @@ protected:
   bool init_;
 
 public:
-  explicit JumpDetector(tf::TransformListener &tfl)
-    : tfl_(tfl)
-    , base_trans_prev_(tf::Quaternion(0, 0, 0, 1))
-    , map_trans_prev_(tf::Quaternion(0, 0, 0, 1))
+  explicit JumpDetector(tf2_ros::Buffer &tfbuf)
+    : tfbuf_(tfbuf)
+    , tfl_(tfbuf_)
+    , base_trans_prev_(tf2::Quaternion(0, 0, 0, 1))
+    , map_trans_prev_(tf2::Quaternion(0, 0, 0, 1))
     , init_(false)
   {
   }
@@ -74,20 +78,18 @@ public:
   }
   bool detectJump()
   {
-    tf::StampedTransform base_trans;
-    tf::StampedTransform map_trans;
+    tf2::Stamped<tf2::Transform> base_trans;
+    tf2::Stamped<tf2::Transform> map_trans;
     try
     {
-      tfl_.waitForTransform(
-          jump_detect_frame_, "base_link", ros::Time(), ros::Duration(0.1));
-      tfl_.lookupTransform(
-          jump_detect_frame_, "base_link", ros::Time(), base_trans);
-      tfl_.waitForTransform(
-          map_frame_, "base_link", ros::Time(), ros::Duration(0.1));
-      tfl_.lookupTransform(
-          map_frame_, "base_link", ros::Time(), map_trans);
+      geometry_msgs::TransformStamped base_trans_tmp =
+          tfbuf_.lookupTransform(jump_detect_frame_, "base_link", ros::Time());
+      geometry_msgs::TransformStamped map_trans_tmp =
+          tfbuf_.lookupTransform(map_frame_, "base_link", ros::Time());
+      tf2::fromMsg(base_trans_tmp, base_trans);
+      tf2::fromMsg(map_trans_tmp, map_trans);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       return false;
     }
@@ -103,7 +105,7 @@ public:
     }
 
     const auto pos_diff = diff.getOrigin().length();
-    const auto yaw_diff = tf::getYaw(diff.getRotation());
+    const auto yaw_diff = tf::getYaw(tf2::toMsg(diff.getRotation()));
 
     if (pos_diff > pos_jump_ || fabs(yaw_diff) > yaw_jump_)
     {

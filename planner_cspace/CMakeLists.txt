@@ -13,6 +13,9 @@ find_package(catkin REQUIRED
     sensor_msgs
     std_srvs
     tf
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
     trajectory_msgs
 
     costmap_cspace
@@ -36,6 +39,9 @@ catkin_package(
     sensor_msgs
     std_srvs
     tf
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
     trajectory_msgs
 
     costmap_cspace
