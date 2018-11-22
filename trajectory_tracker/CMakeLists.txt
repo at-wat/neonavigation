@@ -10,7 +10,9 @@ find_package(catkin REQUIRED
     interactive_markers
     nav_msgs
     tf
+    tf2
     tf2_geometry_msgs
+    tf2_ros
 
     neonavigation_common
     trajectory_tracker_msgs
@@ -25,7 +27,9 @@ catkin_package(
     interactive_markers
     nav_msgs
     tf
+    tf2
     tf2_geometry_msgs
+    tf2_ros
 
     neonavigation_common
     trajectory_tracker_msgs

@@ -39,7 +39,6 @@
 
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Path.h>
-#include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 
 #include <math.h>
@@ -59,7 +58,6 @@ private:
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   ros::Subscriber sub_path_;
-  tf::TransformListener tfl_;
 
   std::string topic_path_;
   std::string filename_;

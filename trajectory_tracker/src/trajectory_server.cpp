@@ -43,7 +43,6 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Path.h>
 #include <visualization_msgs/InteractiveMarkerUpdate.h>
-#include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <trajectory_tracker_msgs/ChangePath.h>
 #include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
@@ -65,7 +64,6 @@ private:
   ros::NodeHandle pnh_;
   ros::Publisher pub_path_;
   ros::Publisher pub_status_;
-  tf::TransformListener tfl_;
   ros::ServiceServer srv_change_path_;
   interactive_markers::InteractiveMarkerServer srv_im_fb_;
 

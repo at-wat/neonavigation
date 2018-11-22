@@ -39,8 +39,10 @@
 
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Path.h>
-#include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <math.h>
 #include <string>
@@ -65,7 +67,8 @@ private:
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   ros::Publisher pub_path_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   nav_msgs::Path path_;
 };
@@ -73,6 +76,7 @@ private:
 RecorderNode::RecorderNode()
   : nh_()
   , pnh_("~")
+  , tfl_(tfbuf_)
 {
   neonavigation_common::compat::checkCompatMode();
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
@@ -106,22 +110,22 @@ void RecorderNode::spin()
     ros::Time now = ros::Time(0);
     if (store_time_)
       now = ros::Time::now();
-    tf::StampedTransform transform;
+    tf2::Stamped<tf2::Transform> transform;
     try
     {
-      tfl_.waitForTransform(frame_global_, frame_robot_, now, ros::Duration(0.2));
-      tfl_.lookupTransform(frame_global_, frame_robot_, now, transform);
+      tf2::fromMsg(
+          tfbuf_.lookupTransform(frame_global_, frame_robot_, now, ros::Duration(0.2)), transform);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN("TF exception: %s", e.what());
       continue;
     }
     geometry_msgs::PoseStamped pose;
-    tf::Quaternion q;
+    tf2::Quaternion q;
     transform.getBasis().getRotation(q);
-    tf::quaternionTFToMsg(q, pose.pose.orientation);
-    tf::Vector3 origin = transform.getOrigin();
+    pose.pose.orientation = tf2::toMsg(q);
+    tf2::Vector3 origin = transform.getOrigin();
     pose.pose.position.x = origin.x();
     pose.pose.position.y = origin.y();
     pose.pose.position.z = origin.z();

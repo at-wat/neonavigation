@@ -47,8 +47,9 @@
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
-#include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <math.h>
 #include <string>
@@ -105,7 +106,8 @@ private:
   ros::Publisher pub_tracking_;
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   nav_msgs::Path path_;
   nav_msgs::Odometry odom_;
@@ -148,6 +150,7 @@ TrackerNode::TrackerNode()
   , v_(0.0)
   , nh_()
   , pnh_("~")
+  , tfl_(tfbuf_)
 {
   neonavigation_common::compat::checkCompatMode();
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
@@ -359,13 +362,15 @@ void TrackerNode::control()
   // Transform
   nav_msgs::Path lpath;
   lpath.header = path_.header;
-  tf::StampedTransform transform;
+  tf2::Stamped<tf2::Transform> transform;
   double transform_delay = 0;
   try
   {
-    tf::StampedTransform trans_odom;
-    tfl_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0), transform);
-    tfl_.lookupTransform(frame_odom_, path_.header.frame_id, ros::Time(0), trans_odom);
+    tf2::Stamped<tf2::Transform> trans_odom;
+    tf2::fromMsg(
+        tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
+    tf2::fromMsg(
+        tfbuf_.lookupTransform(frame_odom_, path_.header.frame_id, ros::Time(0)), trans_odom);
     transform *= trans_odom;
     transform_delay = (ros::Time::now() - transform.stamp_).toSec();
     if (fabs(transform_delay) > 0.1)
@@ -379,8 +384,7 @@ void TrackerNode::control()
       error_cnt_ = 0;
     }
 
-    geometry_msgs::TransformStamped trans_msg;
-    tf::transformStampedTFToMsg(transform, trans_msg);
+    geometry_msgs::TransformStamped trans_msg = tf2::toMsg(transform);
 
     for (size_t i = 0; i < path_.poses.size(); i += path_step_)
     {
@@ -389,7 +393,7 @@ void TrackerNode::control()
       lpath.poses.push_back(pose);
     }
   }
-  catch (tf::TransformException &e)
+  catch (tf2::TransformException &e)
   {
     ROS_WARN("TF exception: %s", e.what());
     status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
