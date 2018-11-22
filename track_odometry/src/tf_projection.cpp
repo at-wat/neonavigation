@@ -29,8 +29,10 @@
 
 #include <ros/ros.h>
 
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <string>
 
@@ -41,8 +43,9 @@ class TfProjectionNode : public TfProjection
 private:
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
-  tf::TransformBroadcaster tf_broadcaster_;
-  tf::TransformListener tf_listener_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
+  tf2_ros::TransformBroadcaster tf_broadcaster_;
 
   double rate_;
   double tf_tolerance_;
@@ -52,6 +55,7 @@ public:
   TfProjectionNode()
     : nh_()
     , pnh_("~")
+    , tf_listener_(tf_buffer_)
   {
     pnh_.param("base_link_frame", frames_["base"], std::string("base_link"));
     pnh_.param("projection_frame", frames_["projection"], std::string("map"));
@@ -66,22 +70,19 @@ public:
   {
     try
     {
-      tf::StampedTransform trans;
-      tf_listener_.waitForTransform(frames_["projection"], frames_["base"],
-                                    ros::Time(0), ros::Duration(0.1));
-      tf_listener_.lookupTransform(frames_["projection"], frames_["base"],
-                                   ros::Time(0), trans);
+      tf2::Stamped<tf2::Transform> trans;
+      tf2::fromMsg(
+          tf_buffer_.lookupTransform(frames_["projection"], frames_["base"], ros::Time(0), ros::Duration(0.1)),
+          trans);
 
-      tf::StampedTransform trans_target;
-      tf_listener_.waitForTransform(frames_["target"], frames_["projection"],
-                                    trans.stamp_, ros::Duration(0.1));
-      tf_listener_.lookupTransform(frames_["target"], frames_["projection"],
-                                   trans.stamp_, trans_target);
+      tf2::Stamped<tf2::Transform> trans_target;
+      tf2::fromMsg(
+          tf_buffer_.lookupTransform(frames_["target"], frames_["projection"], trans.stamp_, ros::Duration(0.1)),
+          trans_target);
 
       const auto result = project(trans, trans_target);
 
-      geometry_msgs::TransformStamped trans_out;
-      tf::transformStampedTFToMsg(result, trans_out);
+      geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
       if (flat_)
       {
         const float yaw = tf::getYaw(trans_out.transform.rotation);
@@ -91,7 +92,7 @@ public:
 
       tf_broadcaster_.sendTransform(trans_out);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN_ONCE("%s", e.what());
     }
