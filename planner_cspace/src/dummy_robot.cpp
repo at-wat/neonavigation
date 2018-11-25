@@ -70,7 +70,7 @@ protected:
     try
     {
       geometry_msgs::TransformStamped trans =
-        tfbuf_.lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(1.0));
+          tfbuf_.lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(1.0));
       tf2::doTransform(pose_in, pose_out, trans);
     }
     catch (tf2::TransformException &e)
@@ -120,8 +120,8 @@ public:
       trans.header.stamp = current_time;
       trans.header.frame_id = "odom";
       trans.child_frame_id = "base_link";
-      tf::vector3TFToMsg(tf::Vector3(x_, y_, 0.0), trans.transform.translation);
-      tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw_), trans.transform.rotation);
+      trans.transform.translation = tf2::toMsg(tf2::Vector3(x_, y_, 0.0));
+      trans.transform.rotation = tf::createQuaternionMsgFromYaw(yaw_);
       tfb_.sendTransform(trans);
 
       nav_msgs::Odometry odom;
