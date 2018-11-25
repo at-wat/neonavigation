@@ -29,8 +29,8 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <string>
 #include <neonavigation_common/compatibility.h>
@@ -45,7 +45,8 @@ private:
   ros::Timer timer_;
 
   nav_msgs::OccupancyGrid::ConstPtr large_map_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   std::string robot_frame_;
 
@@ -55,6 +56,7 @@ public:
   LargeMapToMapNode()
     : pnh_("~")
     , nh_()
+    , tfl_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
@@ -84,13 +86,12 @@ private:
   {
     if (!large_map_)
       return;
-    tf::StampedTransform trans;
+    tf2::Stamped<tf2::Transform> trans;
     try
     {
-      tfl_.lookupTransform(
-          large_map_->header.frame_id, robot_frame_, ros::Time(0), trans);
+      tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, ros::Time(0)), trans);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       return;
     }

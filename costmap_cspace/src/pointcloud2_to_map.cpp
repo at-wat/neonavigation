@@ -29,8 +29,8 @@
 
 #include <ros/ros.h>
 
-#include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -51,7 +51,8 @@ private:
   ros::Subscriber sub_cloud_single_;
 
   nav_msgs::OccupancyGrid map_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
   ros::Time published_;
   ros::Duration publish_interval_;
 
@@ -70,6 +71,7 @@ public:
   Pointcloud2ToMapNode()
     : nh_()
     , pnh_("~")
+    , tfl_(tfbuf_)
     , accums_(2)
   {
     neonavigation_common::compat::checkCompatMode();
@@ -117,14 +119,10 @@ private:
     geometry_msgs::TransformStamped trans;
     try
     {
-      tf::StampedTransform trans_tf;
-      tfl_.waitForTransform(global_frame_, cloud->header.frame_id,
-                            cloud->header.stamp, ros::Duration(0.5));
-      tfl_.lookupTransform(global_frame_, cloud->header.frame_id,
-                           cloud->header.stamp, trans_tf);
-      tf::transformStampedTFToMsg(trans_tf, trans);
+      trans = tfbuf_.lookupTransform(global_frame_, cloud->header.frame_id,
+                                     cloud->header.stamp, ros::Duration(0.5));
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN("%s", e.what());
       return;
@@ -143,8 +141,8 @@ private:
     float robot_z;
     try
     {
-      tf::StampedTransform trans;
-      tfl_.lookupTransform(global_frame_, robot_frame_, ros::Time(0), trans);
+      tf2::Stamped<tf2::Transform> trans;
+      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, ros::Time(0)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map_.info.resolution) * map_.info.resolution;
@@ -157,7 +155,7 @@ private:
       origin_y_ = y - height_ * map_.info.resolution * 0.5;
       robot_z = pos.z();
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN("%s", e.what());
       return;

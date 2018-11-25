@@ -28,11 +28,13 @@
  */
 
 #include <ros/ros.h>
-#include <sensor_msgs/LaserScan.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
 #include <laser_geometry/laser_geometry.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/LaserScan.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
 #include <string>
 
@@ -48,7 +50,8 @@ private:
   ros::Subscriber sub_scan_;
 
   nav_msgs::OccupancyGrid map;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
   laser_geometry::LaserProjection projector_;
   ros::Time published_;
   ros::Duration publish_interval_;
@@ -62,12 +65,13 @@ private:
   float origin_x_;
   float origin_y_;
 
-  PointcloudAccumurator<sensor_msgs::PointCloud> accum_;
+  PointcloudAccumurator<sensor_msgs::PointCloud2> accum_;
 
 public:
   LaserscanToMapNode()
     : nh_()
     , pnh_("~")
+    , tfl_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
     pnh_.param("z_min", z_min_, 0.1);
@@ -104,20 +108,20 @@ public:
 private:
   void cbScan(const sensor_msgs::LaserScan::ConstPtr &scan)
   {
-    sensor_msgs::PointCloud cloud;
-    sensor_msgs::PointCloud cloud_global;
+    sensor_msgs::PointCloud2 cloud;
+    sensor_msgs::PointCloud2 cloud_global;
     projector_.projectLaser(*scan, cloud);
     try
     {
-      tfl_.waitForTransform(global_frame_, cloud.header.frame_id,
-                            cloud.header.stamp, ros::Duration(0.5));
-      tfl_.transformPointCloud(global_frame_, cloud, cloud_global);
+      geometry_msgs::TransformStamped trans = tfbuf_.lookupTransform(
+          global_frame_, cloud.header.frame_id, cloud.header.stamp, ros::Duration(0.5));
+      tf2::doTransform(cloud, cloud_global, trans);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN("%s", e.what());
     }
-    accum_.push(PointcloudAccumurator<sensor_msgs::PointCloud>::Points(
+    accum_.push(PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
     ros::Time now = scan->header.stamp;
@@ -127,8 +131,8 @@ private:
 
     try
     {
-      tf::StampedTransform trans;
-      tfl_.lookupTransform(global_frame_, robot_frame_, ros::Time(0), trans);
+      tf2::Stamped<tf2::Transform> trans;
+      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, ros::Time(0)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map.info.resolution) * map.info.resolution;
@@ -140,7 +144,7 @@ private:
       origin_x_ = x - width_ * map.info.resolution * 0.5;
       origin_y_ = y - height_ * map.info.resolution * 0.5;
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN("%s", e.what());
       return;
@@ -150,12 +154,14 @@ private:
 
     for (auto &pc : accum_)
     {
-      for (auto &p : pc.points)
+      auto itr_x = sensor_msgs::PointCloud2ConstIterator<double>(pc, "x");
+      auto itr_y = sensor_msgs::PointCloud2ConstIterator<double>(pc, "y");
+      for (; itr_x != itr_x.end(); ++itr_x, ++itr_y)
       {
         unsigned int x = int(
-            (p.x - map.info.origin.position.x) / map.info.resolution);
+            (*itr_x - map.info.origin.position.x) / map.info.resolution);
         unsigned int y = int(
-            (p.y - map.info.origin.position.y) / map.info.resolution);
+            (*itr_y - map.info.origin.position.y) / map.info.resolution);
         if (x >= map.info.width || y >= map.info.height)
           continue;
         map.data[x + y * map.info.width] = 100;

@@ -4,12 +4,14 @@ project(costmap_cspace)
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
-    
+
     geometry_msgs
     laser_geometry
     nav_msgs
     sensor_msgs
     tf
+    tf2_geometry_msgs
+    tf2_ros
     tf2_sensor_msgs
 
     costmap_cspace_msgs
@@ -21,12 +23,14 @@ catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS
     roscpp
-    
+
     geometry_msgs
     laser_geometry
     nav_msgs
     sensor_msgs
     tf
+    tf2_geometry_msgs
+    tf2_ros
     tf2_sensor_msgs
 
     costmap_cspace_msgs
