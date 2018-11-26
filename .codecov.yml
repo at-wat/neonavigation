@@ -3,6 +3,7 @@ coverage:
     project:
       default:
         threshold: 2
+    patch: off
 
 ignore:
   - "*/test/*"
