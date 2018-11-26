@@ -13,8 +13,6 @@ find_package(catkin REQUIRED
     nav_msgs
     pcl_ros
     sensor_msgs
-    tf
-    tf_conversions
     tf2
     tf2_geometry_msgs
     tf2_ros
@@ -42,8 +40,6 @@ catkin_package(
     nav_msgs
     pcl_ros
     sensor_msgs
-    tf
-    tf_conversions
     tf2
     tf2_geometry_msgs
     tf2_ros

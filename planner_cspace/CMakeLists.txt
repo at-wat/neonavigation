@@ -12,7 +12,6 @@ find_package(catkin REQUIRED
     nav_msgs
     sensor_msgs
     std_srvs
-    tf
     tf2
     tf2_geometry_msgs
     tf2_ros
@@ -38,7 +37,6 @@ catkin_package(
     nav_msgs
     sensor_msgs
     std_srvs
-    tf
     tf2
     tf2_geometry_msgs
     tf2_ros

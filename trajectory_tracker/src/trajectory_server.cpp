@@ -41,12 +41,12 @@
 #include <string>
 
 #include <geometry_msgs/Twist.h>
+#include <interactive_markers/interactive_marker_server.h>
 #include <nav_msgs/Path.h>
-#include <visualization_msgs/InteractiveMarkerUpdate.h>
-#include <tf/transform_datatypes.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <trajectory_tracker_msgs/ChangePath.h>
 #include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
-#include <interactive_markers/interactive_marker_server.h>
+#include <visualization_msgs/InteractiveMarkerUpdate.h>
 
 #include <filter.h>
 
@@ -195,7 +195,7 @@ void ServerNode::updateIM()
     marker.type = marker.ARROW;
 
     ss << " ctl";
-    ctl.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, M_PI / 2.0, 0.0);
+    ctl.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 1.0, 0.0), M_PI / 2.0));
     ctl.interaction_mode = ctl.MOVE_ROTATE;
     ctl.orientation_mode = ctl.INHERIT;
     ctl.always_visible = true;

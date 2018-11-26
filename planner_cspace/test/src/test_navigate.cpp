@@ -28,7 +28,7 @@
  */
 
 #include <ros/ros.h>
-#include <tf/transform_datatypes.h>
+#include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 #include <nav_msgs/Path.h>
@@ -62,11 +62,11 @@ TEST(Navigate, Navigate)
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.7;
   path.poses[0].pose.position.y = 2.9;
-  path.poses[0].pose.orientation = tf::createQuaternionMsgFromYaw(-3.14);
+  path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
   path.poses[1].header.frame_id = path.header.frame_id;
   path.poses[1].pose.position.x = 1.9;
   path.poses[1].pose.position.y = 2.8;
-  path.poses[1].pose.orientation = tf::createQuaternionMsgFromYaw(-1.57);
+  path.poses[1].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -1.57));
   pub_path.publish(path);
 
   tf2::Transform goal;
@@ -94,7 +94,7 @@ TEST(Navigate, Navigate)
 
     auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
-        fabs(tf::getYaw(tf2::toMsg(goal_rel.getRotation()))) < 0.2)
+        fabs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << "Navagation success." << std::endl;
       ros::Duration(2.0).sleep();

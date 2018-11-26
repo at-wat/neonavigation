@@ -32,6 +32,7 @@
 
 #include <ros/ros.h>
 
+#include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -104,7 +105,7 @@ public:
     }
 
     const auto pos_diff = diff.getOrigin().length();
-    const auto yaw_diff = tf::getYaw(tf2::toMsg(diff.getRotation()));
+    const auto yaw_diff = tf2::getYaw(diff.getRotation());
 
     if (pos_diff > pos_jump_ || fabs(yaw_diff) > yaw_jump_)
     {

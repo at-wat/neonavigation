@@ -35,9 +35,11 @@
 #include <std_msgs/Empty.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
-#include <tf_conversions/tf_eigen.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <pcl/point_types.h>
 #include <pcl/conversions.h>

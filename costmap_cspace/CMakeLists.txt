@@ -9,7 +9,6 @@ find_package(catkin REQUIRED
     laser_geometry
     nav_msgs
     sensor_msgs
-    tf
     tf2_geometry_msgs
     tf2_ros
     tf2_sensor_msgs
@@ -28,7 +27,6 @@ catkin_package(
     laser_geometry
     nav_msgs
     sensor_msgs
-    tf
     tf2_geometry_msgs
     tf2_ros
     tf2_sensor_msgs

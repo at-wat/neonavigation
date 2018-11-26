@@ -29,7 +29,7 @@
 
 #include <ros/ros.h>
 
-#include <tf/transform_datatypes.h>
+#include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -85,8 +85,8 @@ public:
       geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
       if (flat_)
       {
-        const float yaw = tf::getYaw(trans_out.transform.rotation);
-        trans_out.transform.rotation = tf::createQuaternionMsgFromYaw(yaw);
+        const float yaw = tf2::getYaw(trans_out.transform.rotation);
+        trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
       }
       trans_out.header.stamp = trans.stamp_ + ros::Duration(tf_tolerance_);
 

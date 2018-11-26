@@ -10,8 +10,6 @@ find_package(catkin REQUIRED
     geometry_msgs
     pcl_ros
     sensor_msgs
-    tf
-    tf_conversions
 
     neonavigation_common
 )
@@ -27,8 +25,6 @@ catkin_package(
     geometry_msgs
     pcl_ros
     sensor_msgs
-    tf
-    tf_conversions
 
     neonavigation_common
 )

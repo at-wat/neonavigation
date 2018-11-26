@@ -31,7 +31,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
-#include <tf/transform_datatypes.h>
+#include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -81,7 +81,7 @@ protected:
 
     x_ = pose_out.pose.position.x;
     y_ = pose_out.pose.position.y;
-    yaw_ = tf::getYaw(pose_out.pose.orientation);
+    yaw_ = tf2::getYaw(pose_out.pose.orientation);
   }
 
 public:
@@ -121,7 +121,7 @@ public:
       trans.header.frame_id = "odom";
       trans.child_frame_id = "base_link";
       trans.transform.translation = tf2::toMsg(tf2::Vector3(x_, y_, 0.0));
-      trans.transform.rotation = tf::createQuaternionMsgFromYaw(yaw_);
+      trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw_));
       tfb_.sendTransform(trans);
 
       nav_msgs::Odometry odom;
@@ -130,7 +130,7 @@ public:
       odom.child_frame_id = "base_link";
       odom.pose.pose.position.x = x_;
       odom.pose.pose.position.y = y_;
-      odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw_);
+      odom.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw_));
       odom.twist.twist.linear.x = v_;
       odom.twist.twist.angular.z = w_;
       pub_odom_.publish(odom);
