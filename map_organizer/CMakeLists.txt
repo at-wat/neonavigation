@@ -15,6 +15,9 @@ find_package(catkin REQUIRED
     sensor_msgs
     tf
     tf_conversions
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
 
     map_organizer_msgs
     neonavigation_common
@@ -41,6 +44,9 @@ catkin_package(
     sensor_msgs
     tf
     tf_conversions
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
 
     map_organizer_msgs
     neonavigation_common

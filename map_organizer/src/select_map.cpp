@@ -31,7 +31,8 @@
 
 #include <map_organizer_msgs/OccupancyGridArray.h>
 #include <std_msgs/Int32.h>
-#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <vector>
 
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
       nh, "map",
       nh, "/map", 1, true);
 
-  tf::TransformBroadcaster tfb;
+  tf2_ros::TransformBroadcaster tfb;
   geometry_msgs::TransformStamped trans;
   trans.header.frame_id = "map_ground";
   trans.child_frame_id = "map";

@@ -33,7 +33,6 @@
 #include <map_organizer_msgs/OccupancyGridArray.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
-#include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
 
