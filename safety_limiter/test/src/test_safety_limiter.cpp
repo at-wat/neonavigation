@@ -28,7 +28,6 @@
  */
 
 #include <ros/ros.h>
-#include <tf/transform_listener.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/PointCloud2.h>
