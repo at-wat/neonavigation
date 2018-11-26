@@ -154,8 +154,8 @@ private:
 
     for (auto &pc : accum_)
     {
-      auto itr_x = sensor_msgs::PointCloud2ConstIterator<double>(pc, "x");
-      auto itr_y = sensor_msgs::PointCloud2ConstIterator<double>(pc, "y");
+      auto itr_x = sensor_msgs::PointCloud2ConstIterator<float>(pc, "x");
+      auto itr_y = sensor_msgs::PointCloud2ConstIterator<float>(pc, "y");
       for (; itr_x != itr_x.end(); ++itr_x, ++itr_y)
       {
         unsigned int x = int(
