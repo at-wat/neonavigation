@@ -32,12 +32,12 @@
 
 namespace bbf
 {
-constexpr float oddsToProbability(const float &o)
+constexpr float oddsToProbability(const float& o)
 {
   return o / (1.0 + o);
 }
 
-constexpr float probabilityToOdds(const float &p)
+constexpr float probabilityToOdds(const float& p)
 {
   return p / (1.0 - p);
 }
@@ -54,11 +54,11 @@ protected:
 
 public:
   explicit BinaryBayesFilter(
-      const float &initial_odds = 1.0) noexcept
+      const float& initial_odds = 1.0) noexcept
       : odds_(initial_odds)
   {
   }
-  float update(const float &odds)
+  float update(const float& odds)
   {
     odds_ *= odds;
     if (odds_ < MIN_ODDS)

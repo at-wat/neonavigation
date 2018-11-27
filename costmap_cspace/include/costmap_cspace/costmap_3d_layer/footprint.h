@@ -96,11 +96,11 @@ public:
     footprint_radius_ = footprint.radius();
     footprint_ = footprint.toMsg();
   }
-  Polygon &getFootprint()
+  Polygon& getFootprint()
   {
     return footprint_p_;
   }
-  const geometry_msgs::PolygonStamped &getFootprintMsg() const
+  const geometry_msgs::PolygonStamped& getFootprintMsg() const
   {
     return footprint_;
   }
@@ -112,11 +112,11 @@ public:
   {
     return range_max_;
   }
-  const CSpace3Cache &getTemplate() const
+  const CSpace3Cache& getTemplate() const
   {
     return cs_template_;
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
   {
     ROS_ASSERT(footprint_p_.v.size() > 2);
 
@@ -171,8 +171,8 @@ protected:
     return false;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr &map,
-      const UpdatedRegion &region)
+      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const UpdatedRegion& region)
   {
     if (root_)
       gemerateCSpace(map_, map, region);
@@ -181,8 +181,8 @@ protected:
   }
   void gemerateCSpace(
       CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr &msg,
-      const UpdatedRegion &region)
+      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      const UpdatedRegion& region)
   {
     ROS_ASSERT(ang_grid_ > 0);
     const int ox =
@@ -198,7 +198,7 @@ protected:
       {
         for (unsigned int i = 0; i < msg->data.size(); i++)
         {
-          const auto &val = msg->data[i];
+          const auto& val = msg->data[i];
           if (val < 0)
             continue;
 
@@ -222,7 +222,7 @@ protected:
                   static_cast<unsigned int>(y2) >= map->info.height)
                 continue;
 
-              auto &m = map->getCost(x2, y2, yaw);
+              auto& m = map->getCost(x2, y2, yaw);
               m = 0;
             }
           }
@@ -254,7 +254,7 @@ protected:
                 static_cast<unsigned int>(y2) >= map->info.height)
               continue;
 
-            auto &m = map->getCost(x2, y2, yaw);
+            auto& m = map->getCost(x2, y2, yaw);
             const auto c = cs_template_.e(x, y, yaw) * val / 100;
             if (m < c)
               m = c;

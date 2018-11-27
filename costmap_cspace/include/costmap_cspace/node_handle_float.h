@@ -39,8 +39,8 @@ namespace ros
 class NodeHandle_f : public NodeHandle
 {
 public:
-  void param_cast(const std::string &param_name,
-                  float &param_val, const float &default_val) const
+  void param_cast(const std::string& param_name,
+                  float& param_val, const float& default_val) const
   {
     double _default_val_d = default_val;
     double _param_val_d;
@@ -48,8 +48,8 @@ public:
     param<double>(param_name, _param_val_d, _default_val_d);
     param_val = _param_val_d;
   }
-  void param_cast(const std::string &param_name,
-                  size_t &param_val, const size_t &default_val) const
+  void param_cast(const std::string& param_name,
+                  size_t& param_val, const size_t& default_val) const
   {
     int _default_val_d = default_val;
     int _param_val_d;
@@ -57,8 +57,8 @@ public:
     param<int>(param_name, _param_val_d, _default_val_d);
     param_val = _param_val_d;
   }
-  NodeHandle_f(const std::string &ns = std::string(),
-               const M_string &remappings = M_string())
+  NodeHandle_f(const std::string& ns = std::string(),
+               const M_string& remappings = M_string())
     : NodeHandle(ns, remappings)
   {
   }

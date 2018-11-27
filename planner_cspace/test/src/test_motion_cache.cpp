@@ -55,7 +55,7 @@ TEST(MotionCache, Generate)
         { -1, 0, 2 },
         { 0, -1, 3 },
       };
-  for (auto &xy_yaw : xy_yaw_straight)
+  for (auto& xy_yaw : xy_yaw_straight)
   {
     for (int i = 1; i <= range + 1; ++i)
     {
@@ -69,7 +69,7 @@ TEST(MotionCache, Generate)
         continue;
       }
       ASSERT_NE(c, cache.end(xy_yaw[2]));
-      for (const auto &p : c->second.getMotion())
+      for (const auto& p : c->second.getMotion())
       {
         // Must be in the same quadrant
         if (xy_yaw[0] == 0)
@@ -98,7 +98,7 @@ TEST(MotionCache, Generate)
         { -1, 1, 2, 1 },
         { -1, -1, 3, 2 },
       };
-  for (auto &xy_syaw_gyaw : xy_syaw_gyaw_90)
+  for (auto& xy_syaw_gyaw : xy_syaw_gyaw_90)
   {
     for (int i = 1; i <= range + 1; ++i)
     {
@@ -113,7 +113,7 @@ TEST(MotionCache, Generate)
       }
       ASSERT_NE(c, cache.end(xy_syaw_gyaw[2]));
 
-      for (const auto &p : c->second.getMotion())
+      for (const auto& p : c->second.getMotion())
       {
         // Must be in the same quadrant
         ASSERT_GE(p[0] * xy_syaw_gyaw[0], 0);
@@ -126,7 +126,7 @@ TEST(MotionCache, Generate)
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 

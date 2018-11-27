@@ -110,13 +110,13 @@ TEST(GridMetricConverter, Path)
         { 3, 3, 2 }
       };
   std::vector<CyclicVecInt<3, 2>> path_grid;
-  for (const auto &g : grid)
+  for (const auto& g : grid)
     path_grid.push_back(CyclicVecInt<3, 2>(g));
 
   nav_msgs::Path path;
   grid_metric_converter::grid2MetricPath(map_info, 10.0, path_grid, path, path_grid[0]);
   size_t ref = 0;
-  for (const geometry_msgs::PoseStamped &p : path.poses)
+  for (const geometry_msgs::PoseStamped& p : path.poses)
   {
     const double diff_dist = hypotf(
         metric_expected[ref][0] - p.pose.position.x,
@@ -143,7 +143,7 @@ TEST(GridMetricConverter, Path)
   ASSERT_TRUE(false);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 

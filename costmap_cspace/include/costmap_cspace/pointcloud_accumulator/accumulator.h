@@ -43,7 +43,7 @@ public:
   public:
     ros::Time stamp_;
 
-    Points(const T &points, const ros::Time &stamp)
+    Points(const T& points, const ros::Time& stamp)
       : T(points)
       , stamp_(stamp)
     {
@@ -54,12 +54,12 @@ public:
   {
   }
 
-  explicit PointcloudAccumurator(const ros::Duration &duration)
+  explicit PointcloudAccumurator(const ros::Duration& duration)
   {
     reset(duration);
   }
 
-  void reset(const ros::Duration &duration)
+  void reset(const ros::Duration& duration)
   {
     time_to_hold_ = duration;
     clear();
@@ -70,7 +70,7 @@ public:
     points_.clear();
   }
 
-  void push(const Points &points)
+  void push(const Points& points)
   {
     for (auto it = points_.begin(); it != points_.end(); ++it)
     {

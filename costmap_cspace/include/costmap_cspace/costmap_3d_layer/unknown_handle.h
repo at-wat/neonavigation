@@ -59,7 +59,7 @@ public:
       unknown_cost_ = static_cast<int>(config["unknown_cost"]);
     }
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
   {
   }
 
@@ -85,7 +85,7 @@ protected:
             static_cast<int>(x) < region_.x_ + region_.width_ && x < map_->info.width;
             ++x)
         {
-          auto &m = map_overlay_->getCost(x, y, a);
+          auto& m = map_overlay_->getCost(x, y, a);
           if (m < 0)
             m = unknown_cost_;
         }
@@ -94,8 +94,8 @@ protected:
     return false;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr &map,
-      const UpdatedRegion &region)
+      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const UpdatedRegion& region)
   {
   }
 };

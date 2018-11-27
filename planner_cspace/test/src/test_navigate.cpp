@@ -42,8 +42,8 @@ TEST(Navigate, Navigate)
 {
   nav_msgs::OccupancyGrid map;
 
-  const boost::function<void(const nav_msgs::OccupancyGrid::ConstPtr &)> cb_map =
-      [&map](const nav_msgs::OccupancyGrid::ConstPtr &msg) -> void
+  const boost::function<void(const nav_msgs::OccupancyGrid::ConstPtr&)> cb_map =
+      [&map](const nav_msgs::OccupancyGrid::ConstPtr& msg) -> void
   {
     map = *msg;
     std::cerr << "Map received." << std::endl;
@@ -86,7 +86,7 @@ TEST(Navigate, Navigate)
           tfbuf.lookupTransform("map", "base_link", now, ros::Duration(0.5));
       tf2::fromMsg(trans_tmp, trans);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       std::cerr << e.what() << std::endl;
       continue;
@@ -127,7 +127,7 @@ TEST(Navigate, Navigate)
   ASSERT_TRUE(false);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_navigate");

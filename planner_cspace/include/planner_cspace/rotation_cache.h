@@ -41,7 +41,7 @@ protected:
   int ser_size_;
 
 public:
-  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size)
+  void reset(const CyclicVecInt<DIM, NONCYCLIC>& size)
   {
     size_t ser_size = 1;
     for (int i = 0; i < 3; i++)
@@ -53,14 +53,14 @@ public:
 
     c_.reset(new CyclicVecFloat<DIM, NONCYCLIC>[ser_size]);
   }
-  explicit RotationCache(const CyclicVecInt<DIM, NONCYCLIC> &size)
+  explicit RotationCache(const CyclicVecInt<DIM, NONCYCLIC>& size)
   {
     reset(size);
   }
   RotationCache()
   {
   }
-  CyclicVecFloat<DIM, NONCYCLIC> &operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos)
+  CyclicVecFloat<DIM, NONCYCLIC>& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
   {
     size_t addr = pos[2];
     for (int i = 1; i >= 0; i--)

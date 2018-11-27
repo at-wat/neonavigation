@@ -49,11 +49,11 @@ class CSpace3DMsg : public costmap_cspace_msgs::CSpace3D
 public:
   using Ptr = std::shared_ptr<CSpace3DMsg>;
   using ConstPtr = std::shared_ptr<const CSpace3DMsg>;
-  size_t address(const int &x, const int &y, const int &yaw) const
+  size_t address(const int& x, const int& y, const int& yaw) const
   {
     return (yaw * info.height + y) * info.width + x;
   }
-  const int8_t &getCost(const int &x, const int &y, const int &yaw) const
+  const int8_t& getCost(const int& x, const int& y, const int& yaw) const
   {
     ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
     ROS_ASSERT(static_cast<size_t>(x) < info.width);
@@ -64,7 +64,7 @@ public:
 
     return data[addr];
   }
-  int8_t &getCost(const int &x, const int &y, const int &yaw)
+  int8_t& getCost(const int& x, const int& y, const int& yaw)
   {
     ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
     ROS_ASSERT(static_cast<size_t>(x) < info.width);
@@ -101,9 +101,9 @@ public:
   {
   }
   UpdatedRegion(
-      const int &x, const int &y, const int &yaw,
-      const int &width, const int &height, const int &angle,
-      const ros::Time &stamp = ros::Time())
+      const int& x, const int& y, const int& yaw,
+      const int& width, const int& height, const int& angle,
+      const ros::Time& stamp = ros::Time())
     : x_(x)
     , y_(y)
     , yaw_(yaw)
@@ -113,7 +113,7 @@ public:
     , stamp_(stamp)
   {
   }
-  void merge(const UpdatedRegion &region)
+  void merge(const UpdatedRegion& region)
   {
     if (region.width_ == 0 || region.height_ == 0 || region.angle_ == 0)
       return;
@@ -151,7 +151,7 @@ public:
     height_ = y2 - y_;
     angle_ = yaw2 - yaw_;
   }
-  void expand(const int &ex)
+  void expand(const int& ex)
   {
     ROS_ASSERT(ex >= 0);
     x_ -= ex;
@@ -171,7 +171,7 @@ public:
     width_ = x2 - x_;
     height_ = y2 - y_;
   }
-  void bitblt(const CSpace3DMsg::Ptr &dest, const CSpace3DMsg::ConstPtr &src)
+  void bitblt(const CSpace3DMsg::Ptr& dest, const CSpace3DMsg::ConstPtr& src)
   {
     ROS_ASSERT(dest->info.angle == src->info.angle);
     ROS_ASSERT(dest->info.width == src->info.width);
@@ -233,7 +233,7 @@ public:
   }
 
   virtual void loadConfig(XmlRpc::XmlRpcValue config) = 0;
-  virtual void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info) = 0;
+  virtual void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info) = 0;
 
   void setAngleResolution(
       const int ang_resolution)
@@ -251,7 +251,7 @@ public:
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
-  void setBaseMap(const nav_msgs::OccupancyGrid::ConstPtr &base_map)
+  void setBaseMap(const nav_msgs::OccupancyGrid::ConstPtr& base_map)
   {
     ROS_ASSERT(root_);
     ROS_ASSERT(ang_grid_ > 0);
@@ -301,7 +301,7 @@ public:
             0, 0, 0, map_->info.width, map_->info.height, map_->info.angle,
             base_map->header.stamp));
   }
-  void processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+  void processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
     ROS_ASSERT(!root_);
     ROS_ASSERT(ang_grid_ > 0);
@@ -342,11 +342,11 @@ public:
 protected:
   virtual bool updateChain(const bool output) = 0;
   virtual void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr &map,
-      const UpdatedRegion &region) = 0;
+      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const UpdatedRegion& region) = 0;
   virtual int getRangeMax() const = 0;
 
-  bool updateChainEntry(const UpdatedRegion &region, bool output = true)
+  bool updateChainEntry(const UpdatedRegion& region, bool output = true)
   {
     auto region_expand = region;
     region_expand.expand(getRangeMax());

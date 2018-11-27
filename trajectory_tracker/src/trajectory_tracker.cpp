@@ -112,10 +112,10 @@ private:
   nav_msgs::Path path_;
   nav_msgs::Odometry odom_;
 
-  void cbPath(const nav_msgs::Path::ConstPtr &);
-  void cbOdom(const nav_msgs::Odometry::ConstPtr &);
-  void cbSpeed(const std_msgs::Float32::ConstPtr &);
-  void cbTimer(const ros::TimerEvent &);
+  void cbPath(const nav_msgs::Path::ConstPtr&);
+  void cbOdom(const nav_msgs::Odometry::ConstPtr&);
+  void cbSpeed(const std_msgs::Float32::ConstPtr&);
+  void cbTimer(const ros::TimerEvent&);
   void control();
 };
 
@@ -128,7 +128,7 @@ public:
   {
     num = 0;
   };
-  void operator+=(const T &val)
+  void operator+=(const T& val)
   {
     sum += val;
     num++;
@@ -208,7 +208,7 @@ TrackerNode::~TrackerNode()
   pub_vel_.publish(cmd_vel);
 }
 
-float dist2d(const geometry_msgs::Point &a, const geometry_msgs::Point &b)
+float dist2d(const geometry_msgs::Point& a, const geometry_msgs::Point& b)
 {
   return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
@@ -216,9 +216,9 @@ float len2d(const geometry_msgs::Point a)
 {
   return sqrtf(powf(a.x, 2) + powf(a.y, 2));
 }
-float curv3p(const geometry_msgs::Point &a,
-             const geometry_msgs::Point &b,
-             const geometry_msgs::Point &c)
+float curv3p(const geometry_msgs::Point& a,
+             const geometry_msgs::Point& b,
+             const geometry_msgs::Point& c)
 {
   float ret;
   ret = 2 * (a.x * b.y + b.x * c.y + c.x * a.y - a.x * c.y - b.x * a.y - c.x * b.y);
@@ -246,7 +246,7 @@ geometry_msgs::Point point2d(const float x, const float y)
   ret.y = y;
   return ret;
 }
-geometry_msgs::Point sub2d(const geometry_msgs::Point &a, const geometry_msgs::Point &b)
+geometry_msgs::Point sub2d(const geometry_msgs::Point& a, const geometry_msgs::Point& b)
 {
   geometry_msgs::Point ret;
   ret.x = a.x - b.x;
@@ -259,15 +259,15 @@ float sign(const float a)
     return -1;
   return 1;
 }
-float dist2d_line(const geometry_msgs::Point &a,
-                  const geometry_msgs::Point &b,
-                  const geometry_msgs::Point &c)
+float dist2d_line(const geometry_msgs::Point& a,
+                  const geometry_msgs::Point& b,
+                  const geometry_msgs::Point& c)
 {
   return (cross2d(sub2d(b, a), sub2d(c, a)) / dist2d(b, a));
 }
-float dist2d_linestrip(const geometry_msgs::Point &a,
-                       const geometry_msgs::Point &b,
-                       const geometry_msgs::Point &c)
+float dist2d_linestrip(const geometry_msgs::Point& a,
+                       const geometry_msgs::Point& b,
+                       const geometry_msgs::Point& c)
 {
   if (dot2d(sub2d(b, a), sub2d(c, a)) <= 0)
     return dist2d(c, a);
@@ -275,9 +275,9 @@ float dist2d_linestrip(const geometry_msgs::Point &a,
     return -dist2d(c, b) - 0.005;
   return fabs(dist2d_line(a, b, c));
 }
-geometry_msgs::Point projection2d(const geometry_msgs::Point &a,
-                                  const geometry_msgs::Point &b,
-                                  const geometry_msgs::Point &c)
+geometry_msgs::Point projection2d(const geometry_msgs::Point& a,
+                                  const geometry_msgs::Point& b,
+                                  const geometry_msgs::Point& c)
 {
   float r = dot2d(sub2d(b, a), sub2d(c, a)) / pow(len2d(sub2d(b, a)), 2);
   geometry_msgs::Point ret;
@@ -286,17 +286,17 @@ geometry_msgs::Point projection2d(const geometry_msgs::Point &a,
   return ret;
 }
 
-void TrackerNode::cbSpeed(const std_msgs::Float32::ConstPtr &msg)
+void TrackerNode::cbSpeed(const std_msgs::Float32::ConstPtr& msg)
 {
   vel_[0] = msg->data;
 }
 
-void TrackerNode::cbOdom(const nav_msgs::Odometry::ConstPtr &msg)
+void TrackerNode::cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
 {
   odom_ = *msg;
 }
 
-void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr &msg)
+void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
 {
   path_ = *msg;
   auto i = path_.poses.begin();
@@ -329,7 +329,7 @@ float timeoptimal_control(const float angle, const float acc_, const float dt)
   return -sign(angle) * sqrtf(fabs(2 * angle * acc_ * 0.85));
 }
 
-void TrackerNode::cbTimer(const ros::TimerEvent &event)
+void TrackerNode::cbTimer(const ros::TimerEvent& event)
 {
   control();
 }
@@ -393,7 +393,7 @@ void TrackerNode::control()
       lpath.poses.push_back(pose);
     }
   }
-  catch (tf2::TransformException &e)
+  catch (tf2::TransformException& e)
   {
     ROS_WARN("TF exception: %s", e.what());
     status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
@@ -688,7 +688,7 @@ void TrackerNode::control()
     path_step_done_ = 0;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "trajectory_tracker");
 

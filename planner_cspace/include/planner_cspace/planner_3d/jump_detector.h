@@ -41,7 +41,7 @@
 class JumpDetector
 {
 protected:
-  tf2_ros::Buffer &tfbuf_;
+  tf2_ros::Buffer& tfbuf_;
   tf2_ros::TransformListener tfl_;
   tf2::Transform base_trans_prev_;
   tf2::Transform map_trans_prev_;
@@ -55,7 +55,7 @@ protected:
   bool init_;
 
 public:
-  explicit JumpDetector(tf2_ros::Buffer &tfbuf)
+  explicit JumpDetector(tf2_ros::Buffer& tfbuf)
     : tfbuf_(tfbuf)
     , tfl_(tfbuf_)
     , base_trans_prev_(tf2::Quaternion(0, 0, 0, 1))
@@ -63,11 +63,11 @@ public:
     , init_(false)
   {
   }
-  void setMapFrame(const std::string &frame_id)
+  void setMapFrame(const std::string& frame_id)
   {
     map_frame_ = frame_id;
   }
-  void setBaseFrame(const std::string &frame_id)
+  void setBaseFrame(const std::string& frame_id)
   {
     jump_detect_frame_ = frame_id;
   }
@@ -89,7 +89,7 @@ public:
       tf2::fromMsg(base_trans_tmp, base_trans);
       tf2::fromMsg(map_trans_tmp, map_trans);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       return false;
     }

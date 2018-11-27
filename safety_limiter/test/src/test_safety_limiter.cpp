@@ -43,7 +43,7 @@
 namespace
 {
 void GenerateSinglePointPointcloud2(
-    sensor_msgs::PointCloud2 &cloud,
+    sensor_msgs::PointCloud2& cloud,
     const float x,
     const float y,
     const float z)
@@ -112,8 +112,8 @@ public:
 TEST_F(SafetyLimiterTest, Timeouts)
 {
   geometry_msgs::Twist::ConstPtr cmd_vel;
-  const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
-      [&cmd_vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+  const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+      [&cmd_vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
   {
     cmd_vel = msg;
   };
@@ -195,8 +195,8 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
   bool failed = false;
   bool en = false;
   // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s (t_margin: 0)
-  const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
-      [&received, &failed, &en](const geometry_msgs::Twist::ConstPtr &msg) -> void
+  const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+      [&received, &failed, &en](const geometry_msgs::Twist::ConstPtr& msg) -> void
   {
     if (!en)
       return;
@@ -248,8 +248,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
     bool received = false;
     bool failed = false;
     bool en = false;
-    const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
-        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
     {
       if (!en)
         return;
@@ -298,8 +298,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     bool received = false;
     bool failed = false;
     bool en = false;
-    const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
-        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
     {
       if (!en)
         return;
@@ -351,8 +351,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
     bool received = false;
     bool failed = false;
     bool en = false;
-    const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
-        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
     {
       if (!en)
         return;
@@ -401,8 +401,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     bool received = false;
     bool failed = false;
     bool en = false;
-    const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
-        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
     {
       if (!en)
         return;
@@ -445,8 +445,8 @@ TEST_F(SafetyLimiterTest, NoCollision)
       bool received = false;
       bool failed = false;
       bool en = false;
-      const boost::function<void(const geometry_msgs::Twist::ConstPtr &)> cb_cmd_vel =
-          [&received, &failed, &en, vel, ang_vel](const geometry_msgs::Twist::ConstPtr &msg) -> void
+      const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+          [&received, &failed, &en, vel, ang_vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
       {
         failed = true;
         received = true;
@@ -473,7 +473,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_safety_limiter");

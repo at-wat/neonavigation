@@ -68,7 +68,7 @@ private:
 
   Astar::Vecf euclid_cost_coef_;
 
-  float euclidCost(const Astar::Vec &v, const Astar::Vecf coef)
+  float euclidCost(const Astar::Vec& v, const Astar::Vecf coef)
   {
     auto vc = v;
     float cost = 0;
@@ -79,7 +79,7 @@ private:
     }
     return cost;
   }
-  float euclidCost(const Astar::Vec &v)
+  float euclidCost(const Astar::Vec& v)
   {
     return euclidCost(v, euclid_cost_coef_);
   }
@@ -115,7 +115,7 @@ private:
       float y_;
       float th_;
 
-      float dist(const Vec3dof &b)
+      float dist(const Vec3dof& b)
       {
         return hypotf(b.x_ - x_, b.y_ - y_);
       }
@@ -148,12 +148,12 @@ private:
     {
       auto end0 = end(th0);
       auto end1 = b.end(th1);
-      auto &end0r = radius_[1];
-      auto &end1r = b.radius_[1];
-      auto &origin0 = origin_;
-      auto &origin1 = b.origin_;
-      auto &origin0r = radius_[0];
-      auto &origin1r = b.radius_[0];
+      auto& end0r = radius_[1];
+      auto& end1r = b.radius_[1];
+      auto& origin0 = origin_;
+      auto& origin1 = b.origin_;
+      auto& origin0r = radius_[0];
+      auto& origin1r = b.radius_[0];
 
       if (end0.dist(end1) < end0r + end1r)
         return true;
@@ -174,7 +174,7 @@ private:
   ros::Time replan_prev_;
   ros::Duration replan_interval_;
 
-  void cbJoint(const sensor_msgs::JointState::ConstPtr &msg)
+  void cbJoint(const sensor_msgs::JointState::ConstPtr& msg)
   {
     int id[2] = { -1, -1 };
     for (size_t i = 0; i < msg->name.size(); i++)
@@ -202,7 +202,7 @@ private:
   std::pair<ros::Duration, std::pair<float, float>> cmd_prev;
   trajectory_msgs::JointTrajectory traj_prev;
   int id[2];
-  void cbTrajectory(const trajectory_msgs::JointTrajectory::ConstPtr &msg)
+  void cbTrajectory(const trajectory_msgs::JointTrajectory::ConstPtr& msg)
   {
     id[0] = -1;
     id[1] = -1;
@@ -530,13 +530,13 @@ public:
 private:
   void grid2Metric(
       const int t0, const int t1,
-      float &gt0, float &gt1)
+      float& gt0, float& gt1)
   {
     gt0 = (t0 - resolution_) * 2.0 * M_PI / static_cast<float>(resolution_);
     gt1 = (t1 - resolution_) * 2.0 * M_PI / static_cast<float>(resolution_);
   }
   void metric2Grid(
-      int &t0, int &t1,
+      int& t0, int& t1,
       const float gt0, const float gt1)
   {
     t0 = lroundf(gt0 * resolution_ / (2.0 * M_PI)) + resolution_;
@@ -544,17 +544,17 @@ private:
   }
   void grid2Metric(
       const Astar::Vec t,
-      Astar::Vecf &gt)
+      Astar::Vecf& gt)
   {
     grid2Metric(t[0], t[1], gt[0], gt[1]);
   }
   void metric2Grid(
-      Astar::Vec &t,
+      Astar::Vec& t,
       const Astar::Vecf gt)
   {
     metric2Grid(t[0], t[1], gt[0], gt[1]);
   }
-  bool makePlan(const Astar::Vecf sg, const Astar::Vecf eg, std::list<Astar::Vecf> &path)
+  bool makePlan(const Astar::Vecf sg, const Astar::Vecf eg, std::list<Astar::Vecf>& path)
   {
     Astar::Vec s, e;
     metric2Grid(s, sg);
@@ -620,7 +620,7 @@ private:
     Astar::Vec n_prev = s;
     path.push_back(sg);
     int i = 0;
-    for (auto &n : path_grid)
+    for (auto& n : path_grid)
     {
       if (!first)
       {
@@ -657,7 +657,7 @@ private:
         for (p[1] = resolution_ / 2; p[1] < resolution_ * 3 / 2; p[1]++)
         {
           bool found = false;
-          for (auto &g : path_grid)
+          for (auto& g : path_grid)
           {
             if (g == p)
               found = true;
@@ -678,24 +678,24 @@ private:
 
     return true;
   }
-  std::vector<Astar::Vec> &cbSearch(
-      const Astar::Vec &p,
-      const Astar::Vec &s, const Astar::Vec &e)
+  std::vector<Astar::Vec>& cbSearch(
+      const Astar::Vec& p,
+      const Astar::Vec& s, const Astar::Vec& e)
   {
     return search_list_;
   }
-  bool cbProgress(const std::list<Astar::Vec> &path_grid)
+  bool cbProgress(const std::list<Astar::Vec>& path_grid)
   {
     return false;
   }
-  float cbCostEstim(const Astar::Vec &s, const Astar::Vec &e)
+  float cbCostEstim(const Astar::Vec& s, const Astar::Vec& e)
   {
     const Astar::Vec d = e - s;
     return euclidCost(d);
   }
-  float cbCost(const Astar::Vec &s, Astar::Vec &e,
-               const Astar::Vec &v_goal,
-               const Astar::Vec &v_start)
+  float cbCost(const Astar::Vec& s, Astar::Vec& e,
+               const Astar::Vec& v_goal,
+               const Astar::Vec& v_start)
   {
     if ((unsigned int)e[0] >= (unsigned int)resolution_ * 2 ||
         (unsigned int)e[1] >= (unsigned int)resolution_ * 2)
@@ -734,7 +734,7 @@ private:
   }
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "planner_2dof_serial_joints");
   ros::NodeHandle_f pnh("~");

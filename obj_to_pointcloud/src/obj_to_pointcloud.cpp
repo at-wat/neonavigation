@@ -47,7 +47,7 @@
 
 #include <neonavigation_common/compatibility.h>
 
-pcl::PointXYZ operator-(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
+pcl::PointXYZ operator-(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
 {
   auto c = a;
   c.x -= b.x;
@@ -55,7 +55,7 @@ pcl::PointXYZ operator-(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
   c.z -= b.z;
   return c;
 }
-pcl::PointXYZ operator+(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
+pcl::PointXYZ operator+(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
 {
   auto c = a;
   c.x += b.x;
@@ -63,7 +63,7 @@ pcl::PointXYZ operator+(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
   c.z += b.z;
   return c;
 }
-pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
+pcl::PointXYZ operator*(const pcl::PointXYZ& a, const float& b)
 {
   auto c = a;
   c.x *= b;
@@ -72,7 +72,7 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   return c;
 }
 
-std::vector<std::string> split(const std::string &input, char delimiter)
+std::vector<std::string> split(const std::string& input, char delimiter)
 {
   std::istringstream stream(input);
 
@@ -134,7 +134,7 @@ private:
   std::random_device seed_gen_;
   std::default_random_engine engine_;
 
-  sensor_msgs::PointCloud2 convertObj(const std::vector<std::string> &files)
+  sensor_msgs::PointCloud2 convertObj(const std::vector<std::string>& files)
   {
     sensor_msgs::PointCloud2 pc_msg;
     pcl::PolygonMesh::Ptr mesh(new pcl::PolygonMesh());
@@ -144,7 +144,7 @@ private:
     pcl::PointXYZ offset(static_cast<float>(offset_x_), static_cast<float>(offset_y_), static_cast<float>(offset_z_));
 
     pc_rs->points.reserve(500000);
-    for (auto &file : files)
+    for (auto& file : files)
     {
       auto ext = file.substr(file.find_last_of(".") + 1);
 
@@ -156,7 +156,7 @@ private:
           ros::shutdown();
           return pc_msg;
         }
-        for (auto &p : pc->points)
+        for (auto& p : pc->points)
         {
           p.x *= scale_;
           p.y *= scale_;
@@ -176,7 +176,7 @@ private:
 
         pcl::fromPCLPointCloud2(mesh->cloud, *pc);
         pc_rs->header = pc->header;
-        for (auto &p : pc->points)
+        for (auto& p : pc->points)
         {
           p.x *= scale_;
           p.y *= scale_;
@@ -184,7 +184,7 @@ private:
         }
 
         std::uniform_real_distribution<float> ud(0.0, 1.0);
-        for (auto &poly : mesh->polygons)
+        for (auto& poly : mesh->polygons)
         {
           if (poly.vertices.size() != 3)
           {
@@ -192,9 +192,9 @@ private:
             ros::shutdown();
             return pc_msg;
           }
-          auto &p0 = pc->points[poly.vertices[0]];
-          auto &p1 = pc->points[poly.vertices[1]];
-          auto &p2 = pc->points[poly.vertices[2]];
+          auto& p0 = pc->points[poly.vertices[0]];
+          auto& p1 = pc->points[poly.vertices[1]];
+          auto& p2 = pc->points[poly.vertices[2]];
 
           auto a = p1 - p0;
           auto b = p2 - p0;
@@ -243,7 +243,7 @@ private:
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "obj_to_pointcloud");
 

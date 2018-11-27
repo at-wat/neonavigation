@@ -158,7 +158,7 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   ASSERT_LT(te0 - ts0, te1 - ts1);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
