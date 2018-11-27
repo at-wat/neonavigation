@@ -162,7 +162,8 @@ public:
     }
     return true;
   }
-  const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& gm)
+  const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& operator=(
+      const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& gm)
   {
     reset(gm.size_);
     memcpy(c_.get(), gm.c_.get(), ser_size_);
