@@ -32,7 +32,7 @@
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <nav_msgs/Path.h>
-#include <tf/transform_datatypes.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <planner_cspace/cyclic_vec.h>
 
@@ -102,7 +102,7 @@ void grid2MetricPath(
         ps.pose.position.y = y;
         ps.pose.position.z = 0;
         ps.pose.orientation =
-            tf::createQuaternionMsgFromYaw(yaw);
+            tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
         path.poses.push_back(ps);
       }
       else if (fabs(sin_v) < 0.001 ||
@@ -117,7 +117,7 @@ void grid2MetricPath(
           ps.pose.position.y = y2;
           ps.pose.position.z = 0;
           ps.pose.orientation =
-              tf::createQuaternionMsgFromYaw(yaw2);
+              tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw2));
           path.poses.push_back(ps);
         }
       }
@@ -153,14 +153,14 @@ void grid2MetricPath(
           ps.pose.position.y = y2;
           ps.pose.position.z = 0;
           ps.pose.orientation =
-              tf::createQuaternionMsgFromYaw(yaw2);
+              tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw2));
           path.poses.push_back(ps);
         }
         ps.pose.position.x = x;
         ps.pose.position.y = y;
         ps.pose.position.z = 0;
         ps.pose.orientation =
-            tf::createQuaternionMsgFromYaw(yaw);
+            tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
         path.poses.push_back(ps);
       }
     }

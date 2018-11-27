@@ -17,8 +17,8 @@
   <node pkg="rostopic" type="rostopic" name="pub_goal"
     args="pub /goal geometry_msgs/PoseStamped -f $(find planner_cspace)/test/data/goal_performance.yaml" />
 
-  <node pkg="tf" type="static_transform_publisher" name="stf1"
-      args="0 0 0 0 0 0 map odom 50" />
-  <node pkg="tf" type="static_transform_publisher" name="stf2"
-      args="2.5 0.45 0 3.14 0 0 odom base_link 50" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+      args="0 0 0 0 0 0 map odom" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf2"
+      args="2.5 0.45 0 3.14 0 0 odom base_link" />
 </launch>

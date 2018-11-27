@@ -62,6 +62,6 @@
     <param name="initial_y" value="0.45" />
     <param name="initial_yaw" value="3.14" />
   </node>
-  <node pkg="tf" type="static_transform_publisher" name="stf1"
-      args="0 0 0 0 0 0 map odom 50" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+      args="0 0 0 0 0 0 map odom" />
 </launch>

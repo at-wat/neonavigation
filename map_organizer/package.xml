@@ -20,8 +20,9 @@
   <depend>nav_msgs</depend>
   <depend>pcl_ros</depend>
   <depend>sensor_msgs</depend>
-  <depend>tf</depend>
-  <depend>tf_conversions</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
 
   <depend>map_organizer_msgs</depend>
   <depend>neonavigation_common</depend>

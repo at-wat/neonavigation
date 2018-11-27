@@ -30,7 +30,8 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
-#include <tf/transform_datatypes.h>
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <gtest/gtest.h>
 
@@ -67,7 +68,7 @@ TEST(TrackOdometry, OdomImuFusion)
   odom_raw.twist.twist.linear.x = 0.5;
   while (ros::ok())
   {
-    const double yaw = tf::getYaw(odom_raw.pose.pose.orientation);
+    const double yaw = tf2::getYaw(odom_raw.pose.pose.orientation);
     odom_raw.pose.pose.position.x += cos(yaw) * dt * odom_raw.twist.twist.linear.x;
     odom_raw.pose.pose.position.y += sin(yaw) * dt * odom_raw.twist.twist.linear.x;
     imu.header.stamp = odom_raw.header.stamp = ros::Time::now();
@@ -90,7 +91,7 @@ TEST(TrackOdometry, OdomImuFusion)
   ASSERT_NEAR(odom->pose.pose.position.x, 1.0, 1e-3);
   ASSERT_NEAR(odom->pose.pose.position.y, 0.0, 1e-3);
   ASSERT_NEAR(odom->pose.pose.position.z, 0.0, 1e-3);
-  ASSERT_NEAR(tf::getYaw(odom->pose.pose.orientation), 0.0, 1e-3);
+  ASSERT_NEAR(tf2::getYaw(odom->pose.pose.orientation), 0.0, 1e-3);
 
   // Turn 90 degrees with 10% of odometry errors
   ros::Duration(1).sleep();
@@ -101,11 +102,13 @@ TEST(TrackOdometry, OdomImuFusion)
   while (ros::ok())
   {
     odom_raw.pose.pose.orientation =
-        tf::createQuaternionMsgFromYaw(
-            tf::getYaw(odom_raw.pose.pose.orientation) + dt * odom_raw.twist.twist.angular.z);
+        tf2::toMsg(tf2::Quaternion(
+            tf2::Vector3(0.0, 0.0, 1.0),
+            tf2::getYaw(odom_raw.pose.pose.orientation) + dt * odom_raw.twist.twist.angular.z));
     imu.orientation =
-        tf::createQuaternionMsgFromYaw(
-            tf::getYaw(imu.orientation) + dt * imu.angular_velocity.z);
+        tf2::toMsg(tf2::Quaternion(
+            tf2::Vector3(0.0, 0.0, 1.0),
+            tf2::getYaw(imu.orientation) + dt * imu.angular_velocity.z));
     imu.header.stamp = odom_raw.header.stamp = ros::Time::now();
     pub_odom.publish(odom_raw);
     pub_imu.publish(imu);
@@ -119,7 +122,7 @@ TEST(TrackOdometry, OdomImuFusion)
 
   imu.angular_velocity.z = 0;
   odom_raw.twist.twist.angular.z = 0;
-  imu.orientation = tf::createQuaternionMsgFromYaw(M_PI / 2);
+  imu.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI / 2));
   pub_odom.publish(odom_raw);
   pub_imu.publish(imu);
 
@@ -129,7 +132,7 @@ TEST(TrackOdometry, OdomImuFusion)
   ASSERT_NEAR(odom->pose.pose.position.x, 1.0, 1e-2);
   ASSERT_NEAR(odom->pose.pose.position.y, 0.0, 1e-2);
   ASSERT_NEAR(odom->pose.pose.position.z, 0.0, 1e-2);
-  ASSERT_NEAR(tf::getYaw(odom->pose.pose.orientation), M_PI / 2, 1e-2);
+  ASSERT_NEAR(tf2::getYaw(odom->pose.pose.orientation), M_PI / 2, 1e-2);
 
   // Go forward for 1m
   odom_raw.twist.twist.linear.x = 0.5;
@@ -137,7 +140,7 @@ TEST(TrackOdometry, OdomImuFusion)
   rate.sleep();
   while (ros::ok())
   {
-    const double yaw = tf::getYaw(odom_raw.pose.pose.orientation);
+    const double yaw = tf2::getYaw(odom_raw.pose.pose.orientation);
     odom_raw.pose.pose.position.x += cos(yaw) * dt * odom_raw.twist.twist.linear.x;
     odom_raw.pose.pose.position.y += sin(yaw) * dt * odom_raw.twist.twist.linear.x;
     imu.header.stamp = odom_raw.header.stamp = ros::Time::now();
@@ -161,7 +164,7 @@ TEST(TrackOdometry, OdomImuFusion)
   ASSERT_NEAR(odom->pose.pose.position.x, 1.0, 5e-2);
   ASSERT_NEAR(odom->pose.pose.position.y, 1.0, 5e-2);
   ASSERT_NEAR(odom->pose.pose.position.z, 0.0, 5e-2);
-  ASSERT_NEAR(tf::getYaw(odom->pose.pose.orientation), M_PI / 2, 1e-2);
+  ASSERT_NEAR(tf2::getYaw(odom->pose.pose.orientation), M_PI / 2, 1e-2);
 }
 
 int main(int argc, char **argv)

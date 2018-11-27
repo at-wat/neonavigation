@@ -31,8 +31,7 @@
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <sensor_msgs/JointState.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <utility>
 #include <algorithm>
@@ -61,7 +60,8 @@ private:
   ros::Subscriber sub_trajectory_;
   ros::Subscriber sub_joint_;
 
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
@@ -383,6 +383,7 @@ public:
   explicit planner2dofSerialJointsNode(const std::string group_name)
     : nh_()
     , pnh_("~")
+    , tfl_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
     group_ = group_name;

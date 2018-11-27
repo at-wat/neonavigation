@@ -29,6 +29,7 @@
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
+#include <tf2/utils.h>
 
 #include <gtest/gtest.h>
 
@@ -120,7 +121,7 @@ TEST(GridMetricConverter, Path)
     const double diff_dist = hypotf(
         metric_expected[ref][0] - p.pose.position.x,
         metric_expected[ref][1] - p.pose.position.y);
-    double diff_yaw = fabs(tf::getYaw(p.pose.orientation) - metric_expected[ref][2]);
+    double diff_yaw = fabs(tf2::getYaw(p.pose.orientation) - metric_expected[ref][2]);
 
     if (diff_yaw < -M_PI)
       diff_yaw += 2.0 * M_PI;

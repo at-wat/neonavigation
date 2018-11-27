@@ -10,7 +10,9 @@ find_package(catkin REQUIRED
     nav_msgs
     sensor_msgs
     std_msgs
-    tf
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
     trajectory_msgs
 
     neonavigation_common
@@ -24,7 +26,9 @@ catkin_package(
     nav_msgs
     sensor_msgs
     std_msgs
-    tf
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
     trajectory_msgs
 
     neonavigation_common

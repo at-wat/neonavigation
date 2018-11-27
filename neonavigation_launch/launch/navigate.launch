@@ -27,7 +27,7 @@
     <rosparam param="footprint" if="$(arg simulate)">[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]</rosparam>
   </node>
   <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" if="$(arg use_map_server)" />
-  
+
   <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="$(arg output_info)" />
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
@@ -38,10 +38,10 @@
     <param name="max_acc" value="$(arg acc)" />
     <param name="max_angvel" value="$(arg ang_vel)" />
     <param name="max_angacc" value="$(arg ang_acc)" />
-    
+
     <param name="curv_forward" value="$(arg curv_forward)" />
     <param name="look_forward" value="$(arg look_forward)" />
-    
+
     <param name="rotate_ang" value="0.2" if="$(arg slow_and_precise)" />
     <param name="rotate_ang" value="0.4" unless="$(arg slow_and_precise)" />
 
@@ -60,8 +60,8 @@
     <node pkg="planner_cspace" type="dummy_robot" name="dummy_robot">
       <remap from="cmd_vel" to="$(arg cmd_vel_output)" />
     </node>
-    <node pkg="tf" type="static_transform_publisher" name="stf1"
-        args="$(arg sim_robot_x) $(arg sim_robot_y) 0 $(arg sim_robot_yaw) 0 0 map odom 50" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+        args="$(arg sim_robot_x) $(arg sim_robot_y) 0 $(arg sim_robot_yaw) 0 0 map odom" />
   </group>
 </launch>
 
