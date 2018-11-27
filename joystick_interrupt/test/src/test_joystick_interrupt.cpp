@@ -43,7 +43,7 @@ protected:
 
   geometry_msgs::Twist::ConstPtr cmd_vel_;
 
-  void cbCmdVel(const geometry_msgs::Twist::ConstPtr &msg)
+  void cbCmdVel(const geometry_msgs::Twist::ConstPtr& msg)
   {
     cmd_vel_ = msg;
   }
@@ -197,7 +197,7 @@ TEST_F(JoystickInterruptTest, InterruptHighSpeed)
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_joystick_interrupt");

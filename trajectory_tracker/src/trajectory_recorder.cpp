@@ -92,7 +92,7 @@ RecorderNode::~RecorderNode()
 {
 }
 
-float dist2d(geometry_msgs::Point &a, geometry_msgs::Point &b)
+float dist2d(geometry_msgs::Point& a, geometry_msgs::Point& b)
 {
   return sqrtf(powf(a.x - b.x, 2) + powf(a.y - b.y, 2));
 }
@@ -114,7 +114,7 @@ void RecorderNode::spin()
       tf2::fromMsg(
           tfbuf_.lookupTransform(frame_global_, frame_robot_, now, ros::Duration(0.2)), transform);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN("TF exception: %s", e.what());
       continue;
@@ -150,7 +150,7 @@ void RecorderNode::spin()
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "trajectory_recorder");
 

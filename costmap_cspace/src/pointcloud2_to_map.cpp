@@ -113,7 +113,7 @@ public:
   }
 
 private:
-  void cbCloud(const sensor_msgs::PointCloud2::ConstPtr &cloud, const bool singleshot)
+  void cbCloud(const sensor_msgs::PointCloud2::ConstPtr& cloud, const bool singleshot)
   {
     sensor_msgs::PointCloud2 cloud_global;
     geometry_msgs::TransformStamped trans;
@@ -122,7 +122,7 @@ private:
       trans = tfbuf_.lookupTransform(global_frame_, cloud->header.frame_id,
                                      cloud->header.stamp, ros::Duration(0.5));
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN("%s", e.what());
       return;
@@ -155,17 +155,17 @@ private:
       origin_y_ = y - height_ * map_.info.resolution * 0.5;
       robot_z = pos.z();
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN("%s", e.what());
       return;
     }
-    for (auto &cell : map_.data)
+    for (auto& cell : map_.data)
       cell = 0;
 
-    for (auto &accum : accums_)
+    for (auto& accum : accums_)
     {
-      for (auto &pc : accum)
+      for (auto& pc : accum)
       {
         sensor_msgs::PointCloud2Iterator<float> iter_x(pc, "x");
         sensor_msgs::PointCloud2Iterator<float> iter_y(pc, "y");
@@ -189,7 +189,7 @@ private:
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "pointcloud2_to_map");
 

@@ -57,7 +57,7 @@
 
 #include <neonavigation_common/compatibility.h>
 
-pcl::PointXYZ operator-(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
+pcl::PointXYZ operator-(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
 {
   auto c = a;
   c.x -= b.x;
@@ -65,7 +65,7 @@ pcl::PointXYZ operator-(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
   c.z -= b.z;
   return c;
 }
-pcl::PointXYZ operator+(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
+pcl::PointXYZ operator+(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
 {
   auto c = a;
   c.x += b.x;
@@ -73,7 +73,7 @@ pcl::PointXYZ operator+(const pcl::PointXYZ &a, const pcl::PointXYZ &b)
   c.z += b.z;
   return c;
 }
-pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
+pcl::PointXYZ operator*(const pcl::PointXYZ& a, const float& b)
 {
   auto c = a;
   c.x *= b;
@@ -81,7 +81,7 @@ pcl::PointXYZ operator*(const pcl::PointXYZ &a, const float &b)
   c.z *= b;
   return c;
 }
-bool XmlRpc_isNumber(XmlRpc::XmlRpcValue &value)
+bool XmlRpc_isNumber(XmlRpc::XmlRpcValue& value)
 {
   return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
          value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
@@ -272,19 +272,19 @@ public:
   }
 
 protected:
-  void cbWatchdogReset(const std_msgs::Empty::ConstPtr &msg)
+  void cbWatchdogReset(const std_msgs::Empty::ConstPtr& msg)
   {
     watchdog_timer_.setPeriod(watchdog_interval_, true);
     watchdog_stop_ = false;
   }
-  void cbWatchdogTimer(const ros::TimerEvent &event)
+  void cbWatchdogTimer(const ros::TimerEvent& event)
   {
     ROS_WARN_THROTTLE(1.0, "safety_limiter: Watchdog timed-out");
     watchdog_stop_ = true;
     geometry_msgs::Twist cmd_vel;
     pub_twist_.publish(cmd_vel);
   }
-  void cbPredictTimer(const ros::TimerEvent &event)
+  void cbPredictTimer(const ros::TimerEvent& event)
   {
     if (!has_twist_)
       return;
@@ -313,7 +313,7 @@ protected:
 
     diag_updater_.force_update();
   }
-  double predict(const geometry_msgs::Twist &in)
+  double predict(const geometry_msgs::Twist& in)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
@@ -321,7 +321,7 @@ protected:
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
     ds.filter(*pc);
 
-    auto filter_z = [this](pcl::PointXYZ &p)
+    auto filter_z = [this](pcl::PointXYZ& p)
     {
       if (p.z < this->z_range_[0] || this->z_range_[1] < p.z)
         return true;
@@ -394,9 +394,9 @@ protected:
         continue;
 
       bool colliding = false;
-      for (auto &i : indices)
+      for (auto& i : indices)
       {
-        auto &p = pc->points[i];
+        auto& p = pc->points[i];
         auto point = pcl::transformPoint(p, move);
         vec v(point.x, point.y);
         if (footprint_p.inside(v))
@@ -456,7 +456,7 @@ protected:
     return r;
   }
 
-  geometry_msgs::Twist limit(const geometry_msgs::Twist &in)
+  geometry_msgs::Twist limit(const geometry_msgs::Twist& in)
   {
     auto out = in;
     if (r_lim_ < 1.0 - EPSILON)
@@ -488,38 +488,38 @@ protected:
     {
       c[0] = c[1] = 0.0;
     }
-    float &operator[](const int &i)
+    float& operator[](const int& i)
     {
       return c[i];
     }
-    const float &operator[](const int &i) const
+    const float& operator[](const int& i) const
     {
       return c[i];
     }
-    vec operator-(const vec &a) const
+    vec operator-(const vec& a) const
     {
       vec out = *this;
       out[0] -= a[0];
       out[1] -= a[1];
       return out;
     }
-    float cross(const vec &a) const
+    float cross(const vec& a) const
     {
       return (*this)[0] * a[1] - (*this)[1] * a[0];
     }
-    float dot(const vec &a) const
+    float dot(const vec& a) const
     {
       return (*this)[0] * a[0] + (*this)[1] * a[1];
     }
-    float dist(const vec &a) const
+    float dist(const vec& a) const
     {
       return hypotf((*this)[0] - a[0], (*this)[1] - a[1]);
     }
-    float dist_line(const vec &a, const vec &b) const
+    float dist_line(const vec& a, const vec& b) const
     {
       return (b - a).cross((*this) - a) / b.dist(a);
     }
-    float dist_linestrip(const vec &a, const vec &b) const
+    float dist_linestrip(const vec& a, const vec& b) const
     {
       if ((b - a).dot((*this) - a) <= 0)
         return this->dist(a);
@@ -532,24 +532,24 @@ protected:
   {
   public:
     std::vector<vec> v;
-    void move(const float &x, const float &y, const float &yaw)
+    void move(const float& x, const float& y, const float& yaw)
     {
       const float cos_v = cosf(yaw);
       const float sin_v = sinf(yaw);
-      for (auto &p : v)
+      for (auto& p : v)
       {
         const auto tmp = p;
         p[0] = cos_v * tmp[0] - sin_v * tmp[1] + x;
         p[1] = sin_v * tmp[0] + cos_v * tmp[1] + y;
       }
     }
-    bool inside(const vec &a) const
+    bool inside(const vec& a) const
     {
       int cn = 0;
       for (size_t i = 0; i < v.size() - 1; i++)
       {
-        auto &v1 = v[i];
-        auto &v2 = v[i + 1];
+        auto& v1 = v[i];
+        auto& v2 = v[i + 1];
         if ((v1[1] <= a[1] && a[1] < v2[1]) ||
             (v2[1] <= a[1] && a[1] < v1[1]))
         {
@@ -561,13 +561,13 @@ protected:
       }
       return ((cn & 1) == 1);
     }
-    float dist(const vec &a) const
+    float dist(const vec& a) const
     {
       float dist = FLT_MAX;
       for (size_t i = 0; i < v.size() - 1; i++)
       {
-        auto &v1 = v[i];
-        auto &v2 = v[i + 1];
+        auto& v1 = v[i];
+        auto& v2 = v[i + 1];
         auto d = a.dist_linestrip(v1, v2);
         if (d < dist)
           dist = d;
@@ -578,7 +578,7 @@ protected:
 
   polygon footprint_p;
 
-  void cbTwist(const geometry_msgs::Twist::ConstPtr &msg)
+  void cbTwist(const geometry_msgs::Twist::ConstPtr& msg)
   {
     ros::Time now = ros::Time::now();
 
@@ -603,7 +603,7 @@ protected:
         r_lim_ = 1.0;
     }
   }
-  void cbCloud(const sensor_msgs::PointCloud2::ConstPtr &msg)
+  void cbCloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
 
@@ -615,7 +615,7 @@ protected:
       tf2::doTransform(*msg, pc2_tmp, trans);
       pcl::fromROSMsg(pc2_tmp, *pc);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN_THROTTLE(1.0, "safety_limiter: Transform failed: %s", e.what());
       return;
@@ -625,7 +625,7 @@ protected:
     last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
   }
-  void cbDisable(const std_msgs::Bool::ConstPtr &msg)
+  void cbDisable(const std_msgs::Bool::ConstPtr& msg)
   {
     if (msg->data)
     {
@@ -633,7 +633,7 @@ protected:
     }
   }
 
-  void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper &stat)
+  void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
     if (r_lim_ == 1.0)
     {
@@ -657,7 +657,7 @@ protected:
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "safety_limiter");
 

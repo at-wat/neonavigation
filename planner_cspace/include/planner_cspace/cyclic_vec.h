@@ -51,7 +51,7 @@ protected:
   T e_[DIM];
 
 public:
-  explicit CyclicVecBase(const T *v) noexcept
+  explicit CyclicVecBase(const T* v) noexcept
   {
     for (int i = 0; i < DIM; i++)
       e_[i] = v[i];
@@ -67,7 +67,7 @@ public:
   {
   }
   template <typename C>
-  bool operator==(const C &v) const
+  bool operator==(const C& v) const
   {
     for (int i = 0; i < DIM; i++)
       if (v.e_[i] != e_[i])
@@ -75,12 +75,12 @@ public:
     return true;
   }
   template <typename C>
-  bool operator!=(const C &v) const
+  bool operator!=(const C& v) const
   {
     return !(*this == v);
   }
   template <typename C>
-  C operator+(const C &v) const
+  C operator+(const C& v) const
   {
     C out(*this);
     for (int i = 0; i < DIM; i++)
@@ -90,7 +90,7 @@ public:
     return out;
   }
   template <typename C>
-  C operator-(const C &v) const
+  C operator-(const C& v) const
   {
     C out(*this);
     for (int i = 0; i < DIM; i++)
@@ -100,7 +100,7 @@ public:
     return out;
   }
   template <typename C>
-  C operator*(const C &v) const
+  C operator*(const C& v) const
   {
     C out;
     for (int i = 0; i < DIM; i++)
@@ -110,22 +110,22 @@ public:
     return out;
   }
   template <typename C>
-  int cross2d(const C &a) const
+  int cross2d(const C& a) const
   {
     return (*this)[0] * a[1] - (*this)[1] * a[0];
   }
   template <typename C>
-  int dot2d(const C &a) const
+  int dot2d(const C& a) const
   {
     return (*this)[0] * a[0] + (*this)[1] * a[1];
   }
   template <typename C>
-  float distLine2d(const C &a, const C &b) const
+  float distLine2d(const C& a, const C& b) const
   {
     return (b - a).cross2d((*this) - a) / (b - a).len();
   }
   template <typename C>
-  float distLinestrip2d(const C &a, const C &b) const
+  float distLinestrip2d(const C& a, const C& b) const
   {
     auto to_a = (*this) - a;
     if ((b - a).dot2d(to_a) <= 0)
@@ -135,15 +135,15 @@ public:
       return to_b.len();
     return fabs(distLine2d(a, b));
   }
-  T &operator[](const int &x)
+  T& operator[](const int& x)
   {
     return e_[x];
   }
-  const T &operator[](const int &x) const
+  const T& operator[](const int& x) const
   {
     return e_[x];
   }
-  void set(const T *init)
+  void set(const T* init)
   {
     for (int i = 0; i < DIM; i++)
     {
@@ -179,7 +179,7 @@ public:
   }
 
   // Cyclic operations
-  void cycle(int &v, const int c)
+  void cycle(int& v, const int c)
   {
     v = v % c;
     if (v < 0)
@@ -187,7 +187,7 @@ public:
     if (v > c / 2)
       v -= c;
   }
-  void cycleUnsigned(int &v, const int c)
+  void cycleUnsigned(int& v, const int c)
   {
     v = v % c;
     if (v < 0)
@@ -195,7 +195,7 @@ public:
   }
 
   // Hash
-  size_t operator()(const CyclicVecBase &key) const
+  size_t operator()(const CyclicVecBase& key) const
   {
     size_t hash = static_cast<size_t>(key.e_[0]);
     for (int i = 1; i < DIM; i++)
@@ -218,12 +218,12 @@ public:
   CyclicVecInt() noexcept
   {
   }
-  explicit CyclicVecInt(const float *v) noexcept
+  explicit CyclicVecInt(const float* v) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = lroundf(v[i]);
   }
-  explicit CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int> &c) noexcept
+  explicit CyclicVecInt(const CyclicVecBase<DIM, NONCYCLIC, int>& c) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = c[i];
@@ -240,12 +240,12 @@ public:
   CyclicVecFloat() noexcept
   {
   }
-  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, float> &c) noexcept
+  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, float>& c) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = c[i];
   }
-  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, int> &c) noexcept
+  explicit CyclicVecFloat(const CyclicVecBase<DIM, NONCYCLIC, int>& c) noexcept
   {
     for (int i = 0; i < DIM; i++)
       this->e_[i] = c[i];

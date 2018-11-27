@@ -42,17 +42,17 @@
 namespace grid_metric_converter
 {
 void grid2Metric(
-    const costmap_cspace_msgs::MapMetaData3D &map_info,
+    const costmap_cspace_msgs::MapMetaData3D& map_info,
     const int x, const int y, const int yaw,
-    float &gx, float &gy, float &gyaw)
+    float& gx, float& gy, float& gyaw)
 {
   gx = (x + 0.5) * map_info.linear_resolution + map_info.origin.position.x;
   gy = (y + 0.5) * map_info.linear_resolution + map_info.origin.position.y;
   gyaw = yaw * map_info.angular_resolution;
 }
 void metric2Grid(
-    const costmap_cspace_msgs::MapMetaData3D &map_info,
-    int &x, int &y, int &yaw,
+    const costmap_cspace_msgs::MapMetaData3D& map_info,
+    int& x, int& y, int& yaw,
     const float gx, const float gy, const float gyaw)
 {
   x = static_cast<int>(floor((gx - map_info.origin.position.x) / map_info.linear_resolution));
@@ -62,17 +62,17 @@ void metric2Grid(
 
 template <template <class, class> class STL_CONTAINER = std::list>
 void grid2MetricPath(
-    const costmap_cspace_msgs::MapMetaData3D &map_info,
+    const costmap_cspace_msgs::MapMetaData3D& map_info,
     const float local_range,
-    const STL_CONTAINER<CyclicVecInt<3, 2>, std::allocator<CyclicVecInt<3, 2>>> &path_grid,
-    nav_msgs::Path &path, const CyclicVecInt<3, 2> &v_start)
+    const STL_CONTAINER<CyclicVecInt<3, 2>, std::allocator<CyclicVecInt<3, 2>>>& path_grid,
+    nav_msgs::Path& path, const CyclicVecInt<3, 2>& v_start)
 {
   float x_prev = 0, y_prev = 0, yaw_prev = 0;
   // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
   CyclicVecInt<3, 2> p_prev({ 0, 0, 0 });  // NOLINT(whitespace/braces)
   bool init = false;
 
-  for (const auto &p : path_grid)
+  for (const auto& p : path_grid)
   {
     float x, y, yaw;
     grid2Metric(map_info, p[0], p[1], p[2], x, y, yaw);

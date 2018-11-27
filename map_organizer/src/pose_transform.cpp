@@ -42,7 +42,7 @@ std::shared_ptr<tf2_ros::Buffer> tfbuf;
 
 ros::Publisher pub_pose;
 
-void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
+void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr& msg)
 {
   try
   {
@@ -60,13 +60,13 @@ void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
     out_msg.pose.pose = out.pose;
     pub_pose.publish(out_msg);
   }
-  catch (tf2::TransformException &e)
+  catch (tf2::TransformException& e)
   {
     ROS_WARN("pose_transform: %s", e.what());
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "pose_transform");
   ros::NodeHandle pnh("~");

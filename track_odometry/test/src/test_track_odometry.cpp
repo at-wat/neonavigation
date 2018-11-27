@@ -39,8 +39,8 @@ TEST(TrackOdometry, OdomImuFusion)
 {
   nav_msgs::Odometry::ConstPtr odom;
 
-  const boost::function<void(const nav_msgs::Odometry::ConstPtr &)> cb_odom =
-      [&odom](const nav_msgs::Odometry::ConstPtr &msg) -> void
+  const boost::function<void(const nav_msgs::Odometry::ConstPtr&)> cb_odom =
+      [&odom](const nav_msgs::Odometry::ConstPtr& msg) -> void
   {
     odom = msg;
   };
@@ -167,7 +167,7 @@ TEST(TrackOdometry, OdomImuFusion)
   ASSERT_NEAR(tf2::getYaw(odom->pose.pose.orientation), M_PI / 2, 1e-2);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_track_odometry");

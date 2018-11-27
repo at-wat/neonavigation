@@ -42,7 +42,7 @@ protected:
 
 public:
   tf2::Stamped<tf2::Transform> project(
-      const tf2::Stamped<tf2::Transform> &trans, const tf2::Stamped<tf2::Transform> &trans_target)
+      const tf2::Stamped<tf2::Transform>& trans, const tf2::Stamped<tf2::Transform>& trans_target)
   {
     auto origin = trans.getOrigin();
     origin.setZ(0.0);

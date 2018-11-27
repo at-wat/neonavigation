@@ -71,13 +71,13 @@ public:
     {
       p_ = 0;
     }
-    PriorityVec(const float &p, const float &p_raw, const Vec &v)
+    PriorityVec(const float& p, const float& p_raw, const Vec& v)
     {
       p_ = p;
       p_raw_ = p_raw;
       v_ = v;
     }
-    bool operator<(const PriorityVec &b) const
+    bool operator<(const PriorityVec& b) const
     {
       // smaller first
       return p_ > b.p_;
@@ -100,7 +100,7 @@ public:
   {
     return NONCYCLIC;
   }
-  void setSearchTaskNum(const size_t &search_task_num)
+  void setSearchTaskNum(const size_t& search_task_num)
   {
     search_task_num_ = search_task_num;
   }
@@ -128,12 +128,12 @@ public:
   }
 
   bool search(
-      const Vec &s, const Vec &e,
-      std::list<Vec> &path,
-      std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
-      std::function<float(const Vec &, const Vec &)> cb_cost_estim,
-      std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
-      std::function<bool(const std::list<Vec> &)> cb_progress,
+      const Vec& s, const Vec& e,
+      std::list<Vec>& path,
+      std::function<float(const Vec&, Vec&, const Vec&, const Vec&)> cb_cost,
+      std::function<float(const Vec&, const Vec&)> cb_cost_estim,
+      std::function<std::vector<Vec>&(const Vec&, const Vec&, const Vec&)> cb_search,
+      std::function<bool(const std::list<Vec>&)> cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
@@ -143,13 +143,13 @@ public:
                       cost_leave, progress_interval, return_best);
   }
   bool searchImpl(
-      Gridmap<float> &g,
-      const Vec &st, const Vec &en,
-      std::list<Vec> &path,
-      std::function<float(const Vec &, Vec &, const Vec &, const Vec &)> cb_cost,
-      std::function<float(const Vec &, const Vec &)> cb_cost_estim,
-      std::function<std::vector<Vec> &(const Vec &, const Vec &, const Vec &)> cb_search,
-      std::function<bool(const std::list<Vec> &)> cb_progress,
+      Gridmap<float>& g,
+      const Vec& st, const Vec& en,
+      std::list<Vec>& path,
+      std::function<float(const Vec&, Vec&, const Vec&, const Vec&)> cb_cost,
+      std::function<float(const Vec&, const Vec&)> cb_cost_estim,
+      std::function<std::vector<Vec>&(const Vec&, const Vec&, const Vec&)> cb_search,
+      std::function<bool(const std::list<Vec>&)> cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
@@ -222,7 +222,7 @@ public:
         const Vec p = it->v_;
         const float c = it->p_raw_;
         const float c_estim = it->p_;
-        float &gp = g[p];
+        float& gp = g[p];
         if (c > gp)
           continue;
 
@@ -258,7 +258,7 @@ public:
             if (cost < 0 || cost == FLT_MAX)
               break;
 
-            float &gnext = g[next];
+            float& gnext = g[next];
             if (gnext > c + cost)
             {
               gnext = c + cost;
@@ -286,7 +286,7 @@ public:
 
     return findPath(s, e, path);
   }
-  bool findPath(const Vec &s, const Vec &e, std::list<Vec> &path)
+  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
   {
     Vec n = e;
     while (true)

@@ -239,7 +239,7 @@ TEST(CyclicVec, Cycle)
   ASSERT_EQ(v[2], 3);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 

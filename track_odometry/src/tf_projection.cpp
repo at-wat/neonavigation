@@ -92,12 +92,12 @@ public:
 
       tf_broadcaster_.sendTransform(trans_out);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN_ONCE("%s", e.what());
     }
   }
-  void cbTimer(const ros::TimerEvent &event)
+  void cbTimer(const ros::TimerEvent& event)
   {
     process();
   }
@@ -109,7 +109,7 @@ public:
   }
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "tf_projection");
 

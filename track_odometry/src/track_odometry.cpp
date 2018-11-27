@@ -47,19 +47,19 @@
 
 #include <neonavigation_common/compatibility.h>
 
-Eigen::Vector3f toEigen(const geometry_msgs::Vector3 &a)
+Eigen::Vector3f toEigen(const geometry_msgs::Vector3& a)
 {
   return Eigen::Vector3f(a.x, a.y, a.z);
 }
-Eigen::Vector3f toEigen(const geometry_msgs::Point &a)
+Eigen::Vector3f toEigen(const geometry_msgs::Point& a)
 {
   return Eigen::Vector3f(a.x, a.y, a.z);
 }
-Eigen::Quaternionf toEigen(const geometry_msgs::Quaternion &a)
+Eigen::Quaternionf toEigen(const geometry_msgs::Quaternion& a)
 {
   return Eigen::Quaternionf(a.w, a.x, a.y, a.z);
 }
-geometry_msgs::Point toPoint(const Eigen::Vector3f &a)
+geometry_msgs::Point toPoint(const Eigen::Vector3f& a)
 {
   geometry_msgs::Point b;
   b.x = a.x();
@@ -67,7 +67,7 @@ geometry_msgs::Point toPoint(const Eigen::Vector3f &a)
   b.z = a.z();
   return b;
 }
-geometry_msgs::Vector3 toVector3(const Eigen::Vector3f &a)
+geometry_msgs::Vector3 toVector3(const Eigen::Vector3f& a)
 {
   geometry_msgs::Vector3 b;
   b.x = a.x();
@@ -115,11 +115,11 @@ private:
   bool has_odom_;
   bool publish_tf_;
 
-  void cbResetZ(const std_msgs::Float32::Ptr &msg)
+  void cbResetZ(const std_msgs::Float32::Ptr& msg)
   {
     odom_prev_.pose.pose.position.z = msg->data;
   }
-  void cbImu(const sensor_msgs::Imu::Ptr &msg)
+  void cbImu(const sensor_msgs::Imu::Ptr& msg)
   {
     if (base_link_id_.size() == 0)
     {
@@ -174,14 +174,14 @@ private:
 
       has_imu_ = true;
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_ERROR("%s", e.what());
       has_imu_ = false;
       return;
     }
   }
-  void cbOdom(const nav_msgs::Odometry::Ptr &msg)
+  void cbOdom(const nav_msgs::Odometry::Ptr& msg)
   {
     nav_msgs::Odometry odom = *msg;
     if (has_odom_)
@@ -319,7 +319,7 @@ public:
     dist_ = 0;
     slip_.set(0.0, 0.1);
   }
-  void cbTimer(const ros::TimerEvent &event)
+  void cbTimer(const ros::TimerEvent& event)
   {
     nav_msgs::Odometry::Ptr odom(new nav_msgs::Odometry);
     odom->header.stamp = ros::Time::now();
@@ -343,7 +343,7 @@ public:
   }
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "track_odometry");
 

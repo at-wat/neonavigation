@@ -101,7 +101,7 @@ protected:
 
   Astar::Vecf euclid_cost_coef_;
 
-  float euclidCost(const Astar::Vec &v, const Astar::Vecf coef) const
+  float euclidCost(const Astar::Vec& v, const Astar::Vecf coef) const
   {
     Astar::Vec vc = v;
     float cost = 0;
@@ -117,13 +117,13 @@ protected:
     }
     return cost;
   }
-  float euclidCost(const Astar::Vec &v) const
+  float euclidCost(const Astar::Vec& v) const
   {
     return euclidCost(v, euclid_cost_coef_);
   }
 
   std::vector<RotationCache<3, 2>> rotgm_;
-  RotationCache<3, 2> *rot_cache_;
+  RotationCache<3, 2>* rot_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -225,8 +225,8 @@ protected:
 
   diagnostic_updater::Updater diag_updater_;
 
-  bool cbForget(std_srvs::EmptyRequest &req,
-                std_srvs::EmptyResponse &res)
+  bool cbForget(std_srvs::EmptyRequest& req,
+                std_srvs::EmptyResponse& res)
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
@@ -234,8 +234,8 @@ protected:
 
     return true;
   }
-  bool cbMakePlan(nav_msgs::GetPlan::Request &req,
-                  nav_msgs::GetPlan::Response &res)
+  bool cbMakePlan(nav_msgs::GetPlan::Request& req,
+                  nav_msgs::GetPlan::Response& res)
   {
     if (!has_map_)
       return false;
@@ -264,8 +264,8 @@ protected:
     const Astar::Vecf euclid_cost_coef = ec_rough_;
 
     const auto cb_cost = [this, &euclid_cost_coef](
-        const Astar::Vec &s, Astar::Vec &e,
-        const Astar::Vec &v_goal, const Astar::Vec &v_start,
+        const Astar::Vec& s, Astar::Vec& e,
+        const Astar::Vec& v_goal, const Astar::Vec& v_start,
         const bool hyst) -> float
     {
       const Astar::Vec d = e - s;
@@ -276,7 +276,7 @@ protected:
       if (cache_page == motion_cache_linear_->end(0))
         return -1;
       const int num = cache_page->second.getMotion().size();
-      for (const auto &pos_diff : cache_page->second.getMotion())
+      for (const auto& pos_diff : cache_page->second.getMotion())
       {
         // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
         const Astar::Vec pos({ s[0] + pos_diff[0], s[1] + pos_diff[1], 0 });  // NOLINT(whitespace/braces)
@@ -291,7 +291,7 @@ protected:
       return cost;
     };
     const auto cb_cost_estim = [this, &euclid_cost_coef](
-        const Astar::Vec &s, const Astar::Vec &e)
+        const Astar::Vec& s, const Astar::Vec& e)
     {
       const Astar::Vec d = e - s;
       const float cost = euclidCost(d, euclid_cost_coef);
@@ -299,12 +299,12 @@ protected:
       return cost;
     };
     const auto cb_search = [this](
-        const Astar::Vec &p,
-        const Astar::Vec &s, const Astar::Vec &e) -> std::vector<Astar::Vec> &
+        const Astar::Vec& p,
+        const Astar::Vec& s, const Astar::Vec& e) -> std::vector<Astar::Vec>&
     {
       return search_list_rough_;
     };
-    const auto cb_progress = [](const std::list<Astar::Vec> &path_grid)
+    const auto cb_progress = [](const std::list<Astar::Vec>& path_grid)
     {
       return true;
     };
@@ -351,7 +351,7 @@ protected:
     return true;
   }
 
-  void cbGoal(const geometry_msgs::PoseStamped::ConstPtr &msg)
+  void cbGoal(const geometry_msgs::PoseStamped::ConstPtr& msg)
   {
     if (act_->isActive())
     {
@@ -367,7 +367,7 @@ protected:
     has_goal_ = false;
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
   }
-  bool setGoal(const geometry_msgs::PoseStamped &msg)
+  bool setGoal(const geometry_msgs::PoseStamped& msg)
   {
     goal_raw_ = goal_ = msg;
 
@@ -398,9 +398,9 @@ protected:
     return true;
   }
   void fillCostmap(
-      reservable_priority_queue<Astar::PriorityVec> &open,
-      Astar::Gridmap<float> &g,
-      const Astar::Vec &s, const Astar::Vec &e)
+      reservable_priority_queue<Astar::PriorityVec>& open,
+      Astar::Gridmap<float>& g,
+      const Astar::Vec& s, const Astar::Vec& e)
   {
     // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
     const Astar::Vec s_rough({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
@@ -446,7 +446,7 @@ protected:
             if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
                 (unsigned int)next[1] >= (unsigned int)map_info_.height)
               continue;
-            auto &gnext = g[next];
+            auto& gnext = g[next];
             if (gnext < 0)
               continue;
 
@@ -495,7 +495,7 @@ protected:
     }
     rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
   }
-  bool searchAvailablePos(Astar::Vec &s, const int xy_range, const int angle_range,
+  bool searchAvailablePos(Astar::Vec& s, const int xy_range, const int angle_range,
                           const int cost_acceptable = 50, const int min_xy_range = 0)
   {
     Astar::Vec d;
@@ -674,7 +674,7 @@ protected:
     }
     pub_debug_.publish(debug);
   }
-  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr &msg)
+  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
   {
     if (!has_map_)
       return;
@@ -869,7 +869,7 @@ protected:
           if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
-          const float &gn = cost_estim_cache_[next];
+          const float& gn = cost_estim_cache_[next];
           if (gn == FLT_MAX)
             continue;
           if (gn < cost_min)
@@ -892,7 +892,7 @@ protected:
       {
         for (p[1] = 0; p[1] < static_cast<int>(map_info_.height); p[1]++)
         {
-          const auto &gp = cost_estim_cache_[p];
+          const auto& gp = cost_estim_cache_[p];
           if (gp > rough_cost_max_)
           {
             open.push(Astar::PriorityVec(gp, gp, p));
@@ -907,7 +907,7 @@ protected:
               boost::chrono::duration<float>(tnow - ts).count());
     publishCostmap();
   }
-  void cbMap(const costmap_cspace_msgs::CSpace3D::ConstPtr &msg)
+  void cbMap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
     ROS_INFO("Map received");
     ROS_INFO(" linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
@@ -983,7 +983,7 @@ protected:
               range_ * 2 + 1,
               static_cast<int>(map_info_.angle)
             };
-        auto &r = rotgm_[i];
+        auto& r = rotgm_[i];
         r.reset(Astar::Vec(size));
 
         Astar::Vec d;
@@ -1105,7 +1105,7 @@ protected:
           tfbuf_.lookupTransform(map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
       tf2::doTransform(start, start, trans);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       has_start_ = false;
       return;
@@ -1357,8 +1357,8 @@ public:
   }
 
 protected:
-  bool makePlan(const geometry_msgs::Pose &gs, const geometry_msgs::Pose &ge,
-                nav_msgs::Path &path, bool hyst)
+  bool makePlan(const geometry_msgs::Pose& gs, const geometry_msgs::Pose& ge,
+                nav_msgs::Path& path, bool hyst)
   {
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
@@ -1489,7 +1489,7 @@ protected:
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
       const int path_range = range_ + max_dist + expand_dist + 1;
-      for (auto &p : path_grid)
+      for (auto& p : path_grid)
       {
         Astar::Vec d;
         for (d[0] = -path_range; d[0] <= path_range; d[0]++)
@@ -1508,9 +1508,9 @@ protected:
 
       cm_hyst_.clear(100);
       // const auto ts = boost::chrono::high_resolution_clock::now();
-      for (auto &ps : path_points)
+      for (auto& ps : path_points)
       {
-        auto &p = ps.first;
+        auto& p = ps.first;
         float d_min = FLT_MAX;
         auto it_prev = path_grid.begin();
         for (auto it = path_grid.begin(); it != path_grid.end(); it++)
@@ -1539,9 +1539,9 @@ protected:
 
     return true;
   }
-  std::vector<Astar::Vec> &cbSearch(
-      const Astar::Vec &p,
-      const Astar::Vec &s, const Astar::Vec &e)
+  std::vector<Astar::Vec>& cbSearch(
+      const Astar::Vec& p,
+      const Astar::Vec& s, const Astar::Vec& e)
   {
     const auto ds = s - p;
     rot_cache_ = &rotgm_[p[2]];
@@ -1556,7 +1556,7 @@ protected:
     euclid_cost_coef_ = ec_rough_;
     return search_list_rough_;
   }
-  bool cbProgress(const std::list<Astar::Vec> &path_grid)
+  bool cbProgress(const std::list<Astar::Vec>& path_grid)
   {
     nav_msgs::Path path;
     path.header = map_header_;
@@ -1566,7 +1566,7 @@ protected:
     return true;
   }
 
-  float cbCostEstim(const Astar::Vec &s, const Astar::Vec &e)
+  float cbCostEstim(const Astar::Vec& s, const Astar::Vec& e)
   {
     // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
     Astar::Vec s2({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
@@ -1581,13 +1581,13 @@ protected:
     }
     return cost;
   }
-  bool switchDetect(const nav_msgs::Path &path)
+  bool switchDetect(const nav_msgs::Path& path)
   {
     geometry_msgs::Pose p_prev;
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
-    for (const auto &p : path.poses)
+    for (const auto& p : path.poses)
     {
       if (!first)
       {
@@ -1615,9 +1615,9 @@ protected:
     }
     return false;
   }
-  float cbCost(const Astar::Vec &s, Astar::Vec &e,
-               const Astar::Vec &v_goal,
-               const Astar::Vec &v_start,
+  float cbCost(const Astar::Vec& s, Astar::Vec& e,
+               const Astar::Vec& v_goal,
+               const Astar::Vec& v_start,
                const bool hyst)
   {
     Astar::Vec d_raw = e - s;
@@ -1699,7 +1699,7 @@ protected:
       if (cache_page == motion_cache_->end(syaw))
         return -1;
       const int num = cache_page->second.getMotion().size();
-      for (const auto &pos_diff : cache_page->second.getMotion())
+      for (const auto& pos_diff : cache_page->second.getMotion())
       {
         // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
         const Astar::Vec pos(
@@ -1768,7 +1768,7 @@ protected:
         if (cache_page == motion_cache_->end(syaw))
           return -1;
         const int num = cache_page->second.getMotion().size();
-        for (const auto &pos_diff : cache_page->second.getMotion())
+        for (const auto& pos_diff : cache_page->second.getMotion())
         {
           // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
           const Astar::Vec pos(
@@ -1794,7 +1794,7 @@ protected:
     return cost;
   }
 
-  void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper &stat)
+  void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
     if (status_.error == planner_cspace_msgs::PlannerStatus::IN_ROCK)
     {
@@ -1813,7 +1813,7 @@ protected:
   }
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "planner_3d");
 
