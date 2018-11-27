@@ -77,6 +77,14 @@ Sample launch files.
 A. Watanabe, D. Endo, G. Yamauchi and K. Nagatani, "*Neonavigation meta-package: 2-D/3-DOF seamless global-local planner for ROS — Development and field test on the representative offshore oil plant,*" 2016 IEEE International Symposium on Safety, Security, and Rescue Robotics (SSRR), Lausanne, Switzerland, 2016, pp. 86-91.
 (doi: 10.1109/SSRR.2016.7784282)
 
+## Contributing
+
+*neonavigation meta-package* is developed under [GitHub flow](https://guides.github.com/introduction/flow/).
+Feel free to open new Issue and/or Pull Request.
+
+The code in this repository is following [ROS C++ Style Guide](https://wiki.ros.org/CppStyleGuide).
+A configuration file for clang-format is available at https://github.com/seqsense/ros_style/.
+
 ## License
 
 *neonavigation meta-package* is available under BSD license.

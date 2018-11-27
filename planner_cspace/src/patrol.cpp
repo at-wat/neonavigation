@@ -49,7 +49,7 @@ protected:
   nav_msgs::Path path_;
   size_t pos_;
 
-  void cbPath(const nav_msgs::Path::ConstPtr &msg)
+  void cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
     path_ = *msg;
     pos_ = 0;
@@ -128,7 +128,7 @@ public:
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "patrol");
 

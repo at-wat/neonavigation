@@ -55,7 +55,7 @@ public:
     {
       return distance_;
     }
-    const std::vector<VEC_INT> &getMotion()
+    const std::vector<VEC_INT>& getMotion()
     {
       return motion_;
     }
@@ -71,7 +71,7 @@ protected:
 public:
   const typename Cache::iterator find(
       const size_t start_yaw,
-      const VEC_INT &goal)
+      const VEC_INT& goal)
   {
     return cache_[start_yaw].find(goal);
   }
@@ -83,9 +83,9 @@ public:
 
   template <class GRIDMAP>
   MotionCache(
-      const costmap_cspace_msgs::MapMetaData3D &map_info,
+      const costmap_cspace_msgs::MapMetaData3D& map_info,
       const int range,
-      const GRIDMAP &gm_optimize)
+      const GRIDMAP& gm_optimize)
   {
     cache_.resize(map_info.angle);
     for (int syaw = 0; syaw < static_cast<int>(map_info.angle); syaw++)
@@ -197,7 +197,7 @@ public:
         }
       }
       // Sort to improve cache hit rate
-      for (auto &cache : cache_[syaw])
+      for (auto& cache : cache_[syaw])
       {
         auto comp = [this, &gm_optimize](const VEC_INT a, const VEC_INT b)
         {

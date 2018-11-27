@@ -48,7 +48,7 @@ protected:
 
 public:
   void block_addr(
-      const CyclicVecInt<DIM, NONCYCLIC> &pos, size_t &baddr, size_t &addr) const
+      const CyclicVecInt<DIM, NONCYCLIC>& pos, size_t& baddr, size_t& addr) const
   {
     addr = 0;
     baddr = 0;
@@ -65,7 +65,7 @@ public:
       addr += pos[i];
     }
   }
-  const CyclicVecInt<DIM, NONCYCLIC> &size() const
+  const CyclicVecInt<DIM, NONCYCLIC>& size() const
   {
     return size_;
   }
@@ -88,7 +88,7 @@ public:
         c_[i] = zero;
     }
   }
-  void reset(const CyclicVecInt<DIM, NONCYCLIC> &size)
+  void reset(const CyclicVecInt<DIM, NONCYCLIC>& size)
   {
     auto size_tmp = size;
 
@@ -122,14 +122,14 @@ public:
     c_.reset(new T[ser_size_]);
     size_ = size;
   }
-  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC> &size_)
+  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC>& size_)
   {
     reset(size_);
   }
   BlockMemGridmap()
   {
   }
-  T &operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos)
+  T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
@@ -140,7 +140,7 @@ public:
     }
     return c_[baddr * block_ser_size_ + addr];
   }
-  const T operator[](const CyclicVecInt<DIM, NONCYCLIC> &pos) const
+  const T operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) const
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
@@ -148,7 +148,7 @@ public:
       return std::numeric_limits<T>::max();
     return c_[baddr * block_ser_size_ + addr];
   }
-  bool validate(const CyclicVecInt<DIM, NONCYCLIC> &pos, const int tolerance = 0) const
+  bool validate(const CyclicVecInt<DIM, NONCYCLIC>& pos, const int tolerance = 0) const
   {
     for (int i = 0; i < NONCYCLIC; i++)
     {
@@ -162,8 +162,7 @@ public:
     }
     return true;
   }
-  const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>
-      &operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH> &gm)
+  const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& operator=(const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& gm)
   {
     reset(gm.size_);
     memcpy(c_.get(), gm.c_.get(), ser_size_);

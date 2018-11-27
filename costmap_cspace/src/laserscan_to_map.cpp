@@ -106,7 +106,7 @@ public:
   }
 
 private:
-  void cbScan(const sensor_msgs::LaserScan::ConstPtr &scan)
+  void cbScan(const sensor_msgs::LaserScan::ConstPtr& scan)
   {
     sensor_msgs::PointCloud2 cloud;
     sensor_msgs::PointCloud2 cloud_global;
@@ -117,7 +117,7 @@ private:
           global_frame_, cloud.header.frame_id, cloud.header.stamp, ros::Duration(0.5));
       tf2::doTransform(cloud, cloud_global, trans);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN("%s", e.what());
     }
@@ -144,15 +144,15 @@ private:
       origin_x_ = x - width_ * map.info.resolution * 0.5;
       origin_y_ = y - height_ * map.info.resolution * 0.5;
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN("%s", e.what());
       return;
     }
-    for (auto &cell : map.data)
+    for (auto& cell : map.data)
       cell = 0;
 
-    for (auto &pc : accum_)
+    for (auto& pc : accum_)
     {
       auto itr_x = sensor_msgs::PointCloud2ConstIterator<float>(pc, "x");
       auto itr_y = sensor_msgs::PointCloud2ConstIterator<float>(pc, "y");
@@ -172,7 +172,7 @@ private:
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "laserscan_to_map");
 

@@ -60,7 +60,7 @@ private:
       selected_ = 0;
     }
   };
-  void cbTopic(const boost::shared_ptr<topic_tools::ShapeShifter const> &msg, int id)
+  void cbTopic(const boost::shared_ptr<topic_tools::ShapeShifter const>& msg, int id)
   {
     if (selected_ == id)
     {
@@ -125,7 +125,7 @@ public:
   }
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "joystick_mux");
 

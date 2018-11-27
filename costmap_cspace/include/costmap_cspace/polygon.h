@@ -45,40 +45,40 @@ class Vec
 {
 public:
   float c[2];
-  float &operator[](const int &i)
+  float& operator[](const int& i)
   {
     ROS_ASSERT(i < 2);
     return c[i];
   }
-  const float &operator[](const int &i) const
+  const float& operator[](const int& i) const
   {
     ROS_ASSERT(i < 2);
     return c[i];
   }
-  Vec operator-(const Vec &a) const
+  Vec operator-(const Vec& a) const
   {
     Vec out = *this;
     out[0] -= a[0];
     out[1] -= a[1];
     return out;
   }
-  float cross(const Vec &a) const
+  float cross(const Vec& a) const
   {
     return (*this)[0] * a[1] - (*this)[1] * a[0];
   }
-  float dot(const Vec &a) const
+  float dot(const Vec& a) const
   {
     return (*this)[0] * a[0] + (*this)[1] * a[1];
   }
-  float dist(const Vec &a) const
+  float dist(const Vec& a) const
   {
     return hypotf((*this)[0] - a[0], (*this)[1] - a[1]);
   }
-  float dist_line(const Vec &a, const Vec &b) const
+  float dist_line(const Vec& a, const Vec& b) const
   {
     return (b - a).cross((*this) - a) / b.dist(a);
   }
-  float dist_linestrip(const Vec &a, const Vec &b) const
+  float dist_linestrip(const Vec& a, const Vec& b) const
   {
     if ((b - a).dot((*this) - a) <= 0)
       return this->dist(a);
@@ -111,7 +111,7 @@ public:
         p[0] = static_cast<double>(footprint_xml[i][0]);
         p[1] = static_cast<double>(footprint_xml[i][1]);
       }
-      catch (XmlRpc::XmlRpcException &e)
+      catch (XmlRpc::XmlRpcException& e)
       {
         throw std::runtime_error(("Invalid footprint xml." + e.getMessage()).c_str());
       }
@@ -126,7 +126,7 @@ public:
 
     msg.polygon.points.clear();
     msg.header.frame_id = "base_link";
-    for (const auto &p : v)
+    for (const auto& p : v)
     {
       geometry_msgs::Point32 point;
       point.x = p[0];
@@ -141,7 +141,7 @@ public:
   float radius() const
   {
     float radius = 0;
-    for (const auto &p : v)
+    for (const auto& p : v)
     {
       const auto dist = hypotf(p[0], p[1]);
       if (dist > radius)
@@ -149,24 +149,24 @@ public:
     }
     return radius;
   }
-  void move(const float &x, const float &y, const float &yaw)
+  void move(const float& x, const float& y, const float& yaw)
   {
     float cos_v = cosf(yaw);
     float sin_v = sinf(yaw);
-    for (auto &p : v)
+    for (auto& p : v)
     {
       auto tmp = p;
       p[0] = cos_v * tmp[0] - sin_v * tmp[1] + x;
       p[1] = sin_v * tmp[0] + cos_v * tmp[1] + y;
     }
   }
-  bool inside(const Vec &a) const
+  bool inside(const Vec& a) const
   {
     int cn = 0;
     for (size_t i = 0; i < v.size() - 1; i++)
     {
-      auto &v1 = v[i];
-      auto &v2 = v[i + 1];
+      auto& v1 = v[i];
+      auto& v2 = v[i + 1];
       if ((v1[1] <= a[1] && a[1] < v2[1]) ||
           (v2[1] <= a[1] && a[1] < v1[1]))
       {
@@ -178,13 +178,13 @@ public:
     }
     return ((cn & 1) == 1);
   }
-  float dist(const Vec &a) const
+  float dist(const Vec& a) const
   {
     float dist = FLT_MAX;
     for (size_t i = 0; i < v.size() - 1; i++)
     {
-      auto &v1 = v[i];
-      auto &v2 = v[i + 1];
+      auto& v1 = v[i];
+      auto& v2 = v[i + 1];
       auto d = a.dist_linestrip(v1, v2);
       if (d < dist)
         dist = d;

@@ -42,8 +42,8 @@ TEST(TrajectoryRecorder, TfToPath)
   ros::NodeHandle nh("");
 
   nav_msgs::Path::ConstPtr path;
-  const boost::function<void(const nav_msgs::Path::ConstPtr &)> cb_path =
-      [&path](const nav_msgs::Path::ConstPtr &msg) -> void
+  const boost::function<void(const nav_msgs::Path::ConstPtr&)> cb_path =
+      [&path](const nav_msgs::Path::ConstPtr& msg) -> void
   {
     path = msg;
   };
@@ -60,7 +60,7 @@ TEST(TrajectoryRecorder, TfToPath)
   const size_t len = sizeof(points) / sizeof(tf2::Transform);
 
   ros::Duration(1.0).sleep();
-  for (auto &p : points)
+  for (auto& p : points)
   {
     for (size_t i = 0; i < 3; ++i)
     {
@@ -89,7 +89,7 @@ TEST(TrajectoryRecorder, TfToPath)
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_trajectory_recorder");

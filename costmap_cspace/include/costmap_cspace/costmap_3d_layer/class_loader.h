@@ -67,7 +67,7 @@ protected:
   static ClassList classes_;
 
 public:
-  static Costmap3dLayerBase::Ptr loadClass(const std::string &name)
+  static Costmap3dLayerBase::Ptr loadClass(const std::string& name)
   {
     if (classes_.find(name) == classes_.end())
     {
@@ -75,7 +75,7 @@ public:
     }
     return classes_[name]->spawn();
   };
-  static void registerClass(const std::string &name, Costmap3dLayerSpawnerBase::Ptr spawner)
+  static void registerClass(const std::string& name, Costmap3dLayerSpawnerBase::Ptr spawner)
   {
     classes_[name] = spawner;
   };

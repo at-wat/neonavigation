@@ -74,14 +74,14 @@ private:
   boost::shared_array<uint8_t> buffer_;
   int serial_size_;
   double filter_step_;
-  Filter *lpf_[2];
+  Filter* lpf_[2];
 
   bool loadFile();
   void loadPath();
-  bool change(trajectory_tracker_msgs::ChangePath::Request &req,
-              trajectory_tracker_msgs::ChangePath::Response &res);
+  bool change(trajectory_tracker_msgs::ChangePath::Request& req,
+              trajectory_tracker_msgs::ChangePath::Response& res);
   void processFeedback(
-      const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+      const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
   void updateIM();
   enum
   {
@@ -127,7 +127,7 @@ bool ServerNode::loadFile()
     serial_size_ = ifs.tellg();
     ifs.seekg(0, ifs.beg);
     buffer_.reset(new uint8_t[serial_size_]);
-    ifs.read(reinterpret_cast<char *>(buffer_.get()), serial_size_);
+    ifs.read(reinterpret_cast<char*>(buffer_.get()), serial_size_);
 
     return true;
   }
@@ -135,7 +135,7 @@ bool ServerNode::loadFile()
 }
 
 void ServerNode::processFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
+    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   int id = std::atoi(feedback->marker_name.c_str());
   switch (feedback->event_type)
@@ -171,7 +171,7 @@ void ServerNode::updateIM()
   viz.server_id = "Path";
   srv_im_fb_.clear();
   int i = 0;
-  for (auto &p : path_.poses)
+  for (auto& p : path_.poses)
   {
     visualization_msgs::InteractiveMarker mark;
     visualization_msgs::Marker marker;
@@ -231,8 +231,8 @@ void ServerNode::updateIM()
   srv_im_fb_.applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request &req,
-                        trajectory_tracker_msgs::ChangePath::Response &res)
+bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request& req,
+                        trajectory_tracker_msgs::ChangePath::Response& res)
 {
   req_path_ = req;
   res.success = false;
@@ -288,7 +288,7 @@ void ServerNode::spin()
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "trajectory_server");
 

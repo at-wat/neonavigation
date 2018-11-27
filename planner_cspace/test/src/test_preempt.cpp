@@ -59,7 +59,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace_msgs::PlannerStatus &msg)
+  void StatusCallback(const planner_cspace_msgs::PlannerStatus& msg)
   {
     status_ = msg;
   }
@@ -107,7 +107,7 @@ TEST_F(PreemptTest, Preempt)
             status_.status);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_preempt");

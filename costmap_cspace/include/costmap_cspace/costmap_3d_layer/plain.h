@@ -48,7 +48,7 @@ public:
   {
     Polygon footprint;
     footprint.v.resize(3);
-    for (auto &p : footprint.v)
+    for (auto& p : footprint.v)
     {
       p[0] = p[1] = 0.0;
     }

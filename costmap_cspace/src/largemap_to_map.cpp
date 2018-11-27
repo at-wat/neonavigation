@@ -74,11 +74,11 @@ public:
   }
 
 private:
-  void cbTimer(const ros::TimerEvent &event)
+  void cbTimer(const ros::TimerEvent& event)
   {
     publishMap();
   }
-  void cbLargeMap(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+  void cbLargeMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
     large_map_ = msg;
   }
@@ -91,7 +91,7 @@ private:
     {
       tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, ros::Time(0)), trans);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       return;
     }
@@ -140,7 +140,7 @@ private:
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "largemap_to_map");
 

@@ -57,12 +57,12 @@ protected:
   tf2_ros::TransformBroadcaster tfb_;
   tf2_ros::TransformListener tfl_;
 
-  void cbTwist(const geometry_msgs::Twist::ConstPtr &msg)
+  void cbTwist(const geometry_msgs::Twist::ConstPtr& msg)
   {
     v_ = msg->linear.x;
     w_ = msg->angular.z;
   }
-  void cbInit(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
+  void cbInit(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
   {
     geometry_msgs::PoseStamped pose_in, pose_out;
     pose_in.header = msg->header;
@@ -73,7 +73,7 @@ protected:
           tfbuf_.lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(1.0));
       tf2::doTransform(pose_in, pose_out, trans);
     }
-    catch (tf2::TransformException &e)
+    catch (tf2::TransformException& e)
     {
       ROS_WARN("%s", e.what());
       return;
@@ -138,7 +138,7 @@ public:
   }
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "dummy_robot");
 
