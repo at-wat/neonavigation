@@ -35,9 +35,11 @@
 #include <std_msgs/Empty.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
-#include <tf_conversions/tf_eigen.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <pcl/point_types.h>
 #include <pcl/conversions.h>
@@ -98,7 +100,8 @@ protected:
   ros::Subscriber sub_disable_;
   ros::Subscriber sub_watchdog_;
   ros::Timer watchdog_timer_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   geometry_msgs::Twist twist_;
   ros::Time last_cloud_stamp_;
@@ -139,6 +142,7 @@ public:
   SafetyLimiterNode()
     : nh_()
     , pnh_("~")
+    , tfl_(tfbuf_)
     , cloud_(new pcl::PointCloud<pcl::PointXYZ>)
     , last_disable_cmd_(0)
     , watchdog_stop_(false)
@@ -602,15 +606,16 @@ protected:
   void cbCloud(const sensor_msgs::PointCloud2::ConstPtr &msg)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::fromROSMsg(*msg, *pc);
 
     try
     {
-      tfl_.waitForTransform(frame_id_, msg->header.frame_id, msg->header.stamp,
-                            ros::Duration(0.1));
-      pcl_ros::transformPointCloud(frame_id_, *pc, *pc, tfl_);
+      sensor_msgs::PointCloud2 pc2_tmp;
+      geometry_msgs::TransformStamped trans = tfbuf_.lookupTransform(
+          frame_id_, msg->header.frame_id, msg->header.stamp, ros::Duration(0.1));
+      tf2::doTransform(*msg, pc2_tmp, trans);
+      pcl::fromROSMsg(pc2_tmp, *pc);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       ROS_WARN_THROTTLE(1.0, "safety_limiter: Transform failed: %s", e.what());
       return;
@@ -638,15 +643,15 @@ protected:
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
                    (has_collision_at_now_) ?
-                   "Cannot escape from collision." :
-                   "Trying to avoid collision, but cannot move anymore.");
+                       "Cannot escape from collision." :
+                       "Trying to avoid collision, but cannot move anymore.");
     }
     else
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
                    (has_collision_at_now_) ?
-                   "Escaping from collision." :
-                   "Reducing velocity to avoid collision.");
+                       "Escaping from collision." :
+                       "Reducing velocity to avoid collision.");
     }
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
   }

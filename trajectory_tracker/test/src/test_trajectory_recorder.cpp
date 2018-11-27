@@ -28,7 +28,8 @@
  */
 
 #include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Path.h>
 
 #include <algorithm>
@@ -47,25 +48,27 @@ TEST(TrajectoryRecorder, TfToPath)
     path = msg;
   };
   ros::Subscriber sub_path = nh.subscribe("path", 1, cb_path);
-  tf::TransformBroadcaster tfb;
+  tf2_ros::TransformBroadcaster tfb;
 
-  const tf::Transform points[] =
+  const tf2::Transform points[] =
       {
-        tf::Transform(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, 0, 0)),
-        tf::Transform(tf::Quaternion(0, 0, 1, 0), tf::Vector3(2, 0, 0)),
-        tf::Transform(tf::Quaternion(0, 0, 0, -1), tf::Vector3(3, 5, 0)),
-        tf::Transform(tf::Quaternion(0, 0, -1, 0), tf::Vector3(-1, 5, 1))
+        tf2::Transform(tf2::Quaternion(0, 0, 0, 1), tf2::Vector3(0, 0, 0)),
+        tf2::Transform(tf2::Quaternion(0, 0, 1, 0), tf2::Vector3(2, 0, 0)),
+        tf2::Transform(tf2::Quaternion(0, 0, 0, -1), tf2::Vector3(3, 5, 0)),
+        tf2::Transform(tf2::Quaternion(0, 0, -1, 0), tf2::Vector3(-1, 5, 1))
       };
-  const size_t len = sizeof(points) / sizeof(tf::Transform);
+  const size_t len = sizeof(points) / sizeof(tf2::Transform);
 
   ros::Duration(1.0).sleep();
   for (auto &p : points)
   {
     for (size_t i = 0; i < 3; ++i)
     {
-      tfb.sendTransform(
-          tf::StampedTransform(
-              p, ros::Time::now() + ros::Duration(0.1), "map", "base_link"));
+      geometry_msgs::TransformStamped trans =
+          tf2::toMsg(tf2::Stamped<tf2::Transform>(
+              p, ros::Time::now() + ros::Duration(0.1), "map"));
+      trans.child_frame_id = "base_link";
+      tfb.sendTransform(trans);
       ros::Duration(0.1).sleep();
     }
   }

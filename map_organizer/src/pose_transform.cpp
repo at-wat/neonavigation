@@ -30,14 +30,15 @@
 #include <ros/ros.h>
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <tf/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <string>
 
 #include <neonavigation_common/compatibility.h>
 
 std::string to;
-std::shared_ptr<tf::TransformListener> tfl;
+std::shared_ptr<tf2_ros::Buffer> tfbuf;
 
 ros::Publisher pub_pose;
 
@@ -51,14 +52,15 @@ void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr &msg)
     in.header = msg->header;
     in.header.stamp = ros::Time(0);
     in.pose = msg->pose.pose;
-    tfl->waitForTransform(to, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
-    tfl->transformPose(to, in, out);
+    geometry_msgs::TransformStamped trans = tfbuf->lookupTransform(
+        to, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
+    tf2::doTransform(in, out, trans);
     out_msg = *msg;
     out_msg.header = out.header;
     out_msg.pose.pose = out.pose;
     pub_pose.publish(out_msg);
   }
-  catch (tf::TransformException &e)
+  catch (tf2::TransformException &e)
   {
     ROS_WARN("pose_transform: %s", e.what());
   }
@@ -79,7 +81,8 @@ int main(int argc, char **argv)
       pnh, "pose_out", 1, false);
   pnh.param("to_frame", to, std::string("map"));
 
-  tfl.reset(new tf::TransformListener);
+  tfbuf.reset(new tf2_ros::Buffer);
+  tf2_ros::TransformListener tfl(*tfbuf);
   ros::spin();
 
   return 0;

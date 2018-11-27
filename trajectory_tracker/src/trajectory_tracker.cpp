@@ -47,8 +47,9 @@
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
-#include <tf/transform_listener.h>
+#include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <math.h>
 #include <string>
@@ -105,7 +106,8 @@ private:
   ros::Publisher pub_tracking_;
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   nav_msgs::Path path_;
   nav_msgs::Odometry odom_;
@@ -148,6 +150,7 @@ TrackerNode::TrackerNode()
   , v_(0.0)
   , nh_()
   , pnh_("~")
+  , tfl_(tfbuf_)
 {
   neonavigation_common::compat::checkCompatMode();
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
@@ -313,7 +316,7 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr &msg)
 
   while (path_.poses.size() < 3 && path_.poses.size() > 0)
   {
-    float yaw = tf::getYaw(path_.poses.back().pose.orientation);
+    float yaw = tf2::getYaw(path_.poses.back().pose.orientation);
     auto next = path_.poses.back();
     next.pose.position.x += 0.001 * cos(yaw);
     next.pose.position.y += 0.001 * sin(yaw);
@@ -359,13 +362,15 @@ void TrackerNode::control()
   // Transform
   nav_msgs::Path lpath;
   lpath.header = path_.header;
-  tf::StampedTransform transform;
+  tf2::Stamped<tf2::Transform> transform;
   double transform_delay = 0;
   try
   {
-    tf::StampedTransform trans_odom;
-    tfl_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0), transform);
-    tfl_.lookupTransform(frame_odom_, path_.header.frame_id, ros::Time(0), trans_odom);
+    tf2::Stamped<tf2::Transform> trans_odom;
+    tf2::fromMsg(
+        tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
+    tf2::fromMsg(
+        tfbuf_.lookupTransform(frame_odom_, path_.header.frame_id, ros::Time(0)), trans_odom);
     transform *= trans_odom;
     transform_delay = (ros::Time::now() - transform.stamp_).toSec();
     if (fabs(transform_delay) > 0.1)
@@ -379,8 +384,7 @@ void TrackerNode::control()
       error_cnt_ = 0;
     }
 
-    geometry_msgs::TransformStamped trans_msg;
-    tf::transformStampedTFToMsg(transform, trans_msg);
+    geometry_msgs::TransformStamped trans_msg = tf2::toMsg(transform);
 
     for (size_t i = 0; i < path_.poses.size(); i += path_step_)
     {
@@ -389,7 +393,7 @@ void TrackerNode::control()
       lpath.poses.push_back(pose);
     }
   }
-  catch (tf::TransformException &e)
+  catch (tf2::TransformException &e)
   {
     ROS_WARN("TF exception: %s", e.what());
     status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
@@ -433,7 +437,7 @@ void TrackerNode::control()
     float angle = atan2(vec.y, vec.x);
     float angle_pose_;
     if (allow_backward_)
-      angle_pose_ = tf::getYaw(lpath.poses[i].pose.orientation);
+      angle_pose_ = tf2::getYaw(lpath.poses[i].pose.orientation);
     else
       angle_pose_ = angle;
     float signVel_req = cos(angle) * cos(angle_pose_) + sin(angle) * sin(angle_pose_);
@@ -472,7 +476,7 @@ void TrackerNode::control()
   float angle = -atan2(vec.y, vec.x);
   float angle_pose_;
   if (allow_backward_)
-    angle_pose_ = tf::getYaw(lpath.poses[iclose].pose.orientation);
+    angle_pose_ = tf2::getYaw(lpath.poses[iclose].pose.orientation);
   else
     angle_pose_ = -angle;
   float sign_vel_ = 1.0;
@@ -499,7 +503,7 @@ void TrackerNode::control()
       float angle = atan2(vec.y, vec.x);
       float angle_pose_;
       if (allow_backward_)
-        angle_pose_ = tf::getYaw(lpath.poses[i + 1].pose.orientation);
+        angle_pose_ = tf2::getYaw(lpath.poses[i + 1].pose.orientation);
       else
         angle_pose_ = angle;
       float signVel_req = cos(angle) * cos(angle_pose_) + sin(angle) * sin(angle_pose_);
@@ -557,7 +561,7 @@ void TrackerNode::control()
   {
     if (distance_path_ < min_track_path_ || fabs(remain_local_) < stop_tolerance_dist_)
     {
-      angle = -tf::getYaw(lpath.poses.back().pose.orientation);
+      angle = -tf2::getYaw(lpath.poses.back().pose.orientation);
       status.angle_remains = angle;
     }
     w_ = timeoptimal_control(angle + _w * dt * 1.5, acc_[1], dt);
@@ -676,7 +680,7 @@ void TrackerNode::control()
   tracking.header = status.header;
   tracking.header.frame_id = frame_robot_;
   tracking.pose.position = pos_line_;
-  tracking.pose.orientation = tf::createQuaternionMsgFromYaw(-angle);
+  tracking.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -angle));
   pub_tracking_.publish(tracking);
 
   path_step_done_ = iclose;

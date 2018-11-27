@@ -31,7 +31,8 @@
 
 #include <map_organizer_msgs/OccupancyGridArray.h>
 #include <std_msgs/Int32.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <vector>
 
@@ -74,11 +75,11 @@ int main(int argc, char **argv)
       nh, "map",
       nh, "/map", 1, true);
 
-  tf::TransformBroadcaster tfb;
+  tf2_ros::TransformBroadcaster tfb;
   geometry_msgs::TransformStamped trans;
   trans.header.frame_id = "map_ground";
   trans.child_frame_id = "map";
-  trans.transform.rotation = tf::createQuaternionMsgFromYaw(0.0);
+  trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
 
   ros::Rate wait(10);
   int floor_prev = -1;

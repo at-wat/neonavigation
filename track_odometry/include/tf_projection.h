@@ -30,7 +30,7 @@
 #ifndef TF_PROJECTION_H
 #define TF_PROJECTION_H
 
-#include <tf/transform_datatypes.h>
+#include <tf2/LinearMath/Transform.h>
 
 #include <map>
 #include <string>
@@ -41,17 +41,16 @@ protected:
   std::map<std::string, std::string> frames_;
 
 public:
-  tf::StampedTransform project(
-      const tf::StampedTransform &trans, const tf::StampedTransform &trans_target)
+  tf2::Stamped<tf2::Transform> project(
+      const tf2::Stamped<tf2::Transform> &trans, const tf2::Stamped<tf2::Transform> &trans_target)
   {
     auto origin = trans.getOrigin();
     origin.setZ(0.0);
-    tf::StampedTransform projected = trans;
+    tf2::Stamped<tf2::Transform> projected = trans;
     projected.setOrigin(origin);
 
-    tf::StampedTransform output = trans_target;
+    tf2::Stamped<tf2::Transform> output = trans_target;
     output *= projected;
-    output.child_frame_id_ = frames_["frame"];
     output.frame_id_ = frames_["target"];
 
     return output;

@@ -39,8 +39,9 @@
 #include <std_srvs/Empty.h>
 
 #include <ros/console.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
+#include <tf2/utils.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -85,7 +86,8 @@ protected:
   ros::ServiceServer srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
-  tf::TransformListener tfl_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
@@ -241,11 +243,11 @@ protected:
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
-        req.start.pose.position.x, req.start.pose.position.y, tf::getYaw(req.start.pose.orientation));
+        req.start.pose.position.x, req.start.pose.position.y, tf2::getYaw(req.start.pose.orientation));
     s[2] = 0;
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
-        req.goal.pose.position.x, req.goal.pose.position.y, tf::getYaw(req.goal.pose.orientation));
+        req.goal.pose.position.x, req.goal.pose.position.y, tf2::getYaw(req.goal.pose.orientation));
     e[2] = 0;
 
     if (!(cm_rough_.validate(s, range_) && cm_rough_.validate(e, range_)))
@@ -556,12 +558,12 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
         start_.pose.position.x, start_.pose.position.y,
-        tf::getYaw(start_.pose.orientation));
+        tf2::getYaw(start_.pose.orientation));
     s.cycleUnsigned(s[2], map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
-        tf::getYaw(goal_.pose.orientation));
+        tf2::getYaw(goal_.pose.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
     if (goal_changed)
     {
@@ -597,7 +599,7 @@ protected:
                e[0], e[1], e[2]);
       float x, y, yaw;
       grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
-      goal_.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+      goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
       goal_.pose.position.x = x;
       goal_.pose.position.y = y;
     }
@@ -803,12 +805,12 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
         start_.pose.position.x, start_.pose.position.y,
-        tf::getYaw(start_.pose.orientation));
+        tf2::getYaw(start_.pose.orientation));
     s.cycleUnsigned(s[2], map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
-        tf::getYaw(goal_.pose.orientation));
+        tf2::getYaw(goal_.pose.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
 
     if (cm_[e] == 100)
@@ -915,7 +917,7 @@ protected:
     ROS_INFO(" origin %0.3f m, %0.3f m, %0.3f rad",
              msg->info.origin.position.x,
              msg->info.origin.position.y,
-             tf::getYaw(msg->info.origin.orientation));
+             tf2::getYaw(msg->info.origin.orientation));
 
     // Stop robot motion until next planning step
     nav_msgs::Path path;
@@ -1099,11 +1101,11 @@ protected:
     start.pose.position.z = 0;
     try
     {
-      tfl_.waitForTransform(
-          map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
-      tfl_.transformPose(map_header_.frame_id, start, start);
+      geometry_msgs::TransformStamped trans =
+          tfbuf_.lookupTransform(map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
+      tf2::doTransform(start, start, trans);
     }
-    catch (tf::TransformException &e)
+    catch (tf2::TransformException &e)
     {
       has_start_ = false;
       return;
@@ -1116,7 +1118,8 @@ public:
   Planner3dNode()
     : nh_()
     , pnh_("~")
-    , jump_(tfl_)
+    , tfl_(tfbuf_)
+    , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
@@ -1285,12 +1288,12 @@ public:
 
         if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
         {
-          const float yaw_s = tf::getYaw(start_.pose.orientation);
+          const float yaw_s = tf2::getYaw(start_.pose.orientation);
           float yaw_g;
           if (force_goal_orientation_)
-            yaw_g = tf::getYaw(goal_raw_.pose.orientation);
+            yaw_g = tf2::getYaw(goal_raw_.pose.orientation);
           else
-            yaw_g = tf::getYaw(goal_.pose.orientation);
+            yaw_g = tf2::getYaw(goal_.pose.orientation);
 
           float yaw_diff = yaw_s - yaw_g;
           if (yaw_diff > M_PI)
@@ -1360,18 +1363,18 @@ protected:
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
-        gs.position.x, gs.position.y, tf::getYaw(gs.orientation));
+        gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
     s.cycleUnsigned(s[2], map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
-        ge.position.x, ge.position.y, tf::getYaw(ge.orientation));
+        ge.position.x, ge.position.y, tf2::getYaw(ge.orientation));
     e.cycleUnsigned(e[2], map_info_.angle);
 
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
     float x, y, yaw;
     grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
-    p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+    p.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     p.pose.position.x = x;
     p.pose.position.y = y;
     pub_end_.publish(p);
@@ -1403,7 +1406,7 @@ protected:
                    e[0], e[1], e[2]);
           float x, y, yaw;
           grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
-          goal_.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+          goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
           goal_.pose.position.x = x;
           goal_.pose.position.y = y;
 
@@ -1415,7 +1418,7 @@ protected:
     }
 
     grid_metric_converter::grid2Metric(map_info_, s[0], s[1], s[2], x, y, yaw);
-    p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+    p.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     p.pose.position.x = x;
     p.pose.position.y = y;
     pub_start_.publish(p);
@@ -1593,7 +1596,7 @@ protected:
             p.pose.position.x - p_prev.position.x);
         if (len > 0.001)
         {
-          const float yaw = tf::getYaw(p.pose.orientation);
+          const float yaw = tf2::getYaw(p.pose.orientation);
           const float vel_yaw = atan2f(
               p.pose.position.y - p_prev.position.y,
               p.pose.position.x - p_prev.position.x);
