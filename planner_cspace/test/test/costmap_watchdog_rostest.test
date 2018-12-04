@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <test test-name="test_costmap_watchdog" pkg="planner_cspace" type="test_costmap_watchdog" time-limit="30.0" />
+
+  <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
+    <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
+    <param name="ang_resolution" value="16"/>
+    <param name="linear_expand" value="0.1"/>
+    <param name="linear_spread" value="0.1"/>
+  </node>
+  <node pkg="planner_cspace" type="planner_3d" name="planner_3d">
+    <remap from="move_base_simple/goal" to="goal" />
+    <param name="max_vel" value="0.1" />
+    <param name="max_ang_vel" value="0.3" />
+    <param name="costmap_watchdog" value="0.2" />
+    <param name="freq" value="5.0" />
+    <param name="sw_wait" value="0.0" />
+  </node>
+
+  <node pkg="map_server" type="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml" />
+
+  <node pkg="planner_cspace" type="dummy_robot" name="dummy_robot">
+    <param name="initial_x" value="2.5" />
+    <param name="initial_y" value="0.45" />
+    <param name="initial_yaw" value="3.14" />
+  </node>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+      args="0 0 0 0 0 0 map odom" />
+</launch>
