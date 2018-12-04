@@ -163,6 +163,7 @@ protected:
   float remember_miss_odds_;
 
   JumpDetector jump_;
+  std::string robot_frame_;
 
   int max_retry_num_;
 
@@ -679,7 +680,7 @@ protected:
   void publishEmptyPath()
   {
     nav_msgs::Path path;
-    path.header = map_header_;
+    path.header.frame_id = robot_frame_;
     path.header.stamp = ros::Time::now();
     pub_path_.publish(path);
   }
@@ -1100,7 +1101,7 @@ protected:
   void updateStart()
   {
     geometry_msgs::PoseStamped start;
-    start.header.frame_id = "base_link";
+    start.header.frame_id = robot_frame_;
     start.header.stamp = ros::Time(0);
     start.pose.orientation.x = 0.0;
     start.pose.orientation.y = 0.0;
@@ -1112,7 +1113,7 @@ protected:
     try
     {
       geometry_msgs::TransformStamped trans =
-          tfbuf_.lookupTransform(map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
+          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, ros::Time(), ros::Duration(0.1));
       tf2::doTransform(start, start, trans);
     }
     catch (tf2::TransformException& e)
@@ -1204,6 +1205,8 @@ public:
 
     pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
+
+    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
     double pos_jump, yaw_jump;
     std::string jump_detect_frame;
