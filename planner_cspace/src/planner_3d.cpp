@@ -1833,6 +1833,7 @@ protected:
     switch (status_.error)
     {
       case planner_cspace_msgs::PlannerStatus::GOING_WELL:
+        stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Going well.");
         break;
       case planner_cspace_msgs::PlannerStatus::IN_ROCK:
         stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "The robot is in rock.");
