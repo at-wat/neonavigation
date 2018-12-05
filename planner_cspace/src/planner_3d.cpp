@@ -163,6 +163,7 @@ protected:
   float remember_miss_odds_;
 
   JumpDetector jump_;
+  std::string robot_frame_;
 
   int max_retry_num_;
 
@@ -224,6 +225,8 @@ protected:
   MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_linear_;
 
   diagnostic_updater::Updater diag_updater_;
+  ros::Duration costmap_watchdog_;
+  ros::Time last_costmap_;
 
   bool cbForget(std_srvs::EmptyRequest& req,
                 std_srvs::EmptyResponse& res)
@@ -674,11 +677,22 @@ protected:
     }
     pub_debug_.publish(debug);
   }
+  void publishEmptyPath()
+  {
+    nav_msgs::Path path;
+    path.header.frame_id = robot_frame_;
+    path.header.stamp = ros::Time::now();
+    pub_path_.publish(path);
+  }
+
   void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
   {
     if (!has_map_)
       return;
     ROS_DEBUG("Map updated");
+
+    const ros::Time now = ros::Time::now();
+    last_costmap_ = now;
 
     cm_ = cm_base_;
     cm_rough_ = cm_rough_base_;
@@ -688,7 +702,7 @@ protected:
       {
         sensor_msgs::PointCloud pc;
         pc.header = map_header_;
-        pc.header.stamp = ros::Time::now();
+        pc.header.stamp = now;
         Astar::Vec p;
         for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
         {
@@ -920,10 +934,7 @@ protected:
              tf2::getYaw(msg->info.origin.orientation));
 
     // Stop robot motion until next planning step
-    nav_msgs::Path path;
-    path.header.frame_id = msg->header.frame_id;
-    path.header.stamp = ros::Time::now();
-    pub_path_.publish(path);
+    publishEmptyPath();
 
     float ec_val[3] =
         {
@@ -1090,7 +1101,7 @@ protected:
   void updateStart()
   {
     geometry_msgs::PoseStamped start;
-    start.header.frame_id = "base_link";
+    start.header.frame_id = robot_frame_;
     start.header.stamp = ros::Time(0);
     start.pose.orientation.x = 0.0;
     start.pose.orientation.y = 0.0;
@@ -1102,7 +1113,7 @@ protected:
     try
     {
       geometry_msgs::TransformStamped trans =
-          tfbuf_.lookupTransform(map_header_.frame_id, "base_link", ros::Time(), ros::Duration(0.1));
+          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, ros::Time(), ros::Duration(0.1));
       tf2::doTransform(start, start, trans);
     }
     catch (tf2::TransformException& e)
@@ -1152,6 +1163,10 @@ public:
     pnh_.param_cast("freq_min", freq_min_, 2.0f);
     pnh_.param_cast("search_range", search_range_, 0.4f);
 
+    double costmap_watchdog;
+    pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
+    costmap_watchdog_ = ros::Duration(costmap_watchdog);
+
     pnh_.param_cast("max_vel", max_vel_, 0.3f);
     pnh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
 
@@ -1190,6 +1205,8 @@ public:
 
     pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
+
+    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
     double pos_jump, yaw_jump;
     std::string jump_detect_frame;
@@ -1265,6 +1282,8 @@ public:
       wait.sleep();
       ros::spinOnce();
 
+      const ros::Time now = ros::Time::now();
+
       if (has_map_)
       {
         updateStart();
@@ -1277,7 +1296,28 @@ public:
           updateGoal();
       }
 
-      if (has_map_ && has_goal_ && has_start_)
+      bool has_costmap(false);
+      if (costmap_watchdog_ > ros::Duration(0))
+      {
+        if (last_costmap_ + costmap_watchdog_ < now)
+        {
+          ROS_WARN(
+              "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
+              last_costmap_.toSec());
+          status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
+          publishEmptyPath();
+        }
+        else
+        {
+          has_costmap = true;
+        }
+      }
+      else
+      {
+        has_costmap = true;
+      }
+
+      if (has_map_ && has_goal_ && has_start_ && has_costmap)
       {
         if (act_->isActive())
         {
@@ -1330,7 +1370,7 @@ public:
           }
           nav_msgs::Path path;
           path.header = map_header_;
-          path.header.stamp = ros::Time::now();
+          path.header.stamp = now;
           makePlan(start_.pose, goal_.pose, path, true);
           pub_path_.publish(path);
 
@@ -1346,10 +1386,7 @@ public:
       }
       else if (!has_goal_)
       {
-        nav_msgs::Path path;
-        path.header = map_header_;
-        path.header.stamp = ros::Time::now();
-        pub_path_.publish(path);
+        publishEmptyPath();
       }
       pub_status_.publish(status_);
       diag_updater_.force_update();
@@ -1558,10 +1595,7 @@ protected:
   }
   bool cbProgress(const std::list<Astar::Vec>& path_grid)
   {
-    nav_msgs::Path path;
-    path.header = map_header_;
-    path.header.stamp = ros::Time::now();
-    pub_path_.publish(path);
+    publishEmptyPath();
     ROS_WARN("Search timed out");
     return true;
   }
@@ -1796,17 +1830,26 @@ protected:
 
   void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
-    if (status_.error == planner_cspace_msgs::PlannerStatus::IN_ROCK)
+    switch (status_.error)
     {
-      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "The robot is in rock.");
-    }
-    else if (status_.error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND)
-    {
-      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Path not found.");
-    }
-    else
-    {
-      stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Going well.");
+      case planner_cspace_msgs::PlannerStatus::GOING_WELL:
+        stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Going well.");
+        break;
+      case planner_cspace_msgs::PlannerStatus::IN_ROCK:
+        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "The robot is in rock.");
+        break;
+      case planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND:
+        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Path not found.");
+        break;
+      case planner_cspace_msgs::PlannerStatus::DATA_MISSING:
+        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Required data is missing.");
+        break;
+      case planner_cspace_msgs::PlannerStatus::INTERNAL_ERROR:
+        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Planner internal error.");
+        break;
+      default:
+        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Unknown error.");
+        break;
     }
     stat.addf("status", "%u", status_.status);
     stat.addf("error", "%u", status_.error);

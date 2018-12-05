@@ -49,3 +49,10 @@ add_rostest_gtest(test_preempt
 )
 target_link_libraries(test_preempt ${catkin_LIBRARIES})
 add_dependencies(test_preempt planner_3d)
+
+add_rostest_gtest(test_costmap_watchdog
+  test/costmap_watchdog_rostest.test
+  src/test_costmap_watchdog.cpp
+)
+target_link_libraries(test_costmap_watchdog ${catkin_LIBRARIES})
+add_dependencies(test_costmap_watchdog planner_3d)
