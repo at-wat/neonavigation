@@ -60,7 +60,6 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <neonavigation_common/compatibility.h>
-#include <trajectory_tracker_msgs/PathWithVelocity.h>
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 
 #include <trajectory_tracker/average.h>
