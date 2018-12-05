@@ -1,3 +1,15 @@
+# ========================================
+FROM alpine:latest as cloner
+
+WORKDIR /repos
+
+COPY . /repos/src/neonavigation
+RUN cd /repos/src && git clone --depth=1 https://github.com/at-wat/neonavigation_msgs.git
+
+RUN mkdir -p /repos-manifests/src \
+  && find . -name package.xml | xargs -ISRC cp --parents SRC /repos-manifests/
+
+# ========================================
 FROM ros:lunar-ros-core
 
 RUN apt-get -qq update \
@@ -16,22 +28,11 @@ RUN rosdep update \
   && cd /catkin_ws/src \
   && bash -c ". /opt/ros/${ROS_DISTRO}/setup.bash && catkin_init_workspace && cd .. && catkin_make"
 
-COPY ./costmap_cspace/package.xml /catkin_ws/src/neonavigation/costmap_cspace/
-COPY ./joystick_interrupt/package.xml /catkin_ws/src/neonavigation/joystick_interrupt/
-COPY ./map_organizer/package.xml /catkin_ws/src/neonavigation/map_organizer/
-COPY ./neonavigation_common/package.xml /catkin_ws/src/neonavigation/neonavigation_common/
-COPY ./neonavigation_launch/package.xml /catkin_ws/src/neonavigation/neonavigation_launch/
-COPY ./planner_cspace/package.xml /catkin_ws/src/neonavigation/planner_cspace/
-COPY ./safety_limiter/package.xml /catkin_ws/src/neonavigation/safety_limiter/
-COPY ./trajectory_tracker/package.xml /catkin_ws/src/neonavigation/trajectory_tracker/
-COPY ./obj_to_pointcloud/package.xml /catkin_ws/src/neonavigation/obj_to_pointcloud/
-COPY ./track_odometry/package.xml /catkin_ws/src/neonavigation/track_odometry/
-
-RUN cd /catkin_ws/src && git clone --depth=1 https://github.com/at-wat/neonavigation_msgs.git
+COPY --from=cloner /repos-manifests/src /catkin_ws/src
 
 RUN apt-get -qq update \
   && rosdep install --from-paths /catkin_ws/src --ignore-src --rosdistro=${ROS_DISTRO} -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY ./ /catkin_ws/src/neonavigation
+COPY --from=cloner /repos/src /catkin_ws/src
