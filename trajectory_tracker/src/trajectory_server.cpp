@@ -246,8 +246,10 @@ bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request& req,
     if (filter_step_ > 0)
     {
       std::cout << filter_step_ << std::endl;
-      lpf_[0] = new trajectory_tracker::Filter(trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.x);
-      lpf_[1] = new trajectory_tracker::Filter(trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.y);
+      lpf_[0] = new trajectory_tracker::Filter(
+          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.x);
+      lpf_[1] = new trajectory_tracker::Filter(
+          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.y);
 
       for (size_t i = 0; i < path_.poses.size(); i++)
       {

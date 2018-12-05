@@ -40,8 +40,9 @@
    1991, pp. 212-217.
  */
 
-#include <math.h>
+#include <cmath>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -52,6 +53,7 @@
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Header.h>
 
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
