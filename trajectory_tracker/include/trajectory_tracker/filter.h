@@ -1,0 +1,103 @@
+/*
+ * Copyright (c) 2016-2017, the mcl_3dl authors
+ * Copyright (c) 2014-2017, the neonavigation authors
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the copyright holder nor the names of its 
+ *       contributors may be used to endorse or promote products derived from 
+ *       this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef TRAJECTORY_TRACKER_FILTER_H
+#define TRAJECTORY_TRACKER_FILTER_H
+
+#include <cmath>
+
+namespace trajectory_tracker
+{
+class Filter
+{
+public:
+  enum Type
+  {
+    FILTER_HPF,
+    FILTER_LPF
+  };
+
+private:
+  float x_;
+  float out_;
+  float k_[4];
+  bool angle_;
+
+public:
+  Filter(const enum Type type, const float tc, const float out0, const bool angle = false)
+  {
+    angle_ = angle;
+    switch (type)
+    {
+      case FILTER_LPF:
+        k_[3] = -1 / (1.0 + 2 * tc);
+        k_[2] = -k_[3];
+        k_[1] = (1.0 - 2 * tc) * k_[3];
+        k_[0] = -k_[1] - 1.0;
+        x_ = (1 - k_[2]) * out0 / k_[3];
+        break;
+      case FILTER_HPF:
+        k_[3] = -1 / (1.0 + 2 * tc);
+        k_[2] = -k_[3] * 2 * tc;
+        k_[1] = (1.0 - 2 * tc) * k_[3];
+        k_[0] = 2 * tc * (-k_[1] + 1.0);
+        x_ = (1 - k_[2]) * out0 / k_[3];
+        break;
+    }
+    out_ = out0;
+  }
+  void set(const float out0)
+  {
+    x_ = (1 - k_[2]) * out0 / k_[3];
+    out_ = out0;
+  }
+  float in(const float i)
+  {
+    float in = i;
+    assert(std::isfinite(in));
+
+    if (angle_)
+    {
+      in = out_ + remainder(in - out_, M_PI * 2.0);
+    }
+    x_ = k_[0] * in + k_[1] * x_;
+    out_ = k_[2] * in + k_[3] * x_;
+
+    assert(std::isfinite(out_));
+    return out_;
+  }
+  float get() const
+  {
+    return out_;
+  }
+};
+}  // namespace trajectory_tracker
+
+#endif  // TRAJECTORY_TRACKER_FILTER_H

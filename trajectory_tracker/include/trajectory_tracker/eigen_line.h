@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2017, the mcl_3dl authors
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2014, ATR, Atsushi Watanabe
+ * Copyright (c) 2014-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,77 +28,59 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FILTER_H
-#define FILTER_H
+#ifndef TRAJECTORY_TRACKER_EIGEN_LINE_H
+#define TRAJECTORY_TRACKER_EIGEN_LINE_H
 
 #include <cmath>
 
-class Filter
+namespace trajectory_tracker
 {
-public:
-  enum Type
-  {
-    FILTER_HPF,
-    FILTER_LPF
-  };
+inline float curv3p(
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c)
+{
+  float ret;
+  ret = 2 * (a[0] * b[1] + b[0] * c[1] + c[0] * a[1] -
+             a[0] * c[1] - b[0] * a[1] - c[0] * b[1]);
+  ret /= std::sqrt((b - a).squaredNorm() * (b - c).squaredNorm() * (c - a).squaredNorm());
 
-protected:
-  Type type_;
-  float time_const_;
-  float x_;
-  float out_;
-  float k_[4];
-  bool angle_;
+  return ret;
+}
 
-public:
-  Filter(const enum Type type, const float tc, const float out0, const bool angle = false)
-  {
-    angle_ = angle;
-    time_const_ = tc;
-    type_ = type;
-    switch (type_)
-    {
-      case FILTER_LPF:
-        k_[3] = -1 / (1.0 + 2 * time_const_);
-        k_[2] = -k_[3];
-        k_[1] = (1.0 - 2 * time_const_) * k_[3];
-        k_[0] = -k_[1] - 1.0;
-        x_ = (1 - k_[2]) * out0 / k_[3];
-        break;
-      case FILTER_HPF:
-        k_[3] = -1 / (1.0 + 2 * time_const_);
-        k_[2] = -k_[3] * 2 * time_const_;
-        k_[1] = (1.0 - 2 * time_const_) * k_[3];
-        k_[0] = 2 * time_const_ * (-k_[1] + 1.0);
-        x_ = (1 - k_[2]) * out0 / k_[3];
-        break;
-    }
-    out_ = out0;
-  }
-  void set(const float& out0)
-  {
-    x_ = (1 - k_[2]) * out0 / k_[3];
-    out_ = out0;
-  }
-  float in(const float& i)
-  {
-    float in = i;
-    assert(std::isfinite(in));
+inline float cross2(const Eigen::Vector2d& a, const Eigen::Vector2d& b)
+{
+  return a[0] * b[1] - a[1] * b[0];
+}
 
-    if (angle_)
-    {
-      in = out_ + remainder(in - out_, M_PI * 2.0);
-    }
-    x_ = k_[0] * in + k_[1] * x_;
-    out_ = k_[2] * in + k_[3] * x_;
+inline float lineDistance(
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c)
+{
+  return cross2((b - a), (c - a)) / (b - a).norm();
+}
 
-    assert(std::isfinite(out_));
-    return out_;
-  }
-  float get()
-  {
-    return out_;
-  }
-};
+inline float lineStripDistance(
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c)
+{
+  if ((b - a).dot(c - a) <= 0)
+    return (c - a).norm();
+  if ((a - b).dot(c - b) <= 0)
+    return -(c - b).norm() - 0.005;
+  return std::abs(lineDistance(a, b, c));
+}
 
-#endif  // FILTER_H
+inline Eigen::Vector2d projection2d(
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c)
+{
+  const float r = (b - a).dot(c - a) / (b - a).squaredNorm();
+  return b * r + a * (1.0 - r);
+}
+}  // namespace trajectory_tracker
+
+#endif  // TRAJECTORY_TRACKER_EIGEN_LINE_H

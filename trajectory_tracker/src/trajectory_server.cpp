@@ -48,7 +48,7 @@
 #include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
 #include <visualization_msgs/InteractiveMarkerUpdate.h>
 
-#include <filter.h>
+#include <trajectory_tracker/filter.h>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -74,7 +74,7 @@ private:
   boost::shared_array<uint8_t> buffer_;
   int serial_size_;
   double filter_step_;
-  Filter* lpf_[2];
+  trajectory_tracker::Filter* lpf_[2];
 
   bool loadFile();
   void loadPath();
@@ -246,8 +246,8 @@ bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request& req,
     if (filter_step_ > 0)
     {
       std::cout << filter_step_ << std::endl;
-      lpf_[0] = new Filter(Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.x);
-      lpf_[1] = new Filter(Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.y);
+      lpf_[0] = new trajectory_tracker::Filter(trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.x);
+      lpf_[1] = new trajectory_tracker::Filter(trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.y);
 
       for (size_t i = 0; i < path_.poses.size(); i++)
       {
