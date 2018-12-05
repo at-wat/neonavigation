@@ -1,6 +1,8 @@
 # ========================================
 FROM alpine:latest as cloner
 
+RUN apk add --no-cache git
+
 WORKDIR /repos
 
 COPY . /repos/src/neonavigation
