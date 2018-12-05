@@ -27,10 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
+
 #include <ros/ros.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+
+#include <diagnostic_msgs/DiagnosticArray.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
+
+#include <costmap_cspace_msgs/CSpace3DUpdate.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 
 #include <gtest/gtest.h>
@@ -39,6 +44,7 @@ TEST(Planner3D, CostmapWatchdog)
 {
   planner_cspace_msgs::PlannerStatus::ConstPtr status;
   nav_msgs::Path::ConstPtr path;
+  diagnostic_msgs::DiagnosticArray::ConstPtr diag;
 
   const boost::function<void(const planner_cspace_msgs::PlannerStatus::ConstPtr&)> cb_status =
       [&status](const planner_cspace_msgs::PlannerStatus::ConstPtr& msg) -> void
@@ -50,12 +56,18 @@ TEST(Planner3D, CostmapWatchdog)
   {
     path = msg;
   };
+  const boost::function<void(const diagnostic_msgs::DiagnosticArray::ConstPtr&)> cb_diag =
+      [&diag](const diagnostic_msgs::DiagnosticArray::ConstPtr& msg) -> void
+  {
+    diag = msg;
+  };
 
   ros::NodeHandle nh("");
   ros::Publisher pub_goal = nh.advertise<geometry_msgs::PoseStamped>("goal", 1, true);
   ros::Publisher pub_cost_update = nh.advertise<costmap_cspace_msgs::CSpace3DUpdate>("costmap_update", 1);
-  ros::Subscriber sub_status = nh.subscribe("/planner_3d/status", 1, cb_status);
+  ros::Subscriber sub_status = nh.subscribe("planner_3d/status", 1, cb_status);
   ros::Subscriber sub_path = nh.subscribe("path", 1, cb_path);
+  ros::Subscriber sub_diag = nh.subscribe("diagnostics", 1, cb_diag);
 
   geometry_msgs::PoseStamped goal;
   goal.header.frame_id = "map";
@@ -86,13 +98,23 @@ TEST(Planner3D, CostmapWatchdog)
     if (10 < cnt && cnt < 15)
     {
       ASSERT_EQ(status->error, planner_cspace_msgs::PlannerStatus::DATA_MISSING);
+
       ASSERT_TRUE(static_cast<bool>(path));
       ASSERT_EQ(path->poses.size(), 0u);
+
+      ASSERT_TRUE(static_cast<bool>(diag));
+      ASSERT_EQ(diag->status.size(), 1u);
+      ASSERT_EQ(diag->status[0].level, diagnostic_msgs::DiagnosticStatus::ERROR);
+      ASSERT_NE(diag->status[0].message.find("missing"), std::string::npos);
     }
     else if (20 < cnt && cnt < 25)
     {
       ASSERT_EQ(status->status, planner_cspace_msgs::PlannerStatus::DOING);
       ASSERT_EQ(status->error, planner_cspace_msgs::PlannerStatus::GOING_WELL);
+
+      ASSERT_EQ(diag->status.size(), 1u);
+      ASSERT_EQ(diag->status[0].level, diagnostic_msgs::DiagnosticStatus::OK);
+      ASSERT_NE(diag->status[0].message.find("well"), std::string::npos);
     }
     else if (cnt >= 25)
     {
