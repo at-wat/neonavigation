@@ -127,6 +127,8 @@ private:
   bool allow_backward_;
   bool limit_vel_by_avel_;
   bool check_old_path_;
+  double epsilon_;
+  bool in_place_turn_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_odom_;
@@ -187,6 +189,7 @@ TrackerNode::TrackerNode()
   pnh_.param("allow_backward", allow_backward_, true);
   pnh_.param("limit_vel_by_avel", limit_vel_by_avel_, false);
   pnh_.param("check_old_path", check_old_path_, false);
+  pnh_.param("epsilon", epsilon_, 0.001);
 
   sub_path_ = neonavigation_common::compat::subscribe(
       nh_, "path",
@@ -224,6 +227,7 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
   path_header_ = msg->header;
   path_.clear();
   path_step_done_ = 0;
+  in_place_turn_ = false;
   if (msg->poses.size() == 0)
     return;
 
@@ -232,19 +236,23 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
   for (auto j = msg->poses.begin(); j != msg->poses.end(); ++j)
   {
     const PoseWithVelocity next(j->pose, 0);
-    if ((path_.back().pos - next.pos).squaredNorm() >= std::pow(0.01, 2))
+    if ((path_.back().pos - next.pos).squaredNorm() >= std::pow(epsilon_, 2))
     {
       path_.push_back(next);
     }
   }
 
-  while (path_.size() < 3 && path_.size() > 0)
+  if (path_.size() == 1)
   {
-    // to make line direction computable, line should have a few points
-    const float yaw = path_.back().yaw;
-    const PoseWithVelocity next(
-        path_.back().pos + Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * 0.001, yaw, 0);
-    path_.push_back(next);
+    in_place_turn_ = true;
+    while (path_.size() < 3)
+    {
+      // to make line direction computable, line should have a few points
+      const float yaw = path_.back().yaw;
+      const PoseWithVelocity next(
+          path_.back().pos + Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * epsilon_, yaw, 0);
+      path_.push_back(next);
+    }
   }
 }
 void TrackerNode::cbTimer(const ros::TimerEvent& event)
@@ -412,7 +420,7 @@ void TrackerNode::control()
         remain_local_ += (lpath[i - 1].pos - lpath[i].pos).norm();
     }
   }
-  for (int i = iclose - 1; i < local_goal; i++)
+  for (int i = iclose - 1; i <= local_goal; i++)
   {
     if (i > 2)
       curv += trajectory_tracker::curv3p(lpath[i - 2].pos, lpath[i - 1].pos, lpath[i].pos);
@@ -426,7 +434,7 @@ void TrackerNode::control()
   if (min_dist_ < 0 && iclose == local_goal)
   {
     remain = -remain;
-    remain_local_ = -remain_local_;
+    remain_local_ = remain;
   }
   if (distance_path_ < no_pos_cntl_dist_)
     remain = remain_local_ = 0;
@@ -442,7 +450,8 @@ void TrackerNode::control()
   // Stop and rotate
   if ((std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle)) ||
       std::abs(remain_local_) < stop_tolerance_dist_ ||
-      distance_path_ < min_track_path_)
+      distance_path_ < min_track_path_ ||
+      in_place_turn_)
   {
     if (distance_path_ < min_track_path_ || std::abs(remain_local_) < stop_tolerance_dist_)
     {
@@ -456,10 +465,11 @@ void TrackerNode::control()
         trajectory_tracker::timeoptimalControl(angle + w_ref_.get() * dt * 1.5, acc_[1], dt),
         vel_[1], acc_[1], dt);
 
-    ROS_DEBUG("trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
-              angle, w_ref_, transform_delay);
+    ROS_DEBUG(
+        "trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
+        angle, w_ref_.get(), transform_delay);
 
-    if (distance_path_ < stop_tolerance_dist_)
+    if (distance_path_ < stop_tolerance_dist_ || in_place_turn_)
       status.distance_remains = remain = remain_local_ = 0.0;
   }
   else
