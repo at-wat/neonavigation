@@ -40,6 +40,7 @@
    1991, pp. 212-217.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 #include <vector>
