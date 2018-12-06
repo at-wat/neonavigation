@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -28,15 +28,15 @@
  */
 
 /*
-   * This research was supported by a contract with the Ministry of Internal 
-   Affairs and Communications entitled, 'Novel and innovative R&D making use 
+   * This research was supported by a contract with the Ministry of Internal
+   Affairs and Communications entitled, 'Novel and innovative R&D making use
    of brain structures'
 
    This software was implemented to accomplish the above research.
-   Original idea of the implemented control scheme was published on:  
-   S. Iida, S. Yuta, "Vehicle command system and trajectory control for 
-   autonomous mobile robots," in Proceedings of the 1991 IEEE/RSJ 
-   International Workshop on Intelligent Robots and Systems (IROS), 
+   Original idea of the implemented control scheme was published on:
+   S. Iida, S. Yuta, "Vehicle command system and trajectory control for
+   autonomous mobile robots," in Proceedings of the 1991 IEEE/RSJ
+   International Workshop on Intelligent Robots and Systems (IROS),
    1991, pp. 212-217.
  */
 
