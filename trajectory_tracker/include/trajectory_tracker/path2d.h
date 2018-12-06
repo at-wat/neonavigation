@@ -106,7 +106,6 @@ public:
       const float max_search_range = 0) const
   {
     float distance_path_search_ = 0;
-    float sign_vel_prev = 0;
     float min_dist = std::numeric_limits<float>::max();
     ConstIterator it_nearest = Super::end();
 

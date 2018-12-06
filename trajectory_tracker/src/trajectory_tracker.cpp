@@ -311,8 +311,6 @@ void TrackerNode::control()
   const trajectory_tracker::Path2D::ConstIterator it_local_goal =
       lpath.findLocalGoal(
           lpath.begin(), lpath.end(), allow_backward_);
-  const int i_local_goal = std::distance(
-      static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_local_goal);
 
   const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
   const trajectory_tracker::Path2D::ConstIterator it_nearest =
@@ -392,7 +390,7 @@ void TrackerNode::control()
         angle, w_lim_.get(), transform_delay);
 
     if (path_length < stop_tolerance_dist_ || in_place_turn_)
-      status.distance_remains = remain = remain = 0.0;
+      status.distance_remains = remain = 0.0;
   }
   else
   {
