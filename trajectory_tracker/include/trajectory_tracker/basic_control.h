@@ -35,19 +35,19 @@
 
 namespace trajectory_tracker
 {
-inline float timeoptimalControl(const float angle, const float acc, const float dt)
+inline float timeOptimalControl(const float angle, const float acc, const float dt)
 {
   return -std::copysign(1.0, angle) * std::sqrt(std::abs(2 * angle * acc));
 }
 
-inline float clip(const float val, const float max)
+inline float clip(const float v, const float max)
 {
-  if (val > max)
+  if (v > max)
     return max;
-  else if (val < -max)
+  else if (v < -max)
     return -max;
 
-  return val;
+  return v;
 }
 
 inline float angleNormalized(float ang)
@@ -70,28 +70,28 @@ public:
   {
   }
   inline float increment(
-      const float val, const float vel, const float acc, const float dt)
+      const float v, const float vel, const float acc, const float dt)
   {
-    return set(val_prev_ + val, vel, acc, dt);
+    return set(val_prev_ + v, vel, acc, dt);
   }
   inline float set(
-      float val, const float vel, const float acc, const float dt)
+      float v, const float vel, const float acc, const float dt)
   {
-    if (val > vel)
-      val = vel;
-    else if (val < -vel)
-      val = -vel;
+    if (v > vel)
+      v = vel;
+    else if (v < -vel)
+      v = -vel;
 
-    if (val > val_prev_ + dt * acc)
-      val = val_prev_ + dt * acc;
-    else if (val < val_prev_ - dt * acc)
-      val = val_prev_ - dt * acc;
+    if (v > val_prev_ + dt * acc)
+      v = val_prev_ + dt * acc;
+    else if (v < val_prev_ - dt * acc)
+      v = val_prev_ - dt * acc;
 
-    if (!std::isfinite(val))
-      val = 0;
+    if (!std::isfinite(v))
+      v = 0;
 
-    val_prev_ = val;
-    return val;
+    val_prev_ = v;
+    return v;
   }
   inline float get() const
   {

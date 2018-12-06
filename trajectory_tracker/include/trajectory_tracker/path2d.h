@@ -137,7 +137,7 @@ public:
     double remain = (begin->pos_ - target_on_line).norm();
     if (begin + 1 >= end)
     {
-      // overshooted
+      // overshoot
       return -remain;
     }
     ConstIterator it_prev = begin;

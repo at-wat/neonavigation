@@ -89,8 +89,8 @@ private:
   double d_stop_;
   double vel_[2];
   double acc_[2];
-  trajectory_tracker::VelAccLimitter v_ref_;
-  trajectory_tracker::VelAccLimitter w_ref_;
+  trajectory_tracker::VelAccLimitter v_lim_;
+  trajectory_tracker::VelAccLimitter w_lim_;
   double dec_;
   double rotate_ang_;
   double ang_factor_;
@@ -302,8 +302,8 @@ void TrackerNode::control()
   }
 
   const Eigen::Vector2d origin =
-      Eigen::Vector2d(std::cos(w_ref_.get()), std::sin(w_ref_.get())) *
-      (look_forward_ / 2.0) * v_ref_.get() * look_forward_;
+      Eigen::Vector2d(std::cos(w_lim_.get()), std::sin(w_lim_.get())) *
+      (look_forward_ / 2.0) * v_lim_.get() * look_forward_;
 
   const double path_length = lpath.length();
 
@@ -322,8 +322,8 @@ void TrackerNode::control()
 
   if (it_nearest == lpath.end())
   {
-    v_ref_.clear();
-    w_ref_.clear();
+    v_lim_.clear();
+    w_lim_.clear();
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = 0;
     cmd_vel.angular.z = 0;
@@ -380,16 +380,16 @@ void TrackerNode::control()
       angle = -lpath.back().yaw_;
       status.angle_remains = angle;
     }
-    v_ref_.set(
+    v_lim_.set(
         0.0,
         vel_[0], acc_[0], dt);
-    w_ref_.set(
-        trajectory_tracker::timeoptimalControl(angle + w_ref_.get() * dt * 1.5, acc_[1], dt),
+    w_lim_.set(
+        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_[1], dt),
         vel_[1], acc_[1], dt);
 
     ROS_DEBUG(
         "trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
-        angle, w_ref_.get(), transform_delay);
+        angle, w_lim_.get(), transform_delay);
 
     if (path_length < stop_tolerance_dist_ || in_place_turn_)
       status.distance_remains = remain = remain = 0.0;
@@ -417,19 +417,19 @@ void TrackerNode::control()
     // Path following control
     const float dist_err_clip = trajectory_tracker::clip(dist_err, d_lim_);
 
-    v_ref_.set(
-        trajectory_tracker::timeoptimalControl(-remain_local * sign_vel_, acc_[0], dt),
+    v_lim_.set(
+        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0], dt),
         vel_[0], acc_[0], dt);
 
-    const float wref = std::abs(v_ref_.get()) * curv;
+    const float wref = std::abs(v_lim_.get()) * curv;
 
     if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
-      v_ref_.set(
-          std::copysign(1.0, v_ref_.get()) * std::abs(vel_[1] / curv),
+      v_lim_.set(
+          std::copysign(1.0, v_lim_.get()) * std::abs(vel_[1] / curv),
           vel_[0], acc_[0], dt);
 
-    w_ref_.increment(
-        dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_ref_.get() - wref) * k_[2]),
+    w_lim_.increment(
+        dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_lim_.get() - wref) * k_[2]),
         vel_[1], acc_[1], dt);
   }
 
@@ -437,12 +437,12 @@ void TrackerNode::control()
   if (std::abs(status.distance_remains) < stop_tolerance_dist_ &&
       std::abs(status.angle_remains) < stop_tolerance_ang_)
   {
-    v_ref_.clear();
-    w_ref_.clear();
+    v_lim_.clear();
+    w_lim_.clear();
   }
 
-  cmd_vel.linear.x = v_ref_.get();
-  cmd_vel.angular.z = w_ref_.get();
+  cmd_vel.linear.x = v_lim_.get();
+  cmd_vel.angular.z = w_lim_.get();
   pub_vel_.publish(cmd_vel);
   status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING;
   if (std::abs(status.distance_remains) < goal_tolerance_dist_ &&
