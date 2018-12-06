@@ -44,7 +44,9 @@ public:
     FILTER_LPF
   };
 
-private:
+protected:
+  Type type_;
+  float time_const_;
   float x_;
   float out_;
   float k_[4];
@@ -54,31 +56,33 @@ public:
   Filter(const enum Type type, const float tc, const float out0, const bool angle = false)
   {
     angle_ = angle;
-    switch (type)
+    time_const_ = tc;
+    type_ = type;
+    switch (type_)
     {
       case FILTER_LPF:
-        k_[3] = -1 / (1.0 + 2 * tc);
+        k_[3] = -1 / (1.0 + 2 * time_const_);
         k_[2] = -k_[3];
-        k_[1] = (1.0 - 2 * tc) * k_[3];
+        k_[1] = (1.0 - 2 * time_const_) * k_[3];
         k_[0] = -k_[1] - 1.0;
         x_ = (1 - k_[2]) * out0 / k_[3];
         break;
       case FILTER_HPF:
-        k_[3] = -1 / (1.0 + 2 * tc);
-        k_[2] = -k_[3] * 2 * tc;
-        k_[1] = (1.0 - 2 * tc) * k_[3];
-        k_[0] = 2 * tc * (-k_[1] + 1.0);
+        k_[3] = -1 / (1.0 + 2 * time_const_);
+        k_[2] = -k_[3] * 2 * time_const_;
+        k_[1] = (1.0 - 2 * time_const_) * k_[3];
+        k_[0] = 2 * time_const_ * (-k_[1] + 1.0);
         x_ = (1 - k_[2]) * out0 / k_[3];
         break;
     }
     out_ = out0;
   }
-  void set(const float out0)
+  void set(const float& out0)
   {
     x_ = (1 - k_[2]) * out0 / k_[3];
     out_ = out0;
   }
-  float in(const float i)
+  float in(const float& i)
   {
     float in = i;
     assert(std::isfinite(in));
@@ -93,7 +97,7 @@ public:
     assert(std::isfinite(out_));
     return out_;
   }
-  float get() const
+  float get()
   {
     return out_;
   }
