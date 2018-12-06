@@ -40,6 +40,7 @@
 #include <tf2/utils.h>
 
 #include <trajectory_tracker/eigen_line.h>
+#include <trajectory_tracker/average.h>
 
 namespace trajectory_tracker
 {
@@ -146,6 +147,26 @@ public:
       it_prev = it;
     }
     return remain;
+  }
+  inline float getCurvature(
+      const ConstIterator& begin,
+      const ConstIterator& end,
+      const Eigen::Vector2d& target_on_line,
+      const float max_search_range) const
+  {
+    const float max_search_range_sq = max_search_range * max_search_range;
+    trajectory_tracker::Average<float> curv;
+    ConstIterator it_prev2 = begin;
+    ConstIterator it_prev1 = begin + 1;
+    for (ConstIterator it = begin + 2; it < end; ++it)
+    {
+      curv += trajectory_tracker::curv3p(it_prev2->pos_, it_prev1->pos_, it->pos_);
+      if ((it->pos_ - target_on_line).squaredNorm() > max_search_range_sq)
+        break;
+      it_prev2 = it_prev1;
+      it_prev1 = it;
+    }
+    return curv;
   }
 };
 }  // namespace trajectory_tracker

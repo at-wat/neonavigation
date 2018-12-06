@@ -63,6 +63,18 @@ TEST(Path2D, RemainedDistance)
   ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, -0.1)), -0.25, 1e-2);
 }
 
+TEST(Path2D, Curvature)
+{
+  for (float c = 1.0; c < 4.0; c += 0.4)
+  {
+    trajectory_tracker::Path2D path;
+    for (double a = 0; a < 1.57; a += 0.1)
+      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(cos(a), sin(a)) * c, 0));
+
+    ASSERT_NEAR(path.getCurvature(path.begin(), path.end(), path[0].pos_, 10.0), 1.0 / c, 1e-2);
+  }
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

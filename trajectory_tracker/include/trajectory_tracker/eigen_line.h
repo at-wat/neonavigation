@@ -33,6 +33,8 @@
 
 #include <cmath>
 
+#include <Eigen/Core>
+
 namespace trajectory_tracker
 {
 inline float curv3p(

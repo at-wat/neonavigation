@@ -63,7 +63,6 @@
 #include <neonavigation_common/compatibility.h>
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 
-#include <trajectory_tracker/average.h>
 #include <trajectory_tracker/basic_control.h>
 #include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/path2d.h>
@@ -363,17 +362,7 @@ void TrackerNode::control()
   angle = trajectory_tracker::angleNormalized(angle);
 
   // Curvature
-  trajectory_tracker::Average<float> curv;
-  for (int i = i_nearest - 1; i < i_local_goal; i++)
-  {
-    if (i > 2)
-      curv += trajectory_tracker::curv3p(lpath[i - 2].pos_, lpath[i - 1].pos_, lpath[i].pos_);
-
-    if ((lpath[i].pos_ - lpath[i_local_goal].pos_).squaredNorm() < std::pow(0.05f, 2))
-      break;
-    if ((lpath[i].pos_ - pos_on_line).norm() > curv_forward_)
-      break;
-  }
+  const float curv = lpath.getCurvature(it_nearest, it_local_goal, pos_on_line, curv_forward_);
 
   status.distance_remains = remain;
   status.angle_remains = angle;
