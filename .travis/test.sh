@@ -38,6 +38,16 @@ then
 
   gcov -v
 
+  # Workaround: Ubuntu Trusty and Xenial has too old Eigen3 which causes
+  #             deprecated warning on gcc-5 with C++11.
+  (cd /tmp \
+    && git clone -b 3.3.3 --depth=1 https://github.com/eigenteam/eigen-git-mirror.git eigen \
+    && mkdir eigen/build \
+    && cd eigen/build \
+    && cmake .. -DCMAKE_INSTALL_PREFIX=/usr \
+    && make install)
+  rm -rf /tmp/eigen
+
   COVERAGE_OPTION=-coverage
 fi
 
