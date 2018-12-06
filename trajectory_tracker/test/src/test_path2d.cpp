@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014, ATR, Atsushi Watanabe
- * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,59 +27,45 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_EIGEN_LINE_H
-#define TRAJECTORY_TRACKER_EIGEN_LINE_H
+#include <cstddef>
 
-#include <cmath>
+#include <gtest/gtest.h>
 
-namespace trajectory_tracker
+#include <trajectory_tracker/eigen_line.h>
+#include <trajectory_tracker/path2d.h>
+
+namespace
 {
-inline float curv3p(
-    const Eigen::Vector2d& a,
-    const Eigen::Vector2d& b,
-    const Eigen::Vector2d& c)
+double getRemainedDistance(const trajectory_tracker::Path2D& path, const Eigen::Vector2d& p)
 {
-  float ret;
-  ret = 2 * (a[0] * b[1] + b[0] * c[1] + c[0] * a[1] -
-             a[0] * c[1] - b[0] * a[1] - c[0] * b[1]);
-  ret /= std::sqrt((b - a).squaredNorm() * (b - c).squaredNorm() * (c - a).squaredNorm());
+  const auto nearest = path.findNearest(path.begin() + 1, path.end(), p);
+  const Eigen::Vector2d pos_on_line =
+      trajectory_tracker::projection2d((nearest - 1)->pos_, nearest->pos_, p);
+  return path.remainedDistance(nearest, path.end(), pos_on_line);
+}
+}  // namespace
 
-  return ret;
+TEST(Path2D, RemainedDistance)
+{
+  trajectory_tracker::Path2D path;
+  for (double x = 0; x < 10.0; x += 0.2)
+    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0));
+
+  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(0, 0)), 10.0, 1e-2);
+
+  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, 0)), 1.75, 1e-2);
+  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, 0)), -0.25, 1e-2);
+
+  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, 0.1)), 1.75, 1e-2);
+  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, -0.1)), 1.75, 1e-2);
+  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, 0.1)), -0.25, 1e-2);
+  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, -0.1)), -0.25, 1e-2);
 }
 
-inline float cross2(const Eigen::Vector2d& a, const Eigen::Vector2d& b)
+int main(int argc, char** argv)
 {
-  return a[0] * b[1] - a[1] * b[0];
-}
+  testing::InitGoogleTest(&argc, argv);
 
-inline float lineDistance(
-    const Eigen::Vector2d& a,
-    const Eigen::Vector2d& b,
-    const Eigen::Vector2d& c)
-{
-  return cross2((b - a), (c - a)) / (b - a).norm();
+  return RUN_ALL_TESTS();
 }
-
-inline float lineStripDistance(
-    const Eigen::Vector2d& a,
-    const Eigen::Vector2d& b,
-    const Eigen::Vector2d& c)
-{
-  if ((b - a).dot(c - a) <= 0)
-    return (c - a).norm();
-  if ((a - b).dot(c - b) <= 0)
-    return (c - b).norm() + 0.005;
-  return std::abs(lineDistance(a, b, c));
-}
-
-inline Eigen::Vector2d projection2d(
-    const Eigen::Vector2d& a,
-    const Eigen::Vector2d& b,
-    const Eigen::Vector2d& c)
-{
-  const float r = (b - a).dot(c - a) / (b - a).squaredNorm();
-  return b * r + a * (1.0 - r);
-}
-}  // namespace trajectory_tracker
-
-#endif  // TRAJECTORY_TRACKER_EIGEN_LINE_H

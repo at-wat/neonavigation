@@ -40,6 +40,25 @@ inline float timeoptimalControl(const float angle, const float acc, const float 
   return -std::copysign(1.0, angle) * std::sqrt(std::abs(2 * angle * acc));
 }
 
+inline float clip(const float val, const float max)
+{
+  if (val > max)
+    return max;
+  else if (val < -max)
+    return -max;
+
+  return val;
+}
+
+inline float angleNormalized(float ang)
+{
+  while (ang < -M_PI)
+    ang += 2.0 * M_PI;
+  while (ang > M_PI)
+    ang -= 2.0 * M_PI;
+  return ang;
+}
+
 class VelAccLimitter
 {
 private:

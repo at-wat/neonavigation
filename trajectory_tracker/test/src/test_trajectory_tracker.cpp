@@ -89,7 +89,7 @@ public:
     pub_path_.publish(path);
 
     ros::Rate rate(10);
-    while (ros::ok())
+    for (int i = 0; i < 5; ++i)
     {
       yaw_ = 0;
       pos_ = Eigen::Vector2d(0.0, 0.0);
@@ -97,10 +97,6 @@ public:
 
       rate.sleep();
       ros::spinOnce();
-
-      if (yaw_ == 0.0 && pos_ == Eigen::Vector2d(0.0, 0.0))
-        break;
-      std::cerr << yaw_ << " " << pos_ << std::endl;
     }
   }
   void waitUntilStart()
@@ -185,6 +181,45 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   ASSERT_NEAR(yaw_, 0.0, 1e-2);
   ASSERT_NEAR(pos_[0], 0.5, 1e-2);
   ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+}
+
+TEST_F(TrajectoryTrackerTest, CurveFollow)
+{
+  std::vector<Eigen::Vector3d> poses;
+  Eigen::Vector3d p;
+  for (double t = 0.0; t < 2.0; t += 0.01)
+  {
+    p += Eigen::Vector3d(std::cos(p[2]) * 0.01, std::sin(p[2]) * 0.01, 0.001);
+    poses.push_back(p);
+  }
+  for (double t = 0.0; t < 2.0; t += 0.01)
+  {
+    p += Eigen::Vector3d(std::cos(p[2]) * 0.01, std::sin(p[2]) * 0.01, 0.0);
+    poses.push_back(p);
+  }
+  publishPath(poses);
+
+  waitUntilStart();
+
+  ros::Rate rate(50);
+  while (ros::ok())
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      break;
+  }
+  for (int i = 0; i < 25; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_NEAR(yaw_, p[2], 1e-2);
+  ASSERT_NEAR(pos_[0], p[0], 1e-1);
+  ASSERT_NEAR(pos_[1], p[1], 1e-1);
 }
 
 TEST_F(TrajectoryTrackerTest, InPlaceTurn)

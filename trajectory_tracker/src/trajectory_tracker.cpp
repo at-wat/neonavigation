@@ -50,6 +50,7 @@
 #include <ros/ros.h>
 
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Float32.h>
@@ -65,29 +66,7 @@
 #include <trajectory_tracker/average.h>
 #include <trajectory_tracker/basic_control.h>
 #include <trajectory_tracker/eigen_line.h>
-
-namespace
-{
-struct PoseWithVelocity
-{
-  PoseWithVelocity(const Eigen::Vector2d& p, float y, float v)
-    : pos(p)
-    , yaw(y)
-    , velocity(v)
-  {
-  }
-  PoseWithVelocity(const geometry_msgs::Pose& pose, float v)
-    : pos(Eigen::Vector2d(pose.position.x, pose.position.y))
-    , yaw(tf2::getYaw(pose.orientation))
-    , velocity(v)
-  {
-  }
-  Eigen::Vector2d pos;
-  float yaw;
-  float velocity;
-};
-using PoseWithVelocityArray = std::vector<PoseWithVelocity>;
-}  // namespace
+#include <trajectory_tracker/path2d.h>
 
 class TrackerNode
 {
@@ -141,7 +120,7 @@ private:
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
 
-  PoseWithVelocityArray path_;
+  trajectory_tracker::Path2D path_;
   std_msgs::Header path_header_;
   nav_msgs::Odometry odom_;
 
@@ -232,11 +211,11 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
     return;
 
   auto j = msg->poses.begin();
-  path_.push_back(PoseWithVelocity(j->pose, 0));
+  path_.push_back(trajectory_tracker::Pose2D(j->pose));
   for (auto j = msg->poses.begin(); j != msg->poses.end(); ++j)
   {
-    const PoseWithVelocity next(j->pose, 0);
-    if ((path_.back().pos - next.pos).squaredNorm() >= std::pow(epsilon_, 2))
+    const trajectory_tracker::Pose2D next(j->pose);
+    if ((path_.back().pos_ - next.pos_).squaredNorm() >= std::pow(epsilon_, 2))
     {
       path_.push_back(next);
     }
@@ -248,9 +227,9 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
     while (path_.size() < 3)
     {
       // to make line direction computable, line should have a few points
-      const float yaw = path_.back().yaw;
-      const PoseWithVelocity next(
-          path_.back().pos + Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * epsilon_, yaw, 0);
+      const float yaw = path_.back().yaw_;
+      const trajectory_tracker::Pose2D next(
+          path_.back().pos_ + Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * epsilon_, yaw);
       path_.push_back(next);
     }
   }
@@ -285,7 +264,7 @@ void TrackerNode::control()
     return;
   }
   // Transform
-  PoseWithVelocityArray lpath;
+  trajectory_tracker::Path2D lpath;
   tf2::Stamped<tf2::Transform> transform;
   double transform_delay = 0;
   try
@@ -311,10 +290,8 @@ void TrackerNode::control()
         Eigen::Rotation2Dd(trans_yaw);
 
     for (size_t i = 0; i < path_.size(); i += path_step_)
-    {
       lpath.push_back(
-          PoseWithVelocity(trans * path_[i].pos, trans_yaw + path_[i].yaw, vel_[0]));
-    }
+          trajectory_tracker::Pose2D(trans * path_[i].pos_, trans_yaw + path_[i].yaw_));
   }
   catch (tf2::TransformException& e)
   {
@@ -324,49 +301,29 @@ void TrackerNode::control()
     return;
   }
 
-  float min_dist_ = 10000.0;
-  int iclose = -1;
   const Eigen::Vector2d origin =
       Eigen::Vector2d(std::cos(w_ref_.get()), std::sin(w_ref_.get())) *
       (look_forward_ / 2.0) * v_ref_.get() * look_forward_;
 
+  const double path_length = lpath.length();
+
   // Find nearest line strip
-  float distance_path_ = 0;
-  for (size_t i = 1; i < lpath.size(); i++)
-    distance_path_ += (lpath[i - 1].pos - lpath[i].pos).norm();
+  const trajectory_tracker::Path2D::ConstIterator it_local_goal =
+      lpath.findLocalGoal(
+          lpath.begin(), lpath.end(), allow_backward_);
+  const int i_local_goal = std::distance(
+      static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_local_goal);
 
-  float distance_path_search_ = 0;
-  float sign_vel_prev_ = 0;
-  for (size_t i = path_step_done_; i < lpath.size(); i++)
-  {
-    if (i < 1)
-      continue;
-    distance_path_search_ += (lpath[i - 1].pos - lpath[i].pos).norm();
-    if ((origin - lpath[i].pos).squaredNorm() < std::pow(0.05f, 2) && i < lpath.size() - 1)
-      continue;
-    const float d = trajectory_tracker::lineStripDistance(
-        lpath[i - 1].pos, lpath[i].pos, origin);
-    if (std::abs(d) <= std::abs(min_dist_))
-    {
-      min_dist_ = d;
-      iclose = i;
-    }
-    if (path_step_done_ > 0 && distance_path_search_ > 1.0)
-      break;
+  const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
+  const trajectory_tracker::Path2D::ConstIterator it_nearest =
+      lpath.findNearest(
+          lpath.begin() + std::max(1, path_step_done_), it_local_goal, origin,
+          max_search_range);
 
-    const Eigen::Vector2d vec = lpath[i].pos - lpath[i - 1].pos;
-    const float angle = atan2(vec[1], vec[0]);
-    const float angle_pose = allow_backward_ ? lpath[i].yaw : angle;
-    const float sign_vel_req = std::cos(angle) * std::cos(angle_pose) + std::sin(angle) * std::sin(angle_pose);
-    if (sign_vel_prev_ * sign_vel_req < 0)
-    {
-      // Stop read forward if the path_ switched back
-      break;
-    }
-    sign_vel_prev_ = sign_vel_req;
-  }
-  if (iclose < 0)
+  if (it_nearest == lpath.end())
   {
+    v_ref_.clear();
+    w_ref_.clear();
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = 0;
     cmd_vel.angular.z = 0;
@@ -376,72 +333,47 @@ void TrackerNode::control()
     pub_status_.publish(status);
     return;
   }
+  const int i_nearest = std::distance(
+      static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_nearest);
+
+  const Eigen::Vector2d pos_on_line =
+      trajectory_tracker::projection2d(lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
+
+  // Remained distance to the local goal
+  float remain_local = lpath.remainedDistance(it_nearest, it_local_goal, pos_on_line);
+  // Remained distance to the final goal
+  float remain = lpath.remainedDistance(it_nearest, lpath.end(), pos_on_line);
+  if (path_length < no_pos_cntl_dist_)
+    remain = remain_local = 0;
+
   // Signed distance error
-  float dist = trajectory_tracker::lineDistance(lpath[iclose - 1].pos, lpath[iclose].pos, origin);
-  float dist_err_compensated = dist;
-  if (iclose == 0)
-    dist_err_compensated = -(lpath[iclose].pos - origin).norm();
-  else if (iclose + 1 >= static_cast<int>(path_.size()))
-    dist_err_compensated = -(lpath[iclose].pos - origin).norm();
+  const float dist_err = trajectory_tracker::lineDistance(
+      lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
 
   // Angular error
-  const Eigen::Vector2d vec = lpath[iclose].pos - lpath[iclose - 1].pos;
+  const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[i_nearest - 1].pos_;
   float angle = -atan2(vec[1], vec[0]);
-  const float angle_pose = allow_backward_ ? lpath[iclose].yaw : (-angle);
+  const float angle_pose = allow_backward_ ? lpath[i_nearest].yaw_ : -angle;
   float sign_vel_ = 1.0;
   if (std::cos(-angle) * std::cos(angle_pose) + std::sin(-angle) * std::sin(angle_pose) < 0)
   {
     sign_vel_ = -1.0;
     angle = angle + M_PI;
-    if (angle > M_PI)
-      angle -= 2.0 * M_PI;
   }
+  angle = trajectory_tracker::angleNormalized(angle);
+
   // Curvature
   trajectory_tracker::Average<float> curv;
-  const Eigen::Vector2d pos_line =
-      trajectory_tracker::projection2d(lpath[iclose - 1].pos, lpath[iclose].pos, origin);
-  int local_goal = lpath.size() - 1;
-  float remain_local_ = (pos_line - lpath[iclose].pos).norm();
-  for (int i = iclose - 1; i < static_cast<int>(lpath.size()) - 1; i++)
+  for (int i = i_nearest - 1; i < i_local_goal; i++)
   {
     if (i > 2)
-    {
-      const Eigen::Vector2d vec = lpath[i].pos - lpath[i - 1].pos;
-      const float angle = atan2(vec[1], vec[0]);
-      const float angle_pose = allow_backward_ ? lpath[i + 1].yaw : angle;
-      const float sign_vel_req = std::cos(angle) * std::cos(angle_pose) + std::sin(angle) * std::sin(angle_pose);
-      if (sign_vel_ * sign_vel_req < 0)
-      {
-        // Stop read forward if the path_ switched back
-        local_goal = i;
-        break;
-      }
-      if (i > iclose)
-        remain_local_ += (lpath[i - 1].pos - lpath[i].pos).norm();
-    }
-  }
-  for (int i = iclose - 1; i <= local_goal; i++)
-  {
-    if (i > 2)
-      curv += trajectory_tracker::curv3p(lpath[i - 2].pos, lpath[i - 1].pos, lpath[i].pos);
+      curv += trajectory_tracker::curv3p(lpath[i - 2].pos_, lpath[i - 1].pos_, lpath[i].pos_);
 
-    if ((lpath[i].pos - lpath[local_goal].pos).squaredNorm() < std::pow(0.05f, 2))
+    if ((lpath[i].pos_ - lpath[i_local_goal].pos_).squaredNorm() < std::pow(0.05f, 2))
       break;
-    if ((lpath[i].pos - pos_line).norm() > curv_forward_)
+    if ((lpath[i].pos_ - pos_on_line).norm() > curv_forward_)
       break;
   }
-  float remain = (origin - lpath.back().pos).norm();
-  if (min_dist_ < 0 && iclose == local_goal)
-  {
-    remain = -remain;
-    remain_local_ = remain;
-  }
-  if (distance_path_ < no_pos_cntl_dist_)
-    remain = remain_local_ = 0;
-  while (angle < -M_PI)
-    angle += 2.0 * M_PI;
-  while (angle > M_PI)
-    angle -= 2.0 * M_PI;
 
   status.distance_remains = remain;
   status.angle_remains = angle;
@@ -449,13 +381,13 @@ void TrackerNode::control()
   const float dt = 1.0 / hz_;
   // Stop and rotate
   if ((std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle)) ||
-      std::abs(remain_local_) < stop_tolerance_dist_ ||
-      distance_path_ < min_track_path_ ||
+      std::abs(remain_local) < stop_tolerance_dist_ ||
+      path_length < min_track_path_ ||
       in_place_turn_)
   {
-    if (distance_path_ < min_track_path_ || std::abs(remain_local_) < stop_tolerance_dist_)
+    if (path_length < min_track_path_ || std::abs(remain_local) < stop_tolerance_dist_)
     {
-      angle = -lpath.back().yaw;
+      angle = -lpath.back().yaw_;
       status.angle_remains = angle;
     }
     v_ref_.set(
@@ -469,34 +401,18 @@ void TrackerNode::control()
         "trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
         angle, w_ref_.get(), transform_delay);
 
-    if (distance_path_ < stop_tolerance_dist_ || in_place_turn_)
-      status.distance_remains = remain = remain_local_ = 0.0;
+    if (path_length < stop_tolerance_dist_ || in_place_turn_)
+      status.distance_remains = remain = remain = 0.0;
   }
   else
   {
-    // Control
-    if (dist < -d_lim_)
-      dist = -d_lim_;
-    else if (dist > d_lim_)
-      dist = d_lim_;
-
-    v_ref_.set(
-        trajectory_tracker::timeoptimalControl(-remain_local_ * sign_vel_, acc_[0], dt),
-        vel_[0], acc_[0], dt);
-
-    const float wref = std::abs(v_ref_.get()) * curv;
-
-    if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
-      v_ref_.set(
-          std::copysign(1.0, v_ref_.get()) * std::abs(vel_[1] / curv),
-          vel_[0], acc_[0], dt);
-
-    w_ref_.increment(
-        dt * (-dist * k_[0] - angle * k_[1] - (w_ref_.get() - wref) * k_[2]),
-        vel_[1], acc_[1], dt);
-
     // Too far from given path
-    if (std::abs(dist_err_compensated) > d_stop_)
+    float dist_from_path = dist_err;
+    if (i_nearest == 0)
+      dist_from_path = -(lpath[i_nearest].pos_ - origin).norm();
+    else if (i_nearest + 1 >= static_cast<int>(path_.size()))
+      dist_from_path = -(lpath[i_nearest].pos_ - origin).norm();
+    if (std::abs(dist_from_path) > d_stop_)
     {
       geometry_msgs::Twist cmd_vel;
       cmd_vel.linear.x = 0;
@@ -507,6 +423,24 @@ void TrackerNode::control()
       pub_status_.publish(status);
       return;
     }
+
+    // Path following control
+    const float dist_err_clip = trajectory_tracker::clip(dist_err, d_lim_);
+
+    v_ref_.set(
+        trajectory_tracker::timeoptimalControl(-remain_local * sign_vel_, acc_[0], dt),
+        vel_[0], acc_[0], dt);
+
+    const float wref = std::abs(v_ref_.get()) * curv;
+
+    if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
+      v_ref_.set(
+          std::copysign(1.0, v_ref_.get()) * std::abs(vel_[1] / curv),
+          vel_[0], acc_[0], dt);
+
+    w_ref_.increment(
+        dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_ref_.get() - wref) * k_[2]),
+        vel_[1], acc_[1], dt);
   }
 
   geometry_msgs::Twist cmd_vel;
@@ -530,12 +464,12 @@ void TrackerNode::control()
   geometry_msgs::PoseStamped tracking;
   tracking.header = status.header;
   tracking.header.frame_id = frame_robot_;
-  tracking.pose.position.x = pos_line[0];
-  tracking.pose.position.y = pos_line[1];
+  tracking.pose.position.x = pos_on_line[0];
+  tracking.pose.position.y = pos_on_line[1];
   tracking.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -angle));
   pub_tracking_.publish(tracking);
 
-  path_step_done_ = iclose;
+  path_step_done_ = i_nearest - 2;  // i_nearest is the next of the nearest node
   if (path_step_done_ < 0)
     path_step_done_ = 0;
 }
