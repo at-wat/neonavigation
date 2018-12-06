@@ -30,9 +30,12 @@ then
   #   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65831
   #   Install newer gcc to get correct coverage
   apt-get update -qq
-  apt-get install --no-install-recommends software-properties-common -y
-  add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  apt-get update -qq
+  if ! apt-cache search "^gcc-5$" | grep gcc-5; then
+    echo "gcc-5 not found. enabling ppa:ubuntu-toolchain-r/test"
+    apt-get install --no-install-recommends software-properties-common -y
+    add-apt-repository ppa:ubuntu-toolchain-r/test -y
+    apt-get update -qq
+  fi
   apt-get install --no-install-recommends gcc-5 g++-5 -y
   update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5 --slave /usr/bin/gcov gcov /usr/bin/gcov-5
 
