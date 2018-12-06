@@ -88,8 +88,9 @@ public:
     path.header.stamp = ros::Time::now();
     pub_path_.publish(path);
 
+    // Wait until trajectory_tracker node
     ros::Rate rate(10);
-    for (int i = 0; i < 5; ++i)
+    while (ros::ok())
     {
       yaw_ = 0;
       pos_ = Eigen::Vector2d(0.0, 0.0);
@@ -97,6 +98,8 @@ public:
 
       rate.sleep();
       ros::spinOnce();
+      if (status_)
+        break;
     }
   }
   void waitUntilStart()
@@ -107,8 +110,7 @@ public:
       publishTransform();
       rate.sleep();
       ros::spinOnce();
-      if (status_ &&
-          status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
+      if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
     }
   }

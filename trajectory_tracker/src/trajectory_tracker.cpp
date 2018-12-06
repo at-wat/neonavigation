@@ -253,8 +253,10 @@ void TrackerNode::control()
   status.distance_remains = 0.0;
   status.angle_remains = 0.0;
 
-  if (path_header_.frame_id.size() == 0)
+  if (path_header_.frame_id.size() == 0 || path_.size() == 0)
   {
+    v_lim_.clear();
+    w_lim_.clear();
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = 0;
     cmd_vel.angular.z = 0;
