@@ -125,7 +125,7 @@ public:
       const Eigen::Quaterniond q(Eigen::AngleAxisd(p[2], Eigen::Vector3d(0, 0, 1)));
 
       geometry_msgs::PoseStamped pose;
-      pose.header = path.header;
+      pose.header.frame_id = path.header.frame_id;
       pose.pose.position.x = p[0];
       pose.pose.position.y = p[1];
       pose.pose.orientation.x = q.x();
@@ -188,15 +188,15 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 TEST_F(TrajectoryTrackerTest, CurveFollow)
 {
   std::vector<Eigen::Vector3d> poses;
-  Eigen::Vector3d p;
-  for (double t = 0.0; t < 2.0; t += 0.01)
+  Eigen::Vector3d p(0.0, 0.0, 0.0);
+  for (double t = 0.0; t < 1.0; t += 0.01)
   {
-    p += Eigen::Vector3d(std::cos(p[2]) * 0.01, std::sin(p[2]) * 0.01, 0.001);
+    p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.005);
     poses.push_back(p);
   }
-  for (double t = 0.0; t < 2.0; t += 0.01)
+  for (double t = 0.0; t < 1.0; t += 0.01)
   {
-    p += Eigen::Vector3d(std::cos(p[2]) * 0.01, std::sin(p[2]) * 0.01, 0.0);
+    p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.0);
     poses.push_back(p);
   }
   publishPath(poses);
