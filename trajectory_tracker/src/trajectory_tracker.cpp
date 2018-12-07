@@ -122,10 +122,8 @@ private:
 
   trajectory_tracker::Path2D path_;
   std_msgs::Header path_header_;
-  nav_msgs::Odometry odom_;
 
   void cbPath(const nav_msgs::Path::ConstPtr&);
-  void cbOdom(const nav_msgs::Odometry::ConstPtr&);
   void cbSpeed(const std_msgs::Float32::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
   void control();
@@ -173,9 +171,6 @@ TrackerNode::TrackerNode()
   sub_path_ = neonavigation_common::compat::subscribe(
       nh_, "path",
       pnh_, topic_path_, 2, &TrackerNode::cbPath, this);
-  sub_odom_ = neonavigation_common::compat::subscribe(
-      nh_, "odom",
-      pnh_, topic_odom_, 20, &TrackerNode::cbOdom, this);
   sub_vel_ = neonavigation_common::compat::subscribe(
       nh_, "speed",
       pnh_, "speed", 20, &TrackerNode::cbSpeed, this);
@@ -196,10 +191,6 @@ TrackerNode::~TrackerNode()
 void TrackerNode::cbSpeed(const std_msgs::Float32::ConstPtr& msg)
 {
   vel_[0] = msg->data;
-}
-void TrackerNode::cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
-{
-  odom_ = *msg;
 }
 void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
 {
