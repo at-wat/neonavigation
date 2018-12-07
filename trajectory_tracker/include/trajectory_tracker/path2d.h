@@ -105,7 +105,7 @@ public:
       const Eigen::Vector2d& target,
       const float max_search_range = 0) const
   {
-    float distance_path_search_ = 0;
+    float distance_path_search = 0;
     float min_dist = std::numeric_limits<float>::max();
     ConstIterator it_nearest = Super::end();
 
@@ -113,8 +113,8 @@ public:
     for (ConstIterator it = begin + 1; it < end; ++it)
     {
       const Eigen::Vector2d inc = it->pos_ - it_prev->pos_;
-      distance_path_search_ += inc.norm();
-      if (max_search_range > 0 && distance_path_search_ > max_search_range)
+      distance_path_search += inc.norm();
+      if (max_search_range > 0 && distance_path_search > max_search_range)
         break;
 
       const float d =

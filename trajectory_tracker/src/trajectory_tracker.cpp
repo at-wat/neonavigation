@@ -216,9 +216,7 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
     const trajectory_tracker::Pose2D next(j->pose);
     if ((path_.back().pos_ - next.pos_).squaredNorm() >= std::pow(epsilon_, 2))
-    {
       path_.push_back(next);
-    }
   }
 
   if (path_.size() == 1)
@@ -311,14 +309,11 @@ void TrackerNode::control()
 
   // Find nearest line strip
   const trajectory_tracker::Path2D::ConstIterator it_local_goal =
-      lpath.findLocalGoal(
-          lpath.begin(), lpath.end(), allow_backward_);
+      lpath.findLocalGoal(lpath.begin(), lpath.end(), allow_backward_);
 
   const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
   const trajectory_tracker::Path2D::ConstIterator it_nearest =
-      lpath.findNearest(
-          lpath.begin() + std::max(1, path_step_done_), it_local_goal, origin,
-          max_search_range);
+      lpath.findNearest(lpath.begin() + path_step_done_, it_local_goal, origin, max_search_range);
 
   if (it_nearest == lpath.end())
   {
@@ -333,6 +328,7 @@ void TrackerNode::control()
     pub_status_.publish(status);
     return;
   }
+
   const int i_nearest = std::distance(
       static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_nearest);
 
