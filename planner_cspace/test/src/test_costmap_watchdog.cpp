@@ -42,14 +42,16 @@
 
 TEST(Planner3D, CostmapWatchdog)
 {
+  int cnt = 0;
   planner_cspace_msgs::PlannerStatus::ConstPtr status;
   nav_msgs::Path::ConstPtr path;
   diagnostic_msgs::DiagnosticArray::ConstPtr diag;
 
   const boost::function<void(const planner_cspace_msgs::PlannerStatus::ConstPtr&)> cb_status =
-      [&status](const planner_cspace_msgs::PlannerStatus::ConstPtr& msg) -> void
+      [&status, &cnt](const planner_cspace_msgs::PlannerStatus::ConstPtr& msg) -> void
   {
     status = msg;
+    cnt++;
   };
   const boost::function<void(const nav_msgs::Path::ConstPtr&)> cb_path =
       [&path](const nav_msgs::Path::ConstPtr& msg) -> void
@@ -77,10 +79,10 @@ TEST(Planner3D, CostmapWatchdog)
   pub_goal.publish(goal);
 
   ros::Rate rate(10);
-  int cnt = 0;
   while (ros::ok())
   {
-    if (cnt == 0 || cnt > 15)
+    // cnt increments in 5 Hz at maximum
+    if (cnt == 0 || cnt > 8)
     {
       costmap_cspace_msgs::CSpace3DUpdate update;
       update.header.stamp = ros::Time::now();
@@ -95,7 +97,7 @@ TEST(Planner3D, CostmapWatchdog)
     if (!status)
       continue;
 
-    if (10 < cnt && cnt < 15)
+    if (5 < cnt && cnt < 8)
     {
       ASSERT_EQ(status->error, planner_cspace_msgs::PlannerStatus::DATA_MISSING);
 
@@ -107,7 +109,7 @@ TEST(Planner3D, CostmapWatchdog)
       ASSERT_EQ(diag->status[0].level, diagnostic_msgs::DiagnosticStatus::ERROR);
       ASSERT_NE(diag->status[0].message.find("missing"), std::string::npos);
     }
-    else if (20 < cnt && cnt < 25)
+    else if (10 < cnt && cnt < 13)
     {
       ASSERT_EQ(status->status, planner_cspace_msgs::PlannerStatus::DOING);
       ASSERT_EQ(status->error, planner_cspace_msgs::PlannerStatus::GOING_WELL);
@@ -116,12 +118,10 @@ TEST(Planner3D, CostmapWatchdog)
       ASSERT_EQ(diag->status[0].level, diagnostic_msgs::DiagnosticStatus::OK);
       ASSERT_NE(diag->status[0].message.find("well"), std::string::npos);
     }
-    else if (cnt >= 25)
+    else if (cnt >= 13)
     {
       return;
     }
-
-    cnt++;
   }
   ASSERT_TRUE(ros::ok());
 }
