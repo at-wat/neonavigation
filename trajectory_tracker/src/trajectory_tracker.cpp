@@ -78,7 +78,6 @@ public:
 private:
   std::string topic_path_;
   std::string topic_cmd_vel_;
-  std::string topic_odom_;
   std::string frame_robot_;
   std::string frame_odom_;
   double hz_;
@@ -110,7 +109,6 @@ private:
   bool in_place_turn_;
 
   ros::Subscriber sub_path_;
-  ros::Subscriber sub_odom_;
   ros::Subscriber sub_vel_;
   ros::Publisher pub_vel_;
   ros::Publisher pub_status_;
@@ -138,7 +136,6 @@ TrackerNode::TrackerNode()
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
   pnh_.param("frame_odom", frame_odom_, std::string("odom"));
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
-  neonavigation_common::compat::deprecatedParam(pnh_, "odom", topic_odom_, std::string("odom"));
   neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
   pnh_.param("hz", hz_, 50.0);
   pnh_.param("look_forward", look_forward_, 0.5);
@@ -371,7 +368,7 @@ void TrackerNode::control()
         0.0,
         vel_[0], acc_[0], dt);
     w_lim_.set(
-        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_[1], dt),
+        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_[1]),
         vel_[1], acc_[1], dt);
 
     ROS_DEBUG(
@@ -405,7 +402,7 @@ void TrackerNode::control()
     const float dist_err_clip = trajectory_tracker::clip(dist_err, d_lim_);
 
     v_lim_.set(
-        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0], dt),
+        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0]),
         vel_[0], acc_[0], dt);
 
     const float wref = std::abs(v_lim_.get()) * curv;
