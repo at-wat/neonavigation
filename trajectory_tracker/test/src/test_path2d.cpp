@@ -49,8 +49,8 @@ TEST(Path2D, RemainedDistance)
 {
   trajectory_tracker::Path2D path;
   for (double x = 0; x < 10.0; x += 0.2)
-    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0));
-  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0));
+    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0, 1));
 
   ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(0, 0)), 10.0, 1e-2);
 
@@ -69,7 +69,7 @@ TEST(Path2D, Curvature)
   {
     trajectory_tracker::Path2D path;
     for (double a = 0; a < 1.57; a += 0.1)
-      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(cos(a), sin(a)) * c, 0));
+      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(cos(a), sin(a)) * c, 0, 1));
 
     ASSERT_NEAR(path.getCurvature(path.begin(), path.end(), path[0].pos_, 10.0), 1.0 / c, 1e-2);
   }
