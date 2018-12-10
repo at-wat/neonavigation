@@ -176,7 +176,7 @@ TrackerNode::TrackerNode()
       pnh_, topic_path_, 2,
       boost::bind(&TrackerNode::cbPath<nav_msgs::Path>, this, _1));
   sub_path_velocity_ = nh_.subscribe<trajectory_tracker_msgs::PathWithVelocity>(
-      "path_vel", 2,
+      "path_velocity", 2,
       boost::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::PathWithVelocity>, this, _1));
   sub_vel_ = neonavigation_common::compat::subscribe(
       nh_, "speed",

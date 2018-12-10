@@ -164,7 +164,7 @@ public:
 
       path.poses.push_back(pose);
     }
-    pub_path_.publish(path);
+    pub_path_vel_.publish(path);
   }
   void publishTransform()
   {
