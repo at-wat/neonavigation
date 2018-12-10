@@ -160,7 +160,7 @@ public:
       pose.pose.orientation.y = q.y();
       pose.pose.orientation.z = q.z();
       pose.pose.orientation.w = q.w();
-      pose.velocity_linear = p[3];
+      pose.linear_velocity.x = p[3];
 
       path.poses.push_back(pose);
     }

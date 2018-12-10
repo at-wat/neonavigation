@@ -209,7 +209,7 @@ float getVelocity(const geometry_msgs::PoseStamped& msg)
 }
 float getVelocity(const trajectory_tracker_msgs::PoseStampedWithVelocity& msg)
 {
-  return msg.velocity_linear;
+  return msg.linear_velocity.x;
 }
 }  // namespace
 
@@ -230,7 +230,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
     const float velocity = getVelocity(*j);
     if (std::isfinite(velocity) && velocity < -0.0)
     {
-      ROS_ERROR_THROTTLE(1.0, "Negative velocity in path_velocity is not yet supported");
+      ROS_ERROR_THROTTLE(1.0, "path_velocity.velocity.x must be positive");
       path_.clear();
       return;
     }
