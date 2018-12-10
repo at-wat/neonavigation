@@ -35,7 +35,7 @@
 
 namespace trajectory_tracker
 {
-inline float timeOptimalControl(const float angle, const float acc, const float dt)
+inline float timeOptimalControl(const float angle, const float acc)
 {
   return -std::copysign(1.0, angle) * std::sqrt(std::abs(2 * angle * acc));
 }
@@ -77,10 +77,7 @@ public:
   inline float set(
       float v, const float vel, const float acc, const float dt)
   {
-    if (v > vel)
-      v = vel;
-    else if (v < -vel)
-      v = -vel;
+    v = clip(v, vel);
 
     if (v > val_prev_ + dt * acc)
       v = val_prev_ + dt * acc;
