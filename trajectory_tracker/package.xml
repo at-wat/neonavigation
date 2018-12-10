@@ -22,6 +22,8 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
 
+  <depend>eigen</depend>
+
   <depend>neonavigation_common</depend>
   <depend>trajectory_tracker_msgs</depend>
 </package>

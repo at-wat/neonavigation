@@ -10,7 +10,6 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 ### Subscribed topics
 
 * ~/path (new: path) [nav_msgs::Path]
-* ~/odom (new: odom) [nav_msgs::Odometry]
 * ~/speed (new: speed) [std_msgs::Float32]
 * /tf
 
@@ -30,7 +29,6 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 
 * "frame_robot" (string, default: std::string("base_link"))
 * "path" **deprecated** (string, default: std::string("path"))
-* "odom" **deprecated** (string, default: std::string("odom"))
 * "cmd_vel" **deprecated** (string, default: std::string("cmd_vel"))
 * "hz" (double, default: 50.0)
 * "look_forward" (double, default: 0.5)
