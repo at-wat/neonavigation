@@ -51,7 +51,7 @@
 #include <ros/ros.h>
 
 #include <geometry_msgs/Twist.h>
-#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Float32.h>
@@ -63,6 +63,7 @@
 
 #include <neonavigation_common/compatibility.h>
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
+#include <trajectory_tracker_msgs/PathWithVelocity.h>
 
 #include <trajectory_tracker/basic_control.h>
 #include <trajectory_tracker/eigen_line.h>
@@ -110,6 +111,7 @@ private:
   bool in_place_turn_;
 
   ros::Subscriber sub_path_;
+  ros::Subscriber sub_path_velocity_;
   ros::Subscriber sub_odom_;
   ros::Subscriber sub_vel_;
   ros::Publisher pub_vel_;
@@ -123,7 +125,8 @@ private:
   trajectory_tracker::Path2D path_;
   std_msgs::Header path_header_;
 
-  void cbPath(const nav_msgs::Path::ConstPtr&);
+  template <typename MSG_TYPE>
+  void cbPath(const typename MSG_TYPE::ConstPtr&);
   void cbSpeed(const std_msgs::Float32::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
   void control();
@@ -168,9 +171,13 @@ TrackerNode::TrackerNode()
   pnh_.param("check_old_path", check_old_path_, false);
   pnh_.param("epsilon", epsilon_, 0.001);
 
-  sub_path_ = neonavigation_common::compat::subscribe(
+  sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
       nh_, "path",
-      pnh_, topic_path_, 2, &TrackerNode::cbPath, this);
+      pnh_, topic_path_, 2,
+      boost::bind(&TrackerNode::cbPath<nav_msgs::Path>, this, _1));
+  sub_path_velocity_ = nh_.subscribe<trajectory_tracker_msgs::PathWithVelocity>(
+      "path_vel", 2,
+      boost::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::PathWithVelocity>, this, _1));
   sub_vel_ = neonavigation_common::compat::subscribe(
       nh_, "speed",
       pnh_, "speed", 20, &TrackerNode::cbSpeed, this);
@@ -192,7 +199,21 @@ void TrackerNode::cbSpeed(const std_msgs::Float32::ConstPtr& msg)
 {
   vel_[0] = msg->data;
 }
-void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
+
+namespace
+{
+float getVelocity(const geometry_msgs::PoseStamped& msg)
+{
+  return std::numeric_limits<float>::quiet_NaN();
+}
+float getVelocity(const trajectory_tracker_msgs::PoseStampedWithVelocity& msg)
+{
+  return msg.velocity_linear;
+}
+}  // namespace
+
+template <typename MSG_TYPE>
+void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
 {
   path_header_ = msg->header;
   path_.clear();
@@ -202,10 +223,18 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
     return;
 
   auto j = msg->poses.begin();
-  path_.push_back(trajectory_tracker::Pose2D(j->pose));
+  path_.push_back(trajectory_tracker::Pose2D(j->pose, getVelocity(*j)));
   for (auto j = msg->poses.begin(); j != msg->poses.end(); ++j)
   {
-    const trajectory_tracker::Pose2D next(j->pose);
+    const float velocity = getVelocity(*j);
+    if (std::isfinite(velocity) && velocity < -0.0)
+    {
+      ROS_ERROR_THROTTLE(1.0, "Negative velocity in path_velocity is not yet supported");
+      path_.clear();
+      return;
+    }
+    const trajectory_tracker::Pose2D next(j->pose, velocity);
+
     if ((path_.back().pos_ - next.pos_).squaredNorm() >= std::pow(epsilon_, 2))
       path_.push_back(next);
   }
@@ -218,7 +247,8 @@ void TrackerNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
       // to make line direction computable, line should have a few points
       const float yaw = path_.back().yaw_;
       const trajectory_tracker::Pose2D next(
-          path_.back().pos_ + Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * epsilon_, yaw);
+          path_.back().pos_ + Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * epsilon_,
+          yaw, path_.back().velocity_);
       path_.push_back(next);
     }
   }
@@ -282,7 +312,8 @@ void TrackerNode::control()
 
     for (size_t i = 0; i < path_.size(); i += path_step_)
       lpath.push_back(
-          trajectory_tracker::Pose2D(trans * path_[i].pos_, trans_yaw + path_[i].yaw_));
+          trajectory_tracker::Pose2D(
+              trans * path_[i].pos_, trans_yaw + path_[i].yaw_, path_[i].velocity_));
   }
   catch (tf2::TransformException& e)
   {
@@ -325,6 +356,9 @@ void TrackerNode::control()
 
   const Eigen::Vector2d pos_on_line =
       trajectory_tracker::projection2d(lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
+
+  const float linear_vel =
+      std::isnan(lpath[i_nearest].velocity_) ? vel_[0] : lpath[i_nearest].velocity_;
 
   // Remained distance to the local goal
   float remain_local = lpath.remainedDistance(it_nearest, it_local_goal, pos_on_line);
@@ -369,7 +403,7 @@ void TrackerNode::control()
     }
     v_lim_.set(
         0.0,
-        vel_[0], acc_[0], dt);
+        linear_vel, acc_[0], dt);
     w_lim_.set(
         trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_[1], dt),
         vel_[1], acc_[1], dt);
@@ -406,14 +440,14 @@ void TrackerNode::control()
 
     v_lim_.set(
         trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0], dt),
-        vel_[0], acc_[0], dt);
+        linear_vel, acc_[0], dt);
 
     const float wref = std::abs(v_lim_.get()) * curv;
 
     if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
       v_lim_.set(
           std::copysign(1.0, v_lim_.get()) * std::abs(vel_[1] / curv),
-          vel_[0], acc_[0], dt);
+          linear_vel, acc_[0], dt);
 
     w_lim_.increment(
         dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_lim_.get() - wref) * k_[2]),
