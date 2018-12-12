@@ -67,12 +67,14 @@ private:
     yaw_ += msg->angular.z * dt;
     pos_ += Eigen::Vector2d(std::cos(yaw_), std::sin(yaw_)) * msg->linear.x * dt;
     cmd_vel_time_ = now;
+    cmd_vel_ = msg;
   }
 
 public:
   Eigen::Vector2d pos_;
   double yaw_;
   trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr status_;
+  geometry_msgs::Twist::ConstPtr cmd_vel_;
 
   TrajectoryTrackerTest()
     : nh_("")
@@ -82,7 +84,9 @@ public:
     sub_status_ = nh_.subscribe(
         "trajectory_tracker/status", 1, &TrajectoryTrackerTest::cbStatus, this);
     pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
-
+  }
+  void initState(const Eigen::Vector2d& pos, const float yaw)
+  {
     nav_msgs::Path path;
     path.header.frame_id = "odom";
     path.header.stamp = ros::Time::now();
@@ -92,8 +96,8 @@ public:
     ros::Rate rate(10);
     while (ros::ok())
     {
-      yaw_ = 0;
-      pos_ = Eigen::Vector2d(0.0, 0.0);
+      yaw_ = yaw;
+      pos_ = pos;
       publishTransform();
 
       rate.sleep();
@@ -156,6 +160,8 @@ public:
 
 TEST_F(TrajectoryTrackerTest, StraightStop)
 {
+  initState(Eigen::Vector2d(0, 0), 0);
+
   std::vector<Eigen::Vector3d> poses;
   for (double x = 0.0; x < 0.5; x += 0.01)
     poses.push_back(Eigen::Vector3d(x, 0.0, 0.0));
@@ -187,6 +193,8 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
 TEST_F(TrajectoryTrackerTest, CurveFollow)
 {
+  initState(Eigen::Vector2d(0, 0), 0);
+
   std::vector<Eigen::Vector3d> poses;
   Eigen::Vector3d p(0.0, 0.0, 0.0);
   for (double t = 0.0; t < 1.0; t += 0.01)
@@ -226,29 +234,54 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 
 TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 {
-  std::vector<Eigen::Vector3d> poses;
-  poses.push_back(Eigen::Vector3d(0.0, 0.0, 1.5));
-  publishPath(poses);
-
-  waitUntilStart();
-
-  ros::Rate rate(50);
-  while (ros::ok())
+  const float init_yaw_array[] =
+      {
+        0.0,
+        3.0
+      };
+  for (const float init_yaw : init_yaw_array)
   {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
-      break;
-  }
-  for (int i = 0; i < 25; ++i)
-  {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
+    initState(Eigen::Vector2d(0, 0), init_yaw);
 
-  ASSERT_NEAR(yaw_, 1.5, 1e-2);
+    const float target_angle_array[] =
+        {
+          0.5,
+          -0.5
+        };
+    for (const float ang : target_angle_array)
+    {
+      std::vector<Eigen::Vector3d> poses;
+      poses.push_back(Eigen::Vector3d(0.0, 0.0, init_yaw + ang));
+      publishPath(poses);
+
+      waitUntilStart();
+
+      ros::Rate rate(50);
+      while (ros::ok())
+      {
+        publishTransform();
+        rate.sleep();
+        ros::spinOnce();
+
+        if (cmd_vel_)
+          ASSERT_GT(cmd_vel_->angular.z * ang, 0);
+        if (status_)
+          ASSERT_LT(status_->angle_remains * ang, 0);
+
+        if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+          break;
+      }
+      ASSERT_TRUE(static_cast<bool>(cmd_vel_));
+      for (int i = 0; i < 25; ++i)
+      {
+        publishTransform();
+        rate.sleep();
+        ros::spinOnce();
+      }
+
+      ASSERT_NEAR(yaw_, init_yaw + ang, 1e-2);
+    }
+  }
 }
 
 int main(int argc, char** argv)
