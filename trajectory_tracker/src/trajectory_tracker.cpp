@@ -396,7 +396,7 @@ void TrackerNode::control()
   {
     if (path_length < min_track_path_ || std::abs(remain_local) < stop_tolerance_dist_)
     {
-      angle = -lpath.back().yaw_;
+      angle = trajectory_tracker::angleNormalized(-lpath.back().yaw_);
       status.angle_remains = angle;
     }
     v_lim_.set(
