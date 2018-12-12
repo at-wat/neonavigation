@@ -331,9 +331,9 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         ros::spinOnce();
 
         if (cmd_vel_)
-          ASSERT_GT(cmd_vel_->angular.z * ang, 0);
+          ASSERT_GT(cmd_vel_->angular.z * ang, -1e-2);
         if (status_)
-          ASSERT_LT(status_->angle_remains * ang, 0);
+          ASSERT_LT(status_->angle_remains * ang, 1e-2);
 
         if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
           break;
