@@ -88,6 +88,7 @@ private:
   double d_stop_;
   double vel_[2];
   double acc_[2];
+  double acc_toc_[2];
   trajectory_tracker::VelAccLimitter v_lim_;
   trajectory_tracker::VelAccLimitter w_lim_;
   double dec_;
@@ -151,6 +152,11 @@ TrackerNode::TrackerNode()
   pnh_.param("max_angvel", vel_[1], 1.0);
   pnh_.param("max_acc", acc_[0], 1.0);
   pnh_.param("max_angacc", acc_[1], 2.0);
+  double acc_toc_factor[2];
+  pnh_.param("acc_toc_factor", acc_toc_factor[0], 0.9);
+  pnh_.param("angacc_toc_factor", acc_toc_factor[1], 0.9);
+  acc_toc_[0] = acc_[0] * acc_toc_factor[0];
+  acc_toc_[1] = acc_[1] * acc_toc_factor[1];
   pnh_.param("path_step", path_step_, 1);
   pnh_.param("distance_angle_factor", ang_factor_, 0.0);
   pnh_.param("switchback_dist", sw_dist_, 0.3);
@@ -368,7 +374,7 @@ void TrackerNode::control()
         0.0,
         vel_[0], acc_[0], dt);
     w_lim_.set(
-        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_[1]),
+        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_toc_[1]),
         vel_[1], acc_[1], dt);
 
     ROS_DEBUG(
@@ -402,7 +408,7 @@ void TrackerNode::control()
     const float dist_err_clip = trajectory_tracker::clip(dist_err, d_lim_);
 
     v_lim_.set(
-        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0]),
+        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_toc_[0]),
         vel_[0], acc_[0], dt);
 
     const float wref = std::abs(v_lim_.get()) * curv;
