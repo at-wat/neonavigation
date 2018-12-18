@@ -319,6 +319,8 @@ void TrackerNode::control()
 
   const int i_nearest = std::distance(
       static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_nearest);
+  const int i_local_goal = std::distance(
+      static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_local_goal);
 
   const Eigen::Vector2d pos_on_line =
       trajectory_tracker::projection2d(lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
@@ -353,8 +355,8 @@ void TrackerNode::control()
   status.angle_remains = angle;
 
   ROS_DEBUG(
-      "trajectory_tracker: nearest: %lu, local goal: %lu, goal: %lu",
-      i_nearest, (it_local_goal - lpath.begin()), lpath.size());
+      "trajectory_tracker: nearest: %d, local goal: %d, goal: %lu",
+      i_nearest, i_local_goal, lpath.size());
 
   const float dt = 1.0 / hz_;
   // Stop and rotate
