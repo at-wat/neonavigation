@@ -5,3 +5,8 @@ add_rostest_gtest(test_trajectory_recorder test/trajectory_recorder_rostest.test
     src/test_trajectory_recorder.cpp)
 target_link_libraries(test_trajectory_recorder ${catkin_LIBRARIES})
 add_dependencies(test_trajectory_recorder trajectory_recorder)
+
+add_rostest_gtest(test_trajectory_tracker test/trajectory_tracker_rostest.test
+    src/test_trajectory_tracker.cpp)
+target_link_libraries(test_trajectory_tracker ${catkin_LIBRARIES})
+add_dependencies(test_trajectory_tracker trajectory_tracker)
