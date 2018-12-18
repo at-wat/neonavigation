@@ -427,8 +427,8 @@ void TrackerNode::control()
         vel_[1], acc_[1], dt);
 
     ROS_DEBUG(
-        "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f, v_lim: %0.3f, sign_vel: %0.0f"
-        ", angle: %0.3f, yaw: %0.3f",
+        "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
+        ", v_lim: %0.3f, sign_vel: %0.0f, angle: %0.3f, yaw: %0.3f",
         dist_err_clip, angle, w_lim_.get() - wref, v_lim_.get(), sign_vel, angle, lpath[i_nearest].yaw_);
   }
 
