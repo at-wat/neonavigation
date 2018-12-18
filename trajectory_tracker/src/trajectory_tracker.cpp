@@ -358,6 +358,8 @@ void TrackerNode::control()
       "trajectory_tracker: nearest: %d, local goal: %d, goal: %lu",
       i_nearest, i_local_goal, lpath.size());
 
+  bool arrive_local_goal(false);
+
   const float dt = 1.0 / hz_;
   // Stop and rotate
   if ((std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle)) ||
@@ -369,6 +371,8 @@ void TrackerNode::control()
     {
       angle = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
       status.angle_remains = angle;
+      if (it_local_goal != lpath.end())
+        arrive_local_goal = true;
     }
     v_lim_.set(
         0.0,
@@ -452,6 +456,8 @@ void TrackerNode::control()
   path_step_done_ = i_nearest - 2;  // i_nearest is the next of the nearest node
   if (path_step_done_ < 0)
     path_step_done_ = 0;
+  if (arrive_local_goal)
+    path_step_done_ = i_local_goal;
 }
 
 int main(int argc, char** argv)
