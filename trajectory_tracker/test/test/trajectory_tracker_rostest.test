@@ -16,5 +16,9 @@
     <param name="stop_tolerance_dist" value="0.005" />
     <param name="stop_tolerance_ang" value="0.005" />
     <param name="look_forward" value="0.0" />
+    <param name="k_dist" value="4.5" />
+    <param name="k_ang" value="3.0" />
+    <param name="k_avel" value="4.0" />
+    <param name="dist_lim" value="0.5" />
   </node>
 </launch>
