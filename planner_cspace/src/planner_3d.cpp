@@ -1389,7 +1389,7 @@ public:
           if (use_path_with_velocity_)
           {
             // NaN velocity means that don't care the velocity
-            pub_path_.publish(trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
+            pub_path_velocity_.publish(trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
           }
           else
           {
