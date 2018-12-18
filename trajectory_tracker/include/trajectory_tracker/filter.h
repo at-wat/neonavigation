@@ -11,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -28,11 +28,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FILTER_H
-#define FILTER_H
+#ifndef TRAJECTORY_TRACKER_FILTER_H
+#define TRAJECTORY_TRACKER_FILTER_H
 
 #include <cmath>
 
+namespace trajectory_tracker
+{
 class Filter
 {
 public:
@@ -100,5 +102,6 @@ public:
     return out_;
   }
 };
+}  // namespace trajectory_tracker
 
-#endif  // FILTER_H
+#endif  // TRAJECTORY_TRACKER_FILTER_H
