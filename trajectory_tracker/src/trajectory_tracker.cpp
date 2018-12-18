@@ -297,7 +297,7 @@ void TrackerNode::control()
 
   // Find nearest line strip
   const trajectory_tracker::Path2D::ConstIterator it_local_goal =
-      lpath.findLocalGoal(lpath.begin(), lpath.end(), allow_backward_);
+      lpath.findLocalGoal(lpath.begin() + path_step_done_, lpath.end(), allow_backward_);
 
   const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
   const trajectory_tracker::Path2D::ConstIterator it_nearest =
@@ -352,6 +352,10 @@ void TrackerNode::control()
   status.distance_remains = remain;
   status.angle_remains = angle;
 
+  ROS_DEBUG(
+      "trajectory_tracker: nearest: %lu, local goal: %lu, goal: %lu",
+      i_nearest, (it_local_goal - lpath.begin()), lpath.size());
+
   const float dt = 1.0 / hz_;
   // Stop and rotate
   if ((std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle)) ||
@@ -361,7 +365,7 @@ void TrackerNode::control()
   {
     if (path_length < min_track_path_ || std::abs(remain_local) < stop_tolerance_dist_)
     {
-      angle = trajectory_tracker::angleNormalized(-lpath.back().yaw_);
+      angle = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
       status.angle_remains = angle;
     }
     v_lim_.set(
