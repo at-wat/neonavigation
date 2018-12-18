@@ -37,6 +37,8 @@
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
+#include <trajectory_tracker_msgs/PathWithVelocity.h>
+#include <trajectory_tracker_msgs/converter.h>
 
 #include <ros/console.h>
 #include <tf2/utils.h>
@@ -77,6 +79,7 @@ protected:
   ros::Subscriber sub_map_update_;
   ros::Subscriber sub_goal_;
   ros::Publisher pub_path_;
+  ros::Publisher pub_path_velocity_;
   ros::Publisher pub_debug_;
   ros::Publisher pub_hist_;
   ros::Publisher pub_start_;
@@ -161,6 +164,7 @@ protected:
   bool temporary_escape_;
   float remember_hit_odds_;
   float remember_miss_odds_;
+  bool use_path_with_velocity_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -1142,9 +1146,6 @@ public:
     sub_goal_ = neonavigation_common::compat::subscribe(
         nh_, "move_base_simple/goal",
         pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
-    pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
-        nh_, "path",
-        pnh_, "path", 1, true);
     pub_debug_ = pnh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
     pub_hist_ = pnh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
     pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
@@ -1158,6 +1159,19 @@ public:
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
     act_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
+
+    pnh_.param("use_path_with_velocity", use_path_with_velocity_, false);
+    if (use_path_with_velocity_)
+    {
+      pub_path_velocity_ = nh_.advertise<trajectory_tracker_msgs::PathWithVelocity>(
+          "path_velocity", 1, true);
+    }
+    else
+    {
+      pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
+          nh_, "path",
+          pnh_, "path", 1, true);
+    }
 
     pnh_.param_cast("freq", freq_, 4.0f);
     pnh_.param_cast("freq_min", freq_min_, 2.0f);
@@ -1372,7 +1386,15 @@ public:
           path.header = map_header_;
           path.header.stamp = now;
           makePlan(start_.pose, goal_.pose, path, true);
-          pub_path_.publish(path);
+          if (use_path_with_velocity_)
+          {
+            // NaN velocity means that don't care the velocity
+            pub_path_.publish(trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
+          }
+          else
+          {
+            pub_path_.publish(path);
+          }
 
           if (switchDetect(path))
           {
