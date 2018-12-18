@@ -27,6 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <limits>
+#include <list>
+#include <string>
+#include <vector>
+
 #include <ros/ros.h>
 
 #include <costmap_cspace_msgs/CSpace3D.h>
@@ -47,11 +53,6 @@
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
-
-#include <algorithm>
-#include <list>
-#include <string>
-#include <vector>
 
 #include <costmap_cspace/node_handle_float.h>
 #include <neonavigation_common/compatibility.h>
@@ -1389,7 +1390,8 @@ public:
           if (use_path_with_velocity_)
           {
             // NaN velocity means that don't care the velocity
-            pub_path_velocity_.publish(trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
+            pub_path_velocity_.publish(
+                trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
           }
           else
           {
