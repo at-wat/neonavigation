@@ -405,16 +405,23 @@ void TrackerNode::control()
         trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0]),
         vel_[0], acc_[0], dt);
 
-    const float wref = std::abs(v_lim_.get()) * curv;
+    const float wref_raw = std::abs(v_lim_.get()) * curv;
+    float wref = wref_raw;
 
-    if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
+    if (limit_vel_by_avel_ && std::abs(wref_raw) > vel_[1])
+    {
       v_lim_.set(
           std::copysign(1.0, v_lim_.get()) * std::abs(vel_[1] / curv),
           vel_[0], acc_[0], dt);
+      wref = std::copysign(1.0, wref) * vel_[1];
+    }
 
     w_lim_.increment(
         dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_lim_.get() - wref) * k_[2]),
         vel_[1], acc_[1], dt);
+    ROS_DEBUG(
+        "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f",
+        dist_err_clip, angle, w_lim_.get() - wref);
   }
 
   geometry_msgs::Twist cmd_vel;
