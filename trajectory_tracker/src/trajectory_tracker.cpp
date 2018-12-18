@@ -412,7 +412,7 @@ void TrackerNode::control()
     const float dist_err_clip = trajectory_tracker::clip(dist_err, d_lim_);
 
     v_lim_.set(
-        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0]),
+        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel, acc_[0]),
         vel_[0], acc_[0], dt);
 
     const float wref = std::abs(v_lim_.get()) * curv;
