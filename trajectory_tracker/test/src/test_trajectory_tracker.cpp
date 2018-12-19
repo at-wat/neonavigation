@@ -381,7 +381,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_trajectory_recorder");
+  ros::init(argc, argv, "test_trajectory_tracker");
 
   return RUN_ALL_TESTS();
 }
