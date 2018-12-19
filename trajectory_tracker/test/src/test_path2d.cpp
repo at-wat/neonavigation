@@ -69,9 +69,59 @@ TEST(Path2D, Curvature)
   {
     trajectory_tracker::Path2D path;
     for (double a = 0; a < 1.57; a += 0.1)
-      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(cos(a), sin(a)) * c, 0));
+      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(std::cos(a), std::sin(a)) * c, 0));
 
     ASSERT_NEAR(path.getCurvature(path.begin(), path.end(), path[0].pos_, 10.0), 1.0 / c, 1e-2);
+  }
+}
+
+TEST(Path2D, LocalGoalWithoutSwitchBack)
+{
+  for (int yaw_i = -1; yaw_i <= 1; ++yaw_i)
+  {
+    const double yaw_diff = yaw_i * 0.1;
+
+    trajectory_tracker::Path2D path;
+    Eigen::Vector2d p(0, 0);
+    double yaw(0);
+    for (int i = 0; i < 10; ++i)
+    {
+      p -= Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * 0.1;
+      yaw += yaw_diff;
+      path.push_back(trajectory_tracker::Pose2D(p, yaw));
+    }
+    ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), true), path.end());
+    ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), false), path.end());
+  }
+}
+
+TEST(Path2D, LocalGoalWithSwitchBack)
+{
+  for (int yaw_i = -1; yaw_i <= 1; ++yaw_i)
+  {
+    const double yaw_diff = yaw_i * 0.1;
+
+    trajectory_tracker::Path2D path;
+    Eigen::Vector2d p(0, 0);
+    double yaw(0);
+    for (int i = 0; i < 5; ++i)
+    {
+      p -= Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * 0.1;
+      yaw += yaw_diff;
+      path.push_back(trajectory_tracker::Pose2D(p, yaw));
+    }
+    for (int i = 0; i < 5; ++i)
+    {
+      p += Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * 0.1;
+      yaw += yaw_diff;
+      path.push_back(trajectory_tracker::Pose2D(p, yaw));
+    }
+    const auto it_local_goal = path.findLocalGoal(path.begin(), path.end(), true);
+    ASSERT_EQ(it_local_goal, path.begin() + 5);
+    ASSERT_EQ(path.findLocalGoal(it_local_goal, path.end(), true), path.end());
+
+    // no switch back motion under (allow_switchback == false)
+    ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), false), path.end());
   }
 }
 
