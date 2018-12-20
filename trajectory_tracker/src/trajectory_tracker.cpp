@@ -88,6 +88,7 @@ private:
   double d_stop_;
   double vel_[2];
   double acc_[2];
+  double acc_toc_[2];
   trajectory_tracker::VelAccLimitter v_lim_;
   trajectory_tracker::VelAccLimitter w_lim_;
   double dec_;
@@ -151,6 +152,11 @@ TrackerNode::TrackerNode()
   pnh_.param("max_angvel", vel_[1], 1.0);
   pnh_.param("max_acc", acc_[0], 1.0);
   pnh_.param("max_angacc", acc_[1], 2.0);
+  double acc_toc_factor[2];
+  pnh_.param("acc_toc_factor", acc_toc_factor[0], 0.9);
+  pnh_.param("angacc_toc_factor", acc_toc_factor[1], 0.9);
+  acc_toc_[0] = acc_[0] * acc_toc_factor[0];
+  acc_toc_[1] = acc_[1] * acc_toc_factor[1];
   pnh_.param("path_step", path_step_, 1);
   pnh_.param("distance_angle_factor", ang_factor_, 0.0);
   pnh_.param("switchback_dist", sw_dist_, 0.3);
@@ -297,7 +303,7 @@ void TrackerNode::control()
 
   // Find nearest line strip
   const trajectory_tracker::Path2D::ConstIterator it_local_goal =
-      lpath.findLocalGoal(lpath.begin(), lpath.end(), allow_backward_);
+      lpath.findLocalGoal(lpath.begin() + path_step_done_, lpath.end(), allow_backward_);
 
   const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
   const trajectory_tracker::Path2D::ConstIterator it_nearest =
@@ -319,6 +325,8 @@ void TrackerNode::control()
 
   const int i_nearest = std::distance(
       static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_nearest);
+  const int i_local_goal = std::distance(
+      static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_local_goal);
 
   const Eigen::Vector2d pos_on_line =
       trajectory_tracker::projection2d(lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
@@ -338,10 +346,10 @@ void TrackerNode::control()
   const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[i_nearest - 1].pos_;
   float angle = -atan2(vec[1], vec[0]);
   const float angle_pose = allow_backward_ ? lpath[i_nearest].yaw_ : -angle;
-  float sign_vel_ = 1.0;
+  float sign_vel = 1.0;
   if (std::cos(-angle) * std::cos(angle_pose) + std::sin(-angle) * std::sin(angle_pose) < 0)
   {
-    sign_vel_ = -1.0;
+    sign_vel = -1.0;
     angle = angle + M_PI;
   }
   angle = trajectory_tracker::angleNormalized(angle);
@@ -352,6 +360,12 @@ void TrackerNode::control()
   status.distance_remains = remain;
   status.angle_remains = angle;
 
+  ROS_DEBUG(
+      "trajectory_tracker: nearest: %d, local goal: %d, done: %d, goal: %lu, remain: %0.3f, remain_local: %0.3f",
+      i_nearest, i_local_goal, path_step_done_, lpath.size(), remain, remain_local);
+
+  bool arrive_local_goal(false);
+
   const float dt = 1.0 / hz_;
   // Stop and rotate
   if ((std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle)) ||
@@ -361,14 +375,16 @@ void TrackerNode::control()
   {
     if (path_length < min_track_path_ || std::abs(remain_local) < stop_tolerance_dist_)
     {
-      angle = trajectory_tracker::angleNormalized(-lpath.back().yaw_);
+      angle = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
       status.angle_remains = angle;
+      if (it_local_goal != lpath.end())
+        arrive_local_goal = true;
     }
     v_lim_.set(
         0.0,
         vel_[0], acc_[0], dt);
     w_lim_.set(
-        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_[1]),
+        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_toc_[1]),
         vel_[1], acc_[1], dt);
 
     ROS_DEBUG(
@@ -402,7 +418,7 @@ void TrackerNode::control()
     const float dist_err_clip = trajectory_tracker::clip(dist_err, d_lim_);
 
     v_lim_.set(
-        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel_, acc_[0]),
+        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel, acc_toc_[0]),
         vel_[0], acc_[0], dt);
 
     float wref = std::abs(v_lim_.get()) * curv;
@@ -418,9 +434,11 @@ void TrackerNode::control()
     w_lim_.increment(
         dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_lim_.get() - wref) * k_[2]),
         vel_[1], acc_[1], dt);
+
     ROS_DEBUG(
-        "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f",
-        dist_err_clip, angle, w_lim_.get() - wref);
+        "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
+        ", v_lim: %0.3f, sign_vel: %0.0f, angle: %0.3f, yaw: %0.3f",
+        dist_err_clip, angle, w_lim_.get() - wref, v_lim_.get(), sign_vel, angle, lpath[i_nearest].yaw_);
   }
 
   geometry_msgs::Twist cmd_vel;
@@ -449,9 +467,11 @@ void TrackerNode::control()
   tracking.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -angle));
   pub_tracking_.publish(tracking);
 
-  path_step_done_ = i_nearest - 2;  // i_nearest is the next of the nearest node
+  path_step_done_ = i_nearest - 1;  // i_nearest is the next of the nearest node
   if (path_step_done_ < 0)
     path_step_done_ = 0;
+  if (arrive_local_goal)
+    path_step_done_ = i_local_goal + 1;
 }
 
 int main(int argc, char** argv)
