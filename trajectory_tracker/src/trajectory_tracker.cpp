@@ -421,12 +421,15 @@ void TrackerNode::control()
         trajectory_tracker::timeOptimalControl(-remain_local * sign_vel, acc_toc_[0]),
         vel_[0], acc_[0], dt);
 
-    const float wref = std::abs(v_lim_.get()) * curv;
+    float wref = std::abs(v_lim_.get()) * curv;
 
     if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
+    {
       v_lim_.set(
           std::copysign(1.0, v_lim_.get()) * std::abs(vel_[1] / curv),
           vel_[0], acc_[0], dt);
+      wref = std::copysign(1.0, wref) * vel_[1];
+    }
 
     w_lim_.increment(
         dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_lim_.get() - wref) * k_[2]),
