@@ -284,10 +284,104 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
   }
 }
 
+TEST_F(TrajectoryTrackerTest, SwitchBack)
+{
+  initState(Eigen::Vector2d(0, 0), 0);
+
+  std::vector<Eigen::Vector3d> poses;
+  Eigen::Vector3d p(0.0, 0.0, 0.0);
+  for (double t = 0.0; t < 0.5; t += 0.01)
+  {
+    p -= Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, -0.01);
+    poses.push_back(p);
+  }
+  for (double t = 0.0; t < 0.5; t += 0.01)
+  {
+    p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.01);
+    poses.push_back(p);
+  }
+  publishPath(poses);
+
+  waitUntilStart();
+
+  ros::Rate rate(50);
+  while (ros::ok())
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      break;
+  }
+  for (int i = 0; i < 25; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_NEAR(yaw_, p[2], 1e-2);
+  ASSERT_NEAR(pos_[0], p[0], 1e-1);
+  ASSERT_NEAR(pos_[1], p[1], 1e-1);
+}
+
+TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
+{
+  initState(Eigen::Vector2d(0, 0), 0);
+
+  std::vector<Eigen::Vector3d> poses;
+  std::vector<Eigen::Vector3d> poses_second_half;
+  Eigen::Vector3d p(0.0, 0.0, 0.0);
+  for (double t = 0.0; t < 0.5; t += 0.01)
+  {
+    p -= Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, -0.01);
+    poses.push_back(p);
+  }
+  const Eigen::Vector2d pos_local_goal = p.head<2>();
+  for (double t = 0.0; t < 1.0; t += 0.01)
+  {
+    p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.01);
+    poses.push_back(p);
+    poses_second_half.push_back(p);
+  }
+  publishPath(poses);
+
+  waitUntilStart();
+
+  int cnt_arrive_local_goal(0);
+  ros::Rate rate(50);
+  while (ros::ok())
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      break;
+
+    if ((pos_local_goal - pos_).norm() < 0.1)
+      cnt_arrive_local_goal++;
+
+    if (cnt_arrive_local_goal > 25)
+      publishPath(poses_second_half);
+    else
+      publishPath(poses);
+  }
+  for (int i = 0; i < 25; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_NEAR(yaw_, p[2], 1e-2);
+  ASSERT_NEAR(pos_[0], p[0], 1e-1);
+  ASSERT_NEAR(pos_[1], p[1], 1e-1);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_trajectory_recorder");
+  ros::init(argc, argv, "test_trajectory_tracker");
 
   return RUN_ALL_TESTS();
 }

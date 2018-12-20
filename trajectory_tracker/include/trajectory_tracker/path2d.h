@@ -93,7 +93,7 @@ public:
       const float angle_pose = allow_backward_motion ? it->yaw_ : angle;
       const float sign_vel_req = std::cos(angle) * std::cos(angle_pose) + std::sin(angle) * std::sin(angle_pose);
       if (sign_vel_prev * sign_vel_req < 0)
-        return it + 1;
+        return it;
       sign_vel_prev = sign_vel_req;
       it_prev = it;
     }
