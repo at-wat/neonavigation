@@ -289,7 +289,7 @@ void TrackerNode::control()
     return;
   }
 
-  const float predicted_yaw = w_lim_.get() / 2;
+  const float predicted_yaw = w_lim_.get() * look_forward_ / 2;
   const Eigen::Vector2d origin =
       Eigen::Vector2d(std::cos(predicted_yaw), std::sin(predicted_yaw)) * v_lim_.get() * look_forward_;
 
