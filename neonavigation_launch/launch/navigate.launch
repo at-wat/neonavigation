@@ -3,6 +3,7 @@
   <arg name="map_file" />
   <arg name="use_map_server" default="true" />
   <arg name="use_safety_limiter" default="false" />
+  <arg name="use_path_with_velocity" default="true" />
   <arg name="simulate" default="false" />
   <arg name="sim_robot_x" default="0.0" />
   <arg name="sim_robot_y" default="0.0" />
@@ -28,7 +29,9 @@
   </node>
   <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" if="$(arg use_map_server)" />
 
-  <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="$(arg output_info)" />
+  <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="$(arg output_info)">
+    <param name="use_path_with_velocity" value="$(arg use_path_with_velocity)" />
+  </node>
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
     <remap from="cmd_vel" to="$(arg cmd_vel_output)" unless="$(arg use_safety_limiter)" />

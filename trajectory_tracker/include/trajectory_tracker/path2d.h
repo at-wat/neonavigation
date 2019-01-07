@@ -49,15 +49,18 @@ class Pose2D
 public:
   Eigen::Vector2d pos_;
   float yaw_;
+  float velocity_;
 
-  inline Pose2D(const Eigen::Vector2d& p, float y)
+  inline Pose2D(const Eigen::Vector2d& p, float y, float velocity)
     : pos_(p)
     , yaw_(y)
+    , velocity_(velocity)
   {
   }
-  inline explicit Pose2D(const geometry_msgs::Pose& pose)
+  inline explicit Pose2D(const geometry_msgs::Pose& pose, float velocity)
     : pos_(Eigen::Vector2d(pose.position.x, pose.position.y))
     , yaw_(tf2::getYaw(pose.orientation))
+    , velocity_(velocity)
   {
   }
 };

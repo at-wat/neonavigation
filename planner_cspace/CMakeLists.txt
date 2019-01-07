@@ -21,6 +21,7 @@ find_package(catkin REQUIRED
     costmap_cspace_msgs
     neonavigation_common
     planner_cspace_msgs
+    trajectory_tracker_msgs
 )
 
 find_package(Boost REQUIRED COMPONENTS chrono)
@@ -46,6 +47,7 @@ catkin_package(
     costmap_cspace_msgs
     neonavigation_common
     planner_cspace_msgs
+    trajectory_tracker_msgs
 )
 
 include(CheckCXXCompilerFlag)

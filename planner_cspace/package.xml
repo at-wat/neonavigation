@@ -34,4 +34,5 @@
   <depend>costmap_cspace_msgs</depend>
   <depend>neonavigation_common</depend>
   <depend>planner_cspace_msgs</depend>
+  <depend>trajectory_tracker_msgs</depend>
 </package>
