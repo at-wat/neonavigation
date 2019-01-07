@@ -49,8 +49,8 @@ TEST(Path2D, RemainedDistance)
 {
   trajectory_tracker::Path2D path;
   for (double x = 0; x < 10.0; x += 0.2)
-    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0));
-  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0));
+    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0, 1));
 
   ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(0, 0)), 10.0, 1e-2);
 
@@ -69,7 +69,7 @@ TEST(Path2D, Curvature)
   {
     trajectory_tracker::Path2D path;
     for (double a = 0; a < 1.57; a += 0.1)
-      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(std::cos(a), std::sin(a)) * c, 0));
+      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(std::cos(a), std::sin(a)) * c, 0, 1));
 
     ASSERT_NEAR(path.getCurvature(path.begin(), path.end(), path[0].pos_, 10.0), 1.0 / c, 1e-2);
   }
@@ -88,7 +88,7 @@ TEST(Path2D, LocalGoalWithoutSwitchBack)
     {
       p -= Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * 0.1;
       yaw += yaw_diff;
-      path.push_back(trajectory_tracker::Pose2D(p, yaw));
+      path.push_back(trajectory_tracker::Pose2D(p, yaw, 1));
     }
     ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), true), path.end());
     ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), false), path.end());
@@ -108,13 +108,13 @@ TEST(Path2D, LocalGoalWithSwitchBack)
     {
       p -= Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * 0.1;
       yaw += yaw_diff;
-      path.push_back(trajectory_tracker::Pose2D(p, yaw));
+      path.push_back(trajectory_tracker::Pose2D(p, yaw, 1));
     }
     for (int i = 0; i < 5; ++i)
     {
       p += Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * 0.1;
       yaw += yaw_diff;
-      path.push_back(trajectory_tracker::Pose2D(p, yaw));
+      path.push_back(trajectory_tracker::Pose2D(p, yaw, 1));
     }
     const auto it_local_goal = path.findLocalGoal(path.begin(), path.end(), true);
     ASSERT_EQ(it_local_goal, path.begin() + 5);

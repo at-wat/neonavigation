@@ -39,6 +39,7 @@
 #include <geometry_msgs/Twist.h>
 
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
+#include <trajectory_tracker_msgs/PathWithVelocity.h>
 
 #include <gtest/gtest.h>
 
@@ -49,6 +50,7 @@ private:
   ros::Subscriber sub_cmd_vel_;
   ros::Subscriber sub_status_;
   ros::Publisher pub_path_;
+  ros::Publisher pub_path_vel_;
   tf2_ros::TransformBroadcaster tfb_;
 
   ros::Time cmd_vel_time_;
@@ -84,6 +86,7 @@ public:
     sub_status_ = nh_.subscribe(
         "trajectory_tracker/status", 1, &TrajectoryTrackerTest::cbStatus, this);
     pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
+    pub_path_vel_ = nh_.advertise<trajectory_tracker_msgs::PathWithVelocity>("path_velocity", 1, true);
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
@@ -141,6 +144,30 @@ public:
     }
     pub_path_.publish(path);
   }
+  void publishPathVelocity(const std::vector<Eigen::Vector4d>& poses)
+  {
+    trajectory_tracker_msgs::PathWithVelocity path;
+    path.header.frame_id = "odom";
+    path.header.stamp = ros::Time::now();
+
+    for (const Eigen::Vector4d& p : poses)
+    {
+      const Eigen::Quaterniond q(Eigen::AngleAxisd(p[2], Eigen::Vector3d(0, 0, 1)));
+
+      trajectory_tracker_msgs::PoseStampedWithVelocity pose;
+      pose.header.frame_id = path.header.frame_id;
+      pose.pose.position.x = p[0];
+      pose.pose.position.y = p[1];
+      pose.pose.orientation.x = q.x();
+      pose.pose.orientation.y = q.y();
+      pose.pose.orientation.z = q.z();
+      pose.pose.orientation.w = q.w();
+      pose.linear_velocity.x = p[3];
+
+      path.poses.push_back(pose);
+    }
+    pub_path_vel_.publish(path);
+  }
   void publishTransform()
   {
     const Eigen::Quaterniond q(Eigen::AngleAxisd(yaw_, Eigen::Vector3d(0, 0, 1)));
@@ -188,6 +215,46 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
   ASSERT_NEAR(yaw_, 0.0, 1e-2);
   ASSERT_NEAR(pos_[0], 0.5, 1e-2);
+  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+}
+
+TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
+{
+  initState(Eigen::Vector2d(0, 0), 0);
+
+  std::vector<Eigen::Vector4d> poses;
+  for (double x = 0.0; x < 0.5; x += 0.01)
+    poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, 0.3));
+  for (double x = 0.5; x < 1.5; x += 0.01)
+    poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, 0.5));
+  poses.push_back(Eigen::Vector4d(1.5, 0.0, 0.0, 0.5));
+  publishPathVelocity(poses);
+
+  waitUntilStart();
+
+  ros::Rate rate(50);
+  while (ros::ok())
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+    if (0.3 < pos_[0] && pos_[0] < 0.4)
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.3, 1e-2);
+    else if (0.9 < pos_[0] && pos_[0] < 1.0)
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.5, 1e-2);
+
+    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      break;
+  }
+  for (int i = 0; i < 25; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_NEAR(yaw_, 0.0, 1e-2);
+  ASSERT_NEAR(pos_[0], 1.5, 1e-2);
   ASSERT_NEAR(pos_[1], 0.0, 1e-2);
 }
 

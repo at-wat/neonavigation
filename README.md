@@ -14,13 +14,15 @@ ROS meta-package for autonomous vehicle navigation.
 
 ## Install
 
-**Note: neonavigation_msgs meta-package is required to build neonavigation meta-package.**
+- **Note 1: neonavigation_msgs meta-package is required to build neonavigation meta-package.**
+- **Note 2: neonavigation_rviz_plugins meta-package is required to visualize PathWithVelocity message used between planner_3d and trajectory_tracker.**
 
 ```shell
 # clone
 cd /path/to/your/catkin_ws/src
 git clone https://github.com/at-wat/neonavigation.git
 git clone https://github.com/at-wat/neonavigation_msgs.git
+git clone https://github.com/at-wat/neonavigation_rviz_plugins.git
 
 # build
 cd /path/to/your/catkin_ws
