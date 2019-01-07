@@ -16,5 +16,5 @@
   <exec_depend>safety_limiter</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>trajectory_tracker</exec_depend>
-  <!--exec_depend>trajectory_tracker_rviz_plugins</exec_depend-->
+  <!--exec_depend>trajectory_tracker_rviz_plugins</exec_depend-->  <!--TODO(at-wat): uncomment if trajectory_tracker_rviz_plugins is released. -->
 </package>
