@@ -198,8 +198,11 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   waitUntilStart();
 
   ros::Rate rate(50);
+  const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(3.0));
+
     publishTransform();
     rate.sleep();
     ros::spinOnce();
@@ -233,8 +236,11 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   waitUntilStart();
 
   ros::Rate rate(50);
+  const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(5.0));
+
     publishTransform();
     rate.sleep();
     ros::spinOnce();
@@ -279,8 +285,11 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   waitUntilStart();
 
   ros::Rate rate(50);
+  const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+
     publishTransform();
     rate.sleep();
     ros::spinOnce();
@@ -324,8 +333,11 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
       waitUntilStart();
 
       ros::Rate rate(50);
+      const ros::Time start = ros::Time::now();
       while (ros::ok())
       {
+        ASSERT_LT(ros::Time::now() - start, ros::Duration(3.0));
+
         publishTransform();
         rate.sleep();
         ros::spinOnce();
@@ -372,8 +384,11 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   waitUntilStart();
 
   ros::Rate rate(50);
+  const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+
     publishTransform();
     rate.sleep();
     ros::spinOnce();
@@ -417,8 +432,11 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
   int cnt_arrive_local_goal(0);
   ros::Rate rate(50);
+  const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+
     publishTransform();
     rate.sleep();
     ros::spinOnce();
