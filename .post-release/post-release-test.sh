@@ -7,10 +7,10 @@ then
 fi
 
 export ROS_DISTRO=$1
-echo "====================================
+echo "===================================="
 echo "Testing shadow-fixed for $ROS_DISTRO"
 echo "PLEASE MAKE SURE TO RUN \"xhost +\""
-echo "====================================
+echo "===================================="
 
 set -e
 
