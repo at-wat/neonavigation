@@ -166,6 +166,8 @@ public:
 
       path.poses.push_back(pose);
     }
+    // needs sleep to prevent that the empty path from initState arrives later.
+    ros::Duration(0.5).sleep();
     pub_path_vel_.publish(path);
   }
   void publishTransform()
