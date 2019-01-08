@@ -54,9 +54,10 @@ do
   fi
   sleep 1
   cnt=`expr $cnt + 1`
-  if [ $cnt -gt 30 ]
+  if [ $cnt -gt 60 ]
   then
     error=true
+    break
   fi
 done
 
