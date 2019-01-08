@@ -11,5 +11,4 @@ $ xhost +
 $ ./post-release-test.sh indigo
 $ ./post-release-test.sh kinetic
 $ ./post-release-test.sh lunar
-$ ./post-release-test.sh melodic
 ```
