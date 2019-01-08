@@ -201,7 +201,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(3.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
 
     publishTransform();
     rate.sleep();
@@ -239,7 +239,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(5.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
 
     publishTransform();
     rate.sleep();
@@ -288,7 +288,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(15.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(20.0));
 
     publishTransform();
     rate.sleep();
@@ -336,7 +336,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
       const ros::Time start = ros::Time::now();
       while (ros::ok())
       {
-        ASSERT_LT(ros::Time::now() - start, ros::Duration(3.0));
+        ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
 
         publishTransform();
         rate.sleep();
