@@ -2,8 +2,8 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2019-01-10)
+------------------
 * safety_limiter: increase tolerance of the test (`#243 <https://github.com/at-wat/neonavigation/issues/243>`_)
 * Fix pointer alignment style (`#233 <https://github.com/at-wat/neonavigation/issues/233>`_)
 * Migrate tf to tf2 (`#230 <https://github.com/at-wat/neonavigation/issues/230>`_)

@@ -2,8 +2,8 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2019-01-10)
+------------------
 * neonavigation_launch: add dependency to trajectory_tracker_rviz_plugins (`#259 <https://github.com/at-wat/neonavigation/issues/259>`_)
 * trajectory_tracker: support PathWithVelocity (`#244 <https://github.com/at-wat/neonavigation/issues/244>`_)
 * Migrate tf to tf2 (`#230 <https://github.com/at-wat/neonavigation/issues/230>`_)

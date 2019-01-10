@@ -2,8 +2,8 @@
 Changelog for package neonavigation_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2019-01-10)
+------------------
 * Fix pointer alignment style (`#233 <https://github.com/at-wat/neonavigation/issues/233>`_)
 * Contributors: Atsushi Watanabe
 

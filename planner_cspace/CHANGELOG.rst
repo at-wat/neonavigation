@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2019-01-10)
+------------------
 * trajectory_tracker: support PathWithVelocity (`#244 <https://github.com/at-wat/neonavigation/issues/244>`_)
 * planner_cspace: fix stability of test_costmap_watchdog (`#242 <https://github.com/at-wat/neonavigation/issues/242>`_)
 * planner_cspace: add watchdog to costmap update (`#235 <https://github.com/at-wat/neonavigation/issues/235>`_)
