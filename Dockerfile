@@ -14,11 +14,14 @@ RUN mkdir -p /repos-manifests/src \
   && find . -name package.xml | xargs -ISRC cp --parents SRC /repos-manifests/
 
 # ========================================
-FROM ros:lunar-ros-core
+ARG ROS_DISTRO_TARGET=indigo
+FROM ros:${ROS_DISTRO_TARGET}-ros-core
 
 RUN apt-get -qq update \
   && apt-get upgrade -y \
+  && if [ $ROS_DISTRO == "indigo" ]; then indigo_dep=build-essential; fi
   && apt-get install -y --no-install-recommends \
+    ${indigo_dep:-} \
     curl \
     libxml2-utils \
     python-pip \
