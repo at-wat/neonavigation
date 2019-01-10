@@ -2,6 +2,14 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* neonavigation_launch: add dependency to trajectory_tracker_rviz_plugins (`#259 <https://github.com/at-wat/neonavigation/issues/259>`_)
+* trajectory_tracker: support PathWithVelocity (`#244 <https://github.com/at-wat/neonavigation/issues/244>`_)
+* Migrate tf to tf2 (`#230 <https://github.com/at-wat/neonavigation/issues/230>`_)
+* Fix catkin package definitions (`#206 <https://github.com/at-wat/neonavigation/issues/206>`_)
+* Contributors: Atsushi Watanabe, So Jomura
+
 0.2.3 (2018-07-19)
 ------------------
 * Install sample files and nodes for demo (`#201 <https://github.com/at-wat/neonavigation/issues/201>`_)
