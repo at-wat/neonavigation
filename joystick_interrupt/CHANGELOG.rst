@@ -2,6 +2,12 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.1 (2019-01-10)
+------------------
+* Fix pointer alignment style (`#233 <https://github.com/at-wat/neonavigation/issues/233>`_)
+* joystick_interrupt: add test (`#209 <https://github.com/at-wat/neonavigation/issues/209>`_)
+* Contributors: Atsushi Watanabe
+
 0.2.3 (2018-07-19)
 ------------------
 
