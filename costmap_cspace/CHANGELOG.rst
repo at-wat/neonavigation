@@ -2,6 +2,13 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.1 (2019-01-10)
+------------------
+* Fix pointer alignment style (`#233 <https://github.com/at-wat/neonavigation/issues/233>`_)
+* Migrate tf to tf2 (`#230 <https://github.com/at-wat/neonavigation/issues/230>`_)
+* Fix catkin package definitions (`#206 <https://github.com/at-wat/neonavigation/issues/206>`_)
+* Contributors: Atsushi Watanabe, So Jomura
+
 0.2.3 (2018-07-19)
 ------------------
 * Fix test names (`#202 <https://github.com/at-wat/neonavigation/issues/202>`_)

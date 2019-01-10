@@ -2,6 +2,25 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.1 (2019-01-10)
+------------------
+* trajectory_tracker: support PathWithVelocity (`#244 <https://github.com/at-wat/neonavigation/issues/244>`_)
+* planner_cspace: fix stability of test_costmap_watchdog (`#242 <https://github.com/at-wat/neonavigation/issues/242>`_)
+* planner_cspace: add watchdog to costmap update (`#235 <https://github.com/at-wat/neonavigation/issues/235>`_)
+* planner_cspace: add missing test dependencies (`#234 <https://github.com/at-wat/neonavigation/issues/234>`_)
+* Fix pointer alignment style (`#233 <https://github.com/at-wat/neonavigation/issues/233>`_)
+* Migrate tf to tf2 (`#230 <https://github.com/at-wat/neonavigation/issues/230>`_)
+* planner_cspace: add diagnostics to planner node (`#226 <https://github.com/at-wat/neonavigation/issues/226>`_)
+* planner_cspace: stop robot motion if new map received (`#218 <https://github.com/at-wat/neonavigation/issues/218>`_)
+* planner_cspace: split grid-metric converter functions (`#213 <https://github.com/at-wat/neonavigation/issues/213>`_)
+* planner_cspace: split motion cache class (`#212 <https://github.com/at-wat/neonavigation/issues/212>`_)
+* planner_cspace: fix goal and start tolerance parameter (`#211 <https://github.com/at-wat/neonavigation/issues/211>`_)
+* planner_cspace: add cost for turning near obstacles (`#210 <https://github.com/at-wat/neonavigation/issues/210>`_)
+* Fix catkin package definitions (`#206 <https://github.com/at-wat/neonavigation/issues/206>`_)
+* planner_cspace: use odometry position difference in jump detection (`#205 <https://github.com/at-wat/neonavigation/issues/205>`_)
+* planner_cspace: refactoring (`#204 <https://github.com/at-wat/neonavigation/issues/204>`_)
+* Contributors: Atsushi Watanabe, So Jomura, Yuta Koga
+
 0.2.3 (2018-07-19)
 ------------------
 * Fix test names (`#202 <https://github.com/at-wat/neonavigation/issues/202>`_)
