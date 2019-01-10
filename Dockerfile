@@ -19,7 +19,7 @@ FROM ros:${ROS_DISTRO_TARGET}-ros-core
 
 RUN apt-get -qq update \
   && apt-get upgrade -y \
-  && if [ $ROS_DISTRO == "indigo" ]; then indigo_dep=build-essential; fi
+  && if [ $ROS_DISTRO == "indigo" ]; then indigo_dep=build-essential; fi \
   && apt-get install -y --no-install-recommends \
     ${indigo_dep:-} \
     curl \
