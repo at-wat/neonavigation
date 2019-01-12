@@ -11,13 +11,15 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>roscpp</depend>
-  <test_depend>rostest</test_depend>
+  <test_depend>nav_msgs</test_depend>
   <test_depend>roslint</test_depend>
+  <test_depend>rostest</test_depend>
 
   <depend>diagnostic_updater</depend>
   <depend>geometry_msgs</depend>
   <depend>pcl_ros</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_sensor_msgs</depend>
 
