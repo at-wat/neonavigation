@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
     geometry_msgs
     pcl_ros
     sensor_msgs
+    std_msgs
     tf2_ros
     tf2_sensor_msgs
 
@@ -29,6 +30,7 @@ catkin_package(
     geometry_msgs
     pcl_ros
     sensor_msgs
+    std_msgs
     tf2_ros
     tf2_sensor_msgs
 
@@ -75,7 +77,9 @@ target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
+  find_package(nav_msgs REQUIRED)
   add_subdirectory(test)
+
   find_package(roslint REQUIRED)
   roslint_cpp()
   roslint_add_test()
