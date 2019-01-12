@@ -82,7 +82,7 @@ TEST(MotionCache, Generate)
           ASSERT_GE(p[1] * xy_yaw[1], 0);
       }
       ASSERT_EQ(c->second.getDistance(), i);
-      ASSERT_EQ(c->second.getMotion().size(), i);
+      ASSERT_EQ(static_cast<int>(c->second.getMotion().size()), i);
     }
   }
 

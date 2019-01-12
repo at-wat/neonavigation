@@ -15,6 +15,7 @@ env:
     - ROS_DISTRO_TARGET=indigo COVERAGE_TEST=true
     - ROS_DISTRO_TARGET=kinetic COVERAGE_TEST=false
     - ROS_DISTRO_TARGET=lunar COVERAGE_TEST=false
+    - ROS_DISTRO_TARGET=melodic COVERAGE_TEST=false
 branches:
   only:
     - master
