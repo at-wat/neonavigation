@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2016-2017, the mcl_3dl authors
  * Copyright (c) 2014-2017, the neonavigation authors
  * All rights reserved.
  *
