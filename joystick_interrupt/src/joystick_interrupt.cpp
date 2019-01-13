@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, the joystick_interrupt authors
+ * Copyright (c) 2015-2018, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
