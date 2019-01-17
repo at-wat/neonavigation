@@ -48,7 +48,7 @@ double getRemainedDistance(const trajectory_tracker::Path2D& path, const Eigen::
 TEST(Path2D, RemainedDistance)
 {
   trajectory_tracker::Path2D path_full;
-  for (double x = 0.0; x < 10.0; x += 0.2)
+  for (double x = 0.0; x < 10.0 - 1e-3; x += 0.2)
     path_full.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0, 1));
   path_full.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0, 1));
 
