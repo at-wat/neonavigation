@@ -38,7 +38,7 @@ namespace
 {
 double getRemainedDistance(const trajectory_tracker::Path2D& path, const Eigen::Vector2d& p)
 {
-  const auto nearest = path.findNearest(path.begin() + 1, path.end(), p);
+  const auto nearest = path.findNearest(path.begin(), path.end(), p);
   const Eigen::Vector2d pos_on_line =
       trajectory_tracker::projection2d((nearest - 1)->pos_, nearest->pos_, p);
   return path.remainedDistance(nearest, path.end(), pos_on_line);
@@ -47,20 +47,30 @@ double getRemainedDistance(const trajectory_tracker::Path2D& path, const Eigen::
 
 TEST(Path2D, RemainedDistance)
 {
-  trajectory_tracker::Path2D path;
-  for (double x = 0; x < 10.0; x += 0.2)
-    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0, 1));
-  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0, 1));
+  trajectory_tracker::Path2D path_full;
+  for (double x = 0.0; x < 10.0; x += 0.2)
+    path_full.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, 0), 0, 1));
+  path_full.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(10.0, 0), 0, 1));
 
-  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(0, 0)), 10.0, 1e-2);
+  // Single pose path means orientation control mode. More than two poses should be line following.
+  for (size_t l = 2; l < path_full.size(); ++l)
+  {
+    trajectory_tracker::Path2D path;
+    path.resize(l);
+    std::copy(path_full.end() - l, path_full.end(), path.begin());
 
-  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, 0)), 1.75, 1e-2);
-  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, 0)), -0.25, 1e-2);
+    std::string err_msg = "failed for " + std::to_string(l) + " pose(s) path";
 
-  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, 0.1)), 1.75, 1e-2);
-  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, -0.1)), 1.75, 1e-2);
-  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, 0.1)), -0.25, 1e-2);
-  ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, -0.1)), -0.25, 1e-2);
+    ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(0, 0)), 10.0, 1e-2) << err_msg;
+
+    ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, 0)), 1.75, 1e-2) << err_msg;
+    ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, 0)), -0.25, 1e-2) << err_msg;
+
+    ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, 0.1)), 1.75, 1e-2) << err_msg;
+    ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(8.25, -0.1)), 1.75, 1e-2) << err_msg;
+    ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, 0.1)), -0.25, 1e-2) << err_msg;
+    ASSERT_NEAR(getRemainedDistance(path, Eigen::Vector2d(10.25, -0.1)), -0.25, 1e-2) << err_msg;
+  }
 }
 
 TEST(Path2D, Curvature)

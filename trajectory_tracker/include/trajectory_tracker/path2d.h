@@ -51,6 +51,12 @@ public:
   float yaw_;
   float velocity_;
 
+  inline Pose2D()
+    : pos_(0, 0)
+    , yaw_(0)
+    , velocity_(0)
+  {
+  }
   inline Pose2D(const Eigen::Vector2d& p, float y, float velocity)
     : pos_(p)
     , yaw_(y)
