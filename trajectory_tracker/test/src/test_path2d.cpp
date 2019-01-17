@@ -43,7 +43,7 @@ double getRemainedDistance(const trajectory_tracker::Path2D& path, const Eigen::
   const auto nearest = path.findNearest(path.begin(), path.end(), p);
   const Eigen::Vector2d pos_on_line =
       trajectory_tracker::projection2d((nearest - 1)->pos_, nearest->pos_, p);
-  return path.remainedDistance(nearest, path.end(), pos_on_line);
+  return path.remainedDistance(path.begin(), nearest, path.end(), pos_on_line);
 }
 }  // namespace
 

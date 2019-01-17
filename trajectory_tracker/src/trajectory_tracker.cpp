@@ -367,9 +367,9 @@ void TrackerNode::control()
       std::isnan(lpath[i_nearest].velocity_) ? vel_[0] : lpath[i_nearest].velocity_;
 
   // Remained distance to the local goal
-  float remain_local = lpath.remainedDistance(it_nearest, it_local_goal, pos_on_line);
+  float remain_local = lpath.remainedDistance(lpath.begin(), it_nearest, it_local_goal, pos_on_line);
   // Remained distance to the final goal
-  float remain = lpath.remainedDistance(it_nearest, lpath.end(), pos_on_line);
+  float remain = lpath.remainedDistance(lpath.begin(), it_nearest, lpath.end(), pos_on_line);
   if (path_length < no_pos_cntl_dist_)
     remain = remain_local = 0;
 

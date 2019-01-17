@@ -139,17 +139,32 @@ public:
   }
   inline double remainedDistance(
       const ConstIterator& begin,
+      const ConstIterator& nearest,
       const ConstIterator& end,
       const Eigen::Vector2d& target_on_line) const
   {
-    double remain = (begin->pos_ - target_on_line).norm();
-    if (begin + 1 >= end)
+    double remain = (nearest->pos_ - target_on_line).norm();
+    if (nearest + 1 >= end)
     {
+      const ConstIterator last = end - 1;
+      const ConstIterator last_pre = end - 2;
+      if (last_pre < begin || last < begin)
+      {
+        // no enough points: orientation control mode
+        return 0;
+      }
+      const Eigen::Vector2d vec_path = last->pos_ - last_pre->pos_;
+      const Eigen::Vector2d vec_remain = last->pos_ - target_on_line;
+      if (vec_path.dot(vec_remain) >= 0)
+      {
+        // ongoing
+        return remain;
+      }
       // overshoot
       return -remain;
     }
-    ConstIterator it_prev = begin;
-    for (ConstIterator it = begin + 1; it < end; ++it)
+    ConstIterator it_prev = nearest;
+    for (ConstIterator it = nearest + 1; it < end; ++it)
     {
       remain += (it_prev->pos_ - it->pos_).norm();
       it_prev = it;
