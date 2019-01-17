@@ -27,7 +27,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
 #include <cstddef>
+#include <string>
 
 #include <gtest/gtest.h>
 
