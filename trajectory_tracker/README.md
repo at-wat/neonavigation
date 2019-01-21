@@ -36,7 +36,6 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "k_dist" (double, default: 1.0)
 * "k_ang" (double, default: 1.0)
 * "k_avel" (double, default: 1.0)
-* "k_dcel" (double, default: 0.2)
 * "dist_lim" (double, default: 0.5)
 * "dist_stop" (double, default: 2.0)
 * "rotate_ang" (?, default: M_PI / 4)
@@ -49,8 +48,6 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "angacc_toc_factor" (double, default: 0.9)
   > decrease max_angacc by this factor in time optimal control to reduce vibration due to control delay
 * "path_step" (int, default: 1)
-* "distance_angle_factor" (double, default: 0.0)
-* "switchback_dist" (double, default: 0.3)
 * "goal_tolerance_dist" (double, default: 0.2)
 * "goal_tolerance_ang" (double, default: 0.1)
 * "stop_tolerance_dist" (double, default: 0.1)

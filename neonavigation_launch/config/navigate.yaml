@@ -33,7 +33,6 @@ spur:
   k_ang: 3.0
   k_avel: 4.0
   dist_lim: 0.5
-  distance_angle_factor: 0.2
   goal_tolerance_dist: 0.05
   goal_tolerance_ang: 0.05
   stop_tolerance_dist: 0.04

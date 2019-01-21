@@ -43,7 +43,6 @@
     <param name="hz" value="30.0" />
     <param name="dist_lim" value="0.5" />
 
-    <param name="distance_angle_factor" value="0.2" />
     <param name="rotate_ang" value="0.2" />
 
     <param name="goal_tolerance_dist" value="0.05" />
