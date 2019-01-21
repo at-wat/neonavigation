@@ -49,7 +49,6 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "angacc_toc_factor" (double, default: 0.9)
   > decrease max_angacc by this factor in time optimal control to reduce vibration due to control delay
 * "path_step" (int, default: 1)
-* "switchback_dist" (double, default: 0.3)
 * "goal_tolerance_dist" (double, default: 0.2)
 * "goal_tolerance_ang" (double, default: 0.1)
 * "stop_tolerance_dist" (double, default: 0.1)

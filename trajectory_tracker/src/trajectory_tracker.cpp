@@ -95,7 +95,6 @@ private:
   trajectory_tracker::VelAccLimitter w_lim_;
   double dec_;
   double rotate_ang_;
-  double sw_dist_;
   double goal_tolerance_dist_;
   double goal_tolerance_ang_;
   double stop_tolerance_dist_;
@@ -161,7 +160,6 @@ TrackerNode::TrackerNode()
   acc_toc_[0] = acc_[0] * acc_toc_factor[0];
   acc_toc_[1] = acc_[1] * acc_toc_factor[1];
   pnh_.param("path_step", path_step_, 1);
-  pnh_.param("switchback_dist", sw_dist_, 0.3);
   pnh_.param("goal_tolerance_dist", goal_tolerance_dist_, 0.2);
   pnh_.param("goal_tolerance_ang", goal_tolerance_ang_, 0.1);
   pnh_.param("stop_tolerance_dist", stop_tolerance_dist_, 0.1);
