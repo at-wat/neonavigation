@@ -36,7 +36,6 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "k_dist" (double, default: 1.0)
 * "k_ang" (double, default: 1.0)
 * "k_avel" (double, default: 1.0)
-* "k_dcel" (double, default: 0.2)
 * "dist_lim" (double, default: 0.5)
 * "dist_stop" (double, default: 2.0)
 * "rotate_ang" (?, default: M_PI / 4)
