@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
 #include <vector>
 
 #include <Eigen/Core>
