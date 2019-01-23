@@ -2,7 +2,7 @@
 <launch>
   <param name="neonavigation_compatible" value="1" />
 
-  <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="90.0" />
+  <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="290.0" />
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="trajectory_tracker" output="screen">
     <param name="max_vel" value="1.0" />
@@ -17,6 +17,7 @@
     <param name="k_dist" value="4.5" />
     <param name="k_ang" value="3.0" />
     <param name="k_avel" value="4.0" />
+    <param name="gain_at_vel" value="1.0" />
     <param name="dist_lim" value="0.5" />
   </node>
 </launch>

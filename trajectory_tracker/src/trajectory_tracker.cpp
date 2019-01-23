@@ -463,9 +463,8 @@ void TrackerNode::control()
     }
 
     const double k_ang = (gain_at_vel_ == 0.0) ? (k_[1]) : (k_[1] * linear_vel / gain_at_vel_);
-    const double k_angvel = (gain_at_vel_ == 0.0) ? (k_[2]) : (k_[2] * linear_vel / gain_at_vel_);
     w_lim_.increment(
-        dt * (-dist_err_clip * k_[0] - angle * k_ang - (w_lim_.get() - wref) * k_angvel),
+        dt * (-dist_err_clip * k_[0] - angle * k_ang - (w_lim_.get() - wref) * k_[2]),
         vel_[1], acc_[1], dt);
 
     ROS_DEBUG(
