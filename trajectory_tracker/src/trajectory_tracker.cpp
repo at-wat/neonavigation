@@ -86,6 +86,7 @@ private:
   double look_forward_;
   double curv_forward_;
   double k_[3];
+  double gain_at_vel_;
   double d_lim_;
   double d_stop_;
   double vel_[2];
@@ -145,6 +146,7 @@ TrackerNode::TrackerNode()
   pnh_.param("k_dist", k_[0], 1.0);
   pnh_.param("k_ang", k_[1], 1.0);
   pnh_.param("k_avel", k_[2], 1.0);
+  pnh_.param("gain_at_vel", gain_at_vel_, 0.0);
   pnh_.param("dist_lim", d_lim_, 0.5);
   pnh_.param("dist_stop", d_stop_, 2.0);
   pnh_.param("rotate_ang", rotate_ang_, M_PI / 4);
@@ -460,8 +462,9 @@ void TrackerNode::control()
       wref = std::copysign(1.0, wref) * vel_[1];
     }
 
+    const double k_ang = (gain_at_vel_ == 0.0) ? (k_[1]) : (k_[1] * linear_vel / gain_at_vel_);
     w_lim_.increment(
-        dt * (-dist_err_clip * k_[0] - angle * k_[1] - (w_lim_.get() - wref) * k_[2]),
+        dt * (-dist_err_clip * k_[0] - angle * k_ang - (w_lim_.get() - wref) * k_[2]),
         vel_[1], acc_[1], dt);
 
     ROS_DEBUG(
