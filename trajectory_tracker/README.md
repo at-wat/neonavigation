@@ -36,6 +36,8 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "k_dist" (double, default: 1.0)
 * "k_ang" (double, default: 1.0)
 * "k_avel" (double, default: 1.0)
+* "gain_at_vel" (double, default: 0.0)
+  > compensate k_ang according to the current linear velocity to keep convergence characteristic at the linear velocity, specified by this parameter, if `gain_at_vel != 0`
 * "dist_lim" (double, default: 0.5)
 * "dist_stop" (double, default: 2.0)
 * "rotate_ang" (?, default: M_PI / 4)

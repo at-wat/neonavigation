@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
 #include <vector>
 
 #include <Eigen/Core>
@@ -221,6 +222,52 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   ASSERT_NEAR(yaw_, 0.0, 1e-2);
   ASSERT_NEAR(pos_[0], 0.5, 1e-2);
   ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+}
+
+TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
+{
+  const double vels[] =
+      {
+        0.02, 0.05, 0.1, 0.2, 0.5, 1.0
+      };
+  const double path_length = 2.0;
+  for (const double vel : vels)
+  {
+    const std::string info_message = "linear vel: " + std::to_string(vel);
+
+    initState(Eigen::Vector2d(0, 0.01), 0);
+
+    std::vector<Eigen::Vector4d> poses;
+    for (double x = 0.0; x < path_length; x += 0.01)
+      poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, vel));
+    poses.push_back(Eigen::Vector4d(path_length, 0.0, 0.0, vel));
+    publishPathVelocity(poses);
+
+    waitUntilStart();
+
+    ros::Rate rate(50);
+    const ros::Time start = ros::Time::now();
+    while (ros::ok())
+    {
+      ASSERT_LT(ros::Time::now() - start, ros::Duration(5.0 + path_length / vel)) << info_message;
+
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+      if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+        break;
+    }
+    for (int i = 0; i < 25; ++i)
+    {
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+    }
+
+    EXPECT_NEAR(yaw_, 0.0, 1e-2) << info_message;
+    EXPECT_NEAR(pos_[0], path_length, 1e-2) << info_message;
+    EXPECT_NEAR(pos_[1], 0.0, 1e-2) << info_message;
+  }
 }
 
 TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
