@@ -209,7 +209,8 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
 
   for (size_t i = 0; i < 40 * 6 && ros::ok() && !failed; ++i)
   {
-    if (i > 5)
+    // enable check after two cycles of safety_limiter
+    if (i > 8)
       en = true;
     // safety_limiter: 10 hz, cloud publish: 40 hz
     // safety_limiter must check 4 buffered clouds
