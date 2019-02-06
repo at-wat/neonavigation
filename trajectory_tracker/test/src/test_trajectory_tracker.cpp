@@ -28,16 +28,19 @@
  */
 
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include <ros/ros.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <nav_msgs/Path.h>
+
 #include <geometry_msgs/Twist.h>
+#include <nav_msgs/Path.h>
+#include <rosgraph_msgs/Clock.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 #include <trajectory_tracker_msgs/PathWithVelocity.h>
@@ -520,10 +523,34 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   ASSERT_NEAR(pos_[1], p[1], 1e-1);
 }
 
+void timeSource()
+{
+  ros::NodeHandle nh("/");
+  bool use_sim_time;
+  nh.param("/use_sim_time", use_sim_time, false);
+  if (!use_sim_time)
+    return;
+
+  ros::Publisher pub = nh.advertise<rosgraph_msgs::Clock>("clock", 1);
+
+  ros::WallRate rate(500.0);  // 500% speed
+  ros::WallTime time = ros::WallTime::now();
+  while (ros::ok())
+  {
+    rosgraph_msgs::Clock clock;
+    clock.clock.fromNSec(time.toNSec());
+    pub.publish(clock);
+    rate.sleep();
+    time += ros::WallDuration(0.01);
+  }
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_trajectory_tracker");
+
+  std::thread time_thread(timeSource);
 
   return RUN_ALL_TESTS();
 }
