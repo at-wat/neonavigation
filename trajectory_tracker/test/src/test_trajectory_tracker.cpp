@@ -28,8 +28,9 @@
  */
 
 #include <string>
-#include <thread>
 #include <vector>
+
+#include <boost/thread.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -550,7 +551,7 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_trajectory_tracker");
 
-  std::thread time_thread(timeSource);
+  boost::thread time_thread(timeSource);
 
   return RUN_ALL_TESTS();
 }
