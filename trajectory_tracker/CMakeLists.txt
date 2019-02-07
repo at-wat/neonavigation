@@ -17,6 +17,7 @@ find_package(catkin REQUIRED
     trajectory_tracker_msgs
 )
 
+find_package(Boost REQUIRED COMPONENTS thread)
 find_package(Eigen3 REQUIRED)
 
 ## Declare a catkin package
@@ -36,7 +37,7 @@ catkin_package(
 )
 
 ## Build
-include_directories(${catkin_INCLUDE_DIRS} include)
+include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)

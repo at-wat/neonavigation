@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <param name="neonavigation_compatible" value="1" />
+  <param name="use_sim_time" value="true" /><!-- clock is provided by the test node -->
 
   <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="290.0" />
 
