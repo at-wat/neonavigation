@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <test test-name="test_tf_projection_node" pkg="track_odometry" type="test_tf_projection_node" />
+
+  <node pkg="track_odometry" type="tf_projection" name="tf_projection">
+    <param name="base_link_frame" value="base_link" />
+    <param name="projection_frame" value="map" />
+    <param name="target_frame" value="map" />
+    <param name="frame" value="base_link_projected" />
+  </node>
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="test_static_pub" args="1 2 3 0 0 0.7071 0.7071 /map /base_link" />
+</launch>
