@@ -69,8 +69,9 @@ public:
         pnh_.hasParam("target_frame") ||
         pnh_.hasParam("frame"))
     {
-      ROS_ERROR("tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
-                "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
+      ROS_ERROR(
+          "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
+          "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
 
       pnh_.param("base_link_frame", source_frame, std::string("base_link"));
       pnh_.param("projection_frame", projection_surface_frame, std::string("map"));
