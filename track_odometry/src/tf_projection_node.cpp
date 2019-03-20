@@ -107,7 +107,10 @@ public:
       return;
     }
 
-    const tf2::Transform result = track_odometry::projectTranslation(trans, trans_target);
+    const tf2::Stamped<tf2::Transform> result(
+        track_odometry::projectTranslation(trans, trans_target),
+        trans.stamp_ + ros::Duration(tf_tolerance_),
+        parent_frame_);
 
     geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
     if (flat_)
@@ -115,8 +118,6 @@ public:
       const float yaw = tf2::getYaw(trans_out.transform.rotation);
       trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     }
-    trans_out.header.stamp = trans.stamp_ + ros::Duration(tf_tolerance_);
-    trans_out.frame_id = parent_frame_;
     trans_out.child_frame_id = projected_frame_;
 
     tf_broadcaster_.sendTransform(trans_out);
