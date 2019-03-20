@@ -27,6 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
+
 #include <ros/ros.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/buffer.h>
