@@ -62,8 +62,6 @@ public:
     , pnh_("~")
     , tf_listener_(tf_buffer_)
   {
-    std::string parent_frame, projection_surface_frame, source_frame, projected_frame;
-
     if (pnh_.hasParam("base_link_frame") ||
         pnh_.hasParam("projection_frame") ||
         pnh_.hasParam("target_frame") ||
@@ -73,17 +71,17 @@ public:
           "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
           "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
 
-      pnh_.param("base_link_frame", source_frame, std::string("base_link"));
-      pnh_.param("projection_frame", projection_surface_frame, std::string("map"));
-      pnh_.param("target_frame", parent_frame, std::string("map"));
-      pnh_.param("frame", projected_frame, std::string("base_link_projected"));
+      pnh_.param("base_link_frame", source_frame_, std::string("base_link"));
+      pnh_.param("projection_frame", projection_surface_frame_, std::string("map"));
+      pnh_.param("target_frame", parent_frame_, std::string("map"));
+      pnh_.param("frame", projected_frame_, std::string("base_link_projected"));
     }
     else
     {
-      pnh_.param("source_frame", source_frame, std::string("base_link"));
-      pnh_.param("projection_surface_frame", projection_surface_frame, std::string("map"));
-      pnh_.param("parent_frame", parent_frame, std::string("map"));
-      pnh_.param("projected_frame", projected_frame, std::string("base_link_projected"));
+      pnh_.param("source_frame", source_frame_, std::string("base_link"));
+      pnh_.param("projection_surface_frame", projection_surface_frame_, std::string("map"));
+      pnh_.param("parent_frame", parent_frame_, std::string("map"));
+      pnh_.param("projected_frame", projected_frame_, std::string("base_link_projected"));
     }
 
     pnh_.param("hz", rate_, 10.0);
