@@ -27,94 +27,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
-
-#include <tf2/utils.h>
+#include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
 
-#include <string>
+#include <track_odometry/tf_projection.h>
 
-#include <tf_projection.h>
-
-class TfProjectionNode : public TfProjection
+tf2::Transform track_odometry::projectTranslation(
+    const tf2::Transform& trans, const tf2::Transform& trans_target)
 {
-private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
-  tf2_ros::TransformBroadcaster tf_broadcaster_;
+  tf2::Vector3 origin(trans.getOrigin());
+  origin.setZ(0.0);
+  tf2::Transform projected(trans);
+  projected.setOrigin(origin);
 
-  double rate_;
-  double tf_tolerance_;
-  bool flat_;
-
-public:
-  TfProjectionNode()
-    : nh_()
-    , pnh_("~")
-    , tf_listener_(tf_buffer_)
-  {
-    pnh_.param("base_link_frame", frames_["base"], std::string("base_link"));
-    pnh_.param("projection_frame", frames_["projection"], std::string("map"));
-    pnh_.param("target_frame", frames_["target"], std::string("map"));
-    pnh_.param("frame", frames_["frame"], std::string("base_link_projected"));
-
-    pnh_.param("hz", rate_, 10.0);
-    pnh_.param("tf_tolerance", tf_tolerance_, 0.1);
-    pnh_.param("flat", flat_, false);
-  }
-  void process()
-  {
-    try
-    {
-      tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(
-          tf_buffer_.lookupTransform(frames_["projection"], frames_["base"], ros::Time(0), ros::Duration(0.1)),
-          trans);
-
-      tf2::Stamped<tf2::Transform> trans_target;
-      tf2::fromMsg(
-          tf_buffer_.lookupTransform(frames_["target"], frames_["projection"], trans.stamp_, ros::Duration(0.1)),
-          trans_target);
-
-      const auto result = project(trans, trans_target);
-
-      geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
-      if (flat_)
-      {
-        const float yaw = tf2::getYaw(trans_out.transform.rotation);
-        trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-      }
-      trans_out.header.stamp = trans.stamp_ + ros::Duration(tf_tolerance_);
-
-      tf_broadcaster_.sendTransform(trans_out);
-    }
-    catch (tf2::TransformException& e)
-    {
-      ROS_WARN_ONCE("%s", e.what());
-    }
-  }
-  void cbTimer(const ros::TimerEvent& event)
-  {
-    process();
-  }
-  void spin()
-  {
-    ros::Timer timer = nh_.createTimer(
-        ros::Duration(1.0 / rate_), &TfProjectionNode::cbTimer, this);
-    ros::spin();
-  }
-};
-
-int main(int argc, char* argv[])
-{
-  ros::init(argc, argv, "tf_projection");
-
-  TfProjectionNode proj;
-  proj.spin();
-
-  return 0;
+  return trans_target * projected;
 }
