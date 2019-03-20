@@ -55,7 +55,7 @@ add_executable(track_odometry src/track_odometry.cpp)
 target_link_libraries(track_odometry ${catkin_LIBRARIES})
 add_dependencies(track_odometry ${catkin_EXPORTED_TARGETS})
 
-add_executable(tf_projection src/tf_projection.cpp)
+add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
 target_link_libraries(tf_projection ${catkin_LIBRARIES})
 add_dependencies(tf_projection ${catkin_EXPORTED_TARGETS})
 

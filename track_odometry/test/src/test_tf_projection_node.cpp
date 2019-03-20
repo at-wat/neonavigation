@@ -27,6 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
+
 #include <ros/ros.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/buffer.h>
@@ -34,18 +36,34 @@
 
 #include <gtest/gtest.h>
 
-TEST(TfProjection, ProjectionTransform)
+class TfProjectionTest : public ::testing::TestWithParam<const char*>
 {
-  tf2_ros::Buffer tfbuf;
-  tf2_ros::TransformListener tfl(tfbuf);
-  EXPECT_TRUE(tfbuf.canTransform("map", "base_link_projected", ros::Time(0), ros::Duration(1.0)));
+public:
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
+
+  std::string projected_frame_;
+
+  TfProjectionTest()
+    : tfl_(tfbuf_)
+  {
+  }
+  void SetUp() override
+  {
+    projected_frame_ = std::string(GetParam());
+  }
+};
+
+TEST_P(TfProjectionTest, ProjectionTransform)
+{
+  EXPECT_TRUE(tfbuf_.canTransform("map", projected_frame_, ros::Time(0), ros::Duration(1.0)));
 
   geometry_msgs::TransformStamped out;
   try
   {
-    out = tfbuf.lookupTransform("map", "base_link_projected", ros::Time(0), ros::Duration(1.0));
+    out = tfbuf_.lookupTransform("map", projected_frame_, ros::Time(0), ros::Duration(1.0));
   }
-  catch (tf2::TransformException &e)
+  catch (tf2::TransformException& e)
   {
     FAIL() << e.what();
   }
@@ -57,8 +75,12 @@ TEST(TfProjection, ProjectionTransform)
   ASSERT_NEAR(out.transform.rotation.z, 0.7071, 1e-4);
   ASSERT_NEAR(out.transform.rotation.w, 0.7071, 1e-4);
   ASSERT_EQ(out.header.frame_id, "map");
-  ASSERT_EQ(out.child_frame_id, "base_link_projected");
+  ASSERT_EQ(out.child_frame_id, projected_frame_);
 }
+
+INSTANTIATE_TEST_CASE_P(
+    ProjectionTransformInstance, TfProjectionTest,
+    ::testing::Values("base_link_projected", "base_link_projected2"));
 
 int main(int argc, char** argv)
 {
