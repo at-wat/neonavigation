@@ -27,34 +27,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TF_PROJECTION_H
-#define TF_PROJECTION_H
+#ifndef TRACK_ODOMETRY_TF_PROJECTION_H
+#define TRACK_ODOMETRY_TF_PROJECTION_H
 
 #include <tf2/LinearMath/Transform.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#include <map>
-#include <string>
-
-class TfProjection
+namespace track_odometry
 {
-protected:
-  std::map<std::string, std::string> frames_;
+tf2::Transform projectTranslation(
+    const tf2::Transform& trans, const tf2::Transform& trans_target);
+}  // tf_projection
 
-public:
-  tf2::Stamped<tf2::Transform> project(
-      const tf2::Stamped<tf2::Transform>& trans, const tf2::Stamped<tf2::Transform>& trans_target)
-  {
-    auto origin = trans.getOrigin();
-    origin.setZ(0.0);
-    tf2::Stamped<tf2::Transform> projected = trans;
-    projected.setOrigin(origin);
-
-    tf2::Stamped<tf2::Transform> output = trans_target;
-    output *= projected;
-    output.frame_id_ = frames_["target"];
-
-    return output;
-  }
-};
-
-#endif  // TF_PROJECTION_H
+#endif  // TRACK_ODOMETRY_TF_PROJECTION_H

@@ -31,7 +31,7 @@
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/transform_datatypes.h>
 
-#include <tf_projection.h>
+#include <track_odometry/tf_projection.h>
 #include <gtest/gtest.h>
 
 void testTransform(
@@ -39,9 +39,7 @@ void testTransform(
     const tf2::Stamped<tf2::Transform> targ2proj,
     const tf2::Stamped<tf2::Transform> truth)
 {
-  TfProjection tfp;
-
-  tf2::Stamped<tf2::Transform> result = tfp.project(proj2base, targ2proj);
+  tf2::Transform result = track_odometry::projectTranslation(proj2base, targ2proj);
 
   const float error_x = fabs(result.getOrigin().x() - truth.getOrigin().x());
   const float error_y = fabs(result.getOrigin().y() - truth.getOrigin().y());
