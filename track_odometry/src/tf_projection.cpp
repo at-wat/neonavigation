@@ -89,6 +89,7 @@ public:
         trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
       }
       trans_out.header.stamp = trans.stamp_ + ros::Duration(tf_tolerance_);
+      trans_out.child_frame_id = frames_["frame"];
 
       tf_broadcaster_.sendTransform(trans_out);
     }
