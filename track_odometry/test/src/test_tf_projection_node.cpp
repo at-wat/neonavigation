@@ -70,8 +70,8 @@ TEST_P(TfProjectionTest, ProjectionTransform)
   ASSERT_EQ(out.transform.translation.x, 1);
   ASSERT_EQ(out.transform.translation.y, 2);
   ASSERT_EQ(out.transform.translation.z, 0);
-  ASSERT_EQ(out.transform.rotation.x, 0);
-  ASSERT_EQ(out.transform.rotation.y, 0);
+  ASSERT_NEAR(out.transform.rotation.x, 0, 1e-4);
+  ASSERT_NEAR(out.transform.rotation.y, 0, 1e-4);
   ASSERT_NEAR(out.transform.rotation.z, 0.7071, 1e-4);
   ASSERT_NEAR(out.transform.rotation.w, 0.7071, 1e-4);
   ASSERT_EQ(out.header.frame_id, "map");
@@ -80,7 +80,10 @@ TEST_P(TfProjectionTest, ProjectionTransform)
 
 INSTANTIATE_TEST_CASE_P(
     ProjectionTransformInstance, TfProjectionTest,
-    ::testing::Values("base_link_projected", "base_link_projected2"));
+    ::testing::Values(
+        "base_link_projected",
+        "base_link_projected2",
+        "base_link_tilt_projected"));
 
 int main(int argc, char** argv)
 {

@@ -9,6 +9,7 @@
     <param name="projection_frame" value="map" />
     <param name="target_frame" value="map" />
     <param name="frame" value="base_link_projected" />
+    <param name="project_posture" value="false" />
   </node>
 
   <node pkg="track_odometry" type="tf_projection" name="tf_projection_new_param">
@@ -16,7 +17,17 @@
     <param name="projection_surface_frame" value="map" />
     <param name="parent_frame" value="map" />
     <param name="projected_frame" value="base_link_projected2" />
+    <param name="project_posture" value="false" />
   </node>
 
-  <node pkg="tf2_ros" type="static_transform_publisher" name="test_static_pub" args="1 2 3 0 0 0.7071 0.7071 /map /base_link" />
+  <node pkg="track_odometry" type="tf_projection" name="tf_projection_project_posture">
+    <param name="source_frame" value="base_link_tilt" />
+    <param name="projection_surface_frame" value="map" />
+    <param name="parent_frame" value="map" />
+    <param name="projected_frame" value="base_link_tilt_projected" />
+    <param name="project_posture" value="true" />
+  </node>
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="test_static_pub" args="1 2 3 0 0 0.7071 0.7071 map base_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="test_static_pub2" args="1 2 3 0.1830 0.1830 0.6830 0.6830 map base_link_tilt" />
 </launch>
