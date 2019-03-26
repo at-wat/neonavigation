@@ -50,6 +50,7 @@ private:
   double rate_;
   double tf_tolerance_;
   bool flat_;
+  bool project_posture_;
 
   std::string source_frame_;
   std::string projection_surface_frame_;
@@ -87,6 +88,7 @@ public:
     pnh_.param("hz", rate_, 10.0);
     pnh_.param("tf_tolerance", tf_tolerance_, 0.1);
     pnh_.param("flat", flat_, false);
+    pnh_.param("project_posture", project_posture_, false);
   }
   void process()
   {
@@ -105,6 +107,12 @@ public:
     {
       ROS_WARN_ONCE("%s", e.what());
       return;
+    }
+
+    if (project_posture_)
+    {
+      const float yaw = tf2::getYaw(trans.getRotation());
+      trans.setRotation(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     }
 
     const tf2::Stamped<tf2::Transform> result(
