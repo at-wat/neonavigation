@@ -485,6 +485,12 @@ protected:
               cost +=
                   (map_info_.linear_resolution * grid_to_len / 100.0) *
                   (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
+
+              if (cost < 0)
+              {
+                cost = 0;
+                ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
+              }
             }
             cost += euclidCost(d, ec_rough_);
 
