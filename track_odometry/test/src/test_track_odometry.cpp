@@ -54,8 +54,9 @@ public:
       nav_msgs::Odometry& odom_raw,
       sensor_msgs::Imu& imu)
   {
-    ros::Duration(0.5).sleep();
+    ros::Duration(0.1).sleep();
     ros::Rate rate(100);
+    odom_ = nullptr;
     for (int i = 0; i < 100 && ros::ok(); ++i)
     {
       imu.header.stamp = odom_raw.header.stamp = ros::Time::now();
@@ -63,6 +64,8 @@ public:
       pub_imu_.publish(imu);
       rate.sleep();
       ros::spinOnce();
+      if (odom_ && i > 50)
+        break;
     }
   }
   bool run(
@@ -112,6 +115,11 @@ public:
     pub_odom_.publish(odom_raw);
     pub_imu_.publish(imu);
   }
+  void waitAndSpinOnce()
+  {
+    ros::Duration(0.1).sleep();
+    ros::spinOnce();
+  }
 
 protected:
   ros::Publisher pub_odom_;
@@ -150,8 +158,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
 
-  ros::Duration(0.1).sleep();
-  ros::spinOnce();
+  waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 1.0, 1e-3);
   ASSERT_NEAR(odom_->pose.pose.position.y, 0.0, 1e-3);
   ASSERT_NEAR(odom_->pose.pose.position.z, 0.0, 1e-3);
@@ -167,8 +174,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   imu.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI / 2));
   stepAndPublish(odom_raw, imu, dt);
 
-  ros::Duration(0.1).sleep();
-  ros::spinOnce();
+  waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 1.0, 1e-2);
   ASSERT_NEAR(odom_->pose.pose.position.y, 0.0, 1e-2);
   ASSERT_NEAR(odom_->pose.pose.position.z, 0.0, 1e-2);
@@ -181,8 +187,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
 
-  ros::Duration(0.1).sleep();
-  ros::spinOnce();
+  waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 1.0, 5e-2);
   ASSERT_NEAR(odom_->pose.pose.position.y, 1.0, 5e-2);
   ASSERT_NEAR(odom_->pose.pose.position.z, 0.0, 5e-2);
@@ -216,8 +221,7 @@ TEST_P(TrackOdometryTest, ZFilterOff)
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
 
-  ros::Duration(0.1).sleep();
-  ros::spinOnce();
+  waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 0.0, 1e-3);
   ASSERT_NEAR(odom_->pose.pose.position.y, 0.0, 1e-3);
   ASSERT_NEAR(odom_->pose.pose.position.z, 1.0, 1e-3);
