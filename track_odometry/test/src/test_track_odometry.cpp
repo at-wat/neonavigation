@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-class TrackOdometryTest : public ::testing::Test
+class TrackOdometryTest : public ::testing::TestWithParam<const char*>
 {
 public:
   TrackOdometryTest()
@@ -189,9 +189,10 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   ASSERT_NEAR(tf2::getYaw(odom_->pose.pose.orientation), M_PI / 2, 1e-2);
 }
 
-TEST_F(TrackOdometryTest, ZFilterOff)
+TEST_P(TrackOdometryTest, ZFilterOff)
 {
-  initializeNode("no_z_filter");
+  const std::string ns_postfix(GetParam());
+  initializeNode("no_z_filter" + ns_postfix);
 
   const float dt = 0.02;
   const int steps = 100;
@@ -222,9 +223,10 @@ TEST_F(TrackOdometryTest, ZFilterOff)
   ASSERT_NEAR(odom_->pose.pose.position.z, 1.0, 1e-3);
 }
 
-TEST_F(TrackOdometryTest, ZFilterOn)
+TEST_P(TrackOdometryTest, ZFilterOn)
 {
-  initializeNode("z_filter");
+  const std::string ns_postfix(GetParam());
+  initializeNode("z_filter" + ns_postfix);
 
   const float dt = 0.02;
   const int steps = 100;
@@ -248,10 +250,13 @@ TEST_F(TrackOdometryTest, ZFilterOn)
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
 
-  ros::Duration(0.1).sleep();
-  ros::spinOnce();
+  waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.z, 1.0 - 1.0 / M_E, 5e-2);
 }
+
+INSTANTIATE_TEST_CASE_P(
+    TrackOdometryTestInstance, TrackOdometryTest,
+    ::testing::Values("", "_old_param"));
 
 int main(int argc, char** argv)
 {
