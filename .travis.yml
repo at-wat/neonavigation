@@ -31,7 +31,7 @@ script:
     --cache-from ${DOCKER_CACHE_REGISTRY}:${ROS_DISTRO_TARGET}
     -t ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET}
     -f Dockerfile.${ROS_DISTRO_TARGET}
-    --pull=true ${TRAVIS_BUILD_DIR} || (gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}] FAILED on ${ROS_DISTRO_TARGET}" "docker build failed"; false)
+    --pull=true ${TRAVIS_BUILD_DIR} || (gh-pr-comment "[[#${TRAVIS_BUILD_NUMBER}](${TRAVIS_BUILD_WEB_URL})] FAILED on ${ROS_DISTRO_TARGET}" "docker build failed"; false)
   - docker run --rm -it
     -e TRAVIS_PULL_REQUEST
     -e TRAVIS_REPO_SLUG
@@ -39,6 +39,7 @@ script:
     -e COVERAGE_TEST
     -e GITHUB_API_URL_BASE
     -e TRAVIS_BUILD_NUMBER
-    `bash <(curl -s https://codecov.io/env)`
+    -e TRAVIS_BUILD_WEB_URL
+    $(bash <(curl -s https://codecov.io/env))
     ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET} /catkin_ws/src/${PACKAGE_NAME}/.travis/test.sh
   - bash -c "[ x${COVERAGE_TEST} != xtrue ] && .travis/save_cache.sh || true"
