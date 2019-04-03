@@ -49,17 +49,12 @@ public:
     pub_odom_ = nh.advertise<nav_msgs::Odometry>("odom_raw", 10);
     pub_imu_ = nh.advertise<sensor_msgs::Imu>("imu/data", 10);
     sub_odom_ = nh.subscribe("odom", 10, &TrackOdometryTest::cbOdom, this);
-
-    nav_msgs::Odometry odom_raw;
-    odom_raw.header.frame_id = "odom";
-    odom_raw.pose.pose.orientation.w = 1;
-
-    sensor_msgs::Imu imu;
-    imu.header.frame_id = "base_link";
-    imu.orientation.w = 1;
-    imu.linear_acceleration.z = 9.8;
-
-    ros::Duration(1).sleep();
+  }
+  void initializeTrackOdometry(
+      nav_msgs::Odometry& odom_raw,
+      sensor_msgs::Imu& imu)
+  {
+    ros::Duration(0.5).sleep();
     ros::Rate rate(100);
     for (int i = 0; i < 100 && ros::ok(); ++i)
     {
@@ -98,10 +93,7 @@ public:
       odom_raw.pose.pose.position.x += cos(yaw) * dt * odom_raw.twist.twist.linear.x;
       odom_raw.pose.pose.position.y += sin(yaw) * dt * odom_raw.twist.twist.linear.x;
 
-      odom_raw.header.stamp += ros::Duration(dt);
-      imu.header.stamp += ros::Duration(dt);
-      pub_odom_.publish(odom_raw);
-      pub_imu_.publish(imu);
+      stepAndPublish(odom_raw, imu, dt, steps);
 
       rate.sleep();
       ros::spinOnce();
@@ -109,6 +101,16 @@ public:
         break;
     }
     return ros::ok();
+  }
+  bool stepAndPublish(
+      nav_msgs::Odometry& odom_raw,
+      sensor_msgs::Imu& imu,
+      const float dt, const int steps)
+  {
+    odom_raw.header.stamp += ros::Duration(dt);
+    imu.header.stamp += ros::Duration(dt);
+    pub_odom_.publish(odom_raw);
+    pub_imu_.publish(imu);
   }
 
 protected:
@@ -139,13 +141,14 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   imu.orientation.w = 1;
   imu.linear_acceleration.z = 9.8;
 
+  initializeTrackOdometry(odom_raw, imu);
+
   // Go forward for 1m
   odom_raw.twist.twist.linear.x = 0.5;
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  pub_odom_.publish(odom_raw);
-  pub_imu_.publish(imu);
+  stepAndPublish(odom_raw, imu, dt, steps);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -162,8 +165,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   imu.angular_velocity.z = 0;
   odom_raw.twist.twist.angular.z = 0;
   imu.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI / 2));
-  pub_odom_.publish(odom_raw);
-  pub_imu_.publish(imu);
+  stepAndPublish(odom_raw, imu, dt, steps);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -177,8 +179,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  pub_odom_.publish(odom_raw);
-  pub_imu_.publish(imu);
+  stepAndPublish(odom_raw, imu, dt, steps);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -205,13 +206,14 @@ TEST_F(TrackOdometryTest, ZFilterOff)
   imu.orientation.w = cos(-M_PI / 4);
   imu.linear_acceleration.x = -9.8;
 
+  initializeTrackOdometry(odom_raw, imu);
+
   // Go forward for 1m
   odom_raw.twist.twist.linear.x = 0.5;
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  pub_odom_.publish(odom_raw);
-  pub_imu_.publish(imu);
+  stepAndPublish(odom_raw, imu, dt, steps);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -237,13 +239,14 @@ TEST_F(TrackOdometryTest, ZFilterOn)
   imu.orientation.w = cos(-M_PI / 4);
   imu.linear_acceleration.x = -9.8;
 
+  initializeTrackOdometry(odom_raw, imu);
+
   // Go forward for 1m
   odom_raw.twist.twist.linear.x = 0.5;
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  pub_odom_.publish(odom_raw);
-  pub_imu_.publish(imu);
+  stepAndPublish(odom_raw, imu, dt, steps);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
