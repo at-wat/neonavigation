@@ -93,7 +93,7 @@ public:
       odom_raw.pose.pose.position.x += cos(yaw) * dt * odom_raw.twist.twist.linear.x;
       odom_raw.pose.pose.position.y += sin(yaw) * dt * odom_raw.twist.twist.linear.x;
 
-      stepAndPublish(odom_raw, imu, dt, steps);
+      stepAndPublish(odom_raw, imu, dt);
 
       rate.sleep();
       ros::spinOnce();
@@ -105,7 +105,7 @@ public:
   void stepAndPublish(
       nav_msgs::Odometry& odom_raw,
       sensor_msgs::Imu& imu,
-      const float dt, const int steps)
+      const float dt)
   {
     odom_raw.header.stamp += ros::Duration(dt);
     imu.header.stamp += ros::Duration(dt);
@@ -148,7 +148,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  stepAndPublish(odom_raw, imu, dt, steps);
+  stepAndPublish(odom_raw, imu, dt);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -165,7 +165,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   imu.angular_velocity.z = 0;
   odom_raw.twist.twist.angular.z = 0;
   imu.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI / 2));
-  stepAndPublish(odom_raw, imu, dt, steps);
+  stepAndPublish(odom_raw, imu, dt);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -179,7 +179,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  stepAndPublish(odom_raw, imu, dt, steps);
+  stepAndPublish(odom_raw, imu, dt);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -213,7 +213,7 @@ TEST_F(TrackOdometryTest, ZFilterOff)
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  stepAndPublish(odom_raw, imu, dt, steps);
+  stepAndPublish(odom_raw, imu, dt);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
@@ -246,7 +246,7 @@ TEST_F(TrackOdometryTest, ZFilterOn)
   ASSERT_TRUE(run(odom_raw, imu, dt, steps));
 
   odom_raw.twist.twist.linear.x = 0.0;
-  stepAndPublish(odom_raw, imu, dt, steps);
+  stepAndPublish(odom_raw, imu, dt);
 
   ros::Duration(0.1).sleep();
   ros::spinOnce();
