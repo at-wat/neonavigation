@@ -304,7 +304,7 @@ public:
       {
         const double odom_freq = 100.0;
         if (0.0 < z_filter && z_filter < 1.0)
-          z_filter_timeconst_ = odom_freq / (1.0 - z_filter);
+          z_filter_timeconst_ = (1.0 / odom_freq) / (1.0 - z_filter);
       }
       ROS_ERROR(
           "track_odometry: ~z_filter parameter (exponential filter (1 - alpha) value) is deprecated. "
