@@ -74,7 +74,7 @@ then
   set -o pipefail
   cd src/neonavigation/
   cp -r /catkin_ws/build ./
-  rm -rf neonavigation_rviz_plugins neonavigation_msgs
+  rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
   bash <(curl -s https://codecov.io/bash) -y .codecov.yml -Z \
     | grep -i -e error -e fail
   exit 0
