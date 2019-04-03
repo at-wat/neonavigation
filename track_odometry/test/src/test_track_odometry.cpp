@@ -102,7 +102,7 @@ public:
     }
     return ros::ok();
   }
-  bool stepAndPublish(
+  void stepAndPublish(
       nav_msgs::Odometry& odom_raw,
       sensor_msgs::Imu& imu,
       const float dt, const int steps)
