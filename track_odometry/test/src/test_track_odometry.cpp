@@ -74,7 +74,7 @@ public:
       const float dt, const int steps)
   {
     ros::Rate rate(1.0 / dt);
-    size_t cnt = 0;
+    int cnt(0);
 
     imu.header.stamp = odom_raw.header.stamp = ros::Time::now();
     while (ros::ok())
