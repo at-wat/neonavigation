@@ -1,11 +1,44 @@
 <?xml version="1.0"?>
 <launch>
-  <param name="neonavigation_compatible" value="1" />
-
   <test test-name="test_track_odometry" pkg="track_odometry" type="test_track_odometry" />
 
+  <param name="neonavigation_compatible" value="1" />
   <node pkg="track_odometry" type="track_odometry" name="track_odometry">
     <param name="base_link_id" value="base_link" />
     <param name="use_kf" value="false" />
+    <param name="z_filter_timeconst" value="-1.0" />
   </node>
+
+  <group ns="no_z_filter">
+    <param name="neonavigation_compatible" value="1" />
+    <node pkg="track_odometry" type="track_odometry" name="track_odometry_no_z_filter">
+      <param name="base_link_id" value="base_link" />
+      <param name="use_kf" value="false" />
+      <param name="z_filter_timeconst" value="-1.0" />
+    </node>
+  </group>
+  <group ns="no_z_filter_old_param">
+    <param name="neonavigation_compatible" value="1" />
+    <node pkg="track_odometry" type="track_odometry" name="track_odometry_no_z_filter">
+      <param name="base_link_id" value="base_link" />
+      <param name="use_kf" value="false" />
+      <param name="z_filter" value="1.0" />
+    </node>
+  </group>
+  <group ns="z_filter">
+    <param name="neonavigation_compatible" value="1" />
+    <node pkg="track_odometry" type="track_odometry" name="track_odometry_z_filter">
+      <param name="base_link_id" value="base_link" />
+      <param name="use_kf" value="false" />
+      <param name="z_filter_timeconst" value="2.0" />
+    </node>
+  </group>
+  <group ns="z_filter_old_param">
+    <param name="neonavigation_compatible" value="1" />
+    <node pkg="track_odometry" type="track_odometry" name="track_odometry_z_filter">
+      <param name="base_link_id" value="base_link" />
+      <param name="use_kf" value="false" />
+      <param name="z_filter" value="0.995" />
+    </node>
+  </group>
 </launch>
