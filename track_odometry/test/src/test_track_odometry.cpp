@@ -40,9 +40,6 @@
 class TrackOdometryTest : public ::testing::TestWithParam<const char*>
 {
 public:
-  TrackOdometryTest()
-  {
-  }
   void initializeNode(const std::string& ns)
   {
     ros::NodeHandle nh(ns);
