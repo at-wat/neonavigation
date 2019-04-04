@@ -97,7 +97,7 @@ private:
 
   sensor_msgs::Imu imu_;
   double gyro_zero_[3];
-  double z_filter_;
+  double z_filter_timeconst_;
   double tf_tolerance_;
 
   bool debug_;
@@ -248,7 +248,9 @@ private:
         v *= slip_ratio;
 
       odom.pose.pose.position = toPoint(toEigen(odom_prev_.pose.pose.position) + v);
-      odom.pose.pose.position.z *= z_filter_;
+      if (z_filter_timeconst_ > 0)
+        odom.pose.pose.position.z *= 1.0 - (dt / z_filter_timeconst_);
+
       odom.child_frame_id = base_link_id_;
       pub_odom_.publish(odom);
 
@@ -294,7 +296,26 @@ public:
       pnh_.param("odom_id", odom_id_, std::string("odom"));
     }
 
-    pnh_.param("z_filter", z_filter_, 0.99);
+    if (pnh_.hasParam("z_filter"))
+    {
+      z_filter_timeconst_ = -1.0;
+      double z_filter;
+      if (pnh_.getParam("z_filter", z_filter))
+      {
+        const double odom_freq = 100.0;
+        if (0.0 < z_filter && z_filter < 1.0)
+          z_filter_timeconst_ = (1.0 / odom_freq) / (1.0 - z_filter);
+      }
+      ROS_ERROR(
+          "track_odometry: ~z_filter parameter (exponential filter (1 - alpha) value) is deprecated. "
+          "Use ~z_filter_timeconst (in seconds) instead. "
+          "Treated as z_filter_timeconst=%0.6f. (negative value means disabled)",
+          z_filter_timeconst_);
+    }
+    else
+    {
+      pnh_.param("z_filter_timeconst", z_filter_timeconst_, -1.0);
+    }
     pnh_.param("tf_tolerance", tf_tolerance_, 0.01);
     pnh_.param("use_kf", use_kf_, true);
     pnh_.param("enable_negative_slip", negative_slip_, false);
