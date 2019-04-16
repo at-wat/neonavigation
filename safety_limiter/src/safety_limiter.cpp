@@ -372,9 +372,9 @@ protected:
       if (t != 0)
       {
         d_col += twist_.linear.x * dt_;
-        d_escape_remain -= twist_.linear.x * dt_;
+        d_escape_remain -= std::abs(twist_.linear.x) * dt_;
         yaw_col += twist_.angular.z * dt_;
-        yaw_escape_remain -= twist_.angular.z * dt_;
+        yaw_escape_remain -= std::abs(twist_.angular.z) * dt_;
         move = move * motion;
         move_inv = move_inv * motion_inv;
       }

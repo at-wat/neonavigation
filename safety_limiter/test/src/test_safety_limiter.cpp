@@ -268,7 +268,56 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
         en = true;
       publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
-      publishTwist(vel, (i % 3) * 0.01);
+      publishTwist(vel, ((i % 5) - 2.0) * 0.01);
+
+      wait.sleep();
+      ros::spinOnce();
+    }
+    ASSERT_TRUE(received);
+    sub_cmd_vel.shutdown();
+  }
+}
+
+TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
+{
+  ros::Rate wait(20.0);
+
+  // Skip initial state
+  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  {
+    publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", ros::Time::now());
+    publishWatchdogReset();
+
+    wait.sleep();
+    ros::spinOnce();
+  }
+
+  for (float vel = 0.0; vel > -2.0; vel -= 0.4)
+  {
+    // 1.0 m/ss, obstacle at -2.5 m: limited to -1.0 m/s
+    bool received = false;
+    bool failed = false;
+    bool en = false;
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+        [&received, &failed, &en, vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
+    {
+      if (!en)
+        return;
+      const float expected_vel = std::max<float>(vel, -1.0);
+      received = true;
+      failed = true;
+      ASSERT_NEAR(msg->linear.x, expected_vel, 1e-1);
+      failed = false;
+    };
+    ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
+
+    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    {
+      if (i > 5)
+        en = true;
+      publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", ros::Time::now());
+      publishWatchdogReset();
+      publishTwist(vel, ((i % 5) - 2.0) * 0.01);
 
       wait.sleep();
       ros::spinOnce();
