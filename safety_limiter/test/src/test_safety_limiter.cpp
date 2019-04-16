@@ -268,7 +268,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
         en = true;
       publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
-      publishTwist(vel, ((i % 3) - 1.0) * 0.01);
+      publishTwist(vel, ((i % 5) - 2.0) * 0.01);
 
       wait.sleep();
       ros::spinOnce();
@@ -317,7 +317,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
         en = true;
       publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
-      publishTwist(vel, ((i % 3) - 1.0) * 0.01);
+      publishTwist(vel, ((i % 5) - 2.0) * 0.01);
 
       wait.sleep();
       ros::spinOnce();
