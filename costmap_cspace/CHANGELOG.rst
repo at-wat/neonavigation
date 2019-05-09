@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2019-05-09)
+------------------
 * costmap_cspace: add const begin/end to PointcloudAccumurator (`#294 <https://github.com/at-wat/neonavigation/issues/294>`_)
 * Contributors: Naotaka Hatao
 

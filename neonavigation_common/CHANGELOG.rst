@@ -2,8 +2,8 @@
 Changelog for package neonavigation_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2019-05-09)
+------------------
 * Add LICENSE file (`#270 <https://github.com/at-wat/neonavigation/issues/270>`_)
 * Contributors: Atsushi Watanabe
 
