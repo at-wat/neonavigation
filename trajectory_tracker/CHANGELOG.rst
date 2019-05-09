@@ -2,6 +2,16 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2019-05-09)
+------------------
+* trajectory_tracker: speed up simulation on rostest (`#280 <https://github.com/at-wat/neonavigation/issues/280>`_)
+* trajectory_tracker: linear velocity adaptive gain control (`#276 <https://github.com/at-wat/neonavigation/issues/276>`_)
+* trajectory_tracker: remove unused parameters (`#274 <https://github.com/at-wat/neonavigation/issues/274>`_)
+* trajectory_tracker: fix remained distance for path with two poses (`#272 <https://github.com/at-wat/neonavigation/issues/272>`_)
+* Add LICENSE file (`#270 <https://github.com/at-wat/neonavigation/issues/270>`_)
+* Support melodic (`#266 <https://github.com/at-wat/neonavigation/issues/266>`_)
+* Contributors: Atsushi Watanabe, Yuta Koga
+
 0.3.1 (2019-01-10)
 ------------------
 * trajectory_tracker: fix test timeout for path with velocity (`#263 <https://github.com/at-wat/neonavigation/issues/263>`_)
