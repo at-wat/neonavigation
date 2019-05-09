@@ -2,6 +2,13 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2019-05-09)
+------------------
+* safety_limiter: fix backward motion limit (`#292 <https://github.com/at-wat/neonavigation/issues/292>`_)
+* safety_limiter: fix CloudBuffering test start timing (`#279 <https://github.com/at-wat/neonavigation/issues/279>`_)
+* Fix package dependencies (`#268 <https://github.com/at-wat/neonavigation/issues/268>`_)
+* Contributors: Atsushi Watanabe, Yuta Koga
+
 0.3.1 (2019-01-10)
 ------------------
 * safety_limiter: increase tolerance of the test (`#243 <https://github.com/at-wat/neonavigation/issues/243>`_)

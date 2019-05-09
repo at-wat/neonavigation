@@ -2,6 +2,9 @@
 Changelog for package obj_to_pointcloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2019-05-09)
+------------------
+
 0.3.1 (2019-01-10)
 ------------------
 * Fix pointer alignment style (`#233 <https://github.com/at-wat/neonavigation/issues/233>`_)

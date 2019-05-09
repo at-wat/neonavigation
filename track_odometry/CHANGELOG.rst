@@ -2,6 +2,14 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2019-05-09)
+------------------
+* track_odometry: fix z_filter unit to seconds (`#290 <https://github.com/at-wat/neonavigation/issues/290>`_)
+* track_odometry: add project_posture option to tf_projection node (`#286 <https://github.com/at-wat/neonavigation/issues/286>`_)
+* track_odometry: refactor tf_projection (`#285 <https://github.com/at-wat/neonavigation/issues/285>`_)
+* track_odometry: set missing child_frame_id in tf_projection (`#283 <https://github.com/at-wat/neonavigation/issues/283>`_)
+* Contributors: Atsushi Watanabe, Yuta Koga
+
 0.3.1 (2019-01-10)
 ------------------
 * Fix pointer alignment style (`#233 <https://github.com/at-wat/neonavigation/issues/233>`_)
