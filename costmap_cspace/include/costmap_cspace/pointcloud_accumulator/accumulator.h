@@ -93,6 +93,15 @@ public:
     return points_.end();
   }
 
+  typename std::list<Points>::const_iterator begin() const
+  {
+    return points_.cbegin();
+  }
+  typename std::list<Points>::const_iterator end() const
+  {
+    return points_.cend();
+  }
+
 protected:
   ros::Duration time_to_hold_;
   std::list<Points> points_;
