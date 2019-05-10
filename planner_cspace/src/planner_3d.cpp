@@ -40,6 +40,7 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
+#include <geometry_msgs/PoseArray.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
@@ -81,6 +82,7 @@ protected:
   ros::Subscriber sub_goal_;
   ros::Publisher pub_path_;
   ros::Publisher pub_path_velocity_;
+  ros::Publisher pub_path_poses_;
   ros::Publisher pub_debug_;
   ros::Publisher pub_hist_;
   ros::Publisher pub_start_;
@@ -1180,6 +1182,8 @@ public:
           nh_, "path",
           pnh_, "path", 1, true);
     }
+    pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>(
+        "path_poses", 1, true);
 
     pnh_.param_cast("freq", freq_, 4.0f);
     pnh_.param_cast("freq_min", freq_min_, 2.0f);
@@ -1549,6 +1553,21 @@ protected:
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Path found (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
+
+    geometry_msgs::PoseArray poses;
+    poses.header = path.header;
+    for (const auto& p : path_grid)
+    {
+      geometry_msgs::Pose pose;
+      float x, y, yaw;
+      grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
+      pose.position.x = x;
+      pose.position.y = y;
+      pose.orientation =
+          tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      poses.poses.push_back(pose);
+    }
+    pub_path_poses_.publish(poses);
 
     grid_metric_converter::grid2MetricPath(map_info_, local_range_, path_grid, path, s);
 
