@@ -166,6 +166,7 @@ protected:
   float remember_hit_odds_;
   float remember_miss_odds_;
   bool use_path_with_velocity_;
+  float min_curve_raduis_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -1190,6 +1191,7 @@ public:
 
     pnh_.param_cast("max_vel", max_vel_, 0.3f);
     pnh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
+    pnh_.param_cast("min_curve_raduis", min_curve_raduis_, 0.1f);
 
     pnh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
     pnh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
@@ -1746,7 +1748,7 @@ protected:
 
     if (lroundf(motion_grid[2]) == 0)
     {
-      if (motion_grid[0] == 0)
+      if (lroundf(motion_grid[0]) == 0)
         return -1;  // side slip
       const float aspect = motion[0] / motion[1];
       if (fabs(aspect) < angle_resolution_aspect_)
@@ -1788,10 +1790,6 @@ protected:
       // Curve
       if (motion[0] * motion[1] * motion[2] < 0)
         return -1;
-      if (d.sqlen() < 4 * 4)
-        return -1;
-      if (fabs(motion[1]) <= map_info_.linear_resolution * 0.5)
-        return -1;
 
       const float cos_v = cosf(motion[2]);
       const float sin_v = sinf(motion[2]);
@@ -1809,6 +1807,8 @@ protected:
       }
 
       const float curv_radius = (r1 + r2) / 2;
+      if (std::abs(curv_radius) < min_curve_raduis_)
+        return -1;
 
       float vel = max_vel_;
       float ang_vel = cos_v * vel / (cos_v * motion[0] + sin_v * motion[1]);
