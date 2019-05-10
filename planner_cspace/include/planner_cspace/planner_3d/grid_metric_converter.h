@@ -81,8 +81,8 @@ void grid2MetricPath(
 
     if (init)
     {
-      const auto ds = v_start - p;
-      auto d = p - p_prev;
+      const CyclicVecInt<3, 2> ds = v_start - p;
+      CyclicVecInt<3, 2> d = p - p_prev;
       d.cycle(d[2], map_info.angle);
       const float diff_val[3] =
           {
