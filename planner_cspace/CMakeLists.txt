@@ -68,7 +68,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops -finline-functions ${Open
 
 include_directories(${catkin_INCLUDE_DIRS} include)
 
-add_executable(planner_3d src/planner_3d.cpp)
+add_executable(planner_3d
+  src/planner_3d.cpp
+  src/rotation_cache.cpp
+)
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
 

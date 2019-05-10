@@ -31,6 +31,7 @@
 #include <limits>
 #include <list>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <ros/ros.h>
@@ -63,7 +64,7 @@
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/jump_detector.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/rotation_cache.h>
+#include <planner_cspace/planner_3d/rotation_cache.h>
 
 #include <omp.h>
 
@@ -128,7 +129,7 @@ protected:
     return euclidCost(v, euclid_cost_coef_);
   }
 
-  std::vector<RotationCache<3, 2>> rotgm_;
+  RotationCache rotgm_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -998,39 +999,7 @@ protected:
       ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d",
                 map_info_.angle, range_, static_cast<int>(search_list_.size()));
 
-      rotgm_.resize(map_info_.angle);
-      for (int i = 0; i < static_cast<int>(map_info_.angle); i++)
-      {
-        const int size[3] =
-            {
-              range_ * 2 + 1,
-              range_ * 2 + 1,
-              static_cast<int>(map_info_.angle)
-            };
-        auto& r = rotgm_[i];
-        r.reset(Astar::Vec(size));
-
-        Astar::Vec d;
-
-        for (d[0] = 0; d[0] <= range_ * 2; d[0]++)
-        {
-          for (d[1] = 0; d[1] <= range_ * 2; d[1]++)
-          {
-            for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
-            {
-              const float val[3] =
-                  {
-                    (d[0] - range_) * map_info_.linear_resolution,
-                    (d[1] - range_) * map_info_.linear_resolution,
-                    d[2] * map_info_.angular_resolution
-                  };
-              auto v = Astar::Vecf(val);
-              v.rotate(-i * map_info_.angular_resolution);
-              r[d] = v;
-            }
-          }
-        }
-      }
+      rotgm_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
       ROS_DEBUG("Rotation cache generated");
     }
     else
@@ -1739,7 +1708,7 @@ protected:
     d2[1] = d[1] + range_;
     d2[2] = e[2];
 
-    const Astar::Vecf motion = rotgm_[s[2]][d2];
+    const Astar::Vecf motion = rotgm_.getMotion(s[2], d2);
     const Astar::Vecf motion_grid = motion * resolution_;
 
     if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
@@ -1811,8 +1780,9 @@ protected:
       if (d.sqlen() < 3 * 3)
         return -1;
 
-      const float cos_v = cosf(motion[2]);
-      const float sin_v = sinf(motion[2]);
+      const std::pair<float, float>& sc = rotgm_.getSincos(s[2], d2);
+      const float sin_v = sc.first;
+      const float cos_v = sc.second;
 
       const float r1 = motion[1] + motion[0] * cos_v / sin_v;
       const float r2 = std::copysign(

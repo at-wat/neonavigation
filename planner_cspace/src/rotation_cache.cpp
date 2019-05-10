@@ -27,49 +27,68 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_ROTATION_CACHE_H
-#define PLANNER_CSPACE_ROTATION_CACHE_H
+#include <cmath>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <planner_cspace/cyclic_vec.h>
 
-template <int DIM, int NONCYCLIC>
-class RotationCache
+#include <planner_cspace/planner_3d/rotation_cache.h>
+
+void RotationCache::Page::reset(const CyclicVecInt<3, 2>& size)
 {
-protected:
-  std::unique_ptr<CyclicVecFloat<DIM, NONCYCLIC>[]> c_;
-  CyclicVecInt<DIM, NONCYCLIC> size_;
-  int ser_size_;
+  size_t ser_size = 1;
+  for (int i = 0; i < 3; i++)
+    ser_size *= size[i];
 
-public:
-  void reset(const CyclicVecInt<DIM, NONCYCLIC>& size)
+  size_ = size;
+  ser_size_ = ser_size;
+
+  c_.reset(new CyclicVecFloat<3, 2>[ser_size]);
+  sincos_.reset(new std::pair<float, float>[ser_size]);
+}
+
+void RotationCache::reset(
+    const float linear_resolution,
+    const float angular_resolution,
+    const int range)
+{
+  const int angle = std::lround(M_PI * 2 / angular_resolution);
+
+  pages_.resize(angle);
+  for (int i = 0; i < angle; i++)
   {
-    size_t ser_size = 1;
-    for (int i = 0; i < 3; i++)
+    const int size[3] =
+        {
+          range * 2 + 1,
+          range * 2 + 1,
+          angle
+        };
+    Page& r = pages_[i];
+    r.reset(CyclicVecInt<3, 2>(size));
+
+    CyclicVecInt<3, 2> d;
+
+    for (d[0] = 0; d[0] <= range * 2; d[0]++)
     {
-      ser_size *= size[i];
+      for (d[1] = 0; d[1] <= range * 2; d[1]++)
+      {
+        for (d[2] = 0; d[2] < angle; d[2]++)
+        {
+          const float val[3] =
+              {
+                (d[0] - range) * linear_resolution,
+                (d[1] - range) * linear_resolution,
+                d[2] * angular_resolution
+              };
+          auto v = CyclicVecFloat<3, 2>(val);
+          v.rotate(-i * angular_resolution);
+          r.motion(d) = v;
+          r.sincos(d) = std::pair<float, float>(
+              std::sin(v[2]), std::cos(v[2]));
+        }
+      }
     }
-    size_ = size;
-    ser_size_ = ser_size;
-
-    c_.reset(new CyclicVecFloat<DIM, NONCYCLIC>[ser_size]);
   }
-  explicit RotationCache(const CyclicVecInt<DIM, NONCYCLIC>& size)
-  {
-    reset(size);
-  }
-  RotationCache()
-  {
-  }
-  CyclicVecFloat<DIM, NONCYCLIC>& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
-  {
-    size_t addr = pos[2];
-    for (int i = 1; i >= 0; i--)
-    {
-      addr *= size_[i];
-      addr += pos[i];
-    }
-    return c_[addr];
-  }
-};
-
-#endif  // PLANNER_CSPACE_ROTATION_CACHE_H
+}
