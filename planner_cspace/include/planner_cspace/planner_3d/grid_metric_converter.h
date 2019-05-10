@@ -106,7 +106,7 @@ void grid2MetricPath(
             tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
         path.poses.push_back(ps);
       }
-      else if (d[2] == 0)  // || ds.sqlen() > local_range * local_range)
+      else if (d[2] == 0 || ds.sqlen() > local_range * local_range)
       {
         for (float i = 0; i < 1.0; i += inter)
         {

@@ -1523,7 +1523,7 @@ protected:
     }
 
     auto range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
-    angle_resolution_aspect_ = 1.0 / tanf(map_info_.angular_resolution);
+    angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
@@ -1712,7 +1712,7 @@ protected:
     {
       // In-place turn
       int sum = 0;
-      const int dir = d[2] > static_cast<int>(map_info_.angle) / 2 ? -1 : 1;
+      const int dir = d[2] < 0 ? -1 : 1;
       Astar::Vec pos = s;
       for (int i = 0; i < abs(d[2]); i++)
       {
@@ -1763,7 +1763,7 @@ protected:
       cost *= 1.0 + cc_.weight_backward_;
     }
 
-    if (lroundf(motion_grid[2]) == 0)
+    if (d[2] == 0)
     {
       if (lroundf(motion_grid[0]) == 0)
         return -1;  // side slip
@@ -1806,6 +1806,9 @@ protected:
     {
       // Curve
       if (motion[0] * motion[1] * motion[2] < 0)
+        return -1;
+
+      if (d.sqlen() < 3 * 3)
         return -1;
 
       const float cos_v = cosf(motion[2]);
