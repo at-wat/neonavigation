@@ -129,7 +129,6 @@ protected:
   }
 
   std::vector<RotationCache<3, 2>> rotgm_;
-  RotationCache<3, 2>* rot_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -1632,7 +1631,6 @@ protected:
       const Astar::Vec& s, const Astar::Vec& e)
   {
     const auto ds = s - p;
-    rot_cache_ = &rotgm_[p[2]];
 
     if (ds.sqlen() < local_range_ * local_range_)
     {
@@ -1740,8 +1738,8 @@ protected:
     d2[0] = d[0] + range_;
     d2[1] = d[1] + range_;
     d2[2] = e[2];
-    const Astar::Vecf motion = (*rot_cache_)[d2];
 
+    const Astar::Vecf motion = rotgm_[s[2]][d2];
     const Astar::Vecf motion_grid = motion * resolution_;
 
     if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
