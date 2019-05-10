@@ -1792,14 +1792,9 @@ protected:
       if (d.sqlen() < 3 * 3)
         return -1;
 
-      const std::pair<float, float>& sc = rotgm_.getSincos(s[2], d2);
-      const float sin_v = sc.first;
-      const float cos_v = sc.second;
-
-      const float r1 = motion[1] + motion[0] * cos_v / sin_v;
-      const float r2 = std::copysign(
-          sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
-          motion[0] * sin_v);
+      const std::pair<float, float>& radiuses = rotgm_.getRadiuses(s[2], d2);
+      const float r1 = radiuses.first;
+      const float r2 = radiuses.second;
 
       // curveture at the start_ pose and the end pose must be same
       if (fabs(r1 - r2) >= map_info_.linear_resolution * 1.5)
@@ -1812,12 +1807,9 @@ protected:
       if (std::abs(curv_radius) < min_curve_raduis_)
         return -1;
 
-      float vel = max_vel_;
-      float ang_vel = cos_v * vel / (cos_v * motion[0] + sin_v * motion[1]);
-      if (fabs(ang_vel) > max_ang_vel_)
+      if (fabs(max_vel_ / r1) > max_ang_vel_)
       {
-        ang_vel = std::copysign(1.0f, ang_vel) * max_ang_vel_;
-        vel = fabs(curv_radius) * max_ang_vel_;
+        const float vel = fabs(curv_radius) * max_ang_vel_;
 
         // Curve deceleration penalty
         cost += dist * fabs(vel / max_vel_) * cc_.weight_decel_;

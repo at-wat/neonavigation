@@ -44,7 +44,7 @@ private:
   {
   private:
     std::unique_ptr<CyclicVecFloat<3, 2>[]> c_;
-    std::unique_ptr<std::pair<float, float>[]> sincos_;
+    std::unique_ptr<std::pair<float, float>[]> r_;
     CyclicVecInt<3, 2> size_;
     int ser_size_;
 
@@ -66,13 +66,13 @@ private:
     {
       return c_[addr(pos)];
     }
-    inline std::pair<float, float>& sincos(const CyclicVecInt<3, 2>& pos)
+    inline std::pair<float, float>& radiuses(const CyclicVecInt<3, 2>& pos)
     {
-      return sincos_[addr(pos)];
+      return r_[addr(pos)];
     }
-    inline const std::pair<float, float>& sincos(const CyclicVecInt<3, 2>& pos) const
+    inline const std::pair<float, float>& radiuses(const CyclicVecInt<3, 2>& pos) const
     {
-      return sincos_[addr(pos)];
+      return r_[addr(pos)];
     }
   };
 
@@ -86,11 +86,11 @@ public:
   {
     return pages_[start_angle].motion(end);
   }
-  inline const std::pair<float, float>& getSincos(
+  inline const std::pair<float, float>& getRadiuses(
       const int start_angle,
       const CyclicVecInt<3, 2>& end) const
   {
-    return pages_[start_angle].sincos(end);
+    return pages_[start_angle].radiuses(end);
   }
 };
 

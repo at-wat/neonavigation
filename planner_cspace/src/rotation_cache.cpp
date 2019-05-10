@@ -46,7 +46,7 @@ void RotationCache::Page::reset(const CyclicVecInt<3, 2>& size)
   ser_size_ = ser_size;
 
   c_.reset(new CyclicVecFloat<3, 2>[ser_size]);
-  sincos_.reset(new std::pair<float, float>[ser_size]);
+  r_.reset(new std::pair<float, float>[ser_size]);
 }
 
 void RotationCache::reset(
@@ -85,8 +85,14 @@ void RotationCache::reset(
           auto v = CyclicVecFloat<3, 2>(val);
           v.rotate(-i * angular_resolution);
           r.motion(d) = v;
-          r.sincos(d) = std::pair<float, float>(
-              std::sin(v[2]), std::cos(v[2]));
+
+          const float sin_v = std::sin(v[2]);
+          const float cos_v = std::cos(v[2]);
+          const float r1 = v[1] + v[0] * cos_v / sin_v;
+          const float r2 = std::copysign(
+              sqrtf(powf(v[0], 2.0) + powf(v[0] * cos_v / sin_v, 2.0)),
+              v[0] * sin_v);
+          r.radiuses(d) = std::pair<float, float>(r1, r2);
         }
       }
     }
