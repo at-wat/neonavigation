@@ -229,8 +229,8 @@ protected:
 
   int cnt_stuck_;
 
-  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_;
-  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_linear_;
+  MotionCache motion_cache_;
+  MotionCache motion_cache_linear_;
 
   diagnostic_updater::Updater diag_updater_;
   ros::Duration costmap_watchdog_;
@@ -283,8 +283,8 @@ protected:
       float cost = euclidCost(d, euclid_cost_coef);
 
       int sum = 0;
-      const auto cache_page = motion_cache_linear_->find(0, d);
-      if (cache_page == motion_cache_linear_->end(0))
+      const auto cache_page = motion_cache_linear_.find(0, d);
+      if (cache_page == motion_cache_linear_.end(0))
         return -1;
       const int num = cache_page->second.getMotion().size();
       for (const auto& pos_diff : cache_page->second.getMotion())
@@ -969,8 +969,20 @@ protected:
 
       costmap_cspace_msgs::MapMetaData3D map_info_linear(map_info_);
       map_info_linear.angle = 1;
-      motion_cache_linear_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_linear, range_, cm_rough_));
-      motion_cache_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_, range_, cm_));
+      motion_cache_linear_.reset(
+          map_info_linear.linear_resolution,
+          map_info_linear.angular_resolution,
+          range_,
+          std::bind(
+              &decltype(cm_rough_)::block_addr, &cm_rough_,
+              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+      motion_cache_.reset(
+          map_info_.linear_resolution,
+          map_info_.angular_resolution,
+          range_,
+          std::bind(
+              &decltype(cm_)::block_addr, &cm_,
+              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
       search_list_.clear();
       for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -1747,8 +1759,8 @@ protected:
       d_index[2] = e[2];
       d_index.cycleUnsigned(syaw, map_info_.angle);
       d_index.cycleUnsigned(d_index[2], map_info_.angle);
-      const auto cache_page = motion_cache_->find(syaw, d_index);
-      if (cache_page == motion_cache_->end(syaw))
+      const auto cache_page = motion_cache_.find(syaw, d_index);
+      if (cache_page == motion_cache_.end(syaw))
         return -1;
       const int num = cache_page->second.getMotion().size();
       for (const auto& pos_diff : cache_page->second.getMotion())
@@ -1818,8 +1830,8 @@ protected:
         d_index[2] = e[2];
         d_index.cycleUnsigned(syaw, map_info_.angle);
         d_index.cycleUnsigned(d_index[2], map_info_.angle);
-        const auto cache_page = motion_cache_->find(syaw, d_index);
-        if (cache_page == motion_cache_->end(syaw))
+        const auto cache_page = motion_cache_.find(syaw, d_index);
+        if (cache_page == motion_cache_.end(syaw))
           return -1;
         const int num = cache_page->second.getMotion().size();
         for (const auto& pos_diff : cache_page->second.getMotion())

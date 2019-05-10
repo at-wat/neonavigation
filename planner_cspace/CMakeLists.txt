@@ -71,6 +71,7 @@ include_directories(${catkin_INCLUDE_DIRS} include)
 add_executable(planner_3d
   src/planner_3d.cpp
   src/rotation_cache.cpp
+  src/motion_cache.cpp
 )
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
