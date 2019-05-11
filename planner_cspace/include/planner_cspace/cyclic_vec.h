@@ -92,6 +92,57 @@ protected:
   {
   }
 
+  template <typename... ArgList>
+  void cycleElements(
+      const int i,
+      const int res, const ArgList&... rest)
+  {
+    assert(i < DIM);
+
+    e_[i] = e_[i] % res;
+    if (e_[i] < res / 2 - res)
+      e_[i] += res;
+    else if (e_[i] >= res / 2)
+      e_[i] -= res;
+
+    cycleElements(i + 1, rest...);
+  }
+  void cycleElements(const int)
+  {
+  }
+  template <typename... ArgList>
+  void cycleUnsignedElements(
+      const int i,
+      const int res, const ArgList&... rest)
+  {
+    assert(i < DIM);
+
+    e_[i] = e_[i] % res;
+    if (e_[i] < 0)
+      e_[i] += res;
+
+    cycleUnsignedElements(i + 1, rest...);
+  }
+  void cycleUnsignedElements(const int)
+  {
+  }
+
+  // Cyclic operations
+  void cycle_(int& v, const int c)
+  {
+    v = v % c;
+    if (v < 0)
+      v += c;
+    if (v > c / 2)
+      v -= c;
+  }
+  void cycleUnsigned_(int& v, const int c)
+  {
+    v = v % c;
+    if (v < 0)
+      v += c;
+  }
+
 public:
   template <typename T2>
   explicit CyclicVecBase(const CyclicVecBase<DIM, NONCYCLIC, T2>& c) noexcept
@@ -237,19 +288,15 @@ public:
   }
 
   // Cyclic operations
-  void cycle(int& v, const int c)
+  template <typename... ArgList>
+  void cycle(const ArgList&... rest)
   {
-    v = v % c;
-    if (v < 0)
-      v += c;
-    if (v > c / 2)
-      v -= c;
+    cycleElements(NONCYCLIC, rest...);
   }
-  void cycleUnsigned(int& v, const int c)
+  template <typename... ArgList>
+  void cycleUnsigned(const ArgList&... rest)
   {
-    v = v % c;
-    if (v < 0)
-      v += c;
+    cycleUnsignedElements(NONCYCLIC, rest...);
   }
 
   // Hash
