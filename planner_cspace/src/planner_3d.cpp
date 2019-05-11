@@ -117,9 +117,9 @@ protected:
       cost += powf(coef[i] * vc[i], 2.0);
     }
     cost = sqrtf(cost);
+    vc.cycle(cm_.size());
     for (int i = as_.getNoncyclic(); i < as_.getDim(); i++)
     {
-      vc.cycle(vc[i], cm_.size()[i]);
       cost += fabs(coef[i] * vc[i]);
     }
     return cost;
@@ -527,7 +527,7 @@ protected:
           if ((unsigned int)s2[0] >= (unsigned int)map_info_.width ||
               (unsigned int)s2[1] >= (unsigned int)map_info_.height)
             continue;
-          s2.cycleUnsigned(s2[2], map_info_.angle);
+          s2.cycleUnsigned(map_info_.angle);
           if (cm_[s2] >= cost_acceptable)
             continue;
           const auto cost = euclidCost(d, ec_);
@@ -549,7 +549,7 @@ protected:
       return false;
     }
     s = s_out;
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
@@ -567,12 +567,12 @@ protected:
         map_info_, s[0], s[1], s[2],
         start_.pose.position.x, start_.pose.position.y,
         tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
         tf2::getYaw(goal_.pose.orientation));
-    e.cycleUnsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(map_info_.angle);
     if (goal_changed)
     {
       ROS_INFO(
@@ -687,7 +687,16 @@ protected:
     nav_msgs::Path path;
     path.header.frame_id = robot_frame_;
     path.header.stamp = ros::Time::now();
-    pub_path_.publish(path);
+    if (use_path_with_velocity_)
+    {
+      pub_path_velocity_.publish(
+          trajectory_tracker_msgs::toPathWithVelocity(
+              path, std::numeric_limits<double>::quiet_NaN()));
+    }
+    else
+    {
+      pub_path_.publish(path);
+    }
   }
 
   void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
@@ -824,12 +833,12 @@ protected:
         map_info_, s[0], s[1], s[2],
         start_.pose.position.x, start_.pose.position.y,
         tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
         tf2::getYaw(goal_.pose.orientation));
-    e.cycleUnsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(map_info_.angle);
 
     if (cm_[e] == 100)
     {
@@ -1401,11 +1410,11 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
         gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         ge.position.x, ge.position.y, tf2::getYaw(ge.orientation));
-    e.cycleUnsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(map_info_.angle);
 
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
@@ -1460,7 +1469,7 @@ protected:
     pub_start_.publish(p);
 
     auto diff = s - e;
-    diff.cycle(diff[2], map_info_.angle);
+    diff.cycle(map_info_.angle);
     if (diff.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
         abs(diff[2]) <= goal_tolerance_ang_)
     {
@@ -1667,7 +1676,7 @@ protected:
                const bool hyst)
   {
     Astar::Vec d_raw = e - s;
-    d_raw.cycle(d_raw[2], map_info_.angle);
+    d_raw.cycle(map_info_.angle);
     const Astar::Vec d = d_raw;
     float cost = euclidCost(d);
 
@@ -1736,13 +1745,11 @@ protected:
 
       // Go-straight
       int sum = 0, sum_hyst = 0;
-      auto d_index = d;
-      int syaw = s[2];
-      d_index[2] = e[2];
-      d_index.cycleUnsigned(syaw, map_info_.angle);
-      d_index.cycleUnsigned(d_index[2], map_info_.angle);
-      const auto cache_page = motion_cache_.find(syaw, d_index);
-      if (cache_page == motion_cache_.end(syaw))
+      Astar::Vec d_index(d[0], d[1], e[2]);
+      d_index.cycleUnsigned(map_info_.angle);
+
+      const auto cache_page = motion_cache_.find(s[2], d_index);
+      if (cache_page == motion_cache_.end(s[2]))
         return -1;
       const int num = cache_page->second.getMotion().size();
       for (const auto& pos_diff : cache_page->second.getMotion())
@@ -1797,13 +1804,11 @@ protected:
 
       {
         int sum = 0, sum_hyst = 0;
-        auto d_index = d;
-        int syaw = s[2];
-        d_index[2] = e[2];
-        d_index.cycleUnsigned(syaw, map_info_.angle);
-        d_index.cycleUnsigned(d_index[2], map_info_.angle);
-        const auto cache_page = motion_cache_.find(syaw, d_index);
-        if (cache_page == motion_cache_.end(syaw))
+        Astar::Vec d_index(d[0], d[1], e[2]);
+        d_index.cycleUnsigned(map_info_.angle);
+
+        const auto cache_page = motion_cache_.find(s[2], d_index);
+        if (cache_page == motion_cache_.end(s[2]))
           return -1;
         const int num = cache_page->second.getMotion().size();
         for (const auto& pos_diff : cache_page->second.getMotion())

@@ -112,7 +112,7 @@ TEST(GridMetricConverter, Path)
       };
   std::vector<CyclicVecInt<3, 2>> path_grid;
   for (const auto& g : grid)
-    path_grid.push_back(CyclicVecInt<3, 2>(g));
+    path_grid.push_back(CyclicVecInt<3, 2>(g[0], g[1], g[2]));
 
   nav_msgs::Path path;
   grid_metric_converter::grid2MetricPath(map_info, 10.0, path_grid, path, path_grid[0]);

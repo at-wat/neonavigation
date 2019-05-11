@@ -90,6 +90,7 @@ protected:
   }
   void setElements(const int i) noexcept
   {
+    assert(i == DIM);
   }
 
   template <typename... ArgList>
@@ -107,8 +108,9 @@ protected:
 
     cycleElements(i + 1, rest...);
   }
-  void cycleElements(const int)
+  void cycleElements(const int i)
   {
+    assert(i == DIM);
   }
   template <typename... ArgList>
   void cycleUnsignedElements(
@@ -123,24 +125,9 @@ protected:
 
     cycleUnsignedElements(i + 1, rest...);
   }
-  void cycleUnsignedElements(const int)
+  void cycleUnsignedElements(const int i)
   {
-  }
-
-  // Cyclic operations
-  void cycle_(int& v, const int c)
-  {
-    v = v % c;
-    if (v < 0)
-      v += c;
-    if (v > c / 2)
-      v -= c;
-  }
-  void cycleUnsigned_(int& v, const int c)
-  {
-    v = v % c;
-    if (v < 0)
-      v += c;
+    assert(i == DIM);
   }
 
 public:
@@ -240,13 +227,6 @@ public:
   {
     return e_[x];
   }
-  void set(const T* init)
-  {
-    for (int i = 0; i < DIM; i++)
-    {
-      e_[i] = init[i];
-    }
-  }
   T sqlen() const
   {
     T out = 0;
@@ -289,14 +269,32 @@ public:
 
   // Cyclic operations
   template <typename... ArgList>
-  void cycle(const ArgList&... rest)
+  void cycle(const int res, const ArgList&... rest)
   {
-    cycleElements(NONCYCLIC, rest...);
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    cycleElements(NONCYCLIC, res, rest...);
   }
   template <typename... ArgList>
-  void cycleUnsigned(const ArgList&... rest)
+  void cycleUnsigned(const int res, const ArgList&... rest)
   {
-    cycleUnsignedElements(NONCYCLIC, rest...);
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    cycleUnsignedElements(NONCYCLIC, res, rest...);
+  }
+  void cycle(const CyclicVecBase<DIM, NONCYCLIC, T>& res)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    for (int i = NONCYCLIC; i < DIM; ++i)
+      cycleElements(i, res[i]);
+  }
+  void cycleUnsigned(const CyclicVecBase<DIM, NONCYCLIC, T>& res)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    for (int i = NONCYCLIC; i < DIM; ++i)
+      cycleUnsignedElements(i, res[i]);
   }
 
   // Hash

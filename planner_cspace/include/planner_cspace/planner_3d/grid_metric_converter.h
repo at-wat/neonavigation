@@ -82,7 +82,7 @@ void grid2MetricPath(
     {
       const CyclicVecInt<3, 2> ds = v_start - p;
       CyclicVecInt<3, 2> d = p - p_prev;
-      d.cycle(d[2], map_info.angle);
+      d.cycle(map_info.angle);
       CyclicVecFloat<3, 2> motion(
           d[0] * map_info.linear_resolution,
           d[1] * map_info.linear_resolution,

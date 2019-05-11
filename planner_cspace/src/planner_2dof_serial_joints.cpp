@@ -74,7 +74,6 @@ private:
     float cost = 0;
     for (int i = 0; i < as_.getDim(); i++)
     {
-      // vc.cycle(vc[i], cm_.size[i]);
       cost += fabs(coef[i] * vc[i]);
     }
     return cost;
@@ -568,8 +567,7 @@ private:
       return false;
     }
     Astar::Vec d = e - s;
-    d.cycle(d[0], resolution_);
-    d.cycle(d[1], resolution_);
+    d.cycle(resolution_, resolution_);
 
     if (cbCost(s, e, e, s) >= euclidCost(d))
     {
@@ -623,8 +621,7 @@ private:
       if (i == 0)
         ROS_INFO("  next: %d, %d", n[0], n[1]);
       Astar::Vec n_diff = n - n_prev;
-      n_diff.cycle(n_diff[0], resolution_);
-      n_diff.cycle(n_diff[1], resolution_);
+      n_diff.cycle(resolution_, resolution_);
       Astar::Vec n2 = n_prev + n_diff;
       n_prev = n2;
 
@@ -694,8 +691,7 @@ private:
         (unsigned int)e[1] >= (unsigned int)resolution_ * 2)
       return -1;
     Astar::Vec d = e - s;
-    d.cycle(d[0], resolution_);
-    d.cycle(d[1], resolution_);
+    d.cycle(resolution_, resolution_);
 
     float cost = euclidCost(d);
 
@@ -713,8 +709,7 @@ private:
     {
       pos[0] = lroundf(v[0]);
       pos[1] = lroundf(v[1]);
-      pos.cycleUnsigned(pos[0], resolution_);
-      pos.cycleUnsigned(pos[1], resolution_);
+      pos.cycleUnsigned(resolution_, resolution_);
       const auto c = cm_[pos];
       if (c > 99)
         return -1;

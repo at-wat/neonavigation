@@ -85,7 +85,7 @@ void MotionCache::reset(
 
               CyclicVecInt<3, 2> pos(
                   x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
-              pos.cycleUnsigned(pos[2], angle);
+              pos.cycleUnsigned(angle);
               if (registered.find(pos) == registered.end())
               {
                 page.motion_.push_back(pos);
@@ -131,7 +131,7 @@ void MotionCache::reset(
                 };
             const CyclicVecFloat<3, 2> posf(posf_raw[0], posf_raw[1], posf_raw[2]);
             CyclicVecInt<3, 2> pos(posf_raw[0], posf_raw[1], posf_raw[2]);
-            pos.cycleUnsigned(pos[2], angle);
+            pos.cycleUnsigned(angle);
             if (registered.find(pos) == registered.end())
             {
               page.motion_.push_back(pos);
