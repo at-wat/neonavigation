@@ -687,16 +687,7 @@ protected:
     nav_msgs::Path path;
     path.header.frame_id = robot_frame_;
     path.header.stamp = ros::Time::now();
-    if (use_path_with_velocity_)
-    {
-      pub_path_velocity_.publish(
-          trajectory_tracker_msgs::toPathWithVelocity(
-              path, std::numeric_limits<double>::quiet_NaN()));
-    }
-    else
-    {
-      pub_path_.publish(path);
-    }
+    pub_path_.publish(path);
   }
 
   void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
