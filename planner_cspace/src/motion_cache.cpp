@@ -42,6 +42,7 @@ void MotionCache::reset(
 {
   const int angle = std::lround(M_PI * 2 / angular_resolution);
 
+  page_size_ = angle;
   cache_.resize(angle);
   for (int syaw = 0; syaw < angle; syaw++)
   {
