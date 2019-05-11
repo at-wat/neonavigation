@@ -240,18 +240,12 @@ private:
     if (id[0] == -1 || id[1] == -1)
       return;
 
-    float st[2] =
-        {
-          links_[0].current_th_,
-          links_[1].current_th_
-        };
-    float en[2] =
-        {
-          static_cast<float>(traj_prev.points[0].positions[id[0]]),
-          static_cast<float>(traj_prev.points[0].positions[id[1]])
-        };
-    Astar::Vecf start(st);
-    Astar::Vecf end(en);
+    Astar::Vecf start(
+        links_[0].current_th_,
+        links_[1].current_th_);
+    Astar::Vecf end(
+        static_cast<float>(traj_prev.points[0].positions[id[0]]),
+        static_cast<float>(traj_prev.points[0].positions[id[1]]));
 
     ROS_INFO("link %s: %0.3f, %0.3f", group_.c_str(),
              traj_prev.points[0].positions[id[0]],
@@ -418,9 +412,8 @@ public:
     has_goal_ = false;
     has_start_ = false;
 
-    int size[2] = { resolution_ * 2, resolution_ * 2 };
-    cm_.reset(Astar::Vec(size));
-    as_.reset(Astar::Vec(size));
+    cm_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
+    as_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
     cm_.clear(0);
 
     nh_group.param("link0_name", links_[0].name_, std::string("link0"));

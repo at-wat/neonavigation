@@ -60,9 +60,8 @@ TEST(MotionCache, Generate)
   {
     for (int i = 1; i <= range + 1; ++i)
     {
-      // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
       const CyclicVecInt<3, 2> goal(
-          { i * xy_yaw[0], i * xy_yaw[1], xy_yaw[2] });  // NOLINT(whitespace/braces)
+          i * xy_yaw[0], i * xy_yaw[1], xy_yaw[2]);
       const auto c = cache.find(xy_yaw[2], goal);
       if (i > range)
       {
@@ -103,9 +102,8 @@ TEST(MotionCache, Generate)
   {
     for (int i = 1; i <= range + 1; ++i)
     {
-      // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
       const CyclicVecInt<3, 2> goal(
-          { i * xy_syaw_gyaw[0], i * xy_syaw_gyaw[1], xy_syaw_gyaw[3] });  // NOLINT(whitespace/braces)
+          i * xy_syaw_gyaw[0], i * xy_syaw_gyaw[1], xy_syaw_gyaw[3]);
       const auto c = cache.find(xy_syaw_gyaw[2], goal);
       if (i * sqrt(2) >= range)
       {

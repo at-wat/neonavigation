@@ -59,14 +59,8 @@ void RotationCache::reset(
   pages_.resize(angle);
   for (int i = 0; i < angle; i++)
   {
-    const int size[3] =
-        {
-          range * 2 + 1,
-          range * 2 + 1,
-          angle
-        };
     Page& r = pages_[i];
-    r.reset(CyclicVecInt<3, 2>(size));
+    r.reset(CyclicVecInt<3, 2>(range * 2 + 1, range * 2 + 1, angle));
 
     CyclicVecInt<3, 2> d;
 
@@ -76,13 +70,10 @@ void RotationCache::reset(
       {
         for (d[2] = 0; d[2] < angle; d[2]++)
         {
-          const float val[3] =
-              {
-                (d[0] - range) * linear_resolution,
-                (d[1] - range) * linear_resolution,
-                d[2] * angular_resolution
-              };
-          auto v = CyclicVecFloat<3, 2>(val);
+          auto v = CyclicVecFloat<3, 2>(
+              (d[0] - range) * linear_resolution,
+              (d[1] - range) * linear_resolution,
+              d[2] * angular_resolution);
           v.rotate(-i * angular_resolution);
           r.motion(d) = v;
 
