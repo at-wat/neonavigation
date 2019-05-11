@@ -46,9 +46,7 @@ TEST(MotionCache, Generate)
   MotionCache cache;
   cache.reset(
       linear_resolution, angular_resolution, range,
-      std::bind(
-          &decltype(gm)::block_addr, &gm,
-          std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+      gm.getAddressor());
 
   // Straight motions
   const int xy_yaw_straight[][3] =

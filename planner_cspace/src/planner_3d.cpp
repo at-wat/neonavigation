@@ -129,7 +129,7 @@ protected:
     return euclidCost(v, euclid_cost_coef_);
   }
 
-  RotationCache rotgm_;
+  RotationCache rot_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -973,16 +973,12 @@ protected:
           map_info_linear.linear_resolution,
           map_info_linear.angular_resolution,
           range_,
-          std::bind(
-              &decltype(cm_rough_)::block_addr, &cm_rough_,
-              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+          cm_rough_.getAddressor());
       motion_cache_.reset(
           map_info_.linear_resolution,
           map_info_.angular_resolution,
           range_,
-          std::bind(
-              &decltype(cm_)::block_addr, &cm_,
-              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+          cm_.getAddressor());
 
       search_list_.clear();
       for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -1011,7 +1007,7 @@ protected:
       ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d",
                 map_info_.angle, range_, static_cast<int>(search_list_.size()));
 
-      rotgm_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
+      rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
       ROS_DEBUG("Rotation cache generated");
     }
     else
@@ -1720,7 +1716,7 @@ protected:
     d2[1] = d[1] + range_;
     d2[2] = e[2];
 
-    const Astar::Vecf motion = rotgm_.getMotion(s[2], d2);
+    const Astar::Vecf motion = rot_cache_.getMotion(s[2], d2);
     const Astar::Vecf motion_grid = motion * resolution_;
 
     if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
@@ -1792,7 +1788,7 @@ protected:
       if (d.sqlen() < 3 * 3)
         return -1;
 
-      const std::pair<float, float>& radiuses = rotgm_.getRadiuses(s[2], d2);
+      const std::pair<float, float>& radiuses = rot_cache_.getRadiuses(s[2], d2);
       const float r1 = radiuses.first;
       const float r2 = radiuses.second;
 
