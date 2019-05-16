@@ -663,7 +663,12 @@ protected:
             case DEBUG_HYSTERESIS:
               if (cost_estim_cache_[p] == FLT_MAX)
                 continue;
-              point.z = cm_hyst_[p] * 0.01;
+
+              point.z = 0;
+              for (size_t a = 0; a < map_info_.angle; ++a)
+                point.z = std::max(static_cast<float>(cm_hyst_[p]), point.z);
+
+              point.z *= 0.01;
               break;
             case DEBUG_HISTORY:
               if (cm_rough_base_[p] != 0)
@@ -1038,9 +1043,10 @@ protected:
         };
     as_.reset(Astar::Vec(size[0], size[1], size[2]));
     cm_.reset(Astar::Vec(size[0], size[1], size[2]));
+    cm_hyst_.reset(Astar::Vec(size[0], size[1], size[2]));
+
     cost_estim_cache_.reset(Astar::Vec(size[0], size[1], 1));
     cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
-    cm_hyst_.reset(Astar::Vec(size[0], size[1], 1));
     cm_hist_.reset(Astar::Vec(size[0], size[1], 1));
     cm_hist_bbf_.reset(Astar::Vec(size[0], size[1], 1));
 
@@ -1557,7 +1563,6 @@ protected:
           for (d[1] = -path_range; d[1] <= path_range; d[1]++)
           {
             Astar::Vec point = p + d;
-            point[2] = 0;
             if ((unsigned int)point[0] >= (unsigned int)map_info_.width ||
                 (unsigned int)point[1] >= (unsigned int)map_info_.height)
               continue;
@@ -1821,8 +1826,7 @@ protected:
           sum += c;
           if (hyst)
           {
-            const Astar::Vec pos_rough(pos[0], pos[1], 0);
-            sum_hyst += cm_hyst_[pos_rough];
+            sum_hyst += cm_hyst_[pos];
           }
         }
         const float distf = cache_page->second.getDistance();
