@@ -630,7 +630,7 @@ protected:
     cost_estim_cache_[e] = 0;
 
     if (goal_changed)
-      cm_hyst_.clear(0);
+      cm_hyst_.clear(100);
 
     publishCostmap();
 
@@ -664,9 +664,9 @@ protected:
               if (cost_estim_cache_[p] == FLT_MAX)
                 continue;
 
-              point.z = 0;
-              for (size_t a = 0; a < map_info_.angle; ++a)
-                point.z = std::max(static_cast<float>(cm_hyst_[p]), point.z);
+              point.z = 100;
+              for (p[2] = 0; p[2] < static_cast<int>(map_info_.angle); ++p[2])
+                point.z = std::min(static_cast<float>(cm_hyst_[p]), point.z);
 
               point.z *= 0.01;
               break;
@@ -1071,7 +1071,7 @@ protected:
       }
     }
     ROS_DEBUG("Map copied");
-    cm_hyst_.clear(0);
+    cm_hyst_.clear(100);
 
     has_map_ = true;
 
@@ -1209,7 +1209,7 @@ public:
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
-    pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
+    pnh_.param_cast("sw_wait", sw_wait_, 0.0f);
     pnh_.param("find_best", find_best_, true);
 
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
@@ -1389,11 +1389,11 @@ public:
             pub_path_.publish(path);
           }
 
-          if (switchDetect(path))
+          if (sw_wait_ > 0.0)
           {
-            ROS_INFO("Will have switch back");
-            if (sw_wait_ > 0.0)
+            if (switchDetect(path))
             {
+              ROS_INFO("Planned path has switchback");
               ros::Duration(sw_wait_).sleep();
             }
           }
@@ -1554,7 +1554,7 @@ protected:
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
-      const int path_range = range_ + max_dist + expand_dist + 1;
+      const int path_range = range_ + max_dist + expand_dist + 5;
       for (auto& p : path_grid)
       {
         Astar::Vec d;
@@ -1575,26 +1575,21 @@ protected:
       // const auto ts = boost::chrono::high_resolution_clock::now();
       for (auto& ps : path_points)
       {
-        auto& p = ps.first;
+        const Astar::Vec& p = ps.first;
         float d_min = FLT_MAX;
         auto it_prev = path_grid.begin();
         for (auto it = path_grid.begin(); it != path_grid.end(); it++)
         {
           if (it != it_prev)
           {
-            auto d = p.distLinestrip2d(*it_prev, *it);
+            const float d = p.distLinestrip2d(*it_prev, *it);
             if (d < d_min)
               d_min = d;
           }
           it_prev = it;
         }
-        if (d_min < expand_dist)
-          d_min = 0;
-        else if (d_min > max_dist + expand_dist)
-          d_min = max_dist;
-        else
-          d_min -= expand_dist;
-        cm_hyst_[p] = (d_min - expand_dist) * 100.0 / max_dist;
+        d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
+        cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
       }
       // const auto tnow = boost::chrono::high_resolution_clock::now();
       // ROS_INFO("Hysteresis map generated (%0.3f sec.)",
