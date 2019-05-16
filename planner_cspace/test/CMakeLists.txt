@@ -7,12 +7,17 @@ target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 catkin_add_gtest(test_grid_metric_converter src/test_grid_metric_converter.cpp)
 target_link_libraries(test_grid_metric_converter ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-catkin_add_gtest(test_motion_cache src/test_motion_cache.cpp)
+catkin_add_gtest(test_motion_cache
+  src/test_motion_cache.cpp
+  ../src/motion_cache.cpp
+)
 target_link_libraries(test_motion_cache ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 if(PLANNER_CSPACE_PERFORMANCE_TESTS)
 
-  catkin_add_gtest(test_blockmem_gridmap_performance src/test_blockmem_gridmap_performance.cpp)
+  catkin_add_gtest(test_blockmem_gridmap_performance
+    src/test_blockmem_gridmap_performance.cpp
+  )
   target_link_libraries(test_blockmem_gridmap_performance ${catkin_LIBRARIES} ${Boost_LIBRARIES})
   set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}") # Force release build for performance test.
 

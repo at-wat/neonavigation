@@ -27,25 +27,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
-
 #include <cstddef>
 
 #include <gtest/gtest.h>
 
 #include <planner_cspace/cyclic_vec.h>
+#include <planner_cspace/blockmem_gridmap.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 
 TEST(MotionCache, Generate)
 {
   const int range = 4;
-  costmap_cspace_msgs::MapMetaData3D map_info;
-  map_info.angle = 4;
-  map_info.angular_resolution = M_PI * 2 / map_info.angle;
-  map_info.linear_resolution = 0.5;
+  const int angle = 4;
+  const float angular_resolution = M_PI * 2 / angle;
+  const float linear_resolution = 0.5;
 
-  BlockMemGridmap<char, 3, 2, 0x20> gm_;
-  MotionCache<CyclicVecInt<3, 2>, CyclicVecFloat<3, 2>> cache(map_info, range, gm_);
+  BlockMemGridmap<char, 3, 2, 0x20> gm;
+  MotionCache cache;
+  cache.reset(
+      linear_resolution, angular_resolution, range,
+      gm.getAddressor());
 
   // Straight motions
   const int xy_yaw_straight[][3] =
