@@ -625,7 +625,7 @@ protected:
     open.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
     fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Cost estimation cache generated (%0.3f sec.)",
+    ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
     cost_estim_cache_[e] = 0;
 
@@ -935,7 +935,7 @@ protected:
 
     fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Cost estimation cache updated (%0.3f sec.)",
+    ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
     publishCostmap();
   }
@@ -1572,7 +1572,7 @@ protected:
       }
 
       cm_hyst_.clear(100);
-      // const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = boost::chrono::high_resolution_clock::now();
       for (auto& ps : path_points)
       {
         const Astar::Vec& p = ps.first;
@@ -1591,9 +1591,9 @@ protected:
         d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
         cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
       }
-      // const auto tnow = boost::chrono::high_resolution_clock::now();
-      // ROS_INFO("Hysteresis map generated (%0.3f sec.)",
-      //   boost::chrono::duration<float>(tnow - ts).count());
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      ROS_DEBUG("Hysteresis map generated (%0.4f sec.)",
+                boost::chrono::duration<float>(tnow - ts).count());
       publishCostmap();
     }
 
