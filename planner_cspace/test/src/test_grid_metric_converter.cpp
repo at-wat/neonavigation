@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -112,7 +112,7 @@ TEST(GridMetricConverter, Path)
       };
   std::vector<CyclicVecInt<3, 2>> path_grid;
   for (const auto& g : grid)
-    path_grid.push_back(CyclicVecInt<3, 2>(g));
+    path_grid.push_back(CyclicVecInt<3, 2>(g[0], g[1], g[2]));
 
   nav_msgs::Path path;
   grid_metric_converter::grid2MetricPath(map_info, 10.0, path_grid, path, path_grid[0]);

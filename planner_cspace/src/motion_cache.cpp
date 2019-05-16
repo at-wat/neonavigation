@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -42,6 +42,7 @@ void MotionCache::reset(
 {
   const int angle = std::lround(M_PI * 2 / angular_resolution);
 
+  page_size_ = angle;
   cache_.resize(angle);
   for (int syaw = 0; syaw < angle; syaw++)
   {
@@ -68,7 +69,7 @@ void MotionCache::reset(
           std::unordered_map<CyclicVecInt<3, 2>, bool, CyclicVecInt<3, 2>> registered;
           registered[d] = true;
 
-          CyclicVecFloat<3, 2> motion(diff_val);
+          CyclicVecFloat<3, 2> motion(diff_val[0], diff_val[1], diff_val[2]);
           motion.rotate(-syaw * angular_resolution);
           const float cos_v = cosf(motion[2]);
           const float sin_v = sinf(motion[2]);
@@ -82,14 +83,9 @@ void MotionCache::reset(
               const float x = diff_val[0] * i;
               const float y = diff_val[1] * i;
 
-              const float pos_raw[3] =
-                  {
-                    roundf(x / linear_resolution),
-                    roundf(y / linear_resolution),
-                    roundf(yaw / angular_resolution)
-                  };
-              CyclicVecInt<3, 2> pos(pos_raw);
-              pos.cycleUnsigned(pos[2], angle);
+              CyclicVecInt<3, 2> pos(
+                  x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
+              pos.cycleUnsigned(angle);
               if (registered.find(pos) == registered.end())
               {
                 page.motion_.push_back(pos);
@@ -118,8 +114,7 @@ void MotionCache::reset(
           const float cx_s = r1 * cosf(yaw + M_PI / 2);
           const float cy_s = r1 * sinf(yaw + M_PI / 2);
 
-          // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-          CyclicVecFloat<3, 2> posf_prev({ 0, 0, 0 });  // NOLINT(whitespace/braces)
+          CyclicVecFloat<3, 2> posf_prev(0, 0, 0);
 
           for (float i = 0; i < 1.0; i += inter)
           {
@@ -134,9 +129,9 @@ void MotionCache::reset(
                   (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
                   cyaw / angular_resolution
                 };
-            const CyclicVecFloat<3, 2> posf(posf_raw);
-            CyclicVecInt<3, 2> pos(posf_raw);
-            pos.cycleUnsigned(pos[2], angle);
+            const CyclicVecFloat<3, 2> posf(posf_raw[0], posf_raw[1], posf_raw[2]);
+            CyclicVecInt<3, 2> pos(posf_raw[0], posf_raw[1], posf_raw[2]);
+            pos.cycleUnsigned(angle);
             if (registered.find(pos) == registered.end())
             {
               page.motion_.push_back(pos);
