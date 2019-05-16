@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2018-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,49 +27,71 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_ROTATION_CACHE_H
-#define PLANNER_CSPACE_ROTATION_CACHE_H
+#ifndef PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
+#define PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
+
+#include <cmath>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <planner_cspace/cyclic_vec.h>
 
-template <int DIM, int NONCYCLIC>
 class RotationCache
 {
-protected:
-  std::unique_ptr<CyclicVecFloat<DIM, NONCYCLIC>[]> c_;
-  CyclicVecInt<DIM, NONCYCLIC> size_;
-  int ser_size_;
+private:
+  class Page
+  {
+  private:
+    std::unique_ptr<CyclicVecFloat<3, 2>[]> c_;
+    std::unique_ptr<std::pair<float, float>[]> r_;
+    CyclicVecInt<3, 2> size_;
+    int ser_size_;
+
+    inline size_t addr(const CyclicVecInt<3, 2>& pos) const
+    {
+      size_t addr = pos[2];
+      for (int i = 1; i >= 0; i--)
+        addr = addr * size_[i] + pos[i];
+      return addr;
+    }
+
+  public:
+    void reset(const CyclicVecInt<3, 2>& size);
+    inline CyclicVecFloat<3, 2>& motion(const CyclicVecInt<3, 2>& pos)
+    {
+      return c_[addr(pos)];
+    }
+    inline const CyclicVecFloat<3, 2>& motion(const CyclicVecInt<3, 2>& pos) const
+    {
+      return c_[addr(pos)];
+    }
+    inline std::pair<float, float>& radiuses(const CyclicVecInt<3, 2>& pos)
+    {
+      return r_[addr(pos)];
+    }
+    inline const std::pair<float, float>& radiuses(const CyclicVecInt<3, 2>& pos) const
+    {
+      return r_[addr(pos)];
+    }
+  };
+
+  std::vector<Page> pages_;
 
 public:
-  void reset(const CyclicVecInt<DIM, NONCYCLIC>& size)
+  void reset(const float linear_resolution, const float angular_resolution, const int range);
+  inline const CyclicVecFloat<3, 2>& getMotion(
+      const int start_angle,
+      const CyclicVecInt<3, 2>& end) const
   {
-    size_t ser_size = 1;
-    for (int i = 0; i < 3; i++)
-    {
-      ser_size *= size[i];
-    }
-    size_ = size;
-    ser_size_ = ser_size;
-
-    c_.reset(new CyclicVecFloat<DIM, NONCYCLIC>[ser_size]);
+    return pages_[start_angle].motion(end);
   }
-  explicit RotationCache(const CyclicVecInt<DIM, NONCYCLIC>& size)
+  inline const std::pair<float, float>& getRadiuses(
+      const int start_angle,
+      const CyclicVecInt<3, 2>& end) const
   {
-    reset(size);
-  }
-  RotationCache()
-  {
-  }
-  CyclicVecFloat<DIM, NONCYCLIC>& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
-  {
-    size_t addr = pos[2];
-    for (int i = 1; i >= 0; i--)
-    {
-      addr *= size_[i];
-      addr += pos[i];
-    }
-    return c_[addr];
+    return pages_[start_angle].radiuses(end);
   }
 };
 
-#endif  // PLANNER_CSPACE_ROTATION_CACHE_H
+#endif  // PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H

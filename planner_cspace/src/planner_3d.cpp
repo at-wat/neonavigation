@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2014-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 #include <limits>
 #include <list>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <ros/ros.h>
@@ -63,7 +64,7 @@
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/jump_detector.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/rotation_cache.h>
+#include <planner_cspace/planner_3d/rotation_cache.h>
 
 #include <omp.h>
 
@@ -128,7 +129,7 @@ protected:
     return euclidCost(v, euclid_cost_coef_);
   }
 
-  std::vector<RotationCache<3, 2>> rotgm_;
+  RotationCache rot_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -228,8 +229,8 @@ protected:
 
   int cnt_stuck_;
 
-  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_;
-  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_linear_;
+  MotionCache motion_cache_;
+  MotionCache motion_cache_linear_;
 
   diagnostic_updater::Updater diag_updater_;
   ros::Duration costmap_watchdog_;
@@ -282,8 +283,8 @@ protected:
       float cost = euclidCost(d, euclid_cost_coef);
 
       int sum = 0;
-      const auto cache_page = motion_cache_linear_->find(0, d);
-      if (cache_page == motion_cache_linear_->end(0))
+      const auto cache_page = motion_cache_linear_.find(0, d);
+      if (cache_page == motion_cache_linear_.end(0))
         return -1;
       const int num = cache_page->second.getMotion().size();
       for (const auto& pos_diff : cache_page->second.getMotion())
@@ -968,8 +969,16 @@ protected:
 
       costmap_cspace_msgs::MapMetaData3D map_info_linear(map_info_);
       map_info_linear.angle = 1;
-      motion_cache_linear_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_linear, range_, cm_rough_));
-      motion_cache_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_, range_, cm_));
+      motion_cache_linear_.reset(
+          map_info_linear.linear_resolution,
+          map_info_linear.angular_resolution,
+          range_,
+          cm_rough_.getAddressor());
+      motion_cache_.reset(
+          map_info_.linear_resolution,
+          map_info_.angular_resolution,
+          range_,
+          cm_.getAddressor());
 
       search_list_.clear();
       for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -998,39 +1007,7 @@ protected:
       ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d",
                 map_info_.angle, range_, static_cast<int>(search_list_.size()));
 
-      rotgm_.resize(map_info_.angle);
-      for (int i = 0; i < static_cast<int>(map_info_.angle); i++)
-      {
-        const int size[3] =
-            {
-              range_ * 2 + 1,
-              range_ * 2 + 1,
-              static_cast<int>(map_info_.angle)
-            };
-        auto& r = rotgm_[i];
-        r.reset(Astar::Vec(size));
-
-        Astar::Vec d;
-
-        for (d[0] = 0; d[0] <= range_ * 2; d[0]++)
-        {
-          for (d[1] = 0; d[1] <= range_ * 2; d[1]++)
-          {
-            for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
-            {
-              const float val[3] =
-                  {
-                    (d[0] - range_) * map_info_.linear_resolution,
-                    (d[1] - range_) * map_info_.linear_resolution,
-                    d[2] * map_info_.angular_resolution
-                  };
-              auto v = Astar::Vecf(val);
-              v.rotate(-i * map_info_.angular_resolution);
-              r[d] = v;
-            }
-          }
-        }
-      }
+      rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
       ROS_DEBUG("Rotation cache generated");
     }
     else
@@ -1739,7 +1716,7 @@ protected:
     d2[1] = d[1] + range_;
     d2[2] = e[2];
 
-    const Astar::Vecf motion = rotgm_[s[2]][d2];
+    const Astar::Vecf motion = rot_cache_.getMotion(s[2], d2);
     const Astar::Vecf motion_grid = motion * resolution_;
 
     if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
@@ -1778,8 +1755,8 @@ protected:
       d_index[2] = e[2];
       d_index.cycleUnsigned(syaw, map_info_.angle);
       d_index.cycleUnsigned(d_index[2], map_info_.angle);
-      const auto cache_page = motion_cache_->find(syaw, d_index);
-      if (cache_page == motion_cache_->end(syaw))
+      const auto cache_page = motion_cache_.find(syaw, d_index);
+      if (cache_page == motion_cache_.end(syaw))
         return -1;
       const int num = cache_page->second.getMotion().size();
       for (const auto& pos_diff : cache_page->second.getMotion())
@@ -1811,13 +1788,9 @@ protected:
       if (d.sqlen() < 3 * 3)
         return -1;
 
-      const float cos_v = cosf(motion[2]);
-      const float sin_v = sinf(motion[2]);
-
-      const float r1 = motion[1] + motion[0] * cos_v / sin_v;
-      const float r2 = std::copysign(
-          sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
-          motion[0] * sin_v);
+      const std::pair<float, float>& radiuses = rot_cache_.getRadiuses(s[2], d2);
+      const float r1 = radiuses.first;
+      const float r2 = radiuses.second;
 
       // curveture at the start_ pose and the end pose must be same
       if (fabs(r1 - r2) >= map_info_.linear_resolution * 1.5)
@@ -1830,12 +1803,9 @@ protected:
       if (std::abs(curv_radius) < min_curve_raduis_)
         return -1;
 
-      float vel = max_vel_;
-      float ang_vel = cos_v * vel / (cos_v * motion[0] + sin_v * motion[1]);
-      if (fabs(ang_vel) > max_ang_vel_)
+      if (fabs(max_vel_ / r1) > max_ang_vel_)
       {
-        ang_vel = std::copysign(1.0f, ang_vel) * max_ang_vel_;
-        vel = fabs(curv_radius) * max_ang_vel_;
+        const float vel = fabs(curv_radius) * max_ang_vel_;
 
         // Curve deceleration penalty
         cost += dist * fabs(vel / max_vel_) * cc_.weight_decel_;
@@ -1848,8 +1818,8 @@ protected:
         d_index[2] = e[2];
         d_index.cycleUnsigned(syaw, map_info_.angle);
         d_index.cycleUnsigned(d_index[2], map_info_.angle);
-        const auto cache_page = motion_cache_->find(syaw, d_index);
-        if (cache_page == motion_cache_->end(syaw))
+        const auto cache_page = motion_cache_.find(syaw, d_index);
+        if (cache_page == motion_cache_.end(syaw))
           return -1;
         const int num = cache_page->second.getMotion().size();
         for (const auto& pos_diff : cache_page->second.getMotion())

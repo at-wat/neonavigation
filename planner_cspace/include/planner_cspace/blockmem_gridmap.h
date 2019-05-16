@@ -46,7 +46,6 @@ protected:
   size_t block_num_;
   T dummy_;
 
-public:
   void block_addr(
       const CyclicVecInt<DIM, NONCYCLIC>& pos, size_t& baddr, size_t& addr) const
   {
@@ -64,6 +63,15 @@ public:
       addr *= size_[i];
       addr += pos[i];
     }
+  }
+
+public:
+  std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> getAddressor() const
+  {
+    return std::bind(
+        &BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>::block_addr,
+        this,
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
   }
   const CyclicVecInt<DIM, NONCYCLIC>& size() const
   {
