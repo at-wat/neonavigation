@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -39,38 +39,13 @@ TEST(CyclicVec, InitFloat)
       {
         1.0, 2.0, 3.0
       };
-  CyclicVecFloat<3, 2> v(val);
-  const CyclicVecFloat<3, 2> vc(val);
+  CyclicVecFloat<3, 2> v(1.0f, 2.0f, 3.0f);
+  const CyclicVecFloat<3, 2> vc(1.0f, 2.0f, 3.0f);
 
   for (size_t i = 0; i < 3; ++i)
   {
     ASSERT_EQ(v[i], val[i]);
     ASSERT_EQ(vc[i], val[i]);
-  }
-
-  const float val2[3] =
-      {
-        4.0, 5.0, 6.0
-      };
-  v.set(val2);
-
-  for (size_t i = 0; i < 3; ++i)
-  {
-    ASSERT_EQ(v[i], val2[i]);
-  }
-
-#define VAL3F     \
-  {               \
-    7.0, 8.0, 9.0 \
-  }
-  const float val3[3] = VAL3F;
-  CyclicVecFloat<3, 2> v2(VAL3F);
-  const CyclicVecFloat<3, 2> vc2(VAL3F);
-
-  for (size_t i = 0; i < 3; ++i)
-  {
-    ASSERT_EQ(v2[i], val3[i]);
-    ASSERT_EQ(vc2[i], val3[i]);
   }
 }
 
@@ -80,125 +55,52 @@ TEST(CyclicVec, InitInt)
       {
         1, 2, 3
       };
-  CyclicVecInt<3, 2> v(val);
-  const CyclicVecInt<3, 2> vc(val);
+  CyclicVecInt<3, 2> v(1, 2, 3);
+  const CyclicVecInt<3, 2> vc(1, 2, 3);
 
   for (size_t i = 0; i < 3; ++i)
   {
     ASSERT_EQ(v[i], val[i]);
     ASSERT_EQ(vc[i], val[i]);
   }
-
-  const int val2[3] =
-      {
-        4, 5, 6
-      };
-  v.set(val2);
-
-  for (size_t i = 0; i < 3; ++i)
-  {
-    ASSERT_EQ(v[i], val2[i]);
-  }
-
-#define VAL3I \
-  {           \
-    7, 8, 9   \
-  }
-  const int val3[3] = VAL3I;
-  CyclicVecInt<3, 2> v2(VAL3I);
-  const CyclicVecInt<3, 2> vc2(VAL3I);
-
-  for (size_t i = 0; i < 3; ++i)
-  {
-    ASSERT_EQ(v2[i], val3[i]);
-    ASSERT_EQ(vc2[i], val3[i]);
-  }
 }
 
 TEST(CyclicVec, OperatorsFloat)
 {
   using Vec3 = CyclicVecFloat<3, 2>;
-  const float v1c[3] =
-      {
-        1.0, 2.0, 3.0
-      };
-  const float v2c[3] =
-      {
-        4.0, 5.0, 6.0
-      };
-  Vec3 v1(v1c);
-  Vec3 v12(v1c);
-  Vec3 v2(v2c);
+  Vec3 v1(1.0f, 2.0f, 3.0f);
+  Vec3 v12(1.0f, 2.0f, 3.0f);
+  Vec3 v2(4.0f, 5.0f, 6.0f);
 
   ASSERT_EQ(v1, v12);
   ASSERT_NE(v1, v2);
   ASSERT_NE(v12, v2);
 
-  const float v1_plus_v2[3] =
-      {
-        5.0, 7.0, 9.0
-      };
-  ASSERT_EQ(v1 + v2, Vec3(v1_plus_v2));
-
-  const float v1_minus_v2[3] =
-      {
-        -3.0, -3.0, -3.0
-      };
-  ASSERT_EQ(v1 - v2, Vec3(v1_minus_v2));
-
-  const float v1_mul_v2[3] =
-      {
-        4.0, 10.0, 18.0
-      };
-  ASSERT_EQ(v1 * v2, Vec3(v1_mul_v2));
+  ASSERT_EQ(v1 + v2, Vec3(5.0f, 7.0f, 9.0f));
+  ASSERT_EQ(v1 - v2, Vec3(-3.0f, -3.0f, -3.0f));
+  ASSERT_EQ(v1 * v2, Vec3(4.0f, 10.0f, 18.0f));
 }
 
 TEST(CyclicVec, OperatorsInt)
 {
   using Vec3 = CyclicVecInt<3, 2>;
-  const int v1c[3] =
-      {
-        1, 2, 3
-      };
-  const int v2c[3] =
-      {
-        4, 5, 6
-      };
-  Vec3 v1(v1c);
-  Vec3 v12(v1c);
-  Vec3 v2(v2c);
+  Vec3 v1(1, 2, 3);
+  Vec3 v12(1, 2, 3);
+  Vec3 v2(4, 5, 6);
 
   ASSERT_EQ(v1, v12);
   ASSERT_NE(v1, v2);
   ASSERT_NE(v12, v2);
 
-  const int v1_plus_v2[3] =
-      {
-        5, 7, 9
-      };
-  ASSERT_EQ(v1 + v2, Vec3(v1_plus_v2));
-
-  const int v1_minus_v2[3] =
-      {
-        -3, -3, -3
-      };
-  ASSERT_EQ(v1 - v2, Vec3(v1_minus_v2));
-
-  const int v1_mul_v2[3] =
-      {
-        4, 10, 18
-      };
-  ASSERT_EQ(v1 * v2, Vec3(v1_mul_v2));
+  ASSERT_EQ(v1 + v2, Vec3(5, 7, 9));
+  ASSERT_EQ(v1 - v2, Vec3(-3, -3, -3));
+  ASSERT_EQ(v1 * v2, Vec3(4, 10, 18));
 }
 
 TEST(CyclicVec, LengthInt)
 {
   using Vec3 = CyclicVecInt<3, 2>;
-  const int v1c[3] =
-      {
-        3, 4, 5
-      };
-  Vec3 v(v1c);
+  Vec3 v(3, 4, 5);
 
   ASSERT_EQ(v.sqlen(), 25);
   ASSERT_EQ(v.len(), 5.0);
@@ -208,11 +110,7 @@ TEST(CyclicVec, LengthInt)
 TEST(CyclicVec, LengthFloat)
 {
   using Vec3 = CyclicVecFloat<3, 2>;
-  const float v1c[3] =
-      {
-        3.0, 4.0, 5.0
-      };
-  Vec3 v(v1c);
+  Vec3 v(3.0f, 4.0f, 5.0f);
 
   ASSERT_EQ(v.sqlen(), 25.0);
   ASSERT_EQ(v.len(), 5.0);
@@ -222,20 +120,16 @@ TEST(CyclicVec, LengthFloat)
 TEST(CyclicVec, Cycle)
 {
   using Vec3 = CyclicVecInt<3, 2>;
-  const int v1c[3] =
-      {
-        3, 4, 5
-      };
-  Vec3 v(v1c);
-  v.cycle(v[2], 4);
+  Vec3 v(3, 4, 5);
+  v.cycle(4);
   ASSERT_EQ(v[2], 1);
-  v.cycleUnsigned(v[2], 4);
+  v.cycleUnsigned(4);
   ASSERT_EQ(v[2], 1);
 
   v[2] = 7;
-  v.cycle(v[2], 4);
+  v.cycle(4);
   ASSERT_EQ(v[2], -1);
-  v.cycleUnsigned(v[2], 4);
+  v.cycleUnsigned(4);
   ASSERT_EQ(v[2], 3);
 }
 

@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -63,15 +63,21 @@ public:
   using Ptr = std::shared_ptr<MotionCache>;
 
   inline const typename Cache::const_iterator find(
-      const size_t start_yaw,
+      const int start_yaw,
       const CyclicVecInt<3, 2>& goal) const
   {
-    return cache_[start_yaw].find(goal);
+    int i = start_yaw % page_size_;
+    if (i < 0)
+      i += page_size_;
+    return cache_[i].find(goal);
   }
   inline const typename Cache::const_iterator end(
-      const size_t start_yaw) const
+      const int start_yaw) const
   {
-    return cache_[start_yaw].cend();
+    int i = start_yaw % page_size_;
+    if (i < 0)
+      i += page_size_;
+    return cache_[i].cend();
   }
 
   void reset(
@@ -82,6 +88,7 @@ public:
 
 protected:
   std::vector<Cache> cache_;
+  int page_size_;
 };
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H

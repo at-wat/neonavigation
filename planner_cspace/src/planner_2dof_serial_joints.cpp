@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -74,7 +74,6 @@ private:
     float cost = 0;
     for (int i = 0; i < as_.getDim(); i++)
     {
-      // vc.cycle(vc[i], cm_.size[i]);
       cost += fabs(coef[i] * vc[i]);
     }
     return cost;
@@ -240,18 +239,12 @@ private:
     if (id[0] == -1 || id[1] == -1)
       return;
 
-    float st[2] =
-        {
-          links_[0].current_th_,
-          links_[1].current_th_
-        };
-    float en[2] =
-        {
-          static_cast<float>(traj_prev.points[0].positions[id[0]]),
-          static_cast<float>(traj_prev.points[0].positions[id[1]])
-        };
-    Astar::Vecf start(st);
-    Astar::Vecf end(en);
+    Astar::Vecf start(
+        links_[0].current_th_,
+        links_[1].current_th_);
+    Astar::Vecf end(
+        static_cast<float>(traj_prev.points[0].positions[id[0]]),
+        static_cast<float>(traj_prev.points[0].positions[id[1]]));
 
     ROS_INFO("link %s: %0.3f, %0.3f", group_.c_str(),
              traj_prev.points[0].positions[id[0]],
@@ -418,9 +411,8 @@ public:
     has_goal_ = false;
     has_start_ = false;
 
-    int size[2] = { resolution_ * 2, resolution_ * 2 };
-    cm_.reset(Astar::Vec(size));
-    as_.reset(Astar::Vec(size));
+    cm_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
+    as_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
     cm_.clear(0);
 
     nh_group.param("link0_name", links_[0].name_, std::string("link0"));
@@ -575,8 +567,7 @@ private:
       return false;
     }
     Astar::Vec d = e - s;
-    d.cycle(d[0], resolution_);
-    d.cycle(d[1], resolution_);
+    d.cycle(resolution_, resolution_);
 
     if (cbCost(s, e, e, s) >= euclidCost(d))
     {
@@ -630,8 +621,7 @@ private:
       if (i == 0)
         ROS_INFO("  next: %d, %d", n[0], n[1]);
       Astar::Vec n_diff = n - n_prev;
-      n_diff.cycle(n_diff[0], resolution_);
-      n_diff.cycle(n_diff[1], resolution_);
+      n_diff.cycle(resolution_, resolution_);
       Astar::Vec n2 = n_prev + n_diff;
       n_prev = n2;
 
@@ -701,8 +691,7 @@ private:
         (unsigned int)e[1] >= (unsigned int)resolution_ * 2)
       return -1;
     Astar::Vec d = e - s;
-    d.cycle(d[0], resolution_);
-    d.cycle(d[1], resolution_);
+    d.cycle(resolution_, resolution_);
 
     float cost = euclidCost(d);
 
@@ -720,8 +709,7 @@ private:
     {
       pos[0] = lroundf(v[0]);
       pos[1] = lroundf(v[1]);
-      pos.cycleUnsigned(pos[0], resolution_);
-      pos.cycleUnsigned(pos[1], resolution_);
+      pos.cycleUnsigned(resolution_, resolution_);
       const auto c = cm_[pos];
       if (c > 99)
         return -1;
