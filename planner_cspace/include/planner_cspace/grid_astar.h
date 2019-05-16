@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -162,8 +162,8 @@ public:
     Vec e = en;
     for (int i = NONCYCLIC; i < DIM; i++)
     {
-      s.cycleUnsigned(s[i], g.size()[i]);
-      e.cycleUnsigned(e[i], g.size()[i]);
+      s.cycleUnsigned(g.size());
+      e.cycleUnsigned(g.size());
     }
     g.clear(FLT_MAX);
     open_.clear();
@@ -242,7 +242,7 @@ public:
             Vec next = p + *it;
             for (int i = NONCYCLIC; i < DIM; i++)
             {
-              next.cycleUnsigned(next[i], g.size()[i]);
+              next.cycleUnsigned(g.size());
             }
             if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
                 (unsigned int)next[1] >= (unsigned int)g.size()[1])

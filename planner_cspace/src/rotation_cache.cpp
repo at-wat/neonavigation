@@ -27,68 +27,65 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
-#define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
-
-#include <unordered_map>
+#include <cmath>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <planner_cspace/cyclic_vec.h>
 
-class MotionCache
+#include <planner_cspace/planner_3d/rotation_cache.h>
+
+void RotationCache::Page::reset(const CyclicVecInt<3, 2>& size)
 {
-public:
-  class Page
+  size_t ser_size = 1;
+  for (int i = 0; i < 3; i++)
+    ser_size *= size[i];
+
+  size_ = size;
+  ser_size_ = ser_size;
+
+  c_.reset(new CyclicVecFloat<3, 2>[ser_size]);
+  r_.reset(new std::pair<float, float>[ser_size]);
+}
+
+void RotationCache::reset(
+    const float linear_resolution,
+    const float angular_resolution,
+    const int range)
+{
+  const int angle = std::lround(M_PI * 2 / angular_resolution);
+
+  pages_.resize(angle);
+  for (int i = 0; i < angle; i++)
   {
-  protected:
-    friend class MotionCache;
+    Page& r = pages_[i];
+    r.reset(CyclicVecInt<3, 2>(range * 2 + 1, range * 2 + 1, angle));
 
-    std::vector<CyclicVecInt<3, 2>> motion_;
-    float distance_;
+    CyclicVecInt<3, 2> d;
 
-  public:
-    inline float getDistance() const
+    for (d[0] = 0; d[0] <= range * 2; d[0]++)
     {
-      return distance_;
+      for (d[1] = 0; d[1] <= range * 2; d[1]++)
+      {
+        for (d[2] = 0; d[2] < angle; d[2]++)
+        {
+          auto v = CyclicVecFloat<3, 2>(
+              (d[0] - range) * linear_resolution,
+              (d[1] - range) * linear_resolution,
+              d[2] * angular_resolution);
+          v.rotate(-i * angular_resolution);
+          r.motion(d) = v;
+
+          const float sin_v = std::sin(v[2]);
+          const float cos_v = std::cos(v[2]);
+          const float r1 = v[1] + v[0] * cos_v / sin_v;
+          const float r2 = std::copysign(
+              sqrtf(powf(v[0], 2.0) + powf(v[0] * cos_v / sin_v, 2.0)),
+              v[0] * sin_v);
+          r.radiuses(d) = std::pair<float, float>(r1, r2);
+        }
+      }
     }
-    const std::vector<CyclicVecInt<3, 2>>& getMotion() const
-    {
-      return motion_;
-    }
-  };
-
-  using Cache =
-      std::unordered_map<CyclicVecInt<3, 2>, Page, CyclicVecInt<3, 2>>;
-
-  using Ptr = std::shared_ptr<MotionCache>;
-
-  inline const typename Cache::const_iterator find(
-      const int start_yaw,
-      const CyclicVecInt<3, 2>& goal) const
-  {
-    int i = start_yaw % page_size_;
-    if (i < 0)
-      i += page_size_;
-    return cache_[i].find(goal);
   }
-  inline const typename Cache::const_iterator end(
-      const int start_yaw) const
-  {
-    int i = start_yaw % page_size_;
-    if (i < 0)
-      i += page_size_;
-    return cache_[i].cend();
-  }
-
-  void reset(
-      const float linear_resolution,
-      const float angular_resolution,
-      const int range,
-      const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr);
-
-protected:
-  std::vector<Cache> cache_;
-  int page_size_;
-};
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
+}

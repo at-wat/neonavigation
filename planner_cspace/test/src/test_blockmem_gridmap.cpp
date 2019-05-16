@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -40,19 +40,15 @@ TEST(BlockmemGridmap, ResetClear)
 
   for (int s = 4; s <= 6; s += 2)
   {
-    const int size[3] =
-        {
-          s, s, s
-        };
-    gm.reset(CyclicVecInt<3, 3>(size));
+    gm.reset(CyclicVecInt<3, 3>(s, s, s));
     gm.clear(0.0);
 
     CyclicVecInt<3, 3> i;
-    for (i[0] = 0; i[0] < size[0]; ++i[0])
+    for (i[0] = 0; i[0] < s; ++i[0])
     {
-      for (i[1] = 0; i[1] < size[1]; ++i[1])
+      for (i[1] = 0; i[1] < s; ++i[1])
       {
-        for (i[2] = 0; i[2] < size[2]; ++i[2])
+        for (i[2] = 0; i[2] < s; ++i[2])
         {
           ASSERT_EQ(gm[i], 0.0);
         }
@@ -60,11 +56,11 @@ TEST(BlockmemGridmap, ResetClear)
     }
 
     gm.clear(3.0);
-    for (i[0] = 0; i[0] < size[0]; ++i[0])
+    for (i[0] = 0; i[0] < s; ++i[0])
     {
-      for (i[1] = 0; i[1] < size[1]; ++i[1])
+      for (i[1] = 0; i[1] < s; ++i[1])
       {
-        for (i[2] = 0; i[2] < size[2]; ++i[2])
+        for (i[2] = 0; i[2] < s; ++i[2])
         {
           ASSERT_EQ(gm[i], 3.0);
         }
@@ -77,30 +73,27 @@ TEST(BlockmemGridmap, WriteRead)
 {
   BlockMemGridmap<float, 3, 3, 0x20> gm;
 
-  const int size[3] =
-      {
-        4, 4, 4
-      };
-  gm.reset(CyclicVecInt<3, 3>(size));
+  const int s = 4;
+  gm.reset(CyclicVecInt<3, 3>(s, s, s));
   gm.clear(0.0);
 
   CyclicVecInt<3, 3> i;
-  for (i[0] = 0; i[0] < size[0]; ++i[0])
+  for (i[0] = 0; i[0] < s; ++i[0])
   {
-    for (i[1] = 0; i[1] < size[1]; ++i[1])
+    for (i[1] = 0; i[1] < s; ++i[1])
     {
-      for (i[2] = 0; i[2] < size[2]; ++i[2])
+      for (i[2] = 0; i[2] < s; ++i[2])
       {
         gm[i] = i[2] * 100 + i[1] * 10 + i[0];
       }
     }
   }
 
-  for (i[0] = 0; i[0] < size[0]; ++i[0])
+  for (i[0] = 0; i[0] < s; ++i[0])
   {
-    for (i[1] = 0; i[1] < size[1]; ++i[1])
+    for (i[1] = 0; i[1] < s; ++i[1])
     {
-      for (i[2] = 0; i[2] < size[2]; ++i[2])
+      for (i[2] = 0; i[2] < s; ++i[2])
       {
         ASSERT_EQ(gm[i], i[2] * 100 + i[1] * 10 + i[0]);
       }
@@ -112,23 +105,20 @@ TEST(BlockmemGridmap, OuterBoundery)
 {
   BlockMemGridmap<float, 3, 2, 0x20> gm;
 
-  const int size[3] =
-      {
-        0x30, 0x30, 0x30
-      };
-  gm.reset(CyclicVecInt<3, 2>(size));
+  const int s = 0x30;
+  gm.reset(CyclicVecInt<3, 2>(s, s, s));
   gm.clear(1.0);
 
   CyclicVecInt<3, 2> i;
   const int outer = 0x10;
-  for (i[0] = -outer; i[0] < size[0] + outer; ++i[0])
+  for (i[0] = -outer; i[0] < s + outer; ++i[0])
   {
-    for (i[1] = -outer; i[1] < size[1] + outer; ++i[1])
+    for (i[1] = -outer; i[1] < s + outer; ++i[1])
     {
-      for (i[2] = -outer; i[2] < size[2] + outer; ++i[2])
+      for (i[2] = -outer; i[2] < s + outer; ++i[2])
       {
         if (i[0] >= 0 && i[1] >= 0 && i[2] >= 0 &&
-            i[0] < size[0] && i[1] < size[1] && i[2] < size[2])
+            i[0] < s && i[1] < s && i[2] < s)
         {
           ASSERT_TRUE(gm.validate(i));
         }

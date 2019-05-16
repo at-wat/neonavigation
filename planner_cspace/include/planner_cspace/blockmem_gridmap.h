@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -46,7 +46,6 @@ protected:
   size_t block_num_;
   T dummy_;
 
-public:
   void block_addr(
       const CyclicVecInt<DIM, NONCYCLIC>& pos, size_t& baddr, size_t& addr) const
   {
@@ -64,6 +63,15 @@ public:
       addr *= size_[i];
       addr += pos[i];
     }
+  }
+
+public:
+  std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> getAddressor() const
+  {
+    return std::bind(
+        &BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>::block_addr,
+        this,
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
   }
   const CyclicVecInt<DIM, NONCYCLIC>& size() const
   {

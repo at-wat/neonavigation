@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -68,8 +68,7 @@ void grid2MetricPath(
     nav_msgs::Path& path, const CyclicVecInt<3, 2>& v_start)
 {
   float x_prev = 0, y_prev = 0, yaw_prev = 0;
-  // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-  CyclicVecInt<3, 2> p_prev({ 0, 0, 0 });  // NOLINT(whitespace/braces)
+  CyclicVecInt<3, 2> p_prev(0, 0, 0);
   bool init = false;
 
   for (const auto& p : path_grid)
@@ -81,15 +80,13 @@ void grid2MetricPath(
 
     if (init)
     {
-      const auto ds = v_start - p;
-      const auto d = p - p_prev;
-      const float diff_val[3] =
-          {
-            d[0] * map_info.linear_resolution,
-            d[1] * map_info.linear_resolution,
-            p[2] * map_info.angular_resolution
-          };
-      CyclicVecFloat<3, 2> motion(diff_val);
+      const CyclicVecInt<3, 2> ds = v_start - p;
+      CyclicVecInt<3, 2> d = p - p_prev;
+      d.cycle(map_info.angle);
+      CyclicVecFloat<3, 2> motion(
+          d[0] * map_info.linear_resolution,
+          d[1] * map_info.linear_resolution,
+          p[2] * map_info.angular_resolution);
       motion.rotate(-p_prev[2] * map_info.angular_resolution);
 
       const float inter = 0.1 / d.len();
@@ -105,14 +102,20 @@ void grid2MetricPath(
             tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
         path.poses.push_back(ps);
       }
-      else if (fabs(sin_v) < 0.001 ||
-               ds.sqlen() > local_range * local_range)
+      else if (d[2] == 0 || ds.sqlen() > local_range * local_range)
       {
         for (float i = 0; i < 1.0; i += inter)
         {
           const float x2 = x_prev * (1 - i) + x * i;
           const float y2 = y_prev * (1 - i) + y * i;
-          const float yaw2 = yaw_prev * (1 - i) + yaw * i;
+
+          float dyaw = yaw - yaw_prev;
+          if (dyaw < -M_PI)
+            dyaw += 2 * M_PI;
+          else if (dyaw > M_PI)
+            dyaw -= 2 * M_PI;
+          const float yaw2 = yaw_prev + i * dyaw;
+
           ps.pose.position.x = x2;
           ps.pose.position.y = y2;
           ps.pose.position.z = 0;
@@ -126,7 +129,7 @@ void grid2MetricPath(
         const float r1 = motion[1] + motion[0] * cos_v / sin_v;
         const float r2 = std::copysign(
             sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
-            motion[0] * sin_v < 0);
+            motion[0] * sin_v);
 
         float dyaw = yaw - yaw_prev;
         if (dyaw < -M_PI)

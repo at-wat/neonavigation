@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,25 +27,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
-
 #include <cstddef>
 
 #include <gtest/gtest.h>
 
 #include <planner_cspace/cyclic_vec.h>
+#include <planner_cspace/blockmem_gridmap.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 
 TEST(MotionCache, Generate)
 {
   const int range = 4;
-  costmap_cspace_msgs::MapMetaData3D map_info;
-  map_info.angle = 4;
-  map_info.angular_resolution = M_PI * 2 / map_info.angle;
-  map_info.linear_resolution = 0.5;
+  const int angle = 4;
+  const float angular_resolution = M_PI * 2 / angle;
+  const float linear_resolution = 0.5;
 
-  BlockMemGridmap<char, 3, 2, 0x20> gm_;
-  MotionCache<CyclicVecInt<3, 2>, CyclicVecFloat<3, 2>> cache(map_info, range, gm_);
+  BlockMemGridmap<char, 3, 2, 0x20> gm;
+  MotionCache cache;
+  cache.reset(
+      linear_resolution, angular_resolution, range,
+      gm.getAddressor());
 
   // Straight motions
   const int xy_yaw_straight[][3] =
@@ -59,9 +60,8 @@ TEST(MotionCache, Generate)
   {
     for (int i = 1; i <= range + 1; ++i)
     {
-      // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
       const CyclicVecInt<3, 2> goal(
-          { i * xy_yaw[0], i * xy_yaw[1], xy_yaw[2] });  // NOLINT(whitespace/braces)
+          i * xy_yaw[0], i * xy_yaw[1], xy_yaw[2]);
       const auto c = cache.find(xy_yaw[2], goal);
       if (i > range)
       {
@@ -102,9 +102,8 @@ TEST(MotionCache, Generate)
   {
     for (int i = 1; i <= range + 1; ++i)
     {
-      // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
       const CyclicVecInt<3, 2> goal(
-          { i * xy_syaw_gyaw[0], i * xy_syaw_gyaw[1], xy_syaw_gyaw[3] });  // NOLINT(whitespace/braces)
+          i * xy_syaw_gyaw[0], i * xy_syaw_gyaw[1], xy_syaw_gyaw[3]);
       const auto c = cache.find(xy_syaw_gyaw[2], goal);
       if (i * sqrt(2) >= range)
       {

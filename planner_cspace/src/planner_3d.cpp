@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2014-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,6 +31,7 @@
 #include <limits>
 #include <list>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <ros/ros.h>
@@ -40,6 +41,7 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
+#include <geometry_msgs/PoseArray.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
@@ -62,7 +64,7 @@
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/jump_detector.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/rotation_cache.h>
+#include <planner_cspace/planner_3d/rotation_cache.h>
 
 #include <omp.h>
 
@@ -81,6 +83,7 @@ protected:
   ros::Subscriber sub_goal_;
   ros::Publisher pub_path_;
   ros::Publisher pub_path_velocity_;
+  ros::Publisher pub_path_poses_;
   ros::Publisher pub_debug_;
   ros::Publisher pub_hist_;
   ros::Publisher pub_start_;
@@ -114,9 +117,9 @@ protected:
       cost += powf(coef[i] * vc[i], 2.0);
     }
     cost = sqrtf(cost);
+    vc.cycle(cm_.size());
     for (int i = as_.getNoncyclic(); i < as_.getDim(); i++)
     {
-      vc.cycle(vc[i], cm_.size()[i]);
       cost += fabs(coef[i] * vc[i]);
     }
     return cost;
@@ -126,8 +129,7 @@ protected:
     return euclidCost(v, euclid_cost_coef_);
   }
 
-  std::vector<RotationCache<3, 2>> rotgm_;
-  RotationCache<3, 2>* rot_cache_;
+  RotationCache rot_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -166,6 +168,7 @@ protected:
   float remember_hit_odds_;
   float remember_miss_odds_;
   bool use_path_with_velocity_;
+  float min_curve_raduis_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -226,8 +229,8 @@ protected:
 
   int cnt_stuck_;
 
-  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_;
-  MotionCache<Astar::Vec, Astar::Vecf>::Ptr motion_cache_linear_;
+  MotionCache motion_cache_;
+  MotionCache motion_cache_linear_;
 
   diagnostic_updater::Updater diag_updater_;
   ros::Duration costmap_watchdog_;
@@ -280,14 +283,13 @@ protected:
       float cost = euclidCost(d, euclid_cost_coef);
 
       int sum = 0;
-      const auto cache_page = motion_cache_linear_->find(0, d);
-      if (cache_page == motion_cache_linear_->end(0))
+      const auto cache_page = motion_cache_linear_.find(0, d);
+      if (cache_page == motion_cache_linear_.end(0))
         return -1;
       const int num = cache_page->second.getMotion().size();
       for (const auto& pos_diff : cache_page->second.getMotion())
       {
-        // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-        const Astar::Vec pos({ s[0] + pos_diff[0], s[1] + pos_diff[1], 0 });  // NOLINT(whitespace/braces)
+        const Astar::Vec pos(s[0] + pos_diff[0], s[1] + pos_diff[1], 0);
         const auto c = cm_rough_[pos];
         if (c > 99)
           return -1;
@@ -325,13 +327,7 @@ protected:
                     std::bind(cb_cost,
                               std::placeholders::_1, std::placeholders::_2,
                               std::placeholders::_3, std::placeholders::_4, false),
-                    std::bind(cb_cost_estim,
-                              std::placeholders::_1, std::placeholders::_2),
-                    std::bind(cb_search,
-                              std::placeholders::_1,
-                              std::placeholders::_2, std::placeholders::_3),
-                    std::bind(cb_progress,
-                              std::placeholders::_1),
+                    cb_cost_estim, cb_search, cb_progress,
                     0,
                     1.0f / freq_min_,
                     find_best_))
@@ -410,8 +406,7 @@ protected:
       Astar::Gridmap<float>& g,
       const Astar::Vec& s, const Astar::Vec& e)
   {
-    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-    const Astar::Vec s_rough({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
+    const Astar::Vec s_rough(s[0], s[1], 0);
 
     while (true)
     {
@@ -466,8 +461,7 @@ protected:
               const int dist = d.len();
               const float dpx = static_cast<float>(d[0]) / dist;
               const float dpy = static_cast<float>(d[1]) / dist;
-              // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-              Astar::Vec pos({ static_cast<int>(p[0]), static_cast<int>(p[1]), 0 });  // NOLINT(whitespace/braces)
+              Astar::Vec pos(static_cast<int>(p[0]), static_cast<int>(p[1]), 0);
               int i = 0;
               for (; i < dist; i++)
               {
@@ -533,7 +527,7 @@ protected:
           if ((unsigned int)s2[0] >= (unsigned int)map_info_.width ||
               (unsigned int)s2[1] >= (unsigned int)map_info_.height)
             continue;
-          s2.cycleUnsigned(s2[2], map_info_.angle);
+          s2.cycleUnsigned(map_info_.angle);
           if (cm_[s2] >= cost_acceptable)
             continue;
           const auto cost = euclidCost(d, ec_);
@@ -555,7 +549,7 @@ protected:
       return false;
     }
     s = s_out;
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
@@ -573,12 +567,12 @@ protected:
         map_info_, s[0], s[1], s[2],
         start_.pose.position.x, start_.pose.position.y,
         tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
         tf2::getYaw(goal_.pose.orientation));
-    e.cycleUnsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(map_info_.angle);
     if (goal_changed)
     {
       ROS_INFO(
@@ -763,8 +757,7 @@ protected:
       gp[0] = msg->x;
       gp[1] = msg->y;
       gp[2] = msg->yaw;
-      // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-      const Astar::Vec gp_rough({ gp[0], gp[1], 0 });  // NOLINT(whitespace/braces)
+      const Astar::Vec gp_rough(gp[0], gp[1], 0);
       const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
       const int hist_ignore_range_max_sq =
           hist_ignore_range_max_ * hist_ignore_range_max_;
@@ -840,12 +833,12 @@ protected:
         map_info_, s[0], s[1], s[2],
         start_.pose.position.x, start_.pose.position.y,
         tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
         tf2::getYaw(goal_.pose.orientation));
-    e.cycleUnsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(map_info_.angle);
 
     if (cm_[e] == 100)
     {
@@ -956,15 +949,14 @@ protected:
     // Stop robot motion until next planning step
     publishEmptyPath();
 
-    float ec_val[3] =
+    const float ec_val[3] =
         {
           1.0f / max_vel_,
           1.0f / max_vel_,
           1.0f * cc_.weight_ang_vel_ / max_ang_vel_
         };
-    ec_ = Astar::Vecf(ec_val);
-    ec_val[2] = 0;
-    ec_rough_ = Astar::Vecf(ec_val);
+    ec_ = Astar::Vecf(ec_val[0], ec_val[1], ec_val[2]);
+    ec_rough_ = Astar::Vecf(ec_val[0], ec_val[1], 0);
 
     if (map_info_.linear_resolution != msg->info.linear_resolution ||
         map_info_.angular_resolution != msg->info.angular_resolution)
@@ -975,8 +967,16 @@ protected:
 
       costmap_cspace_msgs::MapMetaData3D map_info_linear(map_info_);
       map_info_linear.angle = 1;
-      motion_cache_linear_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_linear, range_, cm_rough_));
-      motion_cache_.reset(new MotionCache<Astar::Vec, Astar::Vecf>(map_info_, range_, cm_));
+      motion_cache_linear_.reset(
+          map_info_linear.linear_resolution,
+          map_info_linear.angular_resolution,
+          range_,
+          cm_rough_.getAddressor());
+      motion_cache_.reset(
+          map_info_.linear_resolution,
+          map_info_.angular_resolution,
+          range_,
+          cm_.getAddressor());
 
       search_list_.clear();
       for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -1005,39 +1005,7 @@ protected:
       ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d",
                 map_info_.angle, range_, static_cast<int>(search_list_.size()));
 
-      rotgm_.resize(map_info_.angle);
-      for (int i = 0; i < static_cast<int>(map_info_.angle); i++)
-      {
-        const int size[3] =
-            {
-              range_ * 2 + 1,
-              range_ * 2 + 1,
-              static_cast<int>(map_info_.angle)
-            };
-        auto& r = rotgm_[i];
-        r.reset(Astar::Vec(size));
-
-        Astar::Vec d;
-
-        for (d[0] = 0; d[0] <= range_ * 2; d[0]++)
-        {
-          for (d[1] = 0; d[1] <= range_ * 2; d[1]++)
-          {
-            for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
-            {
-              const float val[3] =
-                  {
-                    (d[0] - range_) * map_info_.linear_resolution,
-                    (d[1] - range_) * map_info_.linear_resolution,
-                    d[2] * map_info_.angular_resolution
-                  };
-              auto v = Astar::Vecf(val);
-              v.rotate(-i * map_info_.angular_resolution);
-              r[d] = v;
-            }
-          }
-        }
-      }
+      rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
       ROS_DEBUG("Rotation cache generated");
     }
     else
@@ -1062,20 +1030,19 @@ protected:
     goal_tolerance_lin_ = lroundf(goal_tolerance_lin_f_ / map_info_.linear_resolution);
     goal_tolerance_ang_ = lroundf(goal_tolerance_ang_f_ / map_info_.angular_resolution);
 
-    int size[3] =
+    const int size[3] =
         {
           static_cast<int>(map_info_.width),
           static_cast<int>(map_info_.height),
           static_cast<int>(map_info_.angle)
         };
-    as_.reset(Astar::Vec(size));
-    cm_.reset(Astar::Vec(size));
-    size[2] = 1;
-    cost_estim_cache_.reset(Astar::Vec(size));
-    cm_rough_.reset(Astar::Vec(size));
-    cm_hyst_.reset(Astar::Vec(size));
-    cm_hist_.reset(Astar::Vec(size));
-    cm_hist_bbf_.reset(Astar::Vec(size));
+    as_.reset(Astar::Vec(size[0], size[1], size[2]));
+    cm_.reset(Astar::Vec(size[0], size[1], size[2]));
+    cost_estim_cache_.reset(Astar::Vec(size[0], size[1], 1));
+    cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
+    cm_hyst_.reset(Astar::Vec(size[0], size[1], 1));
+    cm_hist_.reset(Astar::Vec(size[0], size[1], 1));
+    cm_hist_bbf_.reset(Astar::Vec(size[0], size[1], 1));
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1188,6 +1155,8 @@ public:
           nh_, "path",
           pnh_, "path", 1, true);
     }
+    pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>(
+        "path_poses", 1, true);
 
     pnh_.param_cast("freq", freq_, 4.0f);
     pnh_.param_cast("freq_min", freq_min_, 2.0f);
@@ -1199,6 +1168,7 @@ public:
 
     pnh_.param_cast("max_vel", max_vel_, 0.3f);
     pnh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
+    pnh_.param_cast("min_curve_raduis", min_curve_raduis_, 0.1f);
 
     pnh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
     pnh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
@@ -1440,11 +1410,11 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
         gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
-    s.cycleUnsigned(s[2], map_info_.angle);
+    s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         ge.position.x, ge.position.y, tf2::getYaw(ge.orientation));
-    e.cycleUnsigned(e[2], map_info_.angle);
+    e.cycleUnsigned(map_info_.angle);
 
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
@@ -1465,8 +1435,7 @@ protected:
       }
       ROS_INFO("Start moved");
     }
-    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-    const Astar::Vec s_rough({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
+    const Astar::Vec s_rough(s[0], s[1], 0);
 
     if (cost_estim_cache_[s_rough] == FLT_MAX)
     {
@@ -1500,7 +1469,7 @@ protected:
     pub_start_.publish(p);
 
     auto diff = s - e;
-    diff.cycle(diff[2], map_info_.angle);
+    diff.cycle(map_info_.angle);
     if (diff.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
         abs(diff[2]) <= goal_tolerance_ang_)
     {
@@ -1527,7 +1496,7 @@ protected:
     }
 
     auto range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
-    angle_resolution_aspect_ = 1.0 / tanf(map_info_.angular_resolution);
+    angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
@@ -1556,6 +1525,21 @@ protected:
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Path found (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
+
+    geometry_msgs::PoseArray poses;
+    poses.header = path.header;
+    for (const auto& p : path_grid)
+    {
+      geometry_msgs::Pose pose;
+      float x, y, yaw;
+      grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
+      pose.position.x = x;
+      pose.position.y = y;
+      pose.orientation =
+          tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      poses.poses.push_back(pose);
+    }
+    pub_path_poses_.publish(poses);
 
     grid_metric_converter::grid2MetricPath(map_info_, local_range_, path_grid, path, s);
 
@@ -1620,7 +1604,6 @@ protected:
       const Astar::Vec& s, const Astar::Vec& e)
   {
     const auto ds = s - p;
-    rot_cache_ = &rotgm_[p[2]];
 
     if (ds.sqlen() < local_range_ * local_range_)
     {
@@ -1641,8 +1624,7 @@ protected:
 
   float cbCostEstim(const Astar::Vec& s, const Astar::Vec& e)
   {
-    // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-    Astar::Vec s2({ s[0], s[1], 0 });  // NOLINT(whitespace/braces)
+    Astar::Vec s2(s[0], s[1], 0);
     auto cost = cost_estim_cache_[s2];
     if (cost == FLT_MAX)
       return FLT_MAX;
@@ -1694,7 +1676,7 @@ protected:
                const bool hyst)
   {
     Astar::Vec d_raw = e - s;
-    d_raw.cycle(d_raw[2], map_info_.angle);
+    d_raw.cycle(map_info_.angle);
     const Astar::Vec d = d_raw;
     float cost = euclidCost(d);
 
@@ -1702,7 +1684,7 @@ protected:
     {
       // In-place turn
       int sum = 0;
-      const int dir = d[2] > static_cast<int>(map_info_.angle) / 2 ? -1 : 1;
+      const int dir = d[2] < 0 ? -1 : 1;
       Astar::Vec pos = s;
       for (int i = 0; i < abs(d[2]); i++)
       {
@@ -1728,8 +1710,8 @@ protected:
     d2[0] = d[0] + range_;
     d2[1] = d[1] + range_;
     d2[2] = e[2];
-    const Astar::Vecf motion = (*rot_cache_)[d2];
 
+    const Astar::Vecf motion = rot_cache_.getMotion(s[2], d2);
     const Astar::Vecf motion_grid = motion * resolution_;
 
     if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
@@ -1753,9 +1735,9 @@ protected:
       cost *= 1.0 + cc_.weight_backward_;
     }
 
-    if (lroundf(motion_grid[2]) == 0)
+    if (d[2] == 0)
     {
-      if (motion_grid[0] == 0)
+      if (lroundf(motion_grid[0]) == 0)
         return -1;  // side slip
       const float aspect = motion[0] / motion[1];
       if (fabs(aspect) < angle_resolution_aspect_)
@@ -1763,27 +1745,23 @@ protected:
 
       // Go-straight
       int sum = 0, sum_hyst = 0;
-      auto d_index = d;
-      int syaw = s[2];
-      d_index[2] = e[2];
-      d_index.cycleUnsigned(syaw, map_info_.angle);
-      d_index.cycleUnsigned(d_index[2], map_info_.angle);
-      const auto cache_page = motion_cache_->find(syaw, d_index);
-      if (cache_page == motion_cache_->end(syaw))
+      Astar::Vec d_index(d[0], d[1], e[2]);
+      d_index.cycleUnsigned(map_info_.angle);
+
+      const auto cache_page = motion_cache_.find(s[2], d_index);
+      if (cache_page == motion_cache_.end(s[2]))
         return -1;
       const int num = cache_page->second.getMotion().size();
       for (const auto& pos_diff : cache_page->second.getMotion())
       {
-        // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
         const Astar::Vec pos(
-            { s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2] });  // NOLINT(whitespace/braces)
+            s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]);
         const auto c = cm_[pos];
         if (c > 99)
           return -1;
         if (hyst)
         {
-          // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-          const Astar::Vec pos_rough({ pos[0], pos[1], 0 });  // NOLINT(whitespace/braces)
+          const Astar::Vec pos_rough(pos[0], pos[1], 0);
           sum_hyst += cm_hyst_[pos_rough];
         }
         sum += c;
@@ -1797,18 +1775,13 @@ protected:
       // Curve
       if (motion[0] * motion[1] * motion[2] < 0)
         return -1;
-      if (d.sqlen() < 4 * 4)
-        return -1;
-      if (fabs(motion[1]) <= map_info_.linear_resolution * 0.5)
+
+      if (d.sqlen() < 3 * 3)
         return -1;
 
-      const float cos_v = cosf(motion[2]);
-      const float sin_v = sinf(motion[2]);
-
-      const float r1 = motion[1] + motion[0] * cos_v / sin_v;
-      const float r2 = std::copysign(
-          sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
-          motion[0] * sin_v);
+      const std::pair<float, float>& radiuses = rot_cache_.getRadiuses(s[2], d2);
+      const float r1 = radiuses.first;
+      const float r2 = radiuses.second;
 
       // curveture at the start_ pose and the end pose must be same
       if (fabs(r1 - r2) >= map_info_.linear_resolution * 1.5)
@@ -1818,13 +1791,12 @@ protected:
       }
 
       const float curv_radius = (r1 + r2) / 2;
+      if (std::abs(curv_radius) < min_curve_raduis_)
+        return -1;
 
-      float vel = max_vel_;
-      float ang_vel = cos_v * vel / (cos_v * motion[0] + sin_v * motion[1]);
-      if (fabs(ang_vel) > max_ang_vel_)
+      if (fabs(max_vel_ / r1) > max_ang_vel_)
       {
-        ang_vel = std::copysign(1.0f, ang_vel) * max_ang_vel_;
-        vel = fabs(curv_radius) * max_ang_vel_;
+        const float vel = fabs(curv_radius) * max_ang_vel_;
 
         // Curve deceleration penalty
         cost += dist * fabs(vel / max_vel_) * cc_.weight_decel_;
@@ -1832,28 +1804,24 @@ protected:
 
       {
         int sum = 0, sum_hyst = 0;
-        auto d_index = d;
-        int syaw = s[2];
-        d_index[2] = e[2];
-        d_index.cycleUnsigned(syaw, map_info_.angle);
-        d_index.cycleUnsigned(d_index[2], map_info_.angle);
-        const auto cache_page = motion_cache_->find(syaw, d_index);
-        if (cache_page == motion_cache_->end(syaw))
+        Astar::Vec d_index(d[0], d[1], e[2]);
+        d_index.cycleUnsigned(map_info_.angle);
+
+        const auto cache_page = motion_cache_.find(s[2], d_index);
+        if (cache_page == motion_cache_.end(s[2]))
           return -1;
         const int num = cache_page->second.getMotion().size();
         for (const auto& pos_diff : cache_page->second.getMotion())
         {
-          // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
           const Astar::Vec pos(
-              { s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2] });  // NOLINT(whitespace/braces)
+              s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]);
           const auto c = cm_[pos];
           if (c > 99)
             return -1;
           sum += c;
           if (hyst)
           {
-            // FIXME(at-wat): remove NOLINT after clang-format or roslint supports it
-            const Astar::Vec pos_rough({ pos[0], pos[1], 0 });  // NOLINT(whitespace/braces)
+            const Astar::Vec pos_rough(pos[0], pos[1], 0);
             sum_hyst += cm_hyst_[pos_rough];
           }
         }
