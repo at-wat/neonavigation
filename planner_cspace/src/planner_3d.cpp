@@ -40,6 +40,7 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
+#include <geometry_msgs/PoseArray.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
@@ -81,6 +82,7 @@ protected:
   ros::Subscriber sub_goal_;
   ros::Publisher pub_path_;
   ros::Publisher pub_path_velocity_;
+  ros::Publisher pub_path_poses_;
   ros::Publisher pub_debug_;
   ros::Publisher pub_hist_;
   ros::Publisher pub_start_;
@@ -127,7 +129,6 @@ protected:
   }
 
   std::vector<RotationCache<3, 2>> rotgm_;
-  RotationCache<3, 2>* rot_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -166,6 +167,7 @@ protected:
   float remember_hit_odds_;
   float remember_miss_odds_;
   bool use_path_with_velocity_;
+  float min_curve_raduis_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -1179,6 +1181,8 @@ public:
           nh_, "path",
           pnh_, "path", 1, true);
     }
+    pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>(
+        "path_poses", 1, true);
 
     pnh_.param_cast("freq", freq_, 4.0f);
     pnh_.param_cast("freq_min", freq_min_, 2.0f);
@@ -1190,6 +1194,7 @@ public:
 
     pnh_.param_cast("max_vel", max_vel_, 0.3f);
     pnh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
+    pnh_.param_cast("min_curve_raduis", min_curve_raduis_, 0.1f);
 
     pnh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
     pnh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
@@ -1518,7 +1523,7 @@ protected:
     }
 
     auto range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
-    angle_resolution_aspect_ = 1.0 / tanf(map_info_.angular_resolution);
+    angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
@@ -1547,6 +1552,21 @@ protected:
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Path found (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
+
+    geometry_msgs::PoseArray poses;
+    poses.header = path.header;
+    for (const auto& p : path_grid)
+    {
+      geometry_msgs::Pose pose;
+      float x, y, yaw;
+      grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
+      pose.position.x = x;
+      pose.position.y = y;
+      pose.orientation =
+          tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      poses.poses.push_back(pose);
+    }
+    pub_path_poses_.publish(poses);
 
     grid_metric_converter::grid2MetricPath(map_info_, local_range_, path_grid, path, s);
 
@@ -1611,7 +1631,6 @@ protected:
       const Astar::Vec& s, const Astar::Vec& e)
   {
     const auto ds = s - p;
-    rot_cache_ = &rotgm_[p[2]];
 
     if (ds.sqlen() < local_range_ * local_range_)
     {
@@ -1693,7 +1712,7 @@ protected:
     {
       // In-place turn
       int sum = 0;
-      const int dir = d[2] > static_cast<int>(map_info_.angle) / 2 ? -1 : 1;
+      const int dir = d[2] < 0 ? -1 : 1;
       Astar::Vec pos = s;
       for (int i = 0; i < abs(d[2]); i++)
       {
@@ -1719,8 +1738,8 @@ protected:
     d2[0] = d[0] + range_;
     d2[1] = d[1] + range_;
     d2[2] = e[2];
-    const Astar::Vecf motion = (*rot_cache_)[d2];
 
+    const Astar::Vecf motion = rotgm_[s[2]][d2];
     const Astar::Vecf motion_grid = motion * resolution_;
 
     if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
@@ -1744,9 +1763,9 @@ protected:
       cost *= 1.0 + cc_.weight_backward_;
     }
 
-    if (lroundf(motion_grid[2]) == 0)
+    if (d[2] == 0)
     {
-      if (motion_grid[0] == 0)
+      if (lroundf(motion_grid[0]) == 0)
         return -1;  // side slip
       const float aspect = motion[0] / motion[1];
       if (fabs(aspect) < angle_resolution_aspect_)
@@ -1788,9 +1807,8 @@ protected:
       // Curve
       if (motion[0] * motion[1] * motion[2] < 0)
         return -1;
-      if (d.sqlen() < 4 * 4)
-        return -1;
-      if (fabs(motion[1]) <= map_info_.linear_resolution * 0.5)
+
+      if (d.sqlen() < 3 * 3)
         return -1;
 
       const float cos_v = cosf(motion[2]);
@@ -1809,6 +1827,8 @@ protected:
       }
 
       const float curv_radius = (r1 + r2) / 2;
+      if (std::abs(curv_radius) < min_curve_raduis_)
+        return -1;
 
       float vel = max_vel_;
       float ang_vel = cos_v * vel / (cos_v * motion[0] + sin_v * motion[1]);

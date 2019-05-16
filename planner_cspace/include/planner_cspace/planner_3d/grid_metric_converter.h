@@ -81,8 +81,9 @@ void grid2MetricPath(
 
     if (init)
     {
-      const auto ds = v_start - p;
-      const auto d = p - p_prev;
+      const CyclicVecInt<3, 2> ds = v_start - p;
+      CyclicVecInt<3, 2> d = p - p_prev;
+      d.cycle(d[2], map_info.angle);
       const float diff_val[3] =
           {
             d[0] * map_info.linear_resolution,
@@ -105,14 +106,20 @@ void grid2MetricPath(
             tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
         path.poses.push_back(ps);
       }
-      else if (fabs(sin_v) < 0.001 ||
-               ds.sqlen() > local_range * local_range)
+      else if (d[2] == 0 || ds.sqlen() > local_range * local_range)
       {
         for (float i = 0; i < 1.0; i += inter)
         {
           const float x2 = x_prev * (1 - i) + x * i;
           const float y2 = y_prev * (1 - i) + y * i;
-          const float yaw2 = yaw_prev * (1 - i) + yaw * i;
+
+          float dyaw = yaw - yaw_prev;
+          if (dyaw < -M_PI)
+            dyaw += 2 * M_PI;
+          else if (dyaw > M_PI)
+            dyaw -= 2 * M_PI;
+          const float yaw2 = yaw_prev + i * dyaw;
+
           ps.pose.position.x = x2;
           ps.pose.position.y = y2;
           ps.pose.position.z = 0;
@@ -126,7 +133,7 @@ void grid2MetricPath(
         const float r1 = motion[1] + motion[0] * cos_v / sin_v;
         const float r2 = std::copysign(
             sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
-            motion[0] * sin_v < 0);
+            motion[0] * sin_v);
 
         float dyaw = yaw - yaw_prev;
         if (dyaw < -M_PI)
