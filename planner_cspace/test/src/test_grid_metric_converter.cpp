@@ -91,7 +91,8 @@ TEST(GridMetricConverter, Path)
 {
   costmap_cspace_msgs::MapMetaData3D map_info;
   map_info.linear_resolution = 0.1;
-  map_info.angular_resolution = M_PI / 8;
+  map_info.angle = 8;
+  map_info.angular_resolution = M_PI / map_info.angle;
   map_info.origin.position.x = 100.0;
   map_info.origin.position.y = 100.0;
 
