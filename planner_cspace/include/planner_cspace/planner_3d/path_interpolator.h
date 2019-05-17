@@ -71,7 +71,6 @@ public:
         CyclicVecInt<3, 2> d = p - p_prev;
         d.cycle(angle_);
         const CyclicVecInt<3, 2> d2(d[0] + range_, d[1] + range_, p[2]);
-        const CyclicVecFloat<3, 2> motion = rot_cache_.getMotion(p_prev[2], d2);
 
         const float inter = interval / d.len();
 
