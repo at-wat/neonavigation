@@ -92,6 +92,11 @@ public:
   {
     return pages_[start_angle].radiuses(end);
   }
+
+  std::list<CyclicVecFloat<3, 2>> interpolate(
+      const std::list<CyclicVecInt<3, 2>>& path_grid,
+      const float interval,
+      const int local_range) const;
 };
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H

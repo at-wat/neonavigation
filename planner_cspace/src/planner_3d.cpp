@@ -65,6 +65,7 @@
 #include <planner_cspace/planner_3d/jump_detector.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
+#include <planner_cspace/planner_3d/path_interpolator.h>
 
 #include <omp.h>
 
@@ -130,6 +131,7 @@ protected:
   }
 
   RotationCache rot_cache_;
+  PathInterpolator path_interpolator_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -343,7 +345,9 @@ protected:
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
 
-    grid_metric_converter::grid2MetricPath(map_info_, 0.0, path_grid, path, s);
+    const std::list<Astar::Vecf> path_interpolated =
+        path_interpolator_.interpolate(path_grid, 0.5, 0.0);
+    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path, s);
 
     res.plan.header = map_header_;
     res.plan.poses.resize(path.poses.size());
@@ -1011,6 +1015,7 @@ protected:
                 map_info_.angle, range_, static_cast<int>(search_list_.size()));
 
       rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
+      path_interpolator_.reset(map_info_.angular_resolution, range_);
       ROS_DEBUG("Rotation cache generated");
     }
     else
@@ -1183,8 +1188,8 @@ public:
     pnh_.param_cast("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
     pnh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
     pnh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
-    pnh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
-    pnh_.param_cast("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
+    pnh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.05f);
+    pnh_.param_cast("hysteresis_expand", cc_.hysteresis_expand_, 0.05f);
     pnh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
     pnh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
@@ -1547,15 +1552,20 @@ protected:
     }
     pub_path_poses_.publish(poses);
 
-    grid_metric_converter::grid2MetricPath(map_info_, local_range_, path_grid, path, s);
+    const std::list<Astar::Vecf> path_interpolated =
+        path_interpolator_.interpolate(path_grid, 0.5, local_range_);
+    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path, s);
 
     if (hyst)
     {
+      const std::list<Astar::Vecf> path_interpolated =
+          path_interpolator_.interpolate(path_grid, 0.5, local_range_);
+
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
       const int path_range = range_ + max_dist + expand_dist + 5;
-      for (auto& p : path_grid)
+      for (const Astar::Vecf& p : path_interpolated)
       {
         Astar::Vec d;
         for (d[0] = -path_range; d[0] <= path_range; d[0]++)
@@ -1563,6 +1573,7 @@ protected:
           for (d[1] = -path_range; d[1] <= path_range; d[1]++)
           {
             Astar::Vec point = p + d;
+            point.cycleUnsigned(map_info_.angle);
             if ((unsigned int)point[0] >= (unsigned int)map_info_.width ||
                 (unsigned int)point[1] >= (unsigned int)map_info_.height)
               continue;
@@ -1577,12 +1588,13 @@ protected:
       {
         const Astar::Vec& p = ps.first;
         float d_min = FLT_MAX;
-        auto it_prev = path_grid.begin();
-        for (auto it = path_grid.begin(); it != path_grid.end(); it++)
+        auto it_prev = path_interpolated.begin();
+        for (auto it = path_interpolated.begin(); it != path_interpolated.end(); it++)
         {
           if (it != it_prev)
           {
-            const float d = p.distLinestrip2d(*it_prev, *it);
+            const float d =
+                CyclicVecFloat<3, 2>(p).distLinestrip2d(*it_prev, *it);
             if (d < d_min)
               d_min = d;
           }
@@ -1759,12 +1771,10 @@ protected:
         const auto c = cm_[pos];
         if (c > 99)
           return -1;
-        if (hyst)
-        {
-          const Astar::Vec pos_rough(pos[0], pos[1], 0);
-          sum_hyst += cm_hyst_[pos_rough];
-        }
         sum += c;
+
+        if (hyst)
+          sum_hyst += cm_hyst_[pos];
       }
       const float distf = cache_page->second.getDistance();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
@@ -1819,10 +1829,9 @@ protected:
           if (c > 99)
             return -1;
           sum += c;
+
           if (hyst)
-          {
             sum_hyst += cm_hyst_[pos];
-          }
         }
         const float distf = cache_page->second.getDistance();
         cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
