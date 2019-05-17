@@ -32,6 +32,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 #include <nav_msgs/Path.h>
+#include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
 
 #include <cstddef>
@@ -40,12 +41,12 @@
 
 TEST(Navigate, Navigate)
 {
-  nav_msgs::OccupancyGrid map;
+  nav_msgs::OccupancyGrid::ConstPtr map;
 
   const boost::function<void(const nav_msgs::OccupancyGrid::ConstPtr&)> cb_map =
       [&map](const nav_msgs::OccupancyGrid::ConstPtr& msg) -> void
   {
-    map = *msg;
+    map = msg;
     std::cerr << "Map received." << std::endl;
   };
 
@@ -61,7 +62,7 @@ TEST(Navigate, Navigate)
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.7;
-  path.poses[0].pose.position.y = 2.9;
+  path.poses[0].pose.position.y = 2.8;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
   path.poses[1].header.frame_id = path.header.frame_id;
   path.poses[1].pose.position.x = 1.9;
@@ -101,7 +102,7 @@ TEST(Navigate, Navigate)
       return;
     }
 
-    if (map.data.size() == 0)
+    if (!map)
     {
       std::cerr << "Waiting map." << std::endl;
       continue;
@@ -111,20 +112,86 @@ TEST(Navigate, Navigate)
     {
       for (int y = -1; y <= 1; ++y)
       {
-        const tf2::Vector3 pos = trans * tf2::Vector3(x * map.info.resolution, y * map.info.resolution, 0);
-        const int map_x = pos.x() / map.info.resolution;
-        const int map_y = pos.y() / map.info.resolution;
-        const size_t addr = map_x + map_y * map.info.width;
-        ASSERT_LT(addr, map.data.size());
-        ASSERT_LT(map_x, static_cast<int>(map.info.width));
-        ASSERT_LT(map_y, static_cast<int>(map.info.height));
-        ASSERT_GT(map_x, 0);
-        ASSERT_GT(map_y, 0);
-        ASSERT_NE(map.data[addr], 100);
+        const tf2::Vector3 pos =
+            trans * tf2::Vector3(x * map->info.resolution, y * map->info.resolution, 0);
+        const int map_x = pos.x() / map->info.resolution;
+        const int map_y = pos.y() / map->info.resolution;
+        const size_t addr = map_x + map_y * map->info.width;
+        ASSERT_LT(addr, map->data.size());
+        ASSERT_LT(map_x, static_cast<int>(map->info.width));
+        ASSERT_LT(map_y, static_cast<int>(map->info.height));
+        ASSERT_GE(map_x, 0);
+        ASSERT_GE(map_y, 0);
+        ASSERT_NE(map->data[addr], 100);
       }
     }
   }
   ASSERT_TRUE(false);
+}
+
+TEST(Navigate, GlobalPlan)
+{
+  nav_msgs::OccupancyGrid::ConstPtr map;
+
+  const boost::function<void(const nav_msgs::OccupancyGrid::ConstPtr&)> cb_map =
+      [&map](const nav_msgs::OccupancyGrid::ConstPtr& msg) -> void
+  {
+    map = msg;
+    std::cerr << "Map received." << std::endl;
+  };
+
+  ros::NodeHandle nh("");
+  tf2_ros::Buffer tfbuf;
+  tf2_ros::TransformListener tfl(tfbuf);
+  ros::ServiceClient srv_plan =
+      nh.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
+          "/planner_3d/make_plan");
+  ros::Subscriber sub_map = nh.subscribe("map", 1, cb_map);
+
+  ros::Duration(2.0).sleep();
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map));
+
+  nav_msgs::GetPlanRequest req;
+  nav_msgs::GetPlanResponse res;
+
+  req.start.header.frame_id = "map";
+  req.start.pose.position.x = 2.0;
+  req.start.pose.position.y = 0.45;
+  req.start.pose.orientation =
+      tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 3.14));
+
+  req.goal.header.frame_id = "map";
+  req.goal.pose.position.x = 1.2;
+  req.goal.pose.position.y = 1.9;
+  req.goal.pose.orientation =
+      tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
+  ASSERT_FALSE(srv_plan.call(req, res));
+
+  req.goal.header.frame_id = "map";
+  req.goal.pose.position.x = 1.9;
+  req.goal.pose.position.y = 2.8;
+  req.goal.pose.orientation =
+      tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -1.57));
+  ASSERT_TRUE(srv_plan.call(req, res));
+
+  ASSERT_NEAR(req.start.pose.position.x, res.plan.poses.front().pose.position.x, 0.1);
+  ASSERT_NEAR(req.start.pose.position.y, res.plan.poses.front().pose.position.y, 0.1);
+  ASSERT_NEAR(req.goal.pose.position.x, res.plan.poses.back().pose.position.x, 0.1);
+  ASSERT_NEAR(req.goal.pose.position.y, res.plan.poses.back().pose.position.y, 0.1);
+
+  for (const geometry_msgs::PoseStamped& p : res.plan.poses)
+  {
+    const int map_x = p.pose.position.x / map->info.resolution;
+    const int map_y = p.pose.position.y / map->info.resolution;
+    const size_t addr = map_x + map_y * map->info.width;
+    ASSERT_LT(addr, map->data.size());
+    ASSERT_LT(map_x, static_cast<int>(map->info.width));
+    ASSERT_LT(map_y, static_cast<int>(map->info.height));
+    ASSERT_GE(map_x, 0);
+    ASSERT_GE(map_y, 0);
+    ASSERT_NE(map->data[addr], 100);
+  }
 }
 
 int main(int argc, char** argv)
