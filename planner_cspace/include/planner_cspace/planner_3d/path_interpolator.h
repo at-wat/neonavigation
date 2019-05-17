@@ -75,9 +75,6 @@ public:
 
         const float inter = interval / d.len();
 
-        const float cos_v = cosf(motion[2]);
-        const float sin_v = sinf(motion[2]);
-
         if (d[0] == 0 && d[1] == 0)
         {
           const int yaw_inc = std::copysign(1, d[2]);
