@@ -69,7 +69,7 @@ void grid2MetricPath(
     const costmap_cspace_msgs::MapMetaData3D& map_info,
     const STL_CONTAINER<CyclicVecFloat<3, 2>,
                         std::allocator<CyclicVecFloat<3, 2>>>& path_grid,
-    nav_msgs::Path& path, const CyclicVecInt<3, 2>& v_start)
+    nav_msgs::Path& path)
 {
   for (const auto& p : path_grid)
   {

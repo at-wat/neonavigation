@@ -347,7 +347,7 @@ protected:
 
     const std::list<Astar::Vecf> path_interpolated =
         path_interpolator_.interpolate(path_grid, 0.5, 0.0);
-    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path, s);
+    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path);
 
     res.plan.header = map_header_;
     res.plan.poses.resize(path.poses.size());
@@ -1554,7 +1554,7 @@ protected:
 
     const std::list<Astar::Vecf> path_interpolated =
         path_interpolator_.interpolate(path_grid, 0.5, local_range_);
-    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path, s);
+    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path);
 
     if (hyst)
     {
