@@ -124,6 +124,7 @@ public:
       p_prev = p;
       init = true;
     }
+    path.push_back(CyclicVecFloat<3, 2>(path_grid.back()));
     return path;
   }
 };
