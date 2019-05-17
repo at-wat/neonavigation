@@ -30,6 +30,8 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_PATH_INTERPOLATOR_H
 #define PLANNER_CSPACE_PLANNER_3D_PATH_INTERPOLATOR_H
 
+#include <list>
+
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 

@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
 
 #include <cmath>
+#include <list>
 #include <memory>
 #include <utility>
 #include <vector>
