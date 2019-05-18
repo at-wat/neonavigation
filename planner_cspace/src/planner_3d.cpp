@@ -448,7 +448,7 @@ protected:
             if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
                 (unsigned int)next[1] >= (unsigned int)map_info_.height)
               continue;
-            auto& gnext = g[next];
+            float& gnext = g[next];
             if (gnext < 0)
               continue;
 
@@ -487,7 +487,7 @@ protected:
             }
             cost += euclidCost(d, ec_rough_);
 
-            const auto gp = c + cost;
+            const float gp = c + cost;
             if (gnext > gp)
             {
               gnext = gp;
@@ -505,10 +505,11 @@ protected:
   bool searchAvailablePos(Astar::Vec& s, const int xy_range, const int angle_range,
                           const int cost_acceptable = 50, const int min_xy_range = 0)
   {
-    Astar::Vec d;
+    ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
+
     float range_min = FLT_MAX;
     Astar::Vec s_out;
-    ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
+    Astar::Vec d;
     for (d[2] = -angle_range; d[2] <= angle_range; d[2]++)
     {
       for (d[0] = -xy_range; d[0] <= xy_range; d[0]++)
@@ -748,18 +749,15 @@ protected:
     }
 
     {
-      Astar::Vec p;
-      Astar::Vec center;
-      center[0] = msg->width / 2;
-      center[1] = msg->height / 2;
-      Astar::Vec gp;
-      gp[0] = msg->x;
-      gp[1] = msg->y;
-      gp[2] = msg->yaw;
+      const Astar::Vec center(
+          static_cast<int>(msg->width / 2), static_cast<int>(msg->height / 2), 0);
+      const Astar::Vec gp(
+          static_cast<int>(msg->x), static_cast<int>(msg->y), static_cast<int>(msg->yaw));
       const Astar::Vec gp_rough(gp[0], gp[1], 0);
       const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
       const int hist_ignore_range_max_sq =
           hist_ignore_range_max_ * hist_ignore_range_max_;
+      Astar::Vec p;
       for (p[0] = 0; p[0] < static_cast<int>(msg->width); p[0]++)
       {
         for (p[1] = 0; p[1] < static_cast<int>(msg->height); p[1]++)
@@ -1328,11 +1326,9 @@ public:
         if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
         {
           const float yaw_s = tf2::getYaw(start_.pose.orientation);
-          float yaw_g;
+          float yaw_g = tf2::getYaw(goal_.pose.orientation);
           if (force_goal_orientation_)
             yaw_g = tf2::getYaw(goal_raw_.pose.orientation);
-          else
-            yaw_g = tf2::getYaw(goal_.pose.orientation);
 
           float yaw_diff = yaw_s - yaw_g;
           if (yaw_diff > M_PI)
@@ -1467,7 +1463,7 @@ protected:
     p.pose.position.y = y;
     pub_start_.publish(p);
 
-    auto diff = s - e;
+    Astar::Vec diff = s - e;
     diff.cycle(map_info_.angle);
     if (diff.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
         abs(diff[2]) <= goal_tolerance_ang_)
@@ -1494,7 +1490,7 @@ protected:
       return true;
     }
 
-    auto range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
+    const float range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
     angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
@@ -1569,14 +1565,14 @@ protected:
       // const auto ts = boost::chrono::high_resolution_clock::now();
       for (auto& ps : path_points)
       {
-        auto& p = ps.first;
+        const auto& p = ps.first;
         float d_min = FLT_MAX;
         auto it_prev = path_grid.begin();
         for (auto it = path_grid.begin(); it != path_grid.end(); it++)
         {
           if (it != it_prev)
           {
-            auto d = p.distLinestrip2d(*it_prev, *it);
+            const float d = p.distLinestrip2d(*it_prev, *it);
             if (d < d_min)
               d_min = d;
           }
@@ -1602,7 +1598,7 @@ protected:
       const Astar::Vec& p,
       const Astar::Vec& s, const Astar::Vec& e)
   {
-    const auto ds = s - p;
+    const Astar::Vec ds = s - p;
 
     if (ds.sqlen() < local_range_ * local_range_)
     {
@@ -1624,7 +1620,7 @@ protected:
   float cbCostEstim(const Astar::Vec& s, const Astar::Vec& e)
   {
     Astar::Vec s2(s[0], s[1], 0);
-    auto cost = cost_estim_cache_[s2];
+    float cost = cost_estim_cache_[s2];
     if (cost == FLT_MAX)
       return FLT_MAX;
     if (!rough_)
