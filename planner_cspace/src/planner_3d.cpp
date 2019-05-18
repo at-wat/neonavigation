@@ -408,6 +408,24 @@ protected:
   {
     const Astar::Vec s_rough(s[0], s[1], 0);
 
+    std::vector<Astar::Vec> search_diffs;
+    {
+      Astar::Vec d;
+      d[2] = 0;
+      const int range_rough = 4;
+      for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+      {
+        for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+        {
+          if (d[0] == 0 && d[1] == 0)
+            continue;
+          if (d.sqlen() > range_rough * range_rough)
+            continue;
+          search_diffs.push_back(d);
+        }
+      }
+    }
+
     while (true)
     {
       if (open.size() < 1)
@@ -448,68 +466,57 @@ protected:
           const Astar::Vec p = it->v_;
           const float c = it->p_raw_;
 
-          Astar::Vec d;
-          d[2] = 0;
-
           const int range_rough = 4;
-          for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+          for (const Astar::Vec d : search_diffs)
           {
-            for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+            Astar::Vec next = p + d;
+            next.cycleUnsigned(map_info_.angle);
+
+            if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
+                (unsigned int)next[1] >= (unsigned int)map_info_.height)
+              continue;
+            const float gnext = g[next];
+            if (gnext < 0)
+              continue;
+
+            float cost = 0;
+
             {
-              if (d[0] == 0 && d[1] == 0)
-                continue;
-              if (d.sqlen() > range_rough * range_rough)
-                continue;
-
-              Astar::Vec next = p + d;
-              next.cycleUnsigned(map_info_.angle);
-
-              if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
-                  (unsigned int)next[1] >= (unsigned int)map_info_.height)
-                continue;
-              const float gnext = g[next];
-              if (gnext < 0)
-                continue;
-
-              float cost = 0;
-
+              float sum = 0, sum_hist = 0;
+              const float grid_to_len = d.gridToLenFactor();
+              const int dist = d.len();
+              const float dpx = static_cast<float>(d[0]) / dist;
+              const float dpy = static_cast<float>(d[1]) / dist;
+              Astar::Vec pos(static_cast<int>(p[0]), static_cast<int>(p[1]), 0);
+              int i = 0;
+              for (; i < dist; i++)
               {
-                float sum = 0, sum_hist = 0;
-                const float grid_to_len = d.gridToLenFactor();
-                const int dist = d.len();
-                const float dpx = static_cast<float>(d[0]) / dist;
-                const float dpy = static_cast<float>(d[1]) / dist;
-                Astar::Vec pos(static_cast<int>(p[0]), static_cast<int>(p[1]), 0);
-                int i = 0;
-                for (; i < dist; i++)
-                {
-                  const char c = cm_rough_[pos];
-                  if (c > 99)
-                    break;
-                  sum += c;
+                const char c = cm_rough_[pos];
+                if (c > 99)
+                  break;
+                sum += c;
 
-                  sum_hist += cm_hist_[pos];
-                  pos[0] += dpx;
-                  pos[1] += dpy;
-                }
-                if (i != dist)
-                  continue;
-                cost +=
-                    (map_info_.linear_resolution * grid_to_len / 100.0) *
-                    (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
-
-                if (cost < 0)
-                {
-                  cost = 0;
-                  ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
-                }
+                sum_hist += cm_hist_[pos];
+                pos[0] += dpx;
+                pos[1] += dpy;
               }
-              cost += euclidCost(d, ec_rough_);
+              if (i != dist)
+                continue;
+              cost +=
+                  (map_info_.linear_resolution * grid_to_len / 100.0) *
+                  (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
 
-              const float cost_next = c + cost;
-              if (gnext > cost_next)
-                updates.push_back(GridmapUpdate(next, cost_next));
+              if (cost < 0)
+              {
+                cost = 0;
+                ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
+              }
             }
+            cost += euclidCost(d, ec_rough_);
+
+            const float cost_next = c + cost;
+            if (gnext > cost_next)
+              updates.push_back(GridmapUpdate(next, cost_next));
           }
         }
 #pragma omp critical
@@ -522,8 +529,8 @@ protected:
               open.push(Astar::PriorityVec(u.cost_, u.cost_, u.p_));
             }
           }
-        }
-      }  // omp parallel
+        }  // omp critical
+      }    // omp parallel
     }
     rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
   }
@@ -922,7 +929,7 @@ protected:
           if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
-          const float& gn = cost_estim_cache_[next];
+          const float gn = cost_estim_cache_[next];
           if (gn == FLT_MAX)
             continue;
           if (gn < cost_min)

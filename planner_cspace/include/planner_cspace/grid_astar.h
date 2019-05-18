@@ -305,8 +305,8 @@ protected:
           {
             g[p] = -1;
           }
-        }
-      }  // omp parallel
+        }  // omp critical
+      }    // omp parallel
       // printf("(parents %d)\n", (int)parents_.size());
     }
     // printf("AStar search finished (parents %d)\n", (int)parents_.size());
