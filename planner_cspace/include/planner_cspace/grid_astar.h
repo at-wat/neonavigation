@@ -216,70 +216,102 @@ public:
         cb_progress(path_tmp);
       }
 
-#pragma omp parallel for schedule(static)
-      for (auto it = centers.begin(); it < centers.end(); ++it)
+#pragma omp parallel
       {
-        const Vec p = it->v_;
-        const float c = it->p_raw_;
-        const float c_estim = it->p_;
-        float& gp = g[p];
-        if (c > gp)
-          continue;
-
-        if (c_estim - c < cost_estim_min)
+        class GridmapUpdate
         {
-          cost_estim_min = c_estim - c;
-          better = p;
-        }
+        public:
+          const Vec p0_;
+          const Vec p1_;
+          const float cost_estim_;
+          const float cost_;
 
-        const std::vector<Vec> search_list = cb_search(p, s, e);
-        int updates = 0;
-
-        for (auto it = search_list.begin(); it < search_list.end(); ++it)
-        {
-          while (1)
+          GridmapUpdate(
+              const Vec& p0, const Vec& p1,
+              const float cost_estim, const float cost)
+            : p0_(p0)
+            , p1_(p1)
+            , cost_estim_(cost_estim)
+            , cost_(cost)
           {
-            Vec next = p + *it;
-            for (int i = NONCYCLIC; i < DIM; i++)
+          }
+        };
+        std::list<GridmapUpdate> updates;
+        std::list<Vec> dont;
+
+#pragma omp for schedule(static)
+        for (auto it = centers.begin(); it < centers.end(); ++it)
+        {
+          const Vec p = it->v_;
+          const float c = it->p_raw_;
+          const float c_estim = it->p_;
+          const float gp = g[p];
+          if (c > gp)
+            continue;
+
+          if (c_estim - c < cost_estim_min)
+          {
+            cost_estim_min = c_estim - c;
+            better = p;
+          }
+
+          const std::vector<Vec> search_list = cb_search(p, s, e);
+
+          bool updated(false);
+          for (auto it = search_list.begin(); it < search_list.end(); ++it)
+          {
+            while (1)
             {
+              Vec next = p + *it;
               next.cycleUnsigned(g.size());
-            }
-            if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
-                (unsigned int)next[1] >= (unsigned int)g.size()[1])
-              break;
-            if (g[next] < 0)
-              break;
+              if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
+                  (unsigned int)next[1] >= (unsigned int)g.size()[1])
+                break;
+              const float gnext = g[next];
+              if (gnext < 0)
+                break;
 
-            const float cost_estim = cb_cost_estim(next, e);
-            if (cost_estim < 0 || cost_estim == FLT_MAX)
-              break;
+              const float cost_estim = cb_cost_estim(next, e);
+              if (cost_estim < 0 || cost_estim == FLT_MAX)
+                break;
 
-            const float cost = cb_cost(p, next, s, e);
-            if (cost < 0 || cost == FLT_MAX)
-              break;
+              const float cost = cb_cost(p, next, s, e);
+              if (cost < 0 || cost == FLT_MAX)
+                break;
 
-            float& gnext = g[next];
-            if (gnext > c + cost)
-            {
-              gnext = c + cost;
-#pragma omp critical
+              const float cost_next = c + cost;
+              if (gnext > cost_next)
               {
-                parents_[next] = p;
-                open_.push(PriorityVec(c + cost + cost_estim, c + cost, next));
-                if (queue_size_limit_ > 0 &&
-                    open_.size() > queue_size_limit_)
-                  open_.pop_back();
+                updated = true;
+                updates.push_back(
+                    GridmapUpdate(p, next, cost_next + cost_estim, cost_next));
               }
-              updates++;
+
+              break;
             }
-            break;
+          }
+          if (!updated)
+            dont.push_back(p);
+        }
+#pragma omp critical
+        {
+          for (const GridmapUpdate& u : updates)
+          {
+            if (g[u.p1_] > u.cost_)
+            {
+              g[u.p1_] = u.cost_;
+              parents_[u.p1_] = u.p0_;
+              open_.push(PriorityVec(u.cost_estim_, u.cost_, u.p1_));
+              if (queue_size_limit_ > 0 && open_.size() > queue_size_limit_)
+                open_.pop_back();
+            }
+          }
+          for (const Vec& p : dont)
+          {
+            g[p] = -1;
           }
         }
-        if (updates == 0)
-        {
-          gp = -1;
-        }
-      }
+      }  // omp parallel
       // printf("(parents %d)\n", (int)parents_.size());
     }
     // printf("AStar search finished (parents %d)\n", (int)parents_.size());
@@ -288,9 +320,15 @@ public:
   }
   bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
   {
+    size_t i(0);
     Vec n = e;
     while (true)
     {
+      ++i;
+      if (i > g_.ser_size())
+      {
+        return false;
+      }
       path.push_front(n);
       // printf("p- %d %d %d   %0.4f\n", n[0], n[1], n[2], g_[n]);
       if (n == s)

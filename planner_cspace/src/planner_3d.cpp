@@ -426,80 +426,104 @@ protected:
           continue;
         centers.push_back(center);
       }
-#pragma omp parallel for schedule(static)
-      for (auto it = centers.begin(); it < centers.end(); ++it)
+#pragma omp parallel
       {
-        const Astar::Vec p = it->v_;
-        const float c = it->p_raw_;
-
-        Astar::Vec d;
-        d[2] = 0;
-
-        const int range_rough = 4;
-        for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+        class GridmapUpdate
         {
-          for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+        public:
+          const Astar::Vec p_;
+          const float cost_;
+
+          GridmapUpdate(const Astar::Vec& p, const float cost)
+            : p_(p)
+            , cost_(cost)
           {
-            if (d[0] == 0 && d[1] == 0)
-              continue;
-            if (d.sqlen() > range_rough * range_rough)
-              continue;
+          }
+        };
+        std::list<GridmapUpdate> updates;
 
-            const Astar::Vec next = p + d;
-            if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
-                (unsigned int)next[1] >= (unsigned int)map_info_.height)
-              continue;
-            float& gnext = g[next];
-            if (gnext < 0)
-              continue;
+#pragma omp for schedule(static)
+        for (auto it = centers.begin(); it < centers.end(); ++it)
+        {
+          const Astar::Vec p = it->v_;
+          const float c = it->p_raw_;
 
-            float cost = 0;
+          Astar::Vec d;
+          d[2] = 0;
 
+          const int range_rough = 4;
+          for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+          {
+            for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
             {
-              float sum = 0, sum_hist = 0;
-              const float grid_to_len = d.gridToLenFactor();
-              const int dist = d.len();
-              const float dpx = static_cast<float>(d[0]) / dist;
-              const float dpy = static_cast<float>(d[1]) / dist;
-              Astar::Vec pos(static_cast<int>(p[0]), static_cast<int>(p[1]), 0);
-              int i = 0;
-              for (; i < dist; i++)
-              {
-                const char c = cm_rough_[pos];
-                if (c > 99)
-                  break;
-                sum += c;
-
-                sum_hist += cm_hist_[pos];
-                pos[0] += dpx;
-                pos[1] += dpy;
-              }
-              if (i != dist)
+              if (d[0] == 0 && d[1] == 0)
                 continue;
-              cost +=
-                  (map_info_.linear_resolution * grid_to_len / 100.0) *
-                  (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
+              if (d.sqlen() > range_rough * range_rough)
+                continue;
 
-              if (cost < 0)
-              {
-                cost = 0;
-                ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
-              }
-            }
-            cost += euclidCost(d, ec_rough_);
+              Astar::Vec next = p + d;
+              next.cycleUnsigned(map_info_.angle);
 
-            const float gp = c + cost;
-            if (gnext > gp)
-            {
-              gnext = gp;
-#pragma omp critical
+              if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
+                  (unsigned int)next[1] >= (unsigned int)map_info_.height)
+                continue;
+              const float gnext = g[next];
+              if (gnext < 0)
+                continue;
+
+              float cost = 0;
+
               {
-                open.push(Astar::PriorityVec(gp, gp, next));
+                float sum = 0, sum_hist = 0;
+                const float grid_to_len = d.gridToLenFactor();
+                const int dist = d.len();
+                const float dpx = static_cast<float>(d[0]) / dist;
+                const float dpy = static_cast<float>(d[1]) / dist;
+                Astar::Vec pos(static_cast<int>(p[0]), static_cast<int>(p[1]), 0);
+                int i = 0;
+                for (; i < dist; i++)
+                {
+                  const char c = cm_rough_[pos];
+                  if (c > 99)
+                    break;
+                  sum += c;
+
+                  sum_hist += cm_hist_[pos];
+                  pos[0] += dpx;
+                  pos[1] += dpy;
+                }
+                if (i != dist)
+                  continue;
+                cost +=
+                    (map_info_.linear_resolution * grid_to_len / 100.0) *
+                    (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
+
+                if (cost < 0)
+                {
+                  cost = 0;
+                  ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
+                }
               }
+              cost += euclidCost(d, ec_rough_);
+
+              const float cost_next = c + cost;
+              if (gnext > cost_next)
+                updates.push_back(GridmapUpdate(next, cost_next));
             }
           }
         }
-      }
+#pragma omp critical
+        {
+          for (const GridmapUpdate& u : updates)
+          {
+            if (g[u.p_] > u.cost_)
+            {
+              g[u.p_] = u.cost_;
+              open.push(Astar::PriorityVec(u.cost_, u.cost_, u.p_));
+            }
+          }
+        }
+      }  // omp parallel
     }
     rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
   }
@@ -893,7 +917,8 @@ protected:
         {
           if (!((d[0] == 0) ^ (d[1] == 0)))
             continue;
-          const Astar::Vec next = p + d;
+          Astar::Vec next = p + d;
+          next.cycleUnsigned(map_info_.angle);
           if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
