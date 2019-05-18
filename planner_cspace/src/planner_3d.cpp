@@ -56,7 +56,6 @@
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
 
-#include <costmap_cspace/node_handle_float.h>
 #include <neonavigation_common/compatibility.h>
 
 #include <planner_cspace/bbf.h>
@@ -77,7 +76,7 @@ protected:
   using Planner3DActionServer = actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction>;
 
   ros::NodeHandle nh_;
-  ros::NodeHandle_f pnh_;
+  ros::NodeHandle pnh_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_update_;
   ros::Subscriber sub_goal_;
@@ -397,7 +396,8 @@ protected:
     else
     {
       has_goal_ = false;
-      act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal cleared.");
+      if (act_->isActive())
+        act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal cleared.");
     }
     return true;
   }
@@ -449,7 +449,7 @@ protected:
             if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
                 (unsigned int)next[1] >= (unsigned int)map_info_.height)
               continue;
-            auto& gnext = g[next];
+            float& gnext = g[next];
             if (gnext < 0)
               continue;
 
@@ -488,7 +488,7 @@ protected:
             }
             cost += euclidCost(d, ec_rough_);
 
-            const auto gp = c + cost;
+            const float gp = c + cost;
             if (gnext > gp)
             {
               gnext = gp;
@@ -506,10 +506,11 @@ protected:
   bool searchAvailablePos(Astar::Vec& s, const int xy_range, const int angle_range,
                           const int cost_acceptable = 50, const int min_xy_range = 0)
   {
-    Astar::Vec d;
+    ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
+
     float range_min = FLT_MAX;
     Astar::Vec s_out;
-    ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
+    Astar::Vec d;
     for (d[2] = -angle_range; d[2] <= angle_range; d[2]++)
     {
       for (d[0] = -xy_range; d[0] <= xy_range; d[0]++)
@@ -555,7 +556,10 @@ protected:
   }
   bool updateGoal(const bool goal_changed = true)
   {
-    if (!has_map_ || !has_goal_ || !has_start_)
+    if (!has_goal_)
+      return true;
+
+    if (!has_map_ || !has_start_)
     {
       ROS_ERROR("Goal received, however map/goal/start are not ready. (%d/%d/%d)",
                 static_cast<int>(has_map_), static_cast<int>(has_goal_), static_cast<int>(has_start_));
@@ -749,18 +753,15 @@ protected:
     }
 
     {
-      Astar::Vec p;
-      Astar::Vec center;
-      center[0] = msg->width / 2;
-      center[1] = msg->height / 2;
-      Astar::Vec gp;
-      gp[0] = msg->x;
-      gp[1] = msg->y;
-      gp[2] = msg->yaw;
+      const Astar::Vec center(
+          static_cast<int>(msg->width / 2), static_cast<int>(msg->height / 2), 0);
+      const Astar::Vec gp(
+          static_cast<int>(msg->x), static_cast<int>(msg->y), static_cast<int>(msg->yaw));
       const Astar::Vec gp_rough(gp[0], gp[1], 0);
       const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
       const int hist_ignore_range_max_sq =
           hist_ignore_range_max_ * hist_ignore_range_max_;
+      Astar::Vec p;
       for (p[0] = 0; p[0] < static_cast<int>(msg->width); p[0]++)
       {
         for (p[1] = 0; p[1] < static_cast<int>(msg->height); p[1]++)
@@ -1080,9 +1081,7 @@ protected:
   {
     move_base_msgs::MoveBaseGoalConstPtr goal = act_->acceptNewGoal();
     if (!setGoal(goal->target_pose))
-    {
       act_->setAborted(move_base_msgs::MoveBaseResult(), "Given goal is invalid.");
-    }
   }
 
   void updateStart()
@@ -1158,28 +1157,28 @@ public:
     pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>(
         "path_poses", 1, true);
 
-    pnh_.param_cast("freq", freq_, 4.0f);
-    pnh_.param_cast("freq_min", freq_min_, 2.0f);
-    pnh_.param_cast("search_range", search_range_, 0.4f);
+    pnh_.param("freq", freq_, 4.0f);
+    pnh_.param("freq_min", freq_min_, 2.0f);
+    pnh_.param("search_range", search_range_, 0.4f);
 
     double costmap_watchdog;
     pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
     costmap_watchdog_ = ros::Duration(costmap_watchdog);
 
-    pnh_.param_cast("max_vel", max_vel_, 0.3f);
-    pnh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
-    pnh_.param_cast("min_curve_raduis", min_curve_raduis_, 0.1f);
+    pnh_.param("max_vel", max_vel_, 0.3f);
+    pnh_.param("max_ang_vel", max_ang_vel_, 0.6f);
+    pnh_.param("min_curve_raduis", min_curve_raduis_, 0.1f);
 
-    pnh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
-    pnh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
-    pnh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
-    pnh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
-    pnh_.param_cast("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
-    pnh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
-    pnh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
-    pnh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
-    pnh_.param_cast("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
-    pnh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
+    pnh_.param("weight_decel", cc_.weight_decel_, 50.0f);
+    pnh_.param("weight_backward", cc_.weight_backward_, 0.9f);
+    pnh_.param("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
+    pnh_.param("weight_costmap", cc_.weight_costmap_, 50.0f);
+    pnh_.param("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
+    pnh_.param("weight_remembered", cc_.weight_remembered_, 1000.0f);
+    pnh_.param("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
+    pnh_.param("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
+    pnh_.param("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
+    pnh_.param("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
     pnh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
     pnh_.param("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
@@ -1203,7 +1202,7 @@ public:
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
-    pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
+    pnh_.param("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
 
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
@@ -1329,11 +1328,9 @@ public:
         if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
         {
           const float yaw_s = tf2::getYaw(start_.pose.orientation);
-          float yaw_g;
+          float yaw_g = tf2::getYaw(goal_.pose.orientation);
           if (force_goal_orientation_)
             yaw_g = tf2::getYaw(goal_raw_.pose.orientation);
-          else
-            yaw_g = tf2::getYaw(goal_.pose.orientation);
 
           float yaw_diff = yaw_s - yaw_g;
           if (yaw_diff > M_PI)
@@ -1345,7 +1342,8 @@ public:
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
             ROS_INFO("Path plan finished");
-            act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
+            if (act_->isActive())
+              act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           }
         }
         else
@@ -1359,8 +1357,10 @@ public:
             status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
-            act_->setAborted(move_base_msgs::MoveBaseResult(),
-                             "Goal is in Rock");
+            if (act_->isActive())
+              act_->setAborted(
+                  move_base_msgs::MoveBaseResult(), "Goal is in Rock");
+
             ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
             continue;
           }
@@ -1468,7 +1468,7 @@ protected:
     p.pose.position.y = y;
     pub_start_.publish(p);
 
-    auto diff = s - e;
+    Astar::Vec diff = s - e;
     diff.cycle(map_info_.angle);
     if (diff.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
         abs(diff[2]) <= goal_tolerance_ang_)
@@ -1495,7 +1495,7 @@ protected:
       return true;
     }
 
-    auto range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
+    const float range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
     angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
@@ -1570,14 +1570,14 @@ protected:
       // const auto ts = boost::chrono::high_resolution_clock::now();
       for (auto& ps : path_points)
       {
-        auto& p = ps.first;
+        const auto& p = ps.first;
         float d_min = FLT_MAX;
         auto it_prev = path_grid.begin();
         for (auto it = path_grid.begin(); it != path_grid.end(); it++)
         {
           if (it != it_prev)
           {
-            auto d = p.distLinestrip2d(*it_prev, *it);
+            const float d = p.distLinestrip2d(*it_prev, *it);
             if (d < d_min)
               d_min = d;
           }
@@ -1603,7 +1603,7 @@ protected:
       const Astar::Vec& p,
       const Astar::Vec& s, const Astar::Vec& e)
   {
-    const auto ds = s - p;
+    const Astar::Vec ds = s - p;
 
     if (ds.sqlen() < local_range_ * local_range_)
     {
@@ -1625,7 +1625,7 @@ protected:
   float cbCostEstim(const Astar::Vec& s, const Astar::Vec& e)
   {
     Astar::Vec s2(s[0], s[1], 0);
-    auto cost = cost_estim_cache_[s2];
+    float cost = cost_estim_cache_[s2];
     if (cost == FLT_MAX)
       return FLT_MAX;
     if (!rough_)
