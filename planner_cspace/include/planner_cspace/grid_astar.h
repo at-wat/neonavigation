@@ -84,13 +84,6 @@ public:
     }
   };
 
-protected:
-  Gridmap<float> g_;
-  std::unordered_map<Vec, Vec, Vec> parents_;
-  reservable_priority_queue<PriorityVec> open_;
-  size_t queue_size_limit_;
-  size_t search_task_num_;
-
 public:
   constexpr int getDim() const
   {
@@ -142,6 +135,8 @@ public:
                       cb_cost, cb_cost_estim, cb_search, cb_progress,
                       cost_leave, progress_interval, return_best);
   }
+
+protected:
   bool searchImpl(
       Gridmap<float>& g,
       const Vec& st, const Vec& en,
@@ -320,29 +315,27 @@ public:
   }
   bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
   {
-    size_t i(0);
     Vec n = e;
     while (true)
     {
-      ++i;
-      if (i > g_.ser_size())
-      {
-        return false;
-      }
       path.push_front(n);
-      // printf("p- %d %d %d   %0.4f\n", n[0], n[1], n[2], g_[n]);
       if (n == s)
         break;
       if (parents_.find(n) == parents_.end())
-      {
-        n = parents_[n];
-        // printf("px %d %d %d\n", n[0], n[1], n[2]);
         return false;
-      }
-      n = parents_[n];
+
+      const Vec child = n;
+      n = parents_[child];
+      parents_.erase(child);
     }
     return true;
   }
+
+  Gridmap<float> g_;
+  std::unordered_map<Vec, Vec, Vec> parents_;
+  reservable_priority_queue<PriorityVec> open_;
+  size_t queue_size_limit_;
+  size_t search_task_num_;
 };
 
 #endif  // PLANNER_CSPACE_GRID_ASTAR_H
