@@ -396,7 +396,8 @@ protected:
     else
     {
       has_goal_ = false;
-      act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal cleared.");
+      if (act_->isActive())
+        act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal cleared.");
     }
     return true;
   }
@@ -555,7 +556,10 @@ protected:
   }
   bool updateGoal(const bool goal_changed = true)
   {
-    if (!has_map_ || !has_goal_ || !has_start_)
+    if (!has_goal_)
+      return true;
+
+    if (!has_map_ || !has_start_)
     {
       ROS_ERROR("Goal received, however map/goal/start are not ready. (%d/%d/%d)",
                 static_cast<int>(has_map_), static_cast<int>(has_goal_), static_cast<int>(has_start_));
@@ -1077,9 +1081,7 @@ protected:
   {
     move_base_msgs::MoveBaseGoalConstPtr goal = act_->acceptNewGoal();
     if (!setGoal(goal->target_pose))
-    {
       act_->setAborted(move_base_msgs::MoveBaseResult(), "Given goal is invalid.");
-    }
   }
 
   void updateStart()
@@ -1340,7 +1342,8 @@ public:
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
             ROS_INFO("Path plan finished");
-            act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
+            if (act_->isActive())
+              act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           }
         }
         else
@@ -1354,8 +1357,10 @@ public:
             status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
-            act_->setAborted(move_base_msgs::MoveBaseResult(),
-                             "Goal is in Rock");
+            if (act_->isActive())
+              act_->setAborted(
+                  move_base_msgs::MoveBaseResult(), "Goal is in Rock");
+
             ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
             continue;
           }
