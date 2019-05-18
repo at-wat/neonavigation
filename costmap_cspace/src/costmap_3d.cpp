@@ -36,7 +36,6 @@
 #include <utility>
 #include <vector>
 
-#include <costmap_cspace/node_handle_float.h>
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 
@@ -46,8 +45,8 @@
 class Costmap3DOFNode
 {
 protected:
-  ros::NodeHandle_f nh_;
-  ros::NodeHandle_f pnh_;
+  ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   ros::Subscriber sub_map_;
   std::vector<ros::Subscriber> sub_map_overlay_;
   ros::Publisher pub_costmap_;
