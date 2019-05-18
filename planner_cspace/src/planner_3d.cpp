@@ -466,7 +466,6 @@ protected:
           const Astar::Vec p = it->v_;
           const float c = it->p_raw_;
 
-          const int range_rough = 4;
           for (const Astar::Vec d : search_diffs)
           {
             Astar::Vec next = p + d;
