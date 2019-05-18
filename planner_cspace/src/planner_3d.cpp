@@ -56,7 +56,6 @@
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
 
-#include <costmap_cspace/node_handle_float.h>
 #include <neonavigation_common/compatibility.h>
 
 #include <planner_cspace/bbf.h>
@@ -77,7 +76,7 @@ protected:
   using Planner3DActionServer = actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction>;
 
   ros::NodeHandle nh_;
-  ros::NodeHandle_f pnh_;
+  ros::NodeHandle pnh_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_update_;
   ros::Subscriber sub_goal_;
@@ -1158,28 +1157,28 @@ public:
     pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>(
         "path_poses", 1, true);
 
-    pnh_.param_cast("freq", freq_, 4.0f);
-    pnh_.param_cast("freq_min", freq_min_, 2.0f);
-    pnh_.param_cast("search_range", search_range_, 0.4f);
+    pnh_.param("freq", freq_, 4.0f);
+    pnh_.param("freq_min", freq_min_, 2.0f);
+    pnh_.param("search_range", search_range_, 0.4f);
 
     double costmap_watchdog;
     pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
     costmap_watchdog_ = ros::Duration(costmap_watchdog);
 
-    pnh_.param_cast("max_vel", max_vel_, 0.3f);
-    pnh_.param_cast("max_ang_vel", max_ang_vel_, 0.6f);
-    pnh_.param_cast("min_curve_raduis", min_curve_raduis_, 0.1f);
+    pnh_.param("max_vel", max_vel_, 0.3f);
+    pnh_.param("max_ang_vel", max_ang_vel_, 0.6f);
+    pnh_.param("min_curve_raduis", min_curve_raduis_, 0.1f);
 
-    pnh_.param_cast("weight_decel", cc_.weight_decel_, 50.0f);
-    pnh_.param_cast("weight_backward", cc_.weight_backward_, 0.9f);
-    pnh_.param_cast("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
-    pnh_.param_cast("weight_costmap", cc_.weight_costmap_, 50.0f);
-    pnh_.param_cast("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
-    pnh_.param_cast("weight_remembered", cc_.weight_remembered_, 1000.0f);
-    pnh_.param_cast("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
-    pnh_.param_cast("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
-    pnh_.param_cast("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
-    pnh_.param_cast("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
+    pnh_.param("weight_decel", cc_.weight_decel_, 50.0f);
+    pnh_.param("weight_backward", cc_.weight_backward_, 0.9f);
+    pnh_.param("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
+    pnh_.param("weight_costmap", cc_.weight_costmap_, 50.0f);
+    pnh_.param("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
+    pnh_.param("weight_remembered", cc_.weight_remembered_, 1000.0f);
+    pnh_.param("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
+    pnh_.param("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
+    pnh_.param("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
+    pnh_.param("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
     pnh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
     pnh_.param("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
@@ -1203,7 +1202,7 @@ public:
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
-    pnh_.param_cast("sw_wait", sw_wait_, 2.0f);
+    pnh_.param("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
 
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
