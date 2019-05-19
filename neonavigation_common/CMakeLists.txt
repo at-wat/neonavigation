@@ -23,7 +23,7 @@ else()
   message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-include_directories(${catkin_INCLUDE_DIRS} include)
+include_directories(include ${catkin_INCLUDE_DIRS})
 
 
 if(CATKIN_ENABLE_TESTING)
