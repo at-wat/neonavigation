@@ -48,7 +48,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -DROS_DISTRO_$ENV{ROS_DISTRO}=1")
 
-include_directories(${catkin_INCLUDE_DIRS} include)
+include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(costmap_3d src/costmap_3d.cpp src/costmap_3d_layers.cpp)
 target_link_libraries(costmap_3d ${catkin_LIBRARIES})
