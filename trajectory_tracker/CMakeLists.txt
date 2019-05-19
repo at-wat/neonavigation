@@ -37,7 +37,7 @@ catkin_package(
 )
 
 ## Build
-include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include)
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
