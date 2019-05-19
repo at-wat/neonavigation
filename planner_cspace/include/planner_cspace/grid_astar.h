@@ -235,13 +235,12 @@ protected:
         std::list<Vec> dont;
 
 #pragma omp for schedule(static)
-        for (auto it = centers.begin(); it < centers.end(); ++it)
+        for (auto it = centers.cbegin(); it < centers.cend(); ++it)
         {
           const Vec p = it->v_;
           const float c = it->p_raw_;
           const float c_estim = it->p_;
-          const float gp = g[p];
-          if (c > gp)
+          if (c > g[p])
             continue;
 
           if (c_estim - c < cost_estim_min)
@@ -253,14 +252,14 @@ protected:
           const std::vector<Vec> search_list = cb_search(p, s, e);
 
           bool updated(false);
-          for (auto it = search_list.begin(); it < search_list.end(); ++it)
+          for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
           {
             while (1)
             {
               Vec next = p + *it;
               next.cycleUnsigned(g.size());
-              if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
-                  (unsigned int)next[1] >= (unsigned int)g.size()[1])
+              if (static_cast<size_t>(next[0]) >= static_cast<size_t>(g.size()[0]) ||
+                  static_cast<size_t>(next[1]) >= static_cast<size_t>(g.size()[1]))
                 break;
               const float gnext = g[next];
               if (gnext < 0)
@@ -307,9 +306,7 @@ protected:
           }
         }  // omp critical
       }    // omp parallel
-      // printf("(parents %d)\n", (int)parents_.size());
     }
-    // printf("AStar search finished (parents %d)\n", (int)parents_.size());
 
     return findPath(s, e, path);
   }

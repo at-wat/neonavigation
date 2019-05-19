@@ -461,18 +461,18 @@ protected:
         std::list<GridmapUpdate> updates;
 
 #pragma omp for schedule(static)
-        for (auto it = centers.begin(); it < centers.end(); ++it)
+        for (auto it = centers.cbegin(); it < centers.cend(); ++it)
         {
           const Astar::Vec p = it->v_;
           const float c = it->p_raw_;
 
-          for (const Astar::Vec d : search_diffs)
+          for (const Astar::Vec& d : search_diffs)
           {
             Astar::Vec next = p + d;
             next.cycleUnsigned(map_info_.angle);
 
-            if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
-                (unsigned int)next[1] >= (unsigned int)map_info_.height)
+            if (static_cast<size_t>(next[0]) >= static_cast<size_t>(map_info_.width) ||
+                static_cast<size_t>(next[1]) >= static_cast<size_t>(map_info_.height))
               continue;
             const float gnext = g[next];
             if (gnext < 0)
