@@ -49,7 +49,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
-include_directories(${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} include)
+include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 
 add_executable(track_odometry src/track_odometry.cpp)
 target_link_libraries(track_odometry ${catkin_LIBRARIES})
