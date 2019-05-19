@@ -258,11 +258,9 @@ protected:
             {
               Vec next = p + *it;
               next.cycleUnsigned(g.size());
-              if (static_cast<size_t>(next[0]) >= static_cast<size_t>(g.size()[0]) ||
-                  static_cast<size_t>(next[1]) >= static_cast<size_t>(g.size()[1]))
+              if (next.isExceeded(g.size()))
                 break;
-              const float gnext = g[next];
-              if (gnext < 0)
+              if (g[next] < 0)
                 break;
 
               const float cost_estim = cb_cost_estim(next, e);
@@ -274,7 +272,7 @@ protected:
                 break;
 
               const float cost_next = c + cost;
-              if (gnext > cost_next)
+              if (g[next] > cost_next)
               {
                 updated = true;
                 updates.push_back(
