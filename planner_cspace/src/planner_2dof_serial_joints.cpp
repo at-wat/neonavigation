@@ -48,7 +48,7 @@
 class planner2dofSerialJointsNode
 {
 public:
-  using Astar = GridAstar<2, 2>;
+  using Astar = GridAstar<2, 0>;
 
 private:
   ros::NodeHandle nh_;
