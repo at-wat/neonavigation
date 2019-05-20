@@ -448,14 +448,27 @@ protected:
       {
         class GridmapUpdate
         {
-        public:
+        private:
           const Astar::Vec p_;
           const float cost_;
 
+        public:
           GridmapUpdate(const Astar::Vec& p, const float cost)
             : p_(p)
             , cost_(cost)
           {
+          }
+          Astar::PriorityVec getPriorityVec() const
+          {
+            return Astar::PriorityVec(cost_, cost_, p_);
+          }
+          float getCost() const
+          {
+            return cost_;
+          }
+          const Astar::Vec& getPos() const
+          {
+            return p_;
           }
         };
         std::list<GridmapUpdate> updates;
@@ -522,10 +535,10 @@ protected:
         {
           for (const GridmapUpdate& u : updates)
           {
-            if (g[u.p_] > u.cost_)
+            if (g[u.getPos()] > u.getCost())
             {
-              g[u.p_] = u.cost_;
-              open.push(Astar::PriorityVec(u.cost_, u.cost_, u.p_));
+              g[u.getPos()] = u.getCost();
+              open.push(u.getPriorityVec());
             }
           }
         }  // omp critical

@@ -215,12 +215,13 @@ protected:
       {
         class GridmapUpdate
         {
-        public:
+        private:
           const Vec p0_;
           const Vec p1_;
           const float cost_estim_;
           const float cost_;
 
+        public:
           GridmapUpdate(
               const Vec& p0, const Vec& p1,
               const float cost_estim, const float cost)
@@ -229,6 +230,22 @@ protected:
             , cost_estim_(cost_estim)
             , cost_(cost)
           {
+          }
+          const Vec& getParentPos() const
+          {
+            return p0_;
+          }
+          const Vec& getPos() const
+          {
+            return p1_;
+          }
+          const float getCost() const
+          {
+            return cost_;
+          }
+          const getPriorityVec() const
+          {
+            return PriorityVec(u.cost_estim_, u.cost_, u.p1_);
           }
         };
         std::list<GridmapUpdate> updates;
@@ -289,11 +306,11 @@ protected:
         {
           for (const GridmapUpdate& u : updates)
           {
-            if (g[u.p1_] > u.cost_)
+            if (g[u.getPos()] > u.getCost())
             {
-              g[u.p1_] = u.cost_;
-              parents_[u.p1_] = u.p0_;
-              open_.push(PriorityVec(u.cost_estim_, u.cost_, u.p1_));
+              g[u.getPos()] = u.getCost();
+              parents_[u.getPos()] = u.getParentPos();
+              open_.push((u.getPriorityVec());
               if (queue_size_limit_ > 0 && open_.size() > queue_size_limit_)
                 open_.pop_back();
             }
