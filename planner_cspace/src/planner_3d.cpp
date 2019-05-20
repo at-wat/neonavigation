@@ -446,32 +446,7 @@ protected:
       }
 #pragma omp parallel
       {
-        class GridmapUpdate
-        {
-        private:
-          const Astar::Vec p_;
-          const float cost_;
-
-        public:
-          GridmapUpdate(const Astar::Vec& p, const float cost)
-            : p_(p)
-            , cost_(cost)
-          {
-          }
-          Astar::PriorityVec getPriorityVec() const
-          {
-            return Astar::PriorityVec(cost_, cost_, p_);
-          }
-          float getCost() const
-          {
-            return cost_;
-          }
-          const Astar::Vec& getPos() const
-          {
-            return p_;
-          }
-        };
-        std::list<GridmapUpdate> updates;
+        std::list<Astar::GridmapUpdate> updates;
 
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
@@ -528,7 +503,7 @@ protected:
 
             const float cost_next = c + cost;
             if (gnext > cost_next)
-              updates.push_back(GridmapUpdate(next, cost_next));
+              updates.push_back(Astar::GridmapUpdate(p, next, cost_next, cost_next));
           }
         }
 #pragma omp critical

@@ -83,6 +83,41 @@ public:
       return p_ > b.p_;
     }
   };
+  class GridmapUpdate
+  {
+  private:
+    const Vec p0_;
+    const Vec p1_;
+    const float cost_estim_;
+    const float cost_;
+
+  public:
+    GridmapUpdate(
+        const Vec& p0, const Vec& p1,
+        const float cost_estim, const float cost)
+      : p0_(p0)
+      , p1_(p1)
+      , cost_estim_(cost_estim)
+      , cost_(cost)
+    {
+    }
+    const Vec& getParentPos() const
+    {
+      return p0_;
+    }
+    const Vec& getPos() const
+    {
+      return p1_;
+    }
+    const float getCost() const
+    {
+      return cost_;
+    }
+    const getPriorityVec() const
+    {
+      return PriorityVec(u.cost_estim_, u.cost_, u.p1_);
+    }
+  };
 
 public:
   constexpr int getDim() const
@@ -213,41 +248,6 @@ protected:
 
 #pragma omp parallel
       {
-        class GridmapUpdate
-        {
-        private:
-          const Vec p0_;
-          const Vec p1_;
-          const float cost_estim_;
-          const float cost_;
-
-        public:
-          GridmapUpdate(
-              const Vec& p0, const Vec& p1,
-              const float cost_estim, const float cost)
-            : p0_(p0)
-            , p1_(p1)
-            , cost_estim_(cost_estim)
-            , cost_(cost)
-          {
-          }
-          const Vec& getParentPos() const
-          {
-            return p0_;
-          }
-          const Vec& getPos() const
-          {
-            return p1_;
-          }
-          const float getCost() const
-          {
-            return cost_;
-          }
-          const getPriorityVec() const
-          {
-            return PriorityVec(u.cost_estim_, u.cost_, u.p1_);
-          }
-        };
         std::list<GridmapUpdate> updates;
         std::list<Vec> dont;
 
