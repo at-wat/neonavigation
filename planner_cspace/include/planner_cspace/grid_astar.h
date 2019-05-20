@@ -310,7 +310,7 @@ protected:
             {
               g[u.getPos()] = u.getCost();
               parents_[u.getPos()] = u.getParentPos();
-              open_.push((u.getPriorityVec());
+              open_.push(u.getPriorityVec());
               if (queue_size_limit_ > 0 && open_.size() > queue_size_limit_)
                 open_.pop_back();
             }
