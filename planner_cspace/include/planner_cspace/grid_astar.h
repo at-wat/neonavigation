@@ -115,7 +115,7 @@ public:
     }
     const getPriorityVec() const
     {
-      return PriorityVec(u.cost_estim_, u.cost_, u.p1_);
+      return PriorityVec(cost_estim_, cost_, p1_);
     }
   };
 
