@@ -113,7 +113,7 @@ public:
     {
       return cost_;
     }
-    const getPriorityVec() const
+    const PriorityVec getPriorityVec() const
     {
       return PriorityVec(cost_estim_, cost_, p1_);
     }

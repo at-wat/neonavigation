@@ -508,7 +508,7 @@ protected:
         }
 #pragma omp critical
         {
-          for (const GridmapUpdate& u : updates)
+          for (const Astar::GridmapUpdate& u : updates)
           {
             if (g[u.getPos()] > u.getCost())
             {
