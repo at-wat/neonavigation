@@ -241,6 +241,8 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
 
   if (path_.size() == 1)
   {
+    path_.back() = trajectory_tracker::Pose2D(
+        msg->poses.back().pose, std::numeric_limits<float>::quiet_NaN());
     in_place_turn_ = true;
     while (path_.size() < 3)
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019, the neonavigation authors
+ * Copyright (c) 2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,77 +27,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
-#define PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
+#ifndef PLANNER_CSPACE_PLANNER_3D_PATH_INTERPOLATOR_H
+#define PLANNER_CSPACE_PLANNER_3D_PATH_INTERPOLATOR_H
 
-#include <cmath>
 #include <list>
-#include <memory>
-#include <utility>
-#include <vector>
 
 #include <planner_cspace/cyclic_vec.h>
+#include <planner_cspace/planner_3d/rotation_cache.h>
 
-class RotationCache
+class PathInterpolator
 {
 private:
-  class Page
-  {
-  private:
-    std::unique_ptr<CyclicVecFloat<3, 2>[]> c_;
-    std::unique_ptr<std::pair<float, float>[]> r_;
-    CyclicVecInt<3, 2> size_;
-    int ser_size_;
-
-    inline size_t addr(const CyclicVecInt<3, 2>& pos) const
-    {
-      size_t addr = pos[2];
-      for (int i = 1; i >= 0; i--)
-        addr = addr * size_[i] + pos[i];
-      return addr;
-    }
-
-  public:
-    void reset(const CyclicVecInt<3, 2>& size);
-    inline CyclicVecFloat<3, 2>& motion(const CyclicVecInt<3, 2>& pos)
-    {
-      return c_[addr(pos)];
-    }
-    inline const CyclicVecFloat<3, 2>& motion(const CyclicVecInt<3, 2>& pos) const
-    {
-      return c_[addr(pos)];
-    }
-    inline std::pair<float, float>& radiuses(const CyclicVecInt<3, 2>& pos)
-    {
-      return r_[addr(pos)];
-    }
-    inline const std::pair<float, float>& radiuses(const CyclicVecInt<3, 2>& pos) const
-    {
-      return r_[addr(pos)];
-    }
-  };
-
-  std::vector<Page> pages_;
+  RotationCache rot_cache_;
+  int range_;
+  int angle_;
 
 public:
-  void reset(const float linear_resolution, const float angular_resolution, const int range);
-  inline const CyclicVecFloat<3, 2>& getMotion(
-      const int start_angle,
-      const CyclicVecInt<3, 2>& end) const
+  inline void reset(
+      const float angular_resolution,
+      const int range)
   {
-    return pages_[start_angle].motion(end);
+    range_ = range;
+    angle_ = std::lround(M_PI * 2 / angular_resolution);
+    rot_cache_.reset(1.0, angular_resolution, range);
   }
-  inline const std::pair<float, float>& getRadiuses(
-      const int start_angle,
-      const CyclicVecInt<3, 2>& end) const
-  {
-    return pages_[start_angle].radiuses(end);
-  }
-
   std::list<CyclicVecFloat<3, 2>> interpolate(
       const std::list<CyclicVecInt<3, 2>>& path_grid,
       const float interval,
       const int local_range) const;
 };
 
-#endif  // PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
+#endif  // PLANNER_CSPACE_PLANNER_3D_PATH_INTERPOLATOR_H

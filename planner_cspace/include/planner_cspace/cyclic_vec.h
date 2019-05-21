@@ -193,28 +193,28 @@ public:
     }
     return out;
   }
-  T cross2d(const CyclicVecBase<DIM, NONCYCLIC, T>& a) const
+  float cross2d(const CyclicVecBase<DIM, NONCYCLIC, T>& a) const
   {
     return (*this)[0] * a[1] - (*this)[1] * a[0];
   }
-  T dot2d(const CyclicVecBase<DIM, NONCYCLIC, T>& a) const
+  float dot2d(const CyclicVecBase<DIM, NONCYCLIC, T>& a) const
   {
     return (*this)[0] * a[0] + (*this)[1] * a[1];
   }
-  T distLine2d(
+  float distLine2d(
       const CyclicVecBase<DIM, NONCYCLIC, T>& a,
       const CyclicVecBase<DIM, NONCYCLIC, T>& b) const
   {
     return (b - a).cross2d((*this) - a) / (b - a).len();
   }
-  T distLinestrip2d(
+  float distLinestrip2d(
       const CyclicVecBase<DIM, NONCYCLIC, T>& a,
       const CyclicVecBase<DIM, NONCYCLIC, T>& b) const
   {
-    auto to_a = (*this) - a;
+    const auto to_a = (*this) - a;
     if ((b - a).dot2d(to_a) <= 0)
       return to_a.len();
-    auto to_b = (*this) - b;
+    const auto to_b = (*this) - b;
     if ((a - b).dot2d(to_b) <= 0)
       return to_b.len();
     return fabs(distLine2d(a, b));
