@@ -64,6 +64,7 @@
 #include <planner_cspace/planner_3d/jump_detector.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
+#include <planner_cspace/planner_3d/path_interpolator.h>
 
 #include <omp.h>
 
@@ -129,6 +130,7 @@ protected:
   }
 
   RotationCache rot_cache_;
+  PathInterpolator path_interpolator_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
@@ -342,7 +344,9 @@ protected:
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
 
-    grid_metric_converter::grid2MetricPath(map_info_, 0.0, path_grid, path, s);
+    const std::list<Astar::Vecf> path_interpolated =
+        path_interpolator_.interpolate(path_grid, 0.5, 0.0);
+    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path);
 
     res.plan.header = map_header_;
     res.plan.poses.resize(path.poses.size());
@@ -647,12 +651,12 @@ protected:
     open.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
     fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Cost estimation cache generated (%0.3f sec.)",
+    ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
     cost_estim_cache_[e] = 0;
 
     if (goal_changed)
-      cm_hyst_.clear(0);
+      cm_hyst_.clear(100);
 
     publishCostmap();
 
@@ -685,7 +689,12 @@ protected:
             case DEBUG_HYSTERESIS:
               if (cost_estim_cache_[p] == FLT_MAX)
                 continue;
-              point.z = cm_hyst_[p] * 0.01;
+
+              point.z = 100;
+              for (p[2] = 0; p[2] < static_cast<int>(map_info_.angle); ++p[2])
+                point.z = std::min(static_cast<float>(cm_hyst_[p]), point.z);
+
+              point.z *= 0.01;
               break;
             case DEBUG_HISTORY:
               if (cm_rough_base_[p] != 0)
@@ -950,7 +959,7 @@ protected:
 
     fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Cost estimation cache updated (%0.3f sec.)",
+    ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
     publishCostmap();
   }
@@ -1026,6 +1035,7 @@ protected:
                 map_info_.angle, range_, static_cast<int>(search_list_.size()));
 
       rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
+      path_interpolator_.reset(map_info_.angular_resolution, range_);
       ROS_DEBUG("Rotation cache generated");
     }
     else
@@ -1058,9 +1068,10 @@ protected:
         };
     as_.reset(Astar::Vec(size[0], size[1], size[2]));
     cm_.reset(Astar::Vec(size[0], size[1], size[2]));
+    cm_hyst_.reset(Astar::Vec(size[0], size[1], size[2]));
+
     cost_estim_cache_.reset(Astar::Vec(size[0], size[1], 1));
     cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
-    cm_hyst_.reset(Astar::Vec(size[0], size[1], 1));
     cm_hist_.reset(Astar::Vec(size[0], size[1], 1));
     cm_hist_bbf_.reset(Astar::Vec(size[0], size[1], 1));
 
@@ -1085,7 +1096,7 @@ protected:
       }
     }
     ROS_DEBUG("Map copied");
-    cm_hyst_.clear(0);
+    cm_hyst_.clear(100);
 
     has_map_ = true;
 
@@ -1195,7 +1206,7 @@ public:
     pnh_.param("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
     pnh_.param("weight_remembered", cc_.weight_remembered_, 1000.0f);
     pnh_.param("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
-    pnh_.param("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.3f);
+    pnh_.param("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.1f);
     pnh_.param("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
     pnh_.param("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
@@ -1221,7 +1232,7 @@ public:
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
-    pnh_.param("sw_wait", sw_wait_, 2.0f);
+    pnh_.param("sw_wait", sw_wait_, 0.0f);
     pnh_.param("find_best", find_best_, true);
 
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
@@ -1402,11 +1413,11 @@ public:
             pub_path_.publish(path);
           }
 
-          if (switchDetect(path))
+          if (sw_wait_ > 0.0)
           {
-            ROS_INFO("Will have switch back");
-            if (sw_wait_ > 0.0)
+            if (switchDetect(path))
             {
+              ROS_INFO("Planned path has switchback");
               ros::Duration(sw_wait_).sleep();
             }
           }
@@ -1560,15 +1571,20 @@ protected:
     }
     pub_path_poses_.publish(poses);
 
-    grid_metric_converter::grid2MetricPath(map_info_, local_range_, path_grid, path, s);
+    const std::list<Astar::Vecf> path_interpolated =
+        path_interpolator_.interpolate(path_grid, 0.5, local_range_);
+    grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path);
 
     if (hyst)
     {
+      const std::list<Astar::Vecf> path_interpolated =
+          path_interpolator_.interpolate(path_grid, 0.5, local_range_);
+
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
-      const int path_range = range_ + max_dist + expand_dist + 1;
-      for (auto& p : path_grid)
+      const int path_range = range_ + max_dist + expand_dist + 5;
+      for (const Astar::Vecf& p : path_interpolated)
       {
         Astar::Vec d;
         for (d[0] = -path_range; d[0] <= path_range; d[0]++)
@@ -1576,7 +1592,7 @@ protected:
           for (d[1] = -path_range; d[1] <= path_range; d[1]++)
           {
             Astar::Vec point = p + d;
-            point[2] = 0;
+            point.cycleUnsigned(map_info_.angle);
             if ((unsigned int)point[0] >= (unsigned int)map_info_.width ||
                 (unsigned int)point[1] >= (unsigned int)map_info_.height)
               continue;
@@ -1586,33 +1602,29 @@ protected:
       }
 
       cm_hyst_.clear(100);
-      // const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = boost::chrono::high_resolution_clock::now();
       for (auto& ps : path_points)
       {
-        const auto& p = ps.first;
+        const Astar::Vec& p = ps.first;
         float d_min = FLT_MAX;
-        auto it_prev = path_grid.begin();
-        for (auto it = path_grid.begin(); it != path_grid.end(); it++)
+        auto it_prev = path_interpolated.begin();
+        for (auto it = path_interpolated.begin(); it != path_interpolated.end(); it++)
         {
           if (it != it_prev)
           {
-            const float d = p.distLinestrip2d(*it_prev, *it);
+            const float d =
+                CyclicVecFloat<3, 2>(p).distLinestrip2d(*it_prev, *it);
             if (d < d_min)
               d_min = d;
           }
           it_prev = it;
         }
-        if (d_min < expand_dist)
-          d_min = 0;
-        else if (d_min > max_dist + expand_dist)
-          d_min = max_dist;
-        else
-          d_min -= expand_dist;
-        cm_hyst_[p] = (d_min - expand_dist) * 100.0 / max_dist;
+        d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
+        cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
       }
-      // const auto tnow = boost::chrono::high_resolution_clock::now();
-      // ROS_INFO("Hysteresis map generated (%0.3f sec.)",
-      //   boost::chrono::duration<float>(tnow - ts).count());
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      ROS_DEBUG("Hysteresis map generated (%0.4f sec.)",
+                boost::chrono::duration<float>(tnow - ts).count());
       publishCostmap();
     }
 
@@ -1778,12 +1790,10 @@ protected:
         const auto c = cm_[pos];
         if (c > 99)
           return -1;
-        if (hyst)
-        {
-          const Astar::Vec pos_rough(pos[0], pos[1], 0);
-          sum_hyst += cm_hyst_[pos_rough];
-        }
         sum += c;
+
+        if (hyst)
+          sum_hyst += cm_hyst_[pos];
       }
       const float distf = cache_page->second.getDistance();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
@@ -1838,11 +1848,9 @@ protected:
           if (c > 99)
             return -1;
           sum += c;
+
           if (hyst)
-          {
-            const Astar::Vec pos_rough(pos[0], pos[1], 0);
-            sum_hyst += cm_hyst_[pos_rough];
-          }
+            sum_hyst += cm_hyst_[pos];
         }
         const float distf = cache_page->second.getDistance();
         cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);

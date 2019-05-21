@@ -14,6 +14,8 @@
     <remap from="move_base_simple/goal" to="goal" />
     <param name="max_vel" value="0.1" />
     <param name="max_ang_vel" value="0.3" />
+    <param name="goal_tolerance_lin" value="0.025" />
+    <param name="sw_wait" value="0.2" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
     <param name="max_vel" value="0.1" />
@@ -36,11 +38,11 @@
 
     <param name="rotate_ang" value="0.2" />
 
-    <param name="goal_tolerance_dist" value="0.05" />
-    <param name="goal_tolerance_ang" value="0.05" />
+    <param name="goal_tolerance_dist" value="0.025" />
+    <param name="goal_tolerance_ang" value="0.025" />
     <param name="stop_tolerance_dist" value="0.02" />
     <param name="stop_tolerance_ang" value="0.02" />
-    <param name="no_position_control_dist" value="0.03" />
+    <param name="no_position_control_dist" value="0.01" />
   </node>
 
   <node pkg="map_server" type="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml" />

@@ -110,12 +110,12 @@ TEST(GridMetricConverter, Path)
         { 2, 3, 1 },
         { 3, 3, 2 }
       };
-  std::vector<CyclicVecInt<3, 2>> path_grid;
+  std::vector<CyclicVecFloat<3, 2>> path_grid;
   for (const auto& g : grid)
-    path_grid.push_back(CyclicVecInt<3, 2>(g[0], g[1], g[2]));
+    path_grid.push_back(CyclicVecFloat<3, 2>(g[0], g[1], g[2]));
 
   nav_msgs::Path path;
-  grid_metric_converter::grid2MetricPath(map_info, 10.0, path_grid, path, path_grid[0]);
+  grid_metric_converter::grid2MetricPath(map_info, path_grid, path);
   size_t ref = 0;
   for (const geometry_msgs::PoseStamped& p : path.poses)
   {

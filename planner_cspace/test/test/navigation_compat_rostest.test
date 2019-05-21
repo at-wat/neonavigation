@@ -19,6 +19,8 @@
     <remap from="~/costmap_update" to="/costmap_3d/costmap_update" />
     <param name="max_vel" value="0.1" />
     <param name="max_ang_vel" value="0.3" />
+    <param name="goal_tolerance_lin" value="0.025" />
+    <param name="sw_wait" value="0.2" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
     <remap from="~/cmd_vel" to="/cmd_vel" />
