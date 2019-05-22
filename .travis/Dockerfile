@@ -33,7 +33,8 @@ RUN pip install gh-pr-comment catkin_lint
 RUN rosdep update \
   && mkdir -p /catkin_ws/src \
   && cd /catkin_ws/src \
-  && bash -c ". /opt/ros/${ROS_DISTRO}/setup.bash && catkin_init_workspace && cd .. && catkin_make"
+  && . /opt/ros/${ROS_DISTRO}/setup.sh \
+  && catkin_init_workspace
 
 COPY --from=cloner /repos-manifests/src /catkin_ws/src
 

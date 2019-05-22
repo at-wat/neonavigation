@@ -41,11 +41,11 @@ add_executable(planner_3d
   src/path_interpolator.cpp
   src/rotation_cache.cpp
 )
-target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
 
 add_executable(planner_2dof_serial_joints src/planner_2dof_serial_joints.cpp)
-target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(planner_2dof_serial_joints ${catkin_EXPORTED_TARGETS})
 
 add_executable(dummy_robot src/dummy_robot.cpp)
