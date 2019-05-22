@@ -3,10 +3,6 @@
 set -o errexit
 
 source /opt/ros/${ROS_DISTRO}/setup.bash
-source /catkin_ws/devel/setup.bash
-
-set -o verbose
-
 cd /catkin_ws
 
 build_number="[[#${TRAVIS_BUILD_NUMBER}](${TRAVIS_BUILD_WEB_URL})]"
