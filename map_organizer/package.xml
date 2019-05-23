@@ -18,7 +18,7 @@
   <depend>geometry_msgs</depend>
   <depend>map_server</depend>
   <depend>nav_msgs</depend>
-  <depend>pcl_ros</depend>
+  <depend>pcl_conversions</depend>
   <depend>sensor_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
@@ -29,4 +29,7 @@
 
   <depend>cmake_modules</depend>
   <depend>eigen</depend>
+
+  <build_depend>libpcl-all-dev</build_depend>
+  <exec_depend>libpcl-all</exec_depend>
 </package>

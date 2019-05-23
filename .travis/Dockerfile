@@ -1,3 +1,5 @@
+ARG ROS_DISTRO=kinetic
+
 # ========================================
 FROM alpine:latest as cloner
 
@@ -14,7 +16,7 @@ RUN mkdir -p /repos-manifests/src \
   && find . -name package.xml | xargs -ISRC cp --parents SRC /repos-manifests/
 
 # ========================================
-FROM ros:lunar-ros-core
+FROM ros:${ROS_DISTRO}-ros-core
 
 RUN apt-get -qq update \
   && apt-get upgrade -y \
@@ -26,11 +28,13 @@ RUN apt-get -qq update \
     wget \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+RUN pip install gh-pr-comment catkin_lint
 
 RUN rosdep update \
   && mkdir -p /catkin_ws/src \
   && cd /catkin_ws/src \
-  && bash -c ". /opt/ros/${ROS_DISTRO}/setup.bash && catkin_init_workspace && cd .. && catkin_make"
+  && . /opt/ros/${ROS_DISTRO}/setup.sh \
+  && catkin_init_workspace
 
 COPY --from=cloner /repos-manifests/src /catkin_ws/src
 
