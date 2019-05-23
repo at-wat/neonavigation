@@ -33,11 +33,7 @@
 #include <ros/ros.h>
 #include <vector>
 
-#if ROS_DISTRO_indigo
-#include <XmlRpcException.h>
-#else
 #include <xmlrpcpp/XmlRpcException.h>
-#endif
 
 namespace costmap_cspace
 {

@@ -37,11 +37,7 @@
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 
-#if ROS_DISTRO_indigo
-#include <XmlRpcValue.h>
-#else
 #include <xmlrpcpp/XmlRpcValue.h>
-#endif
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 #include <costmap_cspace/cspace3_cache.h>

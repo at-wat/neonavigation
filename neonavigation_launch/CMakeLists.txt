@@ -1,19 +1,12 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(neonavigation_launch)
 
-find_package(catkin REQUIRED COMPONENTS
-)
-
+find_package(catkin REQUIRED)
 catkin_package(
 	CATKIN_DEPENDS
 )
 
-install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-)
-install(DIRECTORY config/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
-)
-install(DIRECTORY map/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/map
+
+install(DIRECTORY launch config map
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
