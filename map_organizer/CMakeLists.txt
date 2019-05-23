@@ -33,7 +33,7 @@ catkin_package(
 )
 
 
-add_compile_options(-std=c++11 -Wno-deprecated-declarations)
+add_compile_options(-std=c++11)
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 

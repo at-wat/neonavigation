@@ -24,7 +24,7 @@ catkin_package(
 )
 
 
-add_compile_options(-std=c++11 -Wno-deprecated-declarations)
+add_compile_options(-std=c++11)
 include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 
 
