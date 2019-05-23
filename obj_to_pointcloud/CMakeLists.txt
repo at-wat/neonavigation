@@ -6,7 +6,7 @@ set(CATKIN_DEPENDS
 
   eigen_conversions
   geometry_msgs
-  pcl_ros
+  pcl_conversions
   sensor_msgs
 
   neonavigation_common

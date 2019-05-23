@@ -7,7 +7,7 @@ set(CATKIN_DEPENDS
 
     diagnostic_updater
     geometry_msgs
-    pcl_ros
+    pcl_conversions
     sensor_msgs
     std_msgs
     tf2_ros

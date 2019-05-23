@@ -9,7 +9,7 @@ set(CATKIN_DEPENDS
   geometry_msgs
   map_server
   nav_msgs
-  pcl_ros
+  pcl_conversions
   sensor_msgs
   tf2
   tf2_geometry_msgs
