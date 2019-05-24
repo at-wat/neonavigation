@@ -1213,7 +1213,7 @@ public:
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
-    pnh_.param("sw_wait", sw_wait_, 0.0f);
+    pnh_.param("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
 
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
