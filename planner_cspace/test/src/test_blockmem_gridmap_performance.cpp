@@ -153,11 +153,11 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   std::cout << "Array[][][]: " << boost::chrono::duration<float>(te1 - ts1).count() << std::endl;
 
   // Check result.
-  for (i[0] = 0x200; i[0] < size[0] - 0x200; ++i[0])
+  for (i[0] = pad[0]; i[0] < size[0] - pad[0]; ++i[0])
   {
-    for (i[1] = 0x200; i[1] < size[1] - 0x200; ++i[1])
+    for (i[1] = pad[1]; i[1] < size[1] - pad[1]; ++i[1])
     {
-      for (i[2] = 0x10; i[2] < size[2] - 0x10; ++i[2])
+      for (i[2] = pad[2]; i[2] < size[2] - pad[2]; ++i[2])
       {
         ASSERT_EQ(gm_ret[i], array_ret[i[2]][i[1]][i[0]]);
       }
