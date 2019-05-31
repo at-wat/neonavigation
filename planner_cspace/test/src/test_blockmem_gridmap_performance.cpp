@@ -52,8 +52,11 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   using Vec = CyclicVecInt<3, 2>;
   using ThreeDimArrayFloat = std::array<std::array<std::array<float, size[0]>, size[1]>, size[2]>;
 
-  ThreeDimArrayFloat array;
-  ThreeDimArrayFloat array_ret;
+  // Allocate raw grid in heap memory to avoid stack overflow
+  std::shared_ptr<ThreeDimArrayFloat> array_ptr(new ThreeDimArrayFloat);
+  std::shared_ptr<ThreeDimArrayFloat> array_ret_ptr(new ThreeDimArrayFloat);
+  ThreeDimArrayFloat& array = *array_ptr;
+  ThreeDimArrayFloat& array_ret = *array_ret_ptr;
 
   gm.reset(Vec(size[0], size[1], size[2]));
   gm_ret.reset(Vec(size[0], size[1], size[2]));
