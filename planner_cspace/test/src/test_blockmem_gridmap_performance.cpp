@@ -85,11 +85,13 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
       }
     }
   }
+  boost::chrono::duration<float> d0;
+  boost::chrono::duration<float> d1;
 
-  // Performance test for BlockMemGridmap.
-  const auto ts0 = boost::chrono::high_resolution_clock::now();
   for (int r = 0; r < repeat; ++r)
   {
+    // Performance test for BlockMemGridmap.
+    const auto ts0 = boost::chrono::high_resolution_clock::now();
     for (i[0] = pad[0]; i[0] < size[0] - pad[0]; ++i[0])
     {
       for (i[1] = pad[1]; i[1] < size[1] - pad[1]; ++i[1])
@@ -114,15 +116,12 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
       }
       std::cerr << ".";
     }
-  }
-  std::cerr << std::endl;
-  const auto te0 = boost::chrono::high_resolution_clock::now();
-  std::cout << "BlockMemGridmap<3, 2>: " << boost::chrono::duration<float>(te0 - ts0).count() << std::endl;
+    std::cerr << std::endl;
+    const auto te0 = boost::chrono::high_resolution_clock::now();
+    d0 += boost::chrono::duration<float>(te0 - ts0);
 
-  // Performance test for 3D Array.
-  const auto ts1 = boost::chrono::high_resolution_clock::now();
-  for (int r = 0; r < repeat; ++r)
-  {
+    // Performance test for 3D Array.
+    const auto ts1 = boost::chrono::high_resolution_clock::now();
     for (i[0] = pad[0]; i[0] < size[0] - pad[0]; ++i[0])
     {
       for (i[1] = pad[1]; i[1] < size[1] - pad[1]; ++i[1])
@@ -147,10 +146,12 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
       }
       std::cerr << ".";
     }
+    std::cerr << std::endl;
+    const auto te1 = boost::chrono::high_resolution_clock::now();
+    d1 += boost::chrono::duration<float>(te1 - ts1);
   }
-  std::cerr << std::endl;
-  const auto te1 = boost::chrono::high_resolution_clock::now();
-  std::cout << "Array[][][]: " << boost::chrono::duration<float>(te1 - ts1).count() << std::endl;
+  std::cout << "BlockMemGridmap<3, 2>: " << d0.count() << std::endl;
+  std::cout << "Array[][][]: " << d1.count() << std::endl;
 
   // Check result.
   for (i[0] = pad[0]; i[0] < size[0] - pad[0]; ++i[0])
@@ -165,7 +166,8 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   }
 
   // Compare performance.
-  ASSERT_LT(te0 - ts0, te1 - ts1);
+  std::cout << "Improvement ratio: " << d1.count() / d0.count() << std::endl;
+  ASSERT_LT(d0, d1);
 }
 
 int main(int argc, char** argv)
