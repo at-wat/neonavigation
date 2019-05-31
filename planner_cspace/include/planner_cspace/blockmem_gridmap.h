@@ -46,8 +46,8 @@ private:
   static_assert(isPowOf2(BLOCK_WIDTH), "BLOCK_WIDTH must be power of 2");
 
 protected:
-  const size_t block_bit_;
-  const size_t block_bit_mask_;
+  constexpr static size_t block_bit_ = std::lround(std::log2(BLOCK_WIDTH));
+  constexpr static size_t block_bit_mask_ = (1 << block_bit_) - 1;
 
   std::unique_ptr<T[]> c_;
   CyclicVecInt<DIM, NONCYCLIC> size_;
@@ -64,9 +64,10 @@ protected:
     baddr = 0;
     for (int i = 0; i < NONCYCLIC; i++)
     {
-      addr = (addr << block_bit_) + (pos[i] & block_bit_mask_);
+      const int p = pos[i];
+      addr = (addr << block_bit_) + (p & block_bit_mask_);
       baddr *= block_size_[i];
-      baddr += pos[i] >> block_bit_;
+      baddr += p >> block_bit_;
     }
     for (int i = NONCYCLIC; i < DIM; i++)
     {
@@ -146,9 +147,7 @@ public:
     reset(size_);
   }
   BlockMemGridmap()
-    : block_bit_(std::lround(std::log2(BLOCK_WIDTH)))
-    , block_bit_mask_((1 << block_bit_) - 1)
-    , dummy_(std::numeric_limits<T>::max())
+    : dummy_(std::numeric_limits<T>::max())
   {
   }
   T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
