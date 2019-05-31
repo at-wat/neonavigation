@@ -109,6 +109,7 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
               {
                 const Vec ij = i + j;
                 gm_ret[i] += gm[ij];
+                gm[ij]++;
               }
             }
           }
@@ -139,6 +140,7 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
               {
                 const Vec ij = i + j;
                 array_ret[i[2]][i[1]][i[0]] += array[ij[2]][ij[1]][ij[0]];
+                array[ij[2]][ij[1]][ij[0]]++;
               }
             }
           }
