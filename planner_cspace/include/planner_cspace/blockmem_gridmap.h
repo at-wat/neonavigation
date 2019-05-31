@@ -64,10 +64,9 @@ protected:
     baddr = 0;
     for (int i = 0; i < NONCYCLIC; i++)
     {
-      const int p = pos[i];
-      addr = (addr << block_bit_) + (p & block_bit_mask_);
+      addr = (addr << block_bit_) + (pos[i] & block_bit_mask_);
       baddr *= block_size_[i];
-      baddr += p >> block_bit_;
+      baddr += pos[i] >> block_bit_;
     }
     for (int i = NONCYCLIC; i < DIM; i++)
     {
