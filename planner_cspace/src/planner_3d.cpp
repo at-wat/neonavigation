@@ -732,7 +732,7 @@ protected:
         sensor_msgs::PointCloud pc;
         pc.header = map_header_;
         pc.header.stamp = now;
-        Astar::Vec p;
+        Astar::Vec p(0, 0, 0);
         for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
         {
           for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
