@@ -41,7 +41,7 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
       };
   constexpr int pad[3] =
       {
-        0x200, 0x200, 0x10
+        0x204, 0x204, 0x10
       };
   constexpr int range = 0x10;
   constexpr int repeat = 4;
