@@ -80,6 +80,11 @@ public:
     return cache_[i].cend();
   }
 
+  inline const CyclicVecInt<3, 2>& getMaxRange() const
+  {
+    return max_range_;
+  }
+
   void reset(
       const float linear_resolution,
       const float angular_resolution,
@@ -89,6 +94,7 @@ public:
 protected:
   std::vector<Cache> cache_;
   int page_size_;
+  CyclicVecInt<3, 2> max_range_;
 };
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H

@@ -35,7 +35,7 @@
 
 #include <planner_cspace/cyclic_vec.h>
 
-template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20>
+template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20, bool ENABLE_VALIDATION = false>
 class BlockMemGridmap
 {
 private:
@@ -79,7 +79,7 @@ public:
   std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> getAddressor() const
   {
     return std::bind(
-        &BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>::block_addr,
+        &BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH, ENABLE_VALIDATION>::block_addr,
         this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
   }
@@ -141,30 +141,39 @@ public:
     size_ = size;
   }
   explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC>& size_)
+    : BlockMemGridmap()
   {
     reset(size_);
   }
   BlockMemGridmap()
+    : block_bit_(std::lround(std::log2(BLOCK_WIDTH)))
+    , block_bit_mask_((1 << block_bit_) - 1)
+    , dummy_(std::numeric_limits<T>::max())
   {
   }
   T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
-    if (addr >= block_ser_size_ || baddr >= block_num_)
+    const size_t a = baddr * block_ser_size_ + addr;
+    if (ENABLE_VALIDATION)
     {
-      dummy_ = std::numeric_limits<T>::max();
-      return dummy_;
+      if (a >= ser_size_)
+        return dummy_;
     }
-    return c_[baddr * block_ser_size_ + addr];
+    return c_[a];
   }
   const T operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) const
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
-    if (addr >= block_ser_size_ || baddr >= block_num_)
-      return std::numeric_limits<T>::max();
-    return c_[baddr * block_ser_size_ + addr];
+    const size_t a = baddr * block_ser_size_ + addr;
+    if (ENABLE_VALIDATION)
+    {
+      if (a >= ser_size_)
+        return std::numeric_limits<T>::max();
+    }
+    return c_[a];
   }
   bool validate(const CyclicVecInt<DIM, NONCYCLIC>& pos, const int tolerance = 0) const
   {
@@ -180,8 +189,8 @@ public:
     }
     return true;
   }
-  const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& operator=(
-      const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH>& gm)
+  const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH, ENABLE_VALIDATION>& operator=(
+      const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH, ENABLE_VALIDATION>& gm)
   {
     reset(gm.size_);
     memcpy(c_.get(), gm.c_.get(), ser_size_);
