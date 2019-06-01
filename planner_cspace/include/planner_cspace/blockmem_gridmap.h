@@ -30,6 +30,7 @@
 #ifndef PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
 #define PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
 
+#include <bitset>
 #include <limits>
 
 #include <planner_cspace/cyclic_vec.h>
@@ -37,7 +38,17 @@
 template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20>
 class BlockMemGridmap
 {
+private:
+  static constexpr bool isPowOf2(const int v)
+  {
+    return v && ((v & (v - 1)) == 0);
+  }
+  static_assert(isPowOf2(BLOCK_WIDTH), "BLOCK_WIDTH must be power of 2");
+
 protected:
+  const size_t block_bit_;
+  const size_t block_bit_mask_;
+
   std::unique_ptr<T[]> c_;
   CyclicVecInt<DIM, NONCYCLIC> size_;
   CyclicVecInt<DIM, NONCYCLIC> block_size_;
@@ -46,17 +57,16 @@ protected:
   size_t block_num_;
   T dummy_;
 
-  void block_addr(
+  inline void block_addr(
       const CyclicVecInt<DIM, NONCYCLIC>& pos, size_t& baddr, size_t& addr) const
   {
     addr = 0;
     baddr = 0;
     for (int i = 0; i < NONCYCLIC; i++)
     {
-      addr *= BLOCK_WIDTH;
-      addr += pos[i] % BLOCK_WIDTH;
+      addr = (addr << block_bit_) + (pos[i] & block_bit_mask_);
       baddr *= block_size_[i];
-      baddr += pos[i] / BLOCK_WIDTH;
+      baddr += pos[i] >> block_bit_;
     }
     for (int i = NONCYCLIC; i < DIM; i++)
     {
@@ -98,7 +108,7 @@ public:
   }
   void reset(const CyclicVecInt<DIM, NONCYCLIC>& size)
   {
-    auto size_tmp = size;
+    CyclicVecInt<DIM, NONCYCLIC> size_tmp = size;
 
     for (int i = 0; i < NONCYCLIC; i++)
     {
