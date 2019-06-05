@@ -106,6 +106,7 @@ protected:
   geometry_msgs::Twist twist_;
   ros::Time last_cloud_stamp_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
+  bool cloud_clear_;
   double hz_;
   double timeout_;
   double disable_timeout_;
@@ -144,6 +145,7 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
     , cloud_(new pcl::PointCloud<pcl::PointXYZ>)
+    , cloud_clear_(false)
     , last_disable_cmd_(0)
     , watchdog_stop_(false)
     , has_cloud_(false)
@@ -309,7 +311,8 @@ protected:
 
     if (r_lim_current < 1.0)
       hold_off_ = now + hold_;
-    cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+
+    cloud_clear_ = true;
 
     diag_updater_.force_update();
   }
@@ -335,10 +338,10 @@ protected:
     {
       if (allow_empty_cloud_)
       {
-        return 60.0;
+        return 1.0;
       }
       ROS_WARN_THROTTLE(1.0, "safety_limiter: Empty pointcloud passed.");
-      return DBL_MAX;
+      return 0.0;
     }
 
     pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
@@ -621,6 +624,11 @@ protected:
       return;
     }
 
+    if (cloud_clear_)
+    {
+      cloud_clear_ = false;
+      cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+    }
     *cloud_ += *pc;
     last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
