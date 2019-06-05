@@ -121,14 +121,14 @@ TEST_F(SafetyLimiterTest, Timeouts)
 
   ros::Rate wait(10.0);
 
-  for (size_t with_cloud = 0; with_cloud < 3; ++with_cloud)
+  for (int with_cloud = 0; with_cloud < 3; ++with_cloud)
   {
-    for (size_t with_watchdog_reset = 0; with_watchdog_reset < 2; ++with_watchdog_reset)
+    for (int with_watchdog_reset = 0; with_watchdog_reset < 2; ++with_watchdog_reset)
     {
       ros::Duration(0.3).sleep();
 
       cmd_vel.reset();
-      for (size_t i = 0; i < 20; ++i)
+      for (int i = 0; i < 20; ++i)
       {
         ASSERT_TRUE(ros::ok());
 
@@ -182,7 +182,7 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
   ros::Rate wait(60.0);
 
   // Skip initial state
-  for (size_t i = 0; i < 30 && ros::ok(); ++i)
+  for (int i = 0; i < 30 && ros::ok(); ++i)
   {
     publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
     publishWatchdogReset();
@@ -207,7 +207,7 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
   };
   ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-  for (size_t i = 0; i < 60 * 6 && ros::ok() && !failed; ++i)
+  for (int i = 0; i < 60 * 6 && ros::ok() && !failed; ++i)
   {
     // enable check after two cycles of safety_limiter
     if (i > 8)
@@ -234,7 +234,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
   ros::Rate wait(20.0);
 
   // Skip initial state
-  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && ros::ok(); ++i)
   {
     publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
     publishWatchdogReset();
@@ -262,7 +262,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    for (int i = 0; i < 10 && ros::ok() && !failed; ++i)
     {
       if (i > 5)
         en = true;
@@ -283,7 +283,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
   ros::Rate wait(20.0);
 
   // Skip initial state
-  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && ros::ok(); ++i)
   {
     publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", ros::Time::now());
     publishWatchdogReset();
@@ -311,7 +311,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    for (int i = 0; i < 10 && ros::ok() && !failed; ++i)
     {
       if (i > 5)
         en = true;
@@ -332,7 +332,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
   ros::Rate wait(20.0);
 
   // Skip initial state
-  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && ros::ok(); ++i)
   {
     publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", ros::Time::now());
     publishWatchdogReset();
@@ -365,7 +365,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    for (int i = 0; i < 10 && ros::ok() && !failed; ++i)
     {
       if (i > 5)
         en = true;
@@ -386,7 +386,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
   ros::Rate wait(20.0);
 
   // Skip initial state
-  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && ros::ok(); ++i)
   {
     publishSinglePointPointcloud2(-1, -1, 0, "base_link", ros::Time::now());
     publishWatchdogReset();
@@ -414,7 +414,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    for (int i = 0; i < 10 && ros::ok() && !failed; ++i)
     {
       if (i > 5)
         en = true;
@@ -435,7 +435,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
   ros::Rate wait(20.0);
 
   // Skip initial state
-  for (size_t i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && ros::ok(); ++i)
   {
     publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", ros::Time::now());
     publishWatchdogReset();
@@ -468,7 +468,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-    for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+    for (int i = 0; i < 10 && ros::ok() && !failed; ++i)
     {
       if (i > 5)
         en = true;
@@ -506,7 +506,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
       };
       ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-      for (size_t i = 0; i < 10 && ros::ok() && !failed; ++i)
+      for (int i = 0; i < 10 && ros::ok() && !failed; ++i)
       {
         if (i > 5)
           en = true;
@@ -542,7 +542,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-    for (size_t i = 0; i < lround(10.0 / dt) && ros::ok() && !stop; ++i)
+    for (int i = 0; i < lround(10.0 / dt) && ros::ok() && !stop; ++i)
     {
       publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
