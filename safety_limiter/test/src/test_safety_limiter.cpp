@@ -179,7 +179,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
 
 TEST_F(SafetyLimiterTest, CloudBuffering)
 {
-  ros::Rate wait(40.0);
+  ros::Rate wait(60.0);
 
   // Skip initial state
   for (size_t i = 0; i < 30 && ros::ok(); ++i)
@@ -207,12 +207,12 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
   };
   ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-  for (size_t i = 0; i < 40 * 6 && ros::ok() && !failed; ++i)
+  for (size_t i = 0; i < 60 * 6 && ros::ok() && !failed; ++i)
   {
     // enable check after two cycles of safety_limiter
     if (i > 8)
       en = true;
-    // safety_limiter: 10 hz, cloud publish: 40 hz
+    // safety_limiter: 15 hz, cloud publish: 60 hz
     // safety_limiter must check 4 buffered clouds
     // 1/3 of pointclouds have collision point
     if ((i % 3) == 0)
@@ -418,7 +418,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-1, -1, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(-1, -1.1, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist((i % 3) * 0.01, vel);
 
