@@ -523,6 +523,40 @@ TEST_F(SafetyLimiterTest, NoCollision)
   }
 }
 
+TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
+{
+  const float dt = 0.05;
+  ros::Rate wait(1.0 / dt);
+
+  for (float vel = 0.5; vel < 1.0; vel += 0.2)
+  {
+    float x = 0;
+    bool stop = false;
+    const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
+        [dt, &x, &stop](const geometry_msgs::Twist::ConstPtr& msg) -> void
+    {
+      if (std::abs(msg->linear.x) < 1e-4 && x > 0.5)
+        stop = true;
+
+      x += dt * msg->linear.x;
+    };
+    ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
+
+    for (size_t i = 0; i < lround(10.0 / dt) && ros::ok() && !stop; ++i)
+    {
+      publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
+      publishWatchdogReset();
+      publishTwist(vel, 0.0);
+
+      wait.sleep();
+      ros::spinOnce();
+    }
+    EXPECT_GT(1.01, x);
+    EXPECT_LT(0.95, x);
+    sub_cmd_vel.shutdown();
+  }
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
