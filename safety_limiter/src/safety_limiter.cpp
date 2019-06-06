@@ -247,7 +247,7 @@ public:
       v[1] = static_cast<double>(footprint_xml[i][1]);
       footprint_p.v.push_back(v);
 
-      auto dist = hypotf(v[0], v[2]);
+      const float dist = hypotf(v[0], v[1]);
       if (dist > footprint_radius_)
         footprint_radius_ = dist;
     }
