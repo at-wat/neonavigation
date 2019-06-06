@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2018-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,85 +29,14 @@
 
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <std_msgs/Empty.h>
 
 #include <algorithm>
 #include <string>
 
 #include <gtest/gtest.h>
 
-namespace
-{
-void GenerateSinglePointPointcloud2(
-    sensor_msgs::PointCloud2& cloud,
-    const float x,
-    const float y,
-    const float z)
-{
-  cloud.height = 1;
-  cloud.width = 1;
-  cloud.is_bigendian = false;
-  cloud.is_dense = false;
-  sensor_msgs::PointCloud2Modifier modifier(cloud);
-  modifier.setPointCloud2FieldsByString(1, "xyz");
-  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
-  modifier.resize(1);
-  *iter_x = x;
-  *iter_y = y;
-  *iter_z = z;
-}
-}  // namespace
-
-class SafetyLimiterTest : public ::testing::Test
-{
-protected:
-  ros::NodeHandle nh_;
-  ros::Publisher pub_cmd_vel_;
-  ros::Publisher pub_cloud_;
-  ros::Publisher pub_watchdog_;
-
-public:
-  SafetyLimiterTest()
-    : nh_()
-  {
-    pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_in", 1);
-    pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 1);
-    pub_watchdog_ = nh_.advertise<std_msgs::Empty>("watchdog_reset", 1);
-  }
-  void publishWatchdogReset()
-  {
-    std_msgs::Empty watchdog_reset;
-    pub_watchdog_.publish(watchdog_reset);
-  }
-  void publishSinglePointPointcloud2(
-      const float x,
-      const float y,
-      const float z,
-      const std::string frame_id,
-      const ros::Time stamp)
-  {
-    sensor_msgs::PointCloud2 cloud;
-    cloud.header.frame_id = frame_id;
-    cloud.header.stamp = stamp;
-    GenerateSinglePointPointcloud2(cloud, x, y, z);
-    pub_cloud_.publish(cloud);
-  }
-  void publishTwist(
-      const float lin,
-      const float ang)
-  {
-    geometry_msgs::Twist cmd_vel_out;
-    cmd_vel_out.linear.x = lin;
-    cmd_vel_out.angular.z = ang;
-    pub_cmd_vel_.publish(cmd_vel_out);
-  }
-};
+#include <test_safety_limiter_base.h>
 
 TEST_F(SafetyLimiterTest, Timeouts)
 {
