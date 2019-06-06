@@ -490,10 +490,12 @@ protected:
     }
     float& operator[](const int& i)
     {
+      ROS_ASSERT(i < 2);
       return c[i];
     }
     const float& operator[](const int& i) const
     {
+      ROS_ASSERT(i < 2);
       return c[i];
     }
     vec operator-(const vec& a) const
