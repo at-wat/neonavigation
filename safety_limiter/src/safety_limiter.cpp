@@ -442,18 +442,25 @@ protected:
     if (!has_collision)
       return 1.0;
 
-    const float vel_lim_raw = std::sqrt(std::abs(2 * acc_[0] * d_col));
-    const float avel_lim_raw = std::sqrt(std::abs(2 * acc_[1] * yaw_col));
+    // delay compensation:
+    //   d_compensated = d - delay * sqrt(2 * acc * |d_compensated|)
+    //   d_compensated = d + acc * delay^2 - sqrt((acc * delay^2)^2 + 2 * d * acc * delay^2)
 
     const float delay = 1.0 * (1.0 / hz_) + dt_;
+    const float acc_dtsq[2] =
+        {
+          static_cast<float>(acc_[0] * std::pow(delay, 2)),
+          static_cast<float>(acc_[1] * std::pow(delay, 2)),
+        };
+
     d_col = std::max<float>(
         0.0,
-        std::abs(d_col) - d_margin_ -
-            std::min<float>(vel_lim_raw, std::abs(twist_.linear.x)) * delay);
+        std::abs(d_col) - d_margin_ + acc_dtsq[0] -
+            std::sqrt(std::pow(acc_dtsq[0], 2) + 2 * acc_dtsq[0] * std::abs(d_col)));
     yaw_col = std::max<float>(
         0.0,
-        std::abs(yaw_col) - yaw_margin_ -
-            std::min<float>(avel_lim_raw, std::abs(twist_.angular.z)) * delay);
+        std::abs(yaw_col) - yaw_margin_ + acc_dtsq[1] -
+            std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
 
     float d_r =
         (std::sqrt(std::abs(2 * acc_[0] * d_col)) + EPSILON) / std::abs(twist_.linear.x);
@@ -467,7 +474,8 @@ protected:
     return std::min(d_r, yaw_r);
   }
 
-  geometry_msgs::Twist limit(const geometry_msgs::Twist& in)
+  geometry_msgs::Twist
+  limit(const geometry_msgs::Twist& in)
   {
     auto out = in;
     if (r_lim_ < 1.0 - EPSILON)
