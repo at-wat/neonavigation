@@ -443,8 +443,8 @@ protected:
       return 1.0;
 
     // delay compensation:
-    //   d_compensated = d - delay * sqrt(2 * acc * |d_compensated|)
-    //   d_compensated = d + acc * delay^2 - sqrt((acc * delay^2)^2 + 2 * d * acc * delay^2)
+    //   solve for d_compensated: d_compensated = d - delay * sqrt(2 * acc * d_compensated)
+    //     d_compensated = d + acc * delay^2 - sqrt((acc * delay^2)^2 + 2 * d * acc * delay^2)
 
     const float delay = 1.0 * (1.0 / hz_) + dt_;
     const float acc_dtsq[2] =
