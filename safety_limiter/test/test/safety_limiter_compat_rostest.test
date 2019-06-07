@@ -2,7 +2,7 @@
 <launch>
   <param name="neonavigation_compatible" value="0" />
 
-  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="80.0">
+  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="90.0">
     <remap from="cmd_vel_in" to="/safety_limiter/cmd_vel_in" />
     <remap from="cloud" to="/safety_limiter/cloud" />
     <remap from="watchdog_reset" to="/safety_limiter/watchdog_reset" />
