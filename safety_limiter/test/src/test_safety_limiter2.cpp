@@ -43,9 +43,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
   const float dt = 0.05;
   ros::Rate wait(1.0 / dt);
 
-  const float velocities[] = {
-    -0.8, -0.4, 0.4, 0.8
-  };
+  const float velocities[] =
+      {
+        -0.8, -0.4, 0.4, 0.8
+      };
   for (const float vel : velocities)
   {
     float x = 0;
