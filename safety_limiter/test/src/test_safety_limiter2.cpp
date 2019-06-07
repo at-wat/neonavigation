@@ -43,7 +43,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
   const float dt = 0.05;
   ros::Rate wait(1.0 / dt);
 
-  for (float vel = 0.5; vel < 1.0; vel += 0.2)
+  const float velocities[] = {
+    -0.8, -0.4, 0.4, 0.8
+  };
+  for (const float vel : velocities)
   {
     float x = 0;
     bool stop = false;
@@ -59,7 +62,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 
     for (int i = 0; i < lround(10.0 / dt) && ros::ok() && !stop; ++i)
     {
-      publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
+      if (vel > 0)
+        publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
+      else
+        publishSinglePointPointcloud2(-3.0 - x, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
 
@@ -67,8 +73,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
       ros::spinOnce();
     }
     // margin is set to 0.2
-    EXPECT_GT(0.81, x);
-    EXPECT_LT(0.75, x);
+    if (vel > 0)
+    {
+      EXPECT_GT(0.81, x);
+      EXPECT_LT(0.75, x);
+    }
+    else
+    {
+      EXPECT_LT(-0.81, x);
+      EXPECT_GT(-0.75, x);
+    }
     sub_cmd_vel.shutdown();
   }
 }
