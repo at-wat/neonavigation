@@ -2,7 +2,7 @@
 <launch>
   <param name="neonavigation_compatible" value="0" />
 
-  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="60.0">
+  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="80.0">
     <remap from="cmd_vel_in" to="/safety_limiter/cmd_vel_in" />
     <remap from="cloud" to="/safety_limiter/cloud" />
     <remap from="watchdog_reset" to="/safety_limiter/watchdog_reset" />
@@ -14,7 +14,7 @@
     <param name="allow_empty_cloud" value="false" />
     <param name="watchdog_interval" value="0.2" />
     <param name="cloud_timeout" value="0.2" />
-    <param name="hz" value="10.0" />
+    <param name="freq" value="15.0" />
     <param name="dt" value="0.01" />
     <param name="lin_acc" value="1.0" />
     <param name="lin_vel" value="2.0" />
