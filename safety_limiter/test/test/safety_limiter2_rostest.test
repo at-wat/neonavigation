@@ -2,7 +2,7 @@
 <launch>
   <param name="neonavigation_compatible" value="1" />
 
-  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="80.0" />
+  <test test-name="test_safety_limiter2" pkg="safety_limiter" type="test_safety_limiter2" time-limit="30.0" />
 
   <node pkg="safety_limiter" type="safety_limiter" name="safety_limiter" output="screen">
     <rosparam param="footprint">[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]</rosparam>
@@ -15,7 +15,7 @@
     <param name="lin_vel" value="2.0" />
     <param name="ang_acc" value="1.57" />
     <param name="ang_vel" value="3.14" />
-    <param name="d_margin" value="0.0" />
+    <param name="d_margin" value="0.2" />
     <param name="yaw_margin" value="0.0" />
     <param name="z_range_min" value="-100.0" />
     <param name="z_range_max" value="100.0" />
