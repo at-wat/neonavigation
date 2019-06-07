@@ -454,7 +454,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
 
 TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
 {
-  const float dt = 0.05;
+  const float dt = 0.02;
   ros::Rate wait(1.0 / dt);
 
   const float velocities[] =
