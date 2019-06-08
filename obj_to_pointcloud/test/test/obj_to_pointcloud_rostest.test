@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <node pkg="obj_to_pointcloud" type="obj_to_pointcloud" name="obj_to_pointcloud" output="screen">
+    <param name="objs" value="$(find obj_to_pointcloud)/test/data/sample.obj" />
+    <param name="scale" value="0.001" />
+  </node>
+
+  <test test-name="test_obj_to_pointcloud" pkg="obj_to_pointcloud" type="test_obj_to_pointcloud" />
+</launch>
