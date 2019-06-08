@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+  <arg name="tmpfile_prefix" value="/tmp/tmp-map-organizer-988dbe-" />
+
+  <node pkg="map_organizer" type="tie_maps" name="tie_maps" output="screen">
+    <param name="map_files"
+      value="$(find map_organizer)/test/data/0.yaml,$(find map_organizer)/test/data/1.yaml" />
+    <param name="frame_id" value="map_ground" />
+  </node>
+
+  <node pkg="map_organizer" type="save_maps" name="save_maps" output="screen"
+    args="-f $(arg tmpfile_prefix)" />
+
+  <group ns="saved">
+    <node pkg="map_organizer" type="tie_maps" name="tie_maps2" output="screen" respawn="true">
+      <param name="map_files"
+        value="$(arg tmpfile_prefix)0.yaml,$(arg tmpfile_prefix)1.yaml" />
+      <param name="frame_id" value="map_ground" />
+    </node>
+  </group>
+
+  <node pkg="map_organizer" type="select_map" name="select_map" output="screen" />
+
+  <test test-name="test_map_organizer" pkg="map_organizer" type="test_map_organizer">
+    <param name="file_prefix" value="$(arg tmpfile_prefix)" />
+  </test>
+</launch>
