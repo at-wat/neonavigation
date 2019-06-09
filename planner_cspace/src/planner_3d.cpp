@@ -60,10 +60,9 @@
 
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/grid_astar.h>
+#include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/jump_detector.h>
-#include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
 
 #include <omp.h>
@@ -106,36 +105,10 @@ protected:
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<float> cost_estim_cache_;
 
-  Astar::Vecf euclid_cost_coef_;
-
-  float euclidCost(const Astar::Vec& v, const Astar::Vecf coef) const
-  {
-    Astar::Vec vc = v;
-    float cost = 0;
-    for (int i = 0; i < as_.getNoncyclic(); i++)
-    {
-      cost += powf(coef[i] * vc[i], 2.0);
-    }
-    cost = sqrtf(cost);
-    vc.cycle(cm_.size());
-    for (int i = as_.getNoncyclic(); i < as_.getDim(); i++)
-    {
-      cost += fabs(coef[i] * vc[i]);
-    }
-    return cost;
-  }
-  float euclidCost(const Astar::Vec& v) const
-  {
-    return euclidCost(v, euclid_cost_coef_);
-  }
-
-  RotationCache rot_cache_;
-  PathInterpolator path_interpolator_;
+  GridAstarModel3D::Ptr model_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
-  float max_vel_;
-  float max_ang_vel_;
   float freq_;
   float freq_min_;
   float search_range_;
@@ -169,7 +142,6 @@ protected:
   float remember_hit_odds_;
   float remember_miss_odds_;
   bool use_path_with_velocity_;
-  float min_curve_raduis_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -179,34 +151,18 @@ protected:
   int num_task_;
 
   // Cost weights
-  class CostCoeff
-  {
-  public:
-    float weight_decel_;
-    float weight_backward_;
-    float weight_ang_vel_;
-    float weight_costmap_;
-    float weight_costmap_turn_;
-    float weight_remembered_;
-    float weight_hysteresis_;
-    float in_place_turn_;
-    float hysteresis_max_dist_;
-    float hysteresis_expand_;
-  };
   CostCoeff cc_;
 
   geometry_msgs::PoseStamped start_;
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseStamped goal_raw_;
   Astar::Vecf ec_;
-  Astar::Vecf ec_rough_;
   Astar::Vecf resolution_;
   double goal_tolerance_lin_f_;
   double goal_tolerance_ang_f_;
   double goal_tolerance_ang_finish_;
   int goal_tolerance_lin_;
   int goal_tolerance_ang_;
-  float angle_resolution_aspect_;
 
   enum DebugMode
   {
@@ -230,9 +186,6 @@ protected:
 
   int cnt_stuck_;
 
-  MotionCache motion_cache_;
-  MotionCache motion_cache_linear_;
-
   diagnostic_updater::Updater diag_updater_;
   ros::Duration costmap_watchdog_;
   ros::Time last_costmap_;
@@ -249,7 +202,7 @@ protected:
   bool cbMakePlan(nav_msgs::GetPlan::Request& req,
                   nav_msgs::GetPlan::Response& res)
   {
-    if (!has_map_)
+    /*if (!has_map_)
       return false;
 
     Astar::Vec s, e;
@@ -281,7 +234,7 @@ protected:
         const bool hyst) -> float
     {
       const Astar::Vec d = e - s;
-      float cost = euclidCost(d, euclid_cost_coef);
+      float cost = model_->euclidCostRough(d);
 
       int sum = 0;
       const auto cache_page = motion_cache_linear_.find(0, d);
@@ -305,7 +258,7 @@ protected:
         const Astar::Vec& s, const Astar::Vec& e)
     {
       const Astar::Vec d = e - s;
-      const float cost = euclidCost(d, euclid_cost_coef);
+      const float cost = model_->euclidCostRough(d);
 
       return cost;
     };
@@ -345,7 +298,7 @@ protected:
     path.header.stamp = ros::Time::now();
 
     const std::list<Astar::Vecf> path_interpolated =
-        path_interpolator_.interpolate(path_grid, 0.5, 0.0);
+        model_->path_interpolator_.interpolate(path_grid, 0.5, 0.0);
     grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path);
 
     res.plan.header = map_header_;
@@ -354,7 +307,7 @@ protected:
     {
       res.plan.poses[i] = path.poses[i];
     }
-
+*/
     return true;
   }
 
@@ -426,7 +379,7 @@ protected:
         open.pop();
         if (center.p_raw_ > g[center.v_])
           continue;
-        if (center.p_raw_ - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
+        if (center.p_raw_ - ec_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
           continue;
         centers.push_back(center);
       }
@@ -490,7 +443,7 @@ protected:
                 ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
               }
             }
-            cost += euclidCost(d, ec_rough_);
+            cost += model_->euclidCostRough(d);
 
             const float gp = c + cost;
             if (gnext > gp)
@@ -505,7 +458,7 @@ protected:
         }
       }
     }
-    rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
+    rough_cost_max_ = g[s_rough] + ec_[0] * (range_ + local_range_);
   }
   bool searchAvailablePos(Astar::Vec& s, const int xy_range, const int angle_range,
                           const int cost_acceptable = 50, const int min_xy_range = 0)
@@ -535,7 +488,7 @@ protected:
           s2.cycleUnsigned(map_info_.angle);
           if (cm_[s2] >= cost_acceptable)
             continue;
-          const auto cost = euclidCost(d, ec_);
+          const auto cost = model_->euclidCost(d);
           if (cost < range_min)
           {
             range_min = cost;
@@ -629,7 +582,7 @@ protected:
     }
 
     e[2] = 0;
-    cost_estim_cache_[e] = -ec_rough_[0] * 0.5;  // Decrement to reduce calculation error
+    cost_estim_cache_[e] = -ec_[0] * 0.5;  // Decrement to reduce calculation error
     open.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
     fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
@@ -920,7 +873,7 @@ protected:
     }
     if (open.size() == 0)
     {
-      open.push(Astar::PriorityVec(-ec_rough_[0] * 0.5, -ec_rough_[0] * 0.5, e));
+      open.push(Astar::PriorityVec(-ec_[0] * 0.5, -ec_[0] * 0.5, e));
     }
     {
       Astar::Vec p;
@@ -961,63 +914,41 @@ protected:
 
     const float ec_val[3] =
         {
-          1.0f / max_vel_,
-          1.0f / max_vel_,
-          1.0f * cc_.weight_ang_vel_ / max_ang_vel_
+          1.0f / cc_.max_vel_,
+          1.0f / cc_.max_vel_,
+          1.0f * cc_.weight_ang_vel_ / cc_.max_ang_vel_
         };
     ec_ = Astar::Vecf(ec_val[0], ec_val[1], ec_val[2]);
-    ec_rough_ = Astar::Vecf(ec_val[0], ec_val[1], 0);
 
     if (map_info_.linear_resolution != msg->info.linear_resolution ||
         map_info_.angular_resolution != msg->info.angular_resolution)
     {
       map_info_ = msg->info;
-      Astar::Vec d;
+      resolution_[0] = 1.0 / map_info_.linear_resolution;
+      resolution_[1] = 1.0 / map_info_.linear_resolution;
+      resolution_[2] = 1.0 / map_info_.angular_resolution;
+
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
+      hist_ignore_range_ = lroundf(hist_ignore_range_f_ / map_info_.linear_resolution);
+      hist_ignore_range_max_ = lroundf(hist_ignore_range_max_f_ / map_info_.linear_resolution);
+      local_range_ = lroundf(local_range_f_ / map_info_.linear_resolution);
+      longcut_range_ = lroundf(longcut_range_f_ / map_info_.linear_resolution);
+      esc_range_ = lroundf(esc_range_f_ / map_info_.linear_resolution);
+      esc_angle_ = map_info_.angle / 8;
+      tolerance_range_ = lroundf(tolerance_range_f_ / map_info_.linear_resolution);
+      tolerance_angle_ = lroundf(tolerance_angle_f_ / map_info_.angular_resolution);
+      goal_tolerance_lin_ = lroundf(goal_tolerance_lin_f_ / map_info_.linear_resolution);
+      goal_tolerance_ang_ = lroundf(goal_tolerance_ang_f_ / map_info_.angular_resolution);
 
-      costmap_cspace_msgs::MapMetaData3D map_info_linear(map_info_);
-      map_info_linear.angle = 1;
-      motion_cache_linear_.reset(
-          map_info_linear.linear_resolution,
-          map_info_linear.angular_resolution,
-          range_,
-          cm_rough_.getAddressor());
-      motion_cache_.reset(
-          map_info_.linear_resolution,
-          map_info_.angular_resolution,
-          range_,
-          cm_.getAddressor());
+      model_.reset(
+          new GridAstarModel3D(
+              map_info_,
+              ec_, resolution_,
+              local_range_,
+              cost_estim_cache_, cm_, cm_hyst_, cm_rough_,
+              cc_, range_));
 
-      search_list_.clear();
-      for (d[0] = -range_; d[0] <= range_; d[0]++)
-      {
-        for (d[1] = -range_; d[1] <= range_; d[1]++)
-        {
-          if (d.sqlen() > range_ * range_)
-            continue;
-          for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
-          {
-            search_list_.push_back(d);
-          }
-        }
-      }
-      search_list_rough_.clear();
-      for (d[0] = -range_; d[0] <= range_; d[0]++)
-      {
-        for (d[1] = -range_; d[1] <= range_; d[1]++)
-        {
-          if (d.sqlen() > range_ * range_)
-            continue;
-          d[2] = 0;
-          search_list_rough_.push_back(d);
-        }
-      }
-      ROS_DEBUG("Search list updated (range: ang %d, lin %d) %d",
-                map_info_.angle, range_, static_cast<int>(search_list_.size()));
-
-      rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
-      path_interpolator_.reset(map_info_.angular_resolution, range_);
-      ROS_DEBUG("Rotation cache generated");
+      ROS_DEBUG("Search model updated");
     }
     else
     {
@@ -1025,21 +956,6 @@ protected:
     }
     map_header_ = msg->header;
     jump_.setMapFrame(map_header_.frame_id);
-
-    resolution_[0] = 1.0 / map_info_.linear_resolution;
-    resolution_[1] = 1.0 / map_info_.linear_resolution;
-    resolution_[2] = 1.0 / map_info_.angular_resolution;
-
-    hist_ignore_range_ = lroundf(hist_ignore_range_f_ / map_info_.linear_resolution);
-    hist_ignore_range_max_ = lroundf(hist_ignore_range_max_f_ / map_info_.linear_resolution);
-    local_range_ = lroundf(local_range_f_ / map_info_.linear_resolution);
-    longcut_range_ = lroundf(longcut_range_f_ / map_info_.linear_resolution);
-    esc_range_ = lroundf(esc_range_f_ / map_info_.linear_resolution);
-    esc_angle_ = map_info_.angle / 8;
-    tolerance_range_ = lroundf(tolerance_range_f_ / map_info_.linear_resolution);
-    tolerance_angle_ = lroundf(tolerance_angle_f_ / map_info_.angular_resolution);
-    goal_tolerance_lin_ = lroundf(goal_tolerance_lin_f_ / map_info_.linear_resolution);
-    goal_tolerance_ang_ = lroundf(goal_tolerance_ang_f_ / map_info_.angular_resolution);
 
     const int size[3] =
         {
@@ -1176,9 +1092,9 @@ public:
     pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
     costmap_watchdog_ = ros::Duration(costmap_watchdog);
 
-    pnh_.param("max_vel", max_vel_, 0.3f);
-    pnh_.param("max_ang_vel", max_ang_vel_, 0.6f);
-    pnh_.param("min_curve_raduis", min_curve_raduis_, 0.1f);
+    pnh_.param("max_vel", cc_.max_vel_, 0.3f);
+    pnh_.param("max_ang_vel", cc_.max_ang_vel_, 0.6f);
+    pnh_.param("min_curve_raduis", cc_.min_curve_raduis_, 0.1f);
 
     pnh_.param("weight_decel", cc_.weight_decel_, 50.0f);
     pnh_.param("weight_backward", cc_.weight_backward_, 0.9f);
@@ -1507,26 +1423,21 @@ protected:
     }
 
     const float range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
-    angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
+    cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
+
+    model_->enableHysteresis(hyst);
     std::list<Astar::Vec> path_grid;
     if (!as_.search(s, e, path_grid,
-                    std::bind(&Planner3dNode::cbCost,
-                              this, std::placeholders::_1, std::placeholders::_2,
-                              std::placeholders::_3, std::placeholders::_4, hyst),
-                    std::bind(&Planner3dNode::cbCostEstim,
-                              this, std::placeholders::_1, std::placeholders::_2),
-                    std::bind(&Planner3dNode::cbSearch,
-                              this, std::placeholders::_1,
-                              std::placeholders::_2, std::placeholders::_3),
+                    model_,
                     std::bind(&Planner3dNode::cbProgress,
                               this, std::placeholders::_1),
                     range_limit,
                     1.0f / freq_min_,
-                    true))
+                    find_best_))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
@@ -1534,8 +1445,9 @@ protected:
         return false;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Path found (%0.4f sec.)",
-              boost::chrono::duration<float>(tnow - ts).count());
+    ROS_DEBUG("Path found (%0.4f sec., %u poses)",
+              boost::chrono::duration<float>(tnow - ts).count(),
+              path_grid.size());
 
     geometry_msgs::PoseArray poses;
     poses.header = path.header;
@@ -1553,14 +1465,11 @@ protected:
     pub_path_poses_.publish(poses);
 
     const std::list<Astar::Vecf> path_interpolated =
-        path_interpolator_.interpolate(path_grid, 0.5, local_range_);
+        model_->path_interpolator_.interpolate(path_grid, 0.5, local_range_);
     grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path);
 
     if (hyst)
     {
-      const std::list<Astar::Vecf> path_interpolated =
-          path_interpolator_.interpolate(path_grid, 0.5, local_range_);
-
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
@@ -1611,42 +1520,11 @@ protected:
 
     return true;
   }
-  std::vector<Astar::Vec>& cbSearch(
-      const Astar::Vec& p,
-      const Astar::Vec& s, const Astar::Vec& e)
-  {
-    const Astar::Vec ds = s - p;
-
-    if (ds.sqlen() < local_range_ * local_range_)
-    {
-      rough_ = false;
-      euclid_cost_coef_ = ec_;
-      return search_list_;
-    }
-    rough_ = true;
-    euclid_cost_coef_ = ec_rough_;
-    return search_list_rough_;
-  }
   bool cbProgress(const std::list<Astar::Vec>& path_grid)
   {
     publishEmptyPath();
     ROS_WARN("Search timed out");
     return true;
-  }
-
-  float cbCostEstim(const Astar::Vec& s, const Astar::Vec& e)
-  {
-    Astar::Vec s2(s[0], s[1], 0);
-    float cost = cost_estim_cache_[s2];
-    if (cost == FLT_MAX)
-      return FLT_MAX;
-    if (!rough_)
-    {
-      if (s2[2] > static_cast<int>(map_info_.angle) / 2)
-        s2[2] -= map_info_.angle;
-      cost += ec_rough_[2] * fabs(s[2]);
-    }
-    return cost;
   }
   bool switchDetect(const nav_msgs::Path& path)
   {
@@ -1681,166 +1559,6 @@ protected:
       p_prev = p.pose;
     }
     return false;
-  }
-  float cbCost(const Astar::Vec& s, Astar::Vec& e,
-               const Astar::Vec& v_goal,
-               const Astar::Vec& v_start,
-               const bool hyst)
-  {
-    Astar::Vec d_raw = e - s;
-    d_raw.cycle(map_info_.angle);
-    const Astar::Vec d = d_raw;
-    float cost = euclidCost(d);
-
-    if (d[0] == 0 && d[1] == 0)
-    {
-      // In-place turn
-      int sum = 0;
-      const int dir = d[2] < 0 ? -1 : 1;
-      Astar::Vec pos = s;
-      for (int i = 0; i < abs(d[2]); i++)
-      {
-        pos[2] += dir;
-        if (pos[2] < 0)
-          pos[2] += map_info_.angle;
-        else if (pos[2] >= static_cast<int>(map_info_.angle))
-          pos[2] -= map_info_.angle;
-        const auto c = cm_[pos];
-        if (c > 99)
-          return -1;
-        sum += c;
-      }
-
-      const float cost =
-          sum * map_info_.angular_resolution * ec_[2] / ec_[0] +
-          sum * map_info_.angular_resolution * cc_.weight_costmap_turn_ / 100.0;
-      // simplified from sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * abs(d[2]))
-      return cc_.in_place_turn_ + cost;
-    }
-
-    Astar::Vec d2;
-    d2[0] = d[0] + range_;
-    d2[1] = d[1] + range_;
-    d2[2] = e[2];
-
-    const Astar::Vecf motion = rot_cache_.getMotion(s[2], d2);
-    const Astar::Vecf motion_grid = motion * resolution_;
-
-    if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
-    {
-      // Not non-holonomic
-      return -1;
-    }
-
-    if (fabs(motion[2]) >= 2.0 * M_PI / 4.0)
-    {
-      // Over 90 degree turn
-      // must be separated into two curves
-      return -1;
-    }
-
-    const float dist = motion.len();
-
-    if (motion[0] < 0)
-    {
-      // Going backward
-      cost *= 1.0 + cc_.weight_backward_;
-    }
-
-    if (d[2] == 0)
-    {
-      if (lroundf(motion_grid[0]) == 0)
-        return -1;  // side slip
-      const float aspect = motion[0] / motion[1];
-      if (fabs(aspect) < angle_resolution_aspect_)
-        return -1;  // large y offset
-
-      // Go-straight
-      int sum = 0, sum_hyst = 0;
-      Astar::Vec d_index(d[0], d[1], e[2]);
-      d_index.cycleUnsigned(map_info_.angle);
-
-      const auto cache_page = motion_cache_.find(s[2], d_index);
-      if (cache_page == motion_cache_.end(s[2]))
-        return -1;
-      const int num = cache_page->second.getMotion().size();
-      for (const auto& pos_diff : cache_page->second.getMotion())
-      {
-        const Astar::Vec pos(
-            s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]);
-        const auto c = cm_[pos];
-        if (c > 99)
-          return -1;
-        sum += c;
-
-        if (hyst)
-          sum_hyst += cm_hyst_[pos];
-      }
-      const float distf = cache_page->second.getDistance();
-      cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
-      cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
-    }
-    else
-    {
-      // Curve
-      if (motion[0] * motion[1] * motion[2] < 0)
-        return -1;
-
-      if (d.sqlen() < 3 * 3)
-        return -1;
-
-      const std::pair<float, float>& radiuses = rot_cache_.getRadiuses(s[2], d2);
-      const float r1 = radiuses.first;
-      const float r2 = radiuses.second;
-
-      // curveture at the start_ pose and the end pose must be same
-      if (fabs(r1 - r2) >= map_info_.linear_resolution * 1.5)
-      {
-        // Drifted
-        return -1;
-      }
-
-      const float curv_radius = (r1 + r2) / 2;
-      if (std::abs(curv_radius) < min_curve_raduis_)
-        return -1;
-
-      if (fabs(max_vel_ / r1) > max_ang_vel_)
-      {
-        const float vel = fabs(curv_radius) * max_ang_vel_;
-
-        // Curve deceleration penalty
-        cost += dist * fabs(vel / max_vel_) * cc_.weight_decel_;
-      }
-
-      {
-        int sum = 0, sum_hyst = 0;
-        Astar::Vec d_index(d[0], d[1], e[2]);
-        d_index.cycleUnsigned(map_info_.angle);
-
-        const auto cache_page = motion_cache_.find(s[2], d_index);
-        if (cache_page == motion_cache_.end(s[2]))
-          return -1;
-        const int num = cache_page->second.getMotion().size();
-        for (const auto& pos_diff : cache_page->second.getMotion())
-        {
-          const Astar::Vec pos(
-              s[0] + pos_diff[0], s[1] + pos_diff[1], pos_diff[2]);
-          const auto c = cm_[pos];
-          if (c > 99)
-            return -1;
-          sum += c;
-
-          if (hyst)
-            sum_hyst += cm_hyst_[pos];
-        }
-        const float distf = cache_page->second.getDistance();
-        cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
-        cost += sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * num);
-        cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
-      }
-    }
-
-    return cost;
   }
 
   void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper& stat)

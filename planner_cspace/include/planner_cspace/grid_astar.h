@@ -44,6 +44,7 @@
 #include <planner_cspace/reservable_priority_queue.h>
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/blockmem_gridmap.h>
+#include <planner_cspace/grid_astar_model.h>
 
 #include <omp.h>
 
@@ -130,25 +131,21 @@ public:
   bool search(
       const Vec& s, const Vec& e,
       std::list<Vec>& path,
-      std::function<float(const Vec&, Vec&, const Vec&, const Vec&)> cb_cost,
-      std::function<float(const Vec&, const Vec&)> cb_cost_estim,
-      std::function<std::vector<Vec>&(const Vec&, const Vec&, const Vec&)> cb_search,
+      typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr model,
       std::function<bool(const std::list<Vec>&)> cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
   {
     return searchImpl(g_, s, e, path,
-                      cb_cost, cb_cost_estim, cb_search, cb_progress,
+                      model, cb_progress,
                       cost_leave, progress_interval, return_best);
   }
   bool searchImpl(
       Gridmap<float>& g,
       const Vec& st, const Vec& en,
       std::list<Vec>& path,
-      std::function<float(const Vec&, Vec&, const Vec&, const Vec&)> cb_cost,
-      std::function<float(const Vec&, const Vec&)> cb_cost_estim,
-      std::function<std::vector<Vec>&(const Vec&, const Vec&, const Vec&)> cb_search,
+      typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr model,
       std::function<bool(const std::list<Vec>&)> cb_progress,
       const float cost_leave,
       const float progress_interval,
@@ -170,12 +167,12 @@ public:
     parents_.clear();
 
     g[s] = 0;
-    open_.push(PriorityVec(cb_cost_estim(s, e), 0, s));
+    open_.push(PriorityVec(model->costEstim(s, e), 0, s));
 
     auto ts = boost::chrono::high_resolution_clock::now();
 
     Vec better = s;
-    int cost_estim_min = cb_cost_estim(s, e);
+    int cost_estim_min = model->costEstim(s, e);
 
     while (true)
     {
@@ -232,7 +229,7 @@ public:
           better = p;
         }
 
-        const std::vector<Vec> search_list = cb_search(p, s, e);
+        const std::vector<Vec>& search_list = model->searchGrids(p, s, e);
         int updates = 0;
 
         for (auto it = search_list.begin(); it < search_list.end(); ++it)
@@ -250,11 +247,11 @@ public:
             if (g[next] < 0)
               break;
 
-            const float cost_estim = cb_cost_estim(next, e);
+            const float cost_estim = model->costEstim(next, e);
             if (cost_estim < 0 || cost_estim == FLT_MAX)
               break;
 
-            const float cost = cb_cost(p, next, s, e);
+            const float cost = model->cost(p, next, s, e);
             if (cost < 0 || cost == FLT_MAX)
               break;
 
