@@ -203,7 +203,10 @@ protected:
                   nav_msgs::GetPlan::Response& res)
   {
     if (!has_map_)
+    {
+      ROS_ERROR("make_plan service is called without map.");
       return false;
+    }
 
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
@@ -235,10 +238,12 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
 
+    GridAstarModel2D::Ptr model_2d(new GridAstarModel2D(model_));
+
     std::list<Astar::Vec> path_grid;
     if (!as_.search(
             s, e, path_grid,
-            std::dynamic_pointer_cast<GridAstarModel2D>(model_),
+            model_2d,
             cb_progress,
             0, 1.0f / freq_min_, find_best_))
     {
