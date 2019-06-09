@@ -62,6 +62,7 @@ class GridAstarModel3D : public GridAstarModelBase<3, 2>
 public:
   friend class GridAstarModel2D;
   using Ptr = std::shared_ptr<GridAstarModel3D>;
+  using ConstPtr = std::shared_ptr<const GridAstarModel3D>;
   using Vec = CyclicVecInt<3, 2>;
   using Vecf = CyclicVecFloat<3, 2>;
 
@@ -366,9 +367,9 @@ class GridAstarModel2D : public GridAstarModelBase<3, 2>
 {
 public:
   using Ptr = std::shared_ptr<GridAstarModel2D>;
-  GridAstarModel3D::Ptr base_;
+  const GridAstarModel3D::ConstPtr base_;
 
-  GridAstarModel2D(GridAstarModel3D::Ptr base)
+  explicit GridAstarModel2D(const GridAstarModel3D::ConstPtr base)
     : base_(base)
   {
   }
