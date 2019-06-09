@@ -1445,9 +1445,8 @@ protected:
         return false;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Path found (%0.4f sec., %u poses)",
-              boost::chrono::duration<float>(tnow - ts).count(),
-              path_grid.size());
+    ROS_DEBUG("Path found (%0.4f sec.)",
+              boost::chrono::duration<float>(tnow - ts).count());
 
     geometry_msgs::PoseArray poses;
     poses.header = path.header;
