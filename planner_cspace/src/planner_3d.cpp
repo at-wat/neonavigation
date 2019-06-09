@@ -202,7 +202,7 @@ protected:
   bool cbMakePlan(nav_msgs::GetPlan::Request& req,
                   nav_msgs::GetPlan::Response& res)
   {
-    /*if (!has_map_)
+    if (!has_map_)
       return false;
 
     Astar::Vec s, e;
@@ -222,69 +222,25 @@ protected:
     }
     else if (cm_rough_[s] == 100 || cm_rough_[e] == 100)
     {
-      ROS_ERROR("Given start or goal is in Rock.");
+      ROS_ERROR(
+          "Given start or goal is in Rock. (start: %d, end: %d)",
+          cm_rough_[s], cm_rough_[e]);
       return false;
     }
 
-    const Astar::Vecf euclid_cost_coef = ec_rough_;
-
-    const auto cb_cost = [this, &euclid_cost_coef](
-        const Astar::Vec& s, Astar::Vec& e,
-        const Astar::Vec& v_goal, const Astar::Vec& v_start,
-        const bool hyst) -> float
-    {
-      const Astar::Vec d = e - s;
-      float cost = model_->euclidCostRough(d);
-
-      int sum = 0;
-      const auto cache_page = motion_cache_linear_.find(0, d);
-      if (cache_page == motion_cache_linear_.end(0))
-        return -1;
-      const int num = cache_page->second.getMotion().size();
-      for (const auto& pos_diff : cache_page->second.getMotion())
-      {
-        const Astar::Vec pos(s[0] + pos_diff[0], s[1] + pos_diff[1], 0);
-        const auto c = cm_rough_[pos];
-        if (c > 99)
-          return -1;
-        sum += c;
-      }
-      const float distf = cache_page->second.getDistance();
-      cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
-
-      return cost;
-    };
-    const auto cb_cost_estim = [this, &euclid_cost_coef](
-        const Astar::Vec& s, const Astar::Vec& e)
-    {
-      const Astar::Vec d = e - s;
-      const float cost = model_->euclidCostRough(d);
-
-      return cost;
-    };
-    const auto cb_search = [this](
-        const Astar::Vec& p,
-        const Astar::Vec& s, const Astar::Vec& e) -> std::vector<Astar::Vec>&
-    {
-      return search_list_rough_;
-    };
     const auto cb_progress = [](const std::list<Astar::Vec>& path_grid)
     {
       return true;
     };
 
     const auto ts = boost::chrono::high_resolution_clock::now();
-    // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
-    //   s[0], s[1], s[2], e[0], e[1], e[2]);
+
     std::list<Astar::Vec> path_grid;
-    if (!as_.search(s, e, path_grid,
-                    std::bind(cb_cost,
-                              std::placeholders::_1, std::placeholders::_2,
-                              std::placeholders::_3, std::placeholders::_4, false),
-                    cb_cost_estim, cb_search, cb_progress,
-                    0,
-                    1.0f / freq_min_,
-                    find_best_))
+    if (!as_.search(
+            s, e, path_grid,
+            std::dynamic_pointer_cast<GridAstarModel2D>(model_),
+            cb_progress,
+            0, 1.0f / freq_min_, find_best_))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
       return false;
@@ -307,7 +263,6 @@ protected:
     {
       res.plan.poses[i] = path.poses[i];
     }
-*/
     return true;
   }
 

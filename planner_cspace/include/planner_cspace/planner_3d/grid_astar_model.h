@@ -361,4 +361,48 @@ public:
   }
 };
 
+class GridAstarModel2D : public GridAstarModel3D
+{
+public:
+  using Ptr = std::shared_ptr<GridAstarModel2D>;
+
+  float cost(
+      const Vec& cur, const Vec& next, const Vec& start, const Vec& goal) const
+  {
+    const Vec d = next - cur;
+    float cost = euclidCostRough(d);
+
+    int sum = 0;
+    const auto cache_page = motion_cache_linear_.find(0, d);
+    if (cache_page == motion_cache_linear_.end(0))
+      return -1;
+    const int num = cache_page->second.getMotion().size();
+    for (const auto& pos_diff : cache_page->second.getMotion())
+    {
+      const Vec pos(cur[0] + pos_diff[0], cur[1] + pos_diff[1], 0);
+      const auto c = cm_rough_[pos];
+      if (c > 99)
+        return -1;
+      sum += c;
+    }
+    const float distf = cache_page->second.getDistance();
+    cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
+
+    return cost;
+  }
+  float costEstim(
+      const Vec& cur, const Vec& goal) const
+  {
+    const Vec d = goal - cur;
+    const float cost = euclidCostRough(d);
+
+    return cost;
+  }
+  const std::vector<Vec>& searchGrids(
+      const Vec& cur, const Vec& start, const Vec& goal) const
+  {
+    return search_list_rough_;
+  }
+};
+
 #endif  // PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H
