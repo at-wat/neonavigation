@@ -1352,8 +1352,8 @@ public:
           {
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
-
-            publishEmptyPath();
+            // Don't publish empty path here in order a path follower
+            // to minimize the error to the desired final pose
             ROS_INFO("Path plan finished");
 
             if (act_->isActive())
