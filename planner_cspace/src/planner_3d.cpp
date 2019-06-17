@@ -1352,7 +1352,10 @@ public:
           {
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
+            // Don't publish empty path here in order a path follower
+            // to minimize the error to the desired final pose
             ROS_INFO("Path plan finished");
+
             if (act_->isActive())
               act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           }
@@ -1368,11 +1371,13 @@ public:
             status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
+
+            publishEmptyPath();
+            ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
+
             if (act_->isActive())
               act_->setAborted(
                   move_base_msgs::MoveBaseResult(), "Goal is in Rock");
-
-            ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
             continue;
           }
           else
