@@ -288,7 +288,8 @@ protected:
     const auto cb_cost = [this, &euclid_cost_coef](
         const Astar::Vec& s, Astar::Vec& e,
         const Astar::Vec& v_goal, const Astar::Vec& v_start,
-        const bool hyst) -> float {
+        const bool hyst) -> float
+    {
       const Astar::Vec d = e - s;
       float cost = euclidCost(d, euclid_cost_coef);
 
@@ -311,7 +312,8 @@ protected:
       return cost;
     };
     const auto cb_cost_estim = [this, &euclid_cost_coef](
-        const Astar::Vec& s, const Astar::Vec& e) {
+        const Astar::Vec& s, const Astar::Vec& e)
+    {
       const Astar::Vec d = e - s;
       const float cost = euclidCost(d, euclid_cost_coef);
 
@@ -319,10 +321,12 @@ protected:
     };
     const auto cb_search = [this](
         const Astar::Vec& p,
-        const Astar::Vec& s, const Astar::Vec& e) -> std::vector<Astar::Vec>& {
+        const Astar::Vec& s, const Astar::Vec& e) -> std::vector<Astar::Vec>&
+    {
       return search_list_rough_;
     };
-    const auto cb_progress = [](const std::list<Astar::Vec>& path_grid) {
+    const auto cb_progress = [](const std::list<Astar::Vec>& path_grid)
+    {
       return true;
     };
 
