@@ -80,6 +80,8 @@ add_dependencies(pose_transform ${catkin_EXPORTED_TARGETS})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
+  add_subdirectory(test)
+
   find_package(roslint REQUIRED)
   roslint_cpp()
   roslint_add_test()

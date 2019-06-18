@@ -39,9 +39,9 @@
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 #include <diagnostic_updater/diagnostic_updater.h>
+#include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
-#include <geometry_msgs/PoseArray.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
@@ -50,8 +50,8 @@
 
 #include <ros/console.h>
 #include <tf2/utils.h>
-#include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -63,8 +63,8 @@
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/jump_detector.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
+#include <planner_cspace/planner_3d/rotation_cache.h>
 
 #include <omp.h>
 
@@ -254,6 +254,16 @@ protected:
     if (!has_map_)
       return false;
 
+    if (req.start.header.frame_id != map_header_.frame_id ||
+        req.goal.header.frame_id != map_header_.frame_id)
+    {
+      ROS_ERROR("Start [%s] and Goal [%s] poses must be in the map frame [%s].",
+                req.start.header.frame_id.c_str(),
+                req.goal.header.frame_id.c_str(),
+                map_header_.frame_id.c_str());
+      return false;
+    }
+
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
@@ -378,6 +388,13 @@ protected:
   }
   bool setGoal(const geometry_msgs::PoseStamped& msg)
   {
+    if (msg.header.frame_id != map_header_.frame_id)
+    {
+      ROS_ERROR("Goal [%s] pose must be in the map frame [%s].",
+                msg.header.frame_id.c_str(), map_header_.frame_id.c_str());
+      return false;
+    }
+
     goal_raw_ = goal_ = msg;
 
     const double len2 =
@@ -1359,7 +1376,10 @@ public:
           {
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
+            // Don't publish empty path here in order a path follower
+            // to minimize the error to the desired final pose
             ROS_INFO("Path plan finished");
+
             if (act_->isActive())
               act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           }
@@ -1375,11 +1395,13 @@ public:
             status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
+
+            publishEmptyPath();
+            ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
+
             if (act_->isActive())
               act_->setAborted(
                   move_base_msgs::MoveBaseResult(), "Goal is in Rock");
-
-            ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
             continue;
           }
           else

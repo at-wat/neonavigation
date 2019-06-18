@@ -106,6 +106,7 @@ protected:
   geometry_msgs::Twist twist_;
   ros::Time last_cloud_stamp_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
+  bool cloud_clear_;
   double hz_;
   double timeout_;
   double disable_timeout_;
@@ -144,6 +145,7 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
     , cloud_(new pcl::PointCloud<pcl::PointXYZ>)
+    , cloud_clear_(false)
     , last_disable_cmd_(0)
     , watchdog_stop_(false)
     , has_cloud_(false)
@@ -247,7 +249,7 @@ public:
       v[1] = static_cast<double>(footprint_xml[i][1]);
       footprint_p.v.push_back(v);
 
-      auto dist = hypotf(v[0], v[2]);
+      const float dist = hypotf(v[0], v[1]);
       if (dist > footprint_radius_)
         footprint_radius_ = dist;
     }
@@ -309,7 +311,8 @@ protected:
 
     if (r_lim_current < 1.0)
       hold_off_ = now + hold_;
-    cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+
+    cloud_clear_ = true;
 
     diag_updater_.force_update();
   }
@@ -335,10 +338,10 @@ protected:
     {
       if (allow_empty_cloud_)
       {
-        return 60.0;
+        return 1.0;
       }
       ROS_WARN_THROTTLE(1.0, "safety_limiter: Empty pointcloud passed.");
-      return DBL_MAX;
+      return 0.0;
     }
 
     pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
@@ -439,24 +442,40 @@ protected:
     if (!has_collision)
       return 1.0;
 
-    d_col = std::max<float>(std::abs(d_col) - d_margin_, 0.0);
-    yaw_col = std::max<float>(std::abs(yaw_col) - yaw_margin_, 0.0);
+    // delay compensation:
+    //   solve for d_compensated: d_compensated = d - delay * sqrt(2 * acc * d_compensated)
+    //     d_compensated = d + acc * delay^2 - sqrt((acc * delay^2)^2 + 2 * d * acc * delay^2)
+
+    const float delay = 1.0 * (1.0 / hz_) + dt_;
+    const float acc_dtsq[2] =
+        {
+          static_cast<float>(acc_[0] * std::pow(delay, 2)),
+          static_cast<float>(acc_[1] * std::pow(delay, 2)),
+        };
+
+    d_col = std::max<float>(
+        0.0,
+        std::abs(d_col) - d_margin_ + acc_dtsq[0] -
+            std::sqrt(std::pow(acc_dtsq[0], 2) + 2 * acc_dtsq[0] * std::abs(d_col)));
+    yaw_col = std::max<float>(
+        0.0,
+        std::abs(yaw_col) - yaw_margin_ + acc_dtsq[1] -
+            std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
 
     float d_r =
-        (sqrtf(std::abs(2 * acc_[0] * d_col)) + EPSILON) / std::abs(twist_.linear.x);
+        (std::sqrt(std::abs(2 * acc_[0] * d_col)) + EPSILON) / std::abs(twist_.linear.x);
     float yaw_r =
-        (sqrtf(std::abs(2 * acc_[1] * yaw_col)) + EPSILON) / std::abs(twist_.angular.z);
+        (std::sqrt(std::abs(2 * acc_[1] * yaw_col)) + EPSILON) / std::abs(twist_.angular.z);
     if (!std::isfinite(d_r))
       d_r = 1.0;
     if (!std::isfinite(yaw_r))
       yaw_r = 1.0;
 
-    const auto r = std::min(d_r, yaw_r);
-
-    return r;
+    return std::min(d_r, yaw_r);
   }
 
-  geometry_msgs::Twist limit(const geometry_msgs::Twist& in)
+  geometry_msgs::Twist
+  limit(const geometry_msgs::Twist& in)
   {
     auto out = in;
     if (r_lim_ < 1.0 - EPSILON)
@@ -490,10 +509,12 @@ protected:
     }
     float& operator[](const int& i)
     {
+      ROS_ASSERT(i < 2);
       return c[i];
     }
     const float& operator[](const int& i) const
     {
+      ROS_ASSERT(i < 2);
       return c[i];
     }
     vec operator-(const vec& a) const
@@ -621,6 +642,11 @@ protected:
       return;
     }
 
+    if (cloud_clear_)
+    {
+      cloud_clear_ = false;
+      cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+    }
     *cloud_ += *pc;
     last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
