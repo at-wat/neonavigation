@@ -130,7 +130,7 @@ TEST(PointcloudToMaps, Convert)
 
   pub.publish(generateMapCloud());
   ros::Rate rate(10.0);
-  for (int i = 0; i < 300 && ros::ok(); ++i)
+  for (int i = 0; i < 50 && ros::ok(); ++i)
   {
     rate.sleep();
     ros::spinOnce();
