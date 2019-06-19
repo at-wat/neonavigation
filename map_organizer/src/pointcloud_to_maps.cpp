@@ -150,7 +150,7 @@ public:
     int min_height = h_min;
     std::map<int, float> floor_area;
     std::map<int, float> floor_runnable_area;
-    for (int i = min_height; i < max_height; i++)
+    for (int i = min_height; i <= max_height; i++)
       floor_area[i] = 0;
 
     nav_msgs::MapMetaData mmd;
@@ -158,8 +158,8 @@ public:
     mmd.origin.position.x = x_min * grid;
     mmd.origin.position.y = y_min * grid;
     mmd.origin.orientation.w = 1.0;
-    mmd.width = x_max - x_min;
-    mmd.height = y_max - y_min;
+    mmd.width = x_max - x_min + 1;
+    mmd.height = y_max - y_min + 1;
     ROS_INFO("width %d, height %d", mmd.width, mmd.height);
     std::vector<nav_msgs::OccupancyGrid> maps;
 
@@ -173,7 +173,7 @@ public:
     double floor_area_max = 0;
     double floor_runnable_area_max = 0;
     std::map<int, std::map<std::pair<int, int>, char>> floor;
-    for (int i = min_height; i < max_height; i++)
+    for (int i = min_height; i <= max_height; i++)
     {
       if (hist[i] > min_points)
       {
@@ -217,11 +217,11 @@ public:
     }
     const double floor_area_filter = floor_runnable_area_max * floor_area_thresh_rate;
     int map_num = 0;
-    for (int i = min_height + 1; i < max_height - 1; i++)
+    for (int i = min_height; i <= max_height; i++)
     {
       if (hist[i] > min_points &&
-          floor_runnable_area[i - 1] < floor_runnable_area[i] &&
-          floor_runnable_area[i + 1] < floor_runnable_area[i])
+          (i == min_height || floor_runnable_area[i - 1] <= floor_runnable_area[i]) &&
+          (i == max_height || floor_runnable_area[i + 1] <= floor_runnable_area[i]))
       {
         if (floor_runnable_area[i] > floor_area_filter)
         {
@@ -242,52 +242,6 @@ public:
             else if (m.second == 1)
               map.data[addr] = 100;
           }
-          auto map_cp = map.data;
-          for (unsigned int i = 0; i < map_cp.size(); i++)
-          {
-            if (map_cp[i] == 0)
-            {
-              const int width = 6;
-              int floor_width = width;
-              for (int xp = -width; xp <= width; xp++)
-              {
-                for (int yp = -width; yp <= width; yp++)
-                {
-                  int width_sq = xp * xp + yp * yp;
-                  if (width_sq > width * width)
-                    continue;
-                  unsigned int x = i % mmd.width + xp;
-                  unsigned int y = i / mmd.width + yp;
-                  if (x >= mmd.width || y >= mmd.height)
-                    continue;
-                  int addr = x + y * mmd.width;
-                  if (map_cp[addr] == 100)
-                  {
-                    if (width_sq < floor_width * floor_width)
-                      floor_width = sqrtf(width_sq);
-                  }
-                }
-              }
-              floor_width--;
-              for (int xp = -floor_width; xp <= floor_width; xp++)
-              {
-                for (int yp = -floor_width; yp <= floor_width; yp++)
-                {
-                  if (xp * xp + yp * yp > floor_width * floor_width)
-                    continue;
-                  unsigned int x = i % mmd.width + xp;
-                  unsigned int y = i / mmd.width + yp;
-                  if (x >= mmd.width || y >= mmd.height)
-                    continue;
-                  int addr = x + y * mmd.width;
-                  if (map_cp[addr] != 100)
-                  {
-                    map.data[addr] = 0;
-                  }
-                }
-              }
-            }
-          }
 
           maps.push_back(map);
           map_num++;
@@ -296,23 +250,39 @@ public:
     }
     ROS_INFO("Floor candidates: %d", map_num);
     auto it_prev = maps.rbegin();
-    for (auto it = maps.rbegin() + 1; it != maps.rend(); it++)
+    for (auto it = maps.rbegin() + 1; it != maps.rend() && it_prev != maps.rend(); it++)
     {
+      const int h = it->info.origin.position.z / grid;
+      const int h_prev = it_prev->info.origin.position.z / grid;
       if (fabs(it_prev->info.origin.position.z - it->info.origin.position.z) < grid * 1.5)
       {
         // merge slopes
-        for (unsigned int i = 0; i < it->data.size(); i++)
+        for (size_t i = 0; i < it->data.size(); i++)
         {
-          if (it->data[i] == 100 && it_prev->data[i] == 0)
+          if (it->data[i] != 0 && it_prev->data[i] == 0)
           {
             it->data[i] = 0;
             it_prev->data[i] = -1;
           }
+          else if (it->data[i] == 0 && it_prev->data[i] == 0)
+          {
+            it_prev->data[i] = -1;
+          }
         }
+        int cnt = 0;
+        for (const auto c : it->data)
+          if (c == 0)
+            ++cnt;
+        floor_runnable_area[h] = cnt * grid * grid;
+        int cnt_prev = 0;
+        for (const auto c : it_prev->data)
+          if (c == 0)
+            ++cnt_prev;
+        floor_runnable_area[h_prev] = cnt_prev * grid * grid;
       }
       it_prev = it;
     }
-    for (int i = max_height - 1; i >= min_height; i--)
+    for (int i = max_height; i >= min_height; i--)
     {
       printf(" %6.2f ", i * grid);
       for (int j = 0; j <= 16; j++)
@@ -325,7 +295,7 @@ public:
       if (floor_runnable_area[i] == 0.0)
         printf("  (%7d points)\n", hist[i]);
       else
-        printf("  (%7d points, %4.0f m^2 of floor)\n", hist[i], floor_runnable_area[i]);
+        printf("  (%7d points, %5.2f m^2 of floor)\n", hist[i], floor_runnable_area[i]);
     }
     int num = -1;
     int floor_num = 0;
@@ -336,16 +306,66 @@ public:
       int h = map.info.origin.position.z / grid;
       if (floor_runnable_area[h] < min_floor_area)
       {
-        ROS_ERROR("floor %d (%5.2fm^2), h = %0.2fm skipped",
-                  floor_num, floor_runnable_area[num], map.info.origin.position.z);
+        ROS_WARN("floor %d (%5.2fm^2), h = %0.2fm skipped",
+                 floor_num, floor_runnable_area[num], map.info.origin.position.z);
         continue;
       }
+
+      {
+        auto map_cp = map.data;
+        for (unsigned int i = 0; i < map_cp.size(); i++)
+        {
+          if (map_cp[i] == 0)
+          {
+            const int width = 6;
+            int floor_width = width;
+            for (int xp = -width; xp <= width; xp++)
+            {
+              for (int yp = -width; yp <= width; yp++)
+              {
+                int width_sq = xp * xp + yp * yp;
+                if (width_sq > width * width)
+                  continue;
+                unsigned int x = i % mmd.width + xp;
+                unsigned int y = i / mmd.width + yp;
+                if (x >= mmd.width || y >= mmd.height)
+                  continue;
+                int addr = x + y * mmd.width;
+                if (map_cp[addr] == 100)
+                {
+                  if (width_sq < floor_width * floor_width)
+                    floor_width = sqrtf(width_sq);
+                }
+              }
+            }
+            floor_width--;
+            for (int xp = -floor_width; xp <= floor_width; xp++)
+            {
+              for (int yp = -floor_width; yp <= floor_width; yp++)
+              {
+                if (xp * xp + yp * yp > floor_width * floor_width)
+                  continue;
+                unsigned int x = i % mmd.width + xp;
+                unsigned int y = i / mmd.width + yp;
+                if (x >= mmd.width || y >= mmd.height)
+                  continue;
+                int addr = x + y * mmd.width;
+                if (map_cp[addr] != 100)
+                {
+                  map.data[addr] = 0;
+                }
+              }
+            }
+          }
+        }
+      }
+
       std::string name = "map" + std::to_string(floor_num);
       pub_maps_[name] = pnh_.advertise<nav_msgs::OccupancyGrid>(name, 1, true);
       pub_maps_[name].publish(map);
       map_array.maps.push_back(map);
-      ROS_ERROR("floor %d (%5.2fm^2), h = %0.2fm",
-                floor_num, floor_runnable_area[h], map.info.origin.position.z);
+      ROS_WARN("floor %d (%5.2fm^2), h = %0.2fm",
+               floor_num, floor_runnable_area[h], map.info.origin.position.z);
       floor_num++;
     }
     pub_map_array_.publish(map_array);
