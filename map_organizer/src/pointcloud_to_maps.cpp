@@ -47,31 +47,6 @@
 
 #include <neonavigation_common/compatibility.h>
 
-pcl::PointXYZ operator-(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
-{
-  auto c = a;
-  c.x -= b.x;
-  c.y -= b.y;
-  c.z -= b.z;
-  return c;
-}
-pcl::PointXYZ operator+(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
-{
-  auto c = a;
-  c.x += b.x;
-  c.y += b.y;
-  c.z += b.z;
-  return c;
-}
-pcl::PointXYZ operator*(const pcl::PointXYZ& a, const float& b)
-{
-  auto c = a;
-  c.x *= b;
-  c.y *= b;
-  c.z *= b;
-  return c;
-}
-
 class PointcloudToMapsNode
 {
 private:
