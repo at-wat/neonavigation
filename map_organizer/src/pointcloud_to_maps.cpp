@@ -100,11 +100,11 @@ public:
     int y_min = INT_MAX, y_max = 0;
     int h_min = INT_MAX, h_max = 0;
 
-    for (auto& p : pc->points)
+    for (const auto& p : pc->points)
     {
-      int h = (p.z / grid);
-      int x = (p.x / grid);
-      int y = (p.y / grid);
+      const int h = (p.z / grid);
+      const int x = (p.x / grid);
+      const int y = (p.y / grid);
       if (x_min > x)
         x_min = x;
       if (y_min > y)
@@ -121,8 +121,8 @@ public:
         hist[h] = 0;
       hist[h]++;
     }
-    int max_height = h_max;
-    int min_height = h_min;
+    const int max_height = h_max;
+    const int min_height = h_min;
     std::map<int, float> floor_area;
     std::map<int, float> floor_runnable_area;
     for (int i = min_height; i <= max_height; i++)
@@ -139,7 +139,7 @@ public:
     std::vector<nav_msgs::OccupancyGrid> maps;
 
     int hist_max = INT_MIN;
-    for (auto h : hist)
+    for (const auto& h : hist)
       if (h.second > hist_max)
         hist_max = h.second;
 
@@ -154,10 +154,10 @@ public:
       {
         for (auto& p : pc->points)
         {
-          int x = (p.x / grid);
-          int y = (p.y / grid);
-          int z = (p.z / grid);
-          auto v = std::pair<int, int>(x, y);
+          const int x = (p.x / grid);
+          const int y = (p.y / grid);
+          const int z = (p.z / grid);
+          const auto v = std::pair<int, int>(x, y);
 
           if (abs(i - z) <= floor_height)
           {
@@ -173,7 +173,7 @@ public:
         }
 
         int cnt = 0;
-        for (auto& m : floor[i])
+        for (const auto& m : floor[i])
         {
           if (m.second == 0)
             cnt++;
@@ -207,7 +207,7 @@ public:
           map.data.resize(mmd.width * mmd.height);
           for (auto& c : map.data)
             c = -1;
-          for (auto& m : floor[i])
+          for (const auto& m : floor[i])
           {
             int addr = (m.first.first - x_min) + (m.first.second - y_min) * mmd.width;
             if (m.second == 0)
@@ -287,7 +287,7 @@ public:
       }
 
       {
-        auto map_cp = map.data;
+        const auto map_cp = map.data;
         for (unsigned int i = 0; i < map_cp.size(); i++)
         {
           if (map_cp[i] == 0)
@@ -301,11 +301,11 @@ public:
                 int width_sq = xp * xp + yp * yp;
                 if (width_sq > width * width)
                   continue;
-                unsigned int x = i % mmd.width + xp;
-                unsigned int y = i / mmd.width + yp;
+                const unsigned int x = i % mmd.width + xp;
+                const unsigned int y = i / mmd.width + yp;
                 if (x >= mmd.width || y >= mmd.height)
                   continue;
-                int addr = x + y * mmd.width;
+                const int addr = x + y * mmd.width;
                 if (map_cp[addr] == 100)
                 {
                   if (width_sq < floor_width * floor_width)
@@ -320,11 +320,11 @@ public:
               {
                 if (xp * xp + yp * yp > floor_width * floor_width)
                   continue;
-                unsigned int x = i % mmd.width + xp;
-                unsigned int y = i / mmd.width + yp;
+                const unsigned int x = i % mmd.width + xp;
+                const unsigned int y = i / mmd.width + yp;
                 if (x >= mmd.width || y >= mmd.height)
                   continue;
-                int addr = x + y * mmd.width;
+                const int addr = x + y * mmd.width;
                 if (map_cp[addr] != 100)
                 {
                   map.data[addr] = 0;
