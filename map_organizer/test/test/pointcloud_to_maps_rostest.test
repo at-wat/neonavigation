@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <node pkg="map_organizer" type="pointcloud_to_maps" name="pointcloud_to_maps" output="screen">
+    <param name="min_floor_area" value="0.2" />
+    <param name="points_thresh_rate" value="0.0" />
+    <param name="floor_area_thresh_rate" value="0.0" />
+  </node>
+
+  <test test-name="test_pointcloud_to_maps" pkg="map_organizer" type="test_pointcloud_to_maps" />
+</launch>
