@@ -154,7 +154,7 @@ TEST(MapOrganizer, SelectMap)
     if (pub.getNumSubscribers() > 0 && map)
       break;
   }
-  ASSERT_GT(pub.getNumSubscribers(), 0);
+  ASSERT_GT(pub.getNumSubscribers(), 0u);
   ASSERT_TRUE(static_cast<bool>(map));
   validateMap0(*map, 0.0);
 
