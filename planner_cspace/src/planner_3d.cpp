@@ -286,7 +286,7 @@ protected:
     const Astar::Vecf euclid_cost_coef = ec_rough_;
 
     const auto cb_cost = [this, &euclid_cost_coef](
-        const Astar::Vec& s, Astar::Vec& e,
+        const Astar::Vec& s, const Astar::Vec& e,
         const Astar::Vec& v_goal, const Astar::Vec& v_start,
         const bool hyst) -> float
     {
