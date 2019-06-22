@@ -51,17 +51,19 @@ protected:
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_local_;
   ros::ServiceClient srv_forget_;
+  ros::Publisher pub_map_;
   ros::Publisher pub_map_local_;
   ros::Publisher pub_initial_pose_;
 
   Navigate()
     : tfl_(tfbuf_)
   {
-    sub_map_ = nh_.subscribe("map", 1, &Navigate::cbMap, this);
+    sub_map_ = nh_.subscribe("map_global", 1, &Navigate::cbMap, this);
     sub_map_local_ = nh_.subscribe("map_local", 1, &Navigate::cbMapLocal, this);
     srv_forget_ =
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
+    pub_map_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1);
     pub_map_local_ = nh_.advertise<nav_msgs::OccupancyGrid>("overlay", 1);
     pub_initial_pose_ =
         nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
@@ -77,9 +79,19 @@ protected:
     pub_initial_pose_.publish(pose);
 
     srv_forget_.waitForExistence(ros::Duration(2.0));
-    ros::Duration(0.5).sleep();
-    ros::spinOnce();
-    ros::Duration(0.5).sleep();
+    ros::Rate rate(10.0);
+
+    while (ros::ok() && !map_)
+    {
+      ros::spinOnce();
+      rate.sleep();
+    }
+    pub_map_.publish(map_);
+    std::cerr << "Map applied." << std::endl;
+
+    std_srvs::EmptyRequest req;
+    std_srvs::EmptyResponse res;
+    srv_forget_.call(req, res);
   }
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
