@@ -211,7 +211,6 @@ protected:
   enum DebugMode
   {
     DEBUG_HYSTERESIS,
-    DEBUG_HISTORY,
     DEBUG_COST_ESTIM
   };
   DebugMode debug_out_;
@@ -694,11 +693,6 @@ protected:
                 point.z = std::min(static_cast<float>(cm_hyst_[p]), point.z);
 
               point.z *= 0.01;
-              break;
-            case DEBUG_HISTORY:
-              if (cm_rough_base_[p] != 0)
-                continue;
-              point.z = cm_hist_bbf_[p].getProbability();
               break;
             case DEBUG_COST_ESTIM:
               if (cost_estim_cache_[p] == FLT_MAX)
@@ -1256,8 +1250,6 @@ public:
     pnh_.param("debug_mode", debug_mode, std::string("cost_estim"));
     if (debug_mode == "hyst")
       debug_out_ = DEBUG_HYSTERESIS;
-    else if (debug_mode == "hist")
-      debug_out_ = DEBUG_HISTORY;
     else if (debug_mode == "cost_estim")
       debug_out_ = DEBUG_COST_ESTIM;
 
