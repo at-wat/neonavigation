@@ -2,13 +2,7 @@
 
 set -o errexit
 
-pip install gh-pr-comment catkin_lint
-
 source /opt/ros/${ROS_DISTRO}/setup.bash
-source /catkin_ws/devel/setup.bash
-
-set -o verbose
-
 cd /catkin_ws
 
 build_number="[[#${TRAVIS_BUILD_NUMBER}](${TRAVIS_BUILD_WEB_URL})]"
@@ -27,7 +21,7 @@ $(catkin_lint $pkgs 2>&1)
 COVERAGE_OPTION=
 if [ x${COVERAGE_TEST} == "xtrue" ]
 then
-  # Workaround: Ubuntu Trusty and Xenial uses quite old gcc with a bug.
+  # Workaround: Ubuntu Xenial uses quite old gcc with a bug.
   #   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65831
   #   Install newer gcc to get correct coverage
   apt-get update -qq
@@ -38,11 +32,14 @@ then
     apt-get update -qq
   fi
   apt-get install --no-install-recommends gcc-5 g++-5 -y
-  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5 --slave /usr/bin/gcov gcov /usr/bin/gcov-5
+  update-alternatives \
+    --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 \
+    --slave /usr/bin/g++ g++ /usr/bin/g++-5 \
+    --slave /usr/bin/gcov gcov /usr/bin/gcov-5
 
   gcov -v
 
-  # Workaround: Ubuntu Trusty and Xenial has too old Eigen3 which causes
+  # Workaround: Ubuntu Xenial has too old Eigen3 which causes
   #             deprecated warning on gcc-5 with C++11.
   (cd /tmp \
     && git clone -b 3.3.3 --depth=1 https://github.com/eigenteam/eigen-git-mirror.git eigen \
@@ -60,7 +57,7 @@ sed -i -e "5a set(CMAKE_C_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
 sed -i -e "5a set(CMAKE_CXX_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
 
-CM_OPTIONS=""
+CM_OPTIONS=${CM_OPTIONS:-}
 
 catkin_make ${CM_OPTIONS} \
   || (gh-pr-comment "${build_number} FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)

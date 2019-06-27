@@ -31,6 +31,7 @@
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
+#include <std_srvs/Empty.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -39,24 +40,86 @@
 
 #include <gtest/gtest.h>
 
-TEST(Navigate, Navigate)
+class Navigate : public ::testing::Test
 {
-  nav_msgs::OccupancyGrid::ConstPtr map;
+protected:
+  ros::NodeHandle nh_;
+  tf2_ros::Buffer tfbuf_;
+  tf2_ros::TransformListener tfl_;
+  nav_msgs::OccupancyGrid::ConstPtr map_;
+  nav_msgs::OccupancyGrid::ConstPtr map_local_;
+  ros::Subscriber sub_map_;
+  ros::Subscriber sub_map_local_;
+  ros::ServiceClient srv_forget_;
+  ros::Publisher pub_map_;
+  ros::Publisher pub_map_local_;
+  ros::Publisher pub_initial_pose_;
 
-  const boost::function<void(const nav_msgs::OccupancyGrid::ConstPtr&)> cb_map =
-      [&map](const nav_msgs::OccupancyGrid::ConstPtr& msg) -> void
+  Navigate()
+    : tfl_(tfbuf_)
   {
-    map = msg;
+    sub_map_ = nh_.subscribe("map_global", 1, &Navigate::cbMap, this);
+    sub_map_local_ = nh_.subscribe("map_local", 1, &Navigate::cbMapLocal, this);
+    srv_forget_ =
+        nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
+            "forget_planning_cost");
+    pub_map_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1);
+    pub_map_local_ = nh_.advertise<nav_msgs::OccupancyGrid>("overlay", 1);
+    pub_initial_pose_ =
+        nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
+  }
+
+  virtual void SetUp()
+  {
+    geometry_msgs::PoseWithCovarianceStamped pose;
+    pose.header.frame_id = "map";
+    pose.pose.pose.position.x = 2.5;
+    pose.pose.pose.position.y = 0.45;
+    pose.pose.pose.orientation.z = 1.0;
+    pub_initial_pose_.publish(pose);
+
+    srv_forget_.waitForExistence(ros::Duration(2.0));
+    ros::Rate rate(10.0);
+
+    while (ros::ok() && !map_)
+    {
+      ros::spinOnce();
+      rate.sleep();
+    }
+    pub_map_.publish(map_);
+    std::cerr << "Map applied." << std::endl;
+
+    std_srvs::EmptyRequest req;
+    std_srvs::EmptyResponse res;
+    srv_forget_.call(req, res);
+  }
+  void cbMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  {
+    map_ = msg;
     std::cerr << "Map received." << std::endl;
-  };
+  }
+  void cbMapLocal(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  {
+    map_local_ = msg;
+    std::cerr << "Local map received." << std::endl;
+  }
+  void pubMapLocal()
+  {
+    if (map_local_)
+    {
+      pub_map_local_.publish(map_local_);
+      std::cerr << "Local map applied." << std::endl;
+    }
+  }
+};
 
-  ros::NodeHandle nh("");
-  tf2_ros::Buffer tfbuf;
-  tf2_ros::TransformListener tfl(tfbuf);
-  ros::Publisher pub_path = nh.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
-  ros::Subscriber sub_map = nh.subscribe("map", 1, cb_map);
+TEST_F(Navigate, Navigate)
+{
+  ros::Publisher pub_path = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
 
-  ros::Duration(2.0).sleep();
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+
   nav_msgs::Path path;
   path.poses.resize(2);
   path.header.frame_id = "map";
@@ -84,7 +147,7 @@ TEST(Navigate, Navigate)
     {
       const ros::Time now = ros::Time::now();
       geometry_msgs::TransformStamped trans_tmp =
-          tfbuf.lookupTransform("map", "base_link", now, ros::Duration(0.5));
+          tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
       tf2::fromMsg(trans_tmp, trans);
     }
     catch (tf2::TransformException& e)
@@ -102,10 +165,76 @@ TEST(Navigate, Navigate)
       return;
     }
 
-    if (!map)
+    for (int x = -2; x <= 2; ++x)
     {
-      std::cerr << "Waiting map." << std::endl;
+      for (int y = -1; y <= 1; ++y)
+      {
+        const tf2::Vector3 pos =
+            trans * tf2::Vector3(x * map_->info.resolution, y * map_->info.resolution, 0);
+        const int map_x = pos.x() / map_->info.resolution;
+        const int map_y = pos.y() / map_->info.resolution;
+        const size_t addr = map_x + map_y * map_->info.width;
+        ASSERT_LT(addr, map_->data.size());
+        ASSERT_LT(map_x, static_cast<int>(map_->info.width));
+        ASSERT_LT(map_y, static_cast<int>(map_->info.height));
+        ASSERT_GE(map_x, 0);
+        ASSERT_GE(map_y, 0);
+        ASSERT_NE(map_->data[addr], 100);
+      }
+    }
+  }
+  ASSERT_TRUE(false);
+}
+
+TEST_F(Navigate, NavigateWithLocalMap)
+{
+  ros::Publisher pub_path = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
+
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+  pubMapLocal();
+  ros::Duration(0.2).sleep();
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.7;
+  path.poses[0].pose.position.y = 2.8;
+  path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
+  pub_path.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(10);
+  while (ros::ok())
+  {
+    ros::spinOnce();
+    wait.sleep();
+
+    tf2::Stamped<tf2::Transform> trans;
+    try
+    {
+      const ros::Time now = ros::Time::now();
+      geometry_msgs::TransformStamped trans_tmp =
+          tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
+      tf2::fromMsg(trans_tmp, trans);
+    }
+    catch (tf2::TransformException& e)
+    {
+      std::cerr << e.what() << std::endl;
       continue;
+    }
+
+    auto goal_rel = trans.inverse() * goal;
+    if (goal_rel.getOrigin().length() < 0.2 &&
+        fabs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
+    {
+      std::cerr << "Navagation success." << std::endl;
+      ros::Duration(2.0).sleep();
+      return;
     }
 
     for (int x = -2; x <= 2; ++x)
@@ -113,44 +242,31 @@ TEST(Navigate, Navigate)
       for (int y = -1; y <= 1; ++y)
       {
         const tf2::Vector3 pos =
-            trans * tf2::Vector3(x * map->info.resolution, y * map->info.resolution, 0);
-        const int map_x = pos.x() / map->info.resolution;
-        const int map_y = pos.y() / map->info.resolution;
-        const size_t addr = map_x + map_y * map->info.width;
-        ASSERT_LT(addr, map->data.size());
-        ASSERT_LT(map_x, static_cast<int>(map->info.width));
-        ASSERT_LT(map_y, static_cast<int>(map->info.height));
+            trans * tf2::Vector3(x * map_->info.resolution, y * map_->info.resolution, 0);
+        const int map_x = pos.x() / map_->info.resolution;
+        const int map_y = pos.y() / map_->info.resolution;
+        const size_t addr = map_x + map_y * map_->info.width;
+        ASSERT_LT(addr, map_->data.size());
+        ASSERT_LT(map_x, static_cast<int>(map_->info.width));
+        ASSERT_LT(map_y, static_cast<int>(map_->info.height));
         ASSERT_GE(map_x, 0);
         ASSERT_GE(map_y, 0);
-        ASSERT_NE(map->data[addr], 100);
+        ASSERT_NE(map_->data[addr], 100);
+        ASSERT_NE(map_local_->data[addr], 100);
       }
     }
   }
   ASSERT_TRUE(false);
 }
 
-TEST(Navigate, GlobalPlan)
+TEST_F(Navigate, GlobalPlan)
 {
-  nav_msgs::OccupancyGrid::ConstPtr map;
-
-  const boost::function<void(const nav_msgs::OccupancyGrid::ConstPtr&)> cb_map =
-      [&map](const nav_msgs::OccupancyGrid::ConstPtr& msg) -> void
-  {
-    map = msg;
-    std::cerr << "Map received." << std::endl;
-  };
-
-  ros::NodeHandle nh("");
-  tf2_ros::Buffer tfbuf;
-  tf2_ros::TransformListener tfl(tfbuf);
   ros::ServiceClient srv_plan =
-      nh.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
+      nh_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
           "/planner_3d/make_plan");
-  ros::Subscriber sub_map = nh.subscribe("map", 1, cb_map);
 
-  ros::Duration(2.0).sleep();
   ros::spinOnce();
-  ASSERT_TRUE(static_cast<bool>(map));
+  ASSERT_TRUE(static_cast<bool>(map_));
 
   nav_msgs::GetPlanRequest req;
   nav_msgs::GetPlanResponse res;
@@ -182,15 +298,15 @@ TEST(Navigate, GlobalPlan)
 
   for (const geometry_msgs::PoseStamped& p : res.plan.poses)
   {
-    const int map_x = p.pose.position.x / map->info.resolution;
-    const int map_y = p.pose.position.y / map->info.resolution;
-    const size_t addr = map_x + map_y * map->info.width;
-    ASSERT_LT(addr, map->data.size());
-    ASSERT_LT(map_x, static_cast<int>(map->info.width));
-    ASSERT_LT(map_y, static_cast<int>(map->info.height));
+    const int map_x = p.pose.position.x / map_->info.resolution;
+    const int map_y = p.pose.position.y / map_->info.resolution;
+    const size_t addr = map_x + map_y * map_->info.width;
+    ASSERT_LT(addr, map_->data.size());
+    ASSERT_LT(map_x, static_cast<int>(map_->info.width));
+    ASSERT_LT(map_y, static_cast<int>(map_->info.height));
     ASSERT_GE(map_x, 0);
     ASSERT_GE(map_y, 0);
-    ASSERT_NE(map->data[addr], 100);
+    ASSERT_NE(map_->data[addr], 100);
   }
 }
 

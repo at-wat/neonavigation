@@ -1,54 +1,32 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(costmap_cspace)
 
-find_package(catkin REQUIRED
-  COMPONENTS
-    roscpp
+set(CATKIN_DEPENDS
+  roscpp
 
-    geometry_msgs
-    laser_geometry
-    nav_msgs
-    sensor_msgs
-    tf2_geometry_msgs
-    tf2_ros
-    tf2_sensor_msgs
+  geometry_msgs
+  laser_geometry
+  nav_msgs
+  sensor_msgs
+  tf2_geometry_msgs
+  tf2_ros
+  tf2_sensor_msgs
 
-    costmap_cspace_msgs
-    neonavigation_common
+  costmap_cspace_msgs
+  neonavigation_common
 )
-find_package(xmlrpcpp REQUIRED)
 
+find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
+find_package(xmlrpcpp REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS
-    roscpp
-
-    geometry_msgs
-    laser_geometry
-    nav_msgs
-    sensor_msgs
-    tf2_geometry_msgs
-    tf2_ros
-    tf2_sensor_msgs
-
-    costmap_cspace_msgs
-    neonavigation_common
+  CATKIN_DEPENDS ${CATKIN_DEPENDS}
 )
 
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-  message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -DROS_DISTRO_$ENV{ROS_DISTRO}=1")
-
+add_compile_options(-std=c++11)
 include_directories(include ${catkin_INCLUDE_DIRS})
+
 
 add_executable(costmap_3d src/costmap_3d.cpp src/costmap_3d_layers.cpp)
 target_link_libraries(costmap_3d ${catkin_LIBRARIES})
@@ -75,6 +53,7 @@ if(CATKIN_ENABLE_TESTING)
   roslint_cpp()
   roslint_add_test()
 endif()
+
 
 install(TARGETS
     costmap_3d
