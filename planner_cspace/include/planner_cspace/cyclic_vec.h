@@ -313,7 +313,7 @@ public:
   bool isExceeded(const CyclicVecBase<DIM, NONCYCLIC, int>& v) const
   {
     static_assert(
-        std::is_same<int, T>(), "operator< in provided only for T=int");
+        std::is_same<int, T>(), "isExceeded is provided only for T=int");
     for (int i = 0; i < NONCYCLIC; ++i)
     {
       if (static_cast<unsigned int>((*this)[i]) >= static_cast<unsigned int>(v[i]))
