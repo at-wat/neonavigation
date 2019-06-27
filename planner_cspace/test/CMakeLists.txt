@@ -2,7 +2,7 @@ catkin_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 catkin_add_gtest(test_grid_astar src/test_grid_astar.cpp)
-target_link_libraries(test_grid_astar ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(test_grid_astar ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 
 catkin_add_gtest(test_cyclic_vec src/test_cyclic_vec.cpp)
 target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
