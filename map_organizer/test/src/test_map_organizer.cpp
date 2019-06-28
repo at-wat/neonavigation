@@ -86,7 +86,7 @@ TEST(MapOrganizer, MapArray)
   ros::Subscriber sub = nh.subscribe("maps", 1, cb);
 
   ros::Rate rate(10.0);
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  for (int i = 0; i < 100 && ros::ok(); ++i)
   {
     rate.sleep();
     ros::spinOnce();
@@ -117,7 +117,7 @@ TEST(MapOrganizer, Maps)
       nh.subscribe<nav_msgs::OccupancyGrid>("map1", 1, boost::bind(cb, _1, 1));
 
   ros::Rate rate(10.0);
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  for (int i = 0; i < 100 && ros::ok(); ++i)
   {
     rate.sleep();
     ros::spinOnce();
@@ -147,27 +147,36 @@ TEST(MapOrganizer, SelectMap)
   ros::Publisher pub = nh.advertise<std_msgs::Int32>("floor", 1);
 
   ros::Rate rate(10.0);
+  for (int i = 0; i < 100 && ros::ok(); ++i)
+  {
+    rate.sleep();
+    ros::spinOnce();
+    if (pub.getNumSubscribers() > 0 && map)
+      break;
+  }
+  ASSERT_GT(pub.getNumSubscribers(), 0u);
+  ASSERT_TRUE(static_cast<bool>(map));
+  validateMap0(*map, 0.0);
 
   std_msgs::Int32 floor;
   floor.data = 2;  // invalid floor must be ignored
   pub.publish(floor);
 
   map = nullptr;
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && ros::ok(); ++i)
   {
     rate.sleep();
     ros::spinOnce();
     if (map)
       break;
   }
-  ASSERT_TRUE(static_cast<bool>(map));
-  validateMap0(*map, 0.0);
+  ASSERT_FALSE(static_cast<bool>(map));
 
   floor.data = 1;
   pub.publish(floor);
 
   map = nullptr;
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  for (int i = 0; i < 100 && ros::ok(); ++i)
   {
     rate.sleep();
     ros::spinOnce();
@@ -191,7 +200,7 @@ TEST(MapOrganizer, SavedMapArray)
   ros::Subscriber sub = nh.subscribe("saved/maps", 1, cb);
 
   ros::Rate rate(10.0);
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  for (int i = 0; i < 100 && ros::ok(); ++i)
   {
     rate.sleep();
     ros::spinOnce();

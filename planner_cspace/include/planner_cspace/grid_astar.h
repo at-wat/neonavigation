@@ -83,13 +83,41 @@ public:
       return p_ > b.p_;
     }
   };
+  class GridmapUpdate
+  {
+  private:
+    const Vec p0_;
+    const Vec p1_;
+    const float cost_estim_;
+    const float cost_;
 
-protected:
-  Gridmap<float> g_;
-  std::unordered_map<Vec, Vec, Vec> parents_;
-  reservable_priority_queue<PriorityVec> open_;
-  size_t queue_size_limit_;
-  size_t search_task_num_;
+  public:
+    GridmapUpdate(
+        const Vec& p0, const Vec& p1,
+        const float cost_estim, const float cost)
+      : p0_(p0)
+      , p1_(p1)
+      , cost_estim_(cost_estim)
+      , cost_(cost)
+    {
+    }
+    const Vec& getParentPos() const
+    {
+      return p0_;
+    }
+    const Vec& getPos() const
+    {
+      return p1_;
+    }
+    const float getCost() const
+    {
+      return cost_;
+    }
+    const PriorityVec getPriorityVec() const
+    {
+      return PriorityVec(cost_estim_, cost_, p1_);
+    }
+  };
 
 public:
   constexpr int getDim() const
@@ -142,6 +170,8 @@ public:
                       cb_cost, cb_cost_estim, cb_search, cb_progress,
                       cost_leave, progress_interval, return_best);
   }
+
+protected:
   bool searchImpl(
       Gridmap<float>& g,
       const Vec& st, const Vec& en,
@@ -216,73 +246,82 @@ public:
         cb_progress(path_tmp);
       }
 
-#pragma omp parallel for schedule(static)
-      for (auto it = centers.begin(); it < centers.end(); ++it)
+#pragma omp parallel
       {
-        const Vec p = it->v_;
-        const float c = it->p_raw_;
-        const float c_estim = it->p_;
-        float& gp = g[p];
-        if (c > gp)
-          continue;
+        std::list<GridmapUpdate> updates;
+        std::list<Vec> dont;
 
-        if (c_estim - c < cost_estim_min)
+#pragma omp for schedule(static)
+        for (auto it = centers.cbegin(); it < centers.cend(); ++it)
         {
-          cost_estim_min = c_estim - c;
-          better = p;
-        }
+          const Vec p = it->v_;
+          const float c = it->p_raw_;
+          const float c_estim = it->p_;
+          if (c > g[p])
+            continue;
 
-        const std::vector<Vec> search_list = cb_search(p, s, e);
-        int updates = 0;
-
-        for (auto it = search_list.begin(); it < search_list.end(); ++it)
-        {
-          while (1)
+          if (c_estim - c < cost_estim_min)
           {
-            Vec next = p + *it;
-            for (int i = NONCYCLIC; i < DIM; i++)
-            {
-              next.cycleUnsigned(g.size());
-            }
-            if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
-                (unsigned int)next[1] >= (unsigned int)g.size()[1])
-              break;
-            if (g[next] < 0)
-              break;
-
-            const float cost_estim = cb_cost_estim(next, e);
-            if (cost_estim < 0 || cost_estim == FLT_MAX)
-              break;
-
-            const float cost = cb_cost(p, next, s, e);
-            if (cost < 0 || cost == FLT_MAX)
-              break;
-
-            float& gnext = g[next];
-            if (gnext > c + cost)
-            {
-              gnext = c + cost;
-#pragma omp critical
-              {
-                parents_[next] = p;
-                open_.push(PriorityVec(c + cost + cost_estim, c + cost, next));
-                if (queue_size_limit_ > 0 &&
-                    open_.size() > queue_size_limit_)
-                  open_.pop_back();
-              }
-              updates++;
-            }
-            break;
+            cost_estim_min = c_estim - c;
+            better = p;
           }
+
+          const std::vector<Vec> search_list = cb_search(p, s, e);
+
+          bool updated(false);
+          for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
+          {
+            while (1)
+            {
+              Vec next = p + *it;
+              next.cycleUnsigned(g.size());
+              if (next.isExceeded(g.size()))
+                break;
+              if (g[next] < 0)
+                break;
+
+              const float cost_estim = cb_cost_estim(next, e);
+              if (cost_estim < 0 || cost_estim == FLT_MAX)
+                break;
+
+              const float cost = cb_cost(p, next, s, e);
+              if (cost < 0 || cost == FLT_MAX)
+                break;
+
+              const float cost_next = c + cost;
+              if (g[next] > cost_next)
+              {
+                updated = true;
+                updates.push_back(
+                    GridmapUpdate(p, next, cost_next + cost_estim, cost_next));
+              }
+
+              break;
+            }
+          }
+          if (!updated)
+            dont.push_back(p);
         }
-        if (updates == 0)
+#pragma omp critical
         {
-          gp = -1;
-        }
-      }
-      // printf("(parents %d)\n", (int)parents_.size());
+          for (const GridmapUpdate& u : updates)
+          {
+            if (g[u.getPos()] > u.getCost())
+            {
+              g[u.getPos()] = u.getCost();
+              parents_[u.getPos()] = u.getParentPos();
+              open_.push(u.getPriorityVec());
+              if (queue_size_limit_ > 0 && open_.size() > queue_size_limit_)
+                open_.pop_back();
+            }
+          }
+          for (const Vec& p : dont)
+          {
+            g[p] = -1;
+          }
+        }  // omp critical
+      }    // omp parallel
     }
-    // printf("AStar search finished (parents %d)\n", (int)parents_.size());
 
     return findPath(s, e, path);
   }
@@ -292,19 +331,23 @@ public:
     while (true)
     {
       path.push_front(n);
-      // printf("p- %d %d %d   %0.4f\n", n[0], n[1], n[2], g_[n]);
       if (n == s)
         break;
       if (parents_.find(n) == parents_.end())
-      {
-        n = parents_[n];
-        // printf("px %d %d %d\n", n[0], n[1], n[2]);
         return false;
-      }
-      n = parents_[n];
+
+      const Vec child = n;
+      n = parents_[child];
+      parents_.erase(child);
     }
     return true;
   }
+
+  Gridmap<float> g_;
+  std::unordered_map<Vec, Vec, Vec> parents_;
+  reservable_priority_queue<PriorityVec> open_;
+  size_t queue_size_limit_;
+  size_t search_task_num_;
 };
 
 #endif  // PLANNER_CSPACE_GRID_ASTAR_H

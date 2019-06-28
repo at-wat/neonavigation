@@ -211,7 +211,6 @@ protected:
   enum DebugMode
   {
     DEBUG_HYSTERESIS,
-    DEBUG_HISTORY,
     DEBUG_COST_ESTIM
   };
   DebugMode debug_out_;
@@ -288,7 +287,7 @@ protected:
     const Astar::Vecf euclid_cost_coef = ec_rough_;
 
     const auto cb_cost = [this, &euclid_cost_coef](
-        const Astar::Vec& s, Astar::Vec& e,
+        const Astar::Vec& s, const Astar::Vec& e,
         const Astar::Vec& v_goal, const Astar::Vec& v_start,
         const bool hyst) -> float
     {
@@ -431,6 +430,24 @@ protected:
   {
     const Astar::Vec s_rough(s[0], s[1], 0);
 
+    std::vector<Astar::Vec> search_diffs;
+    {
+      Astar::Vec d;
+      d[2] = 0;
+      const int range_rough = 4;
+      for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+      {
+        for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+        {
+          if (d[0] == 0 && d[1] == 0)
+            continue;
+          if (d.sqlen() > range_rough * range_rough)
+            continue;
+          search_diffs.push_back(d);
+        }
+      }
+    }
+
     while (true)
     {
       if (open.size() < 1)
@@ -449,30 +466,25 @@ protected:
           continue;
         centers.push_back(center);
       }
-#pragma omp parallel for schedule(static)
-      for (auto it = centers.begin(); it < centers.end(); ++it)
+#pragma omp parallel
       {
-        const Astar::Vec p = it->v_;
-        const float c = it->p_raw_;
+        std::list<Astar::GridmapUpdate> updates;
 
-        Astar::Vec d;
-        d[2] = 0;
-
-        const int range_rough = 4;
-        for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+#pragma omp for schedule(static)
+        for (auto it = centers.cbegin(); it < centers.cend(); ++it)
         {
-          for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
-          {
-            if (d[0] == 0 && d[1] == 0)
-              continue;
-            if (d.sqlen() > range_rough * range_rough)
-              continue;
+          const Astar::Vec p = it->v_;
+          const float c = it->p_raw_;
 
-            const Astar::Vec next = p + d;
-            if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
-                (unsigned int)next[1] >= (unsigned int)map_info_.height)
+          for (const Astar::Vec& d : search_diffs)
+          {
+            Astar::Vec next = p + d;
+            next.cycleUnsigned(map_info_.angle);
+
+            if (static_cast<size_t>(next[0]) >= static_cast<size_t>(map_info_.width) ||
+                static_cast<size_t>(next[1]) >= static_cast<size_t>(map_info_.height))
               continue;
-            float& gnext = g[next];
+            const float gnext = g[next];
             if (gnext < 0)
               continue;
 
@@ -511,18 +523,23 @@ protected:
             }
             cost += euclidCost(d, ec_rough_);
 
-            const float gp = c + cost;
-            if (gnext > gp)
-            {
-              gnext = gp;
-#pragma omp critical
-              {
-                open.push(Astar::PriorityVec(gp, gp, next));
-              }
-            }
+            const float cost_next = c + cost;
+            if (gnext > cost_next)
+              updates.push_back(Astar::GridmapUpdate(p, next, cost_next, cost_next));
           }
         }
-      }
+#pragma omp critical
+        {
+          for (const Astar::GridmapUpdate& u : updates)
+          {
+            if (g[u.getPos()] > u.getCost())
+            {
+              g[u.getPos()] = u.getCost();
+              open.push(u.getPriorityVec());
+            }
+          }
+        }  // omp critical
+      }    // omp parallel
     }
     rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
   }
@@ -696,11 +713,6 @@ protected:
                 point.z = std::min(static_cast<float>(cm_hyst_[p]), point.z);
 
               point.z *= 0.01;
-              break;
-            case DEBUG_HISTORY:
-              if (cm_rough_base_[p] != 0)
-                continue;
-              point.z = cm_hist_bbf_[p].getProbability();
               break;
             case DEBUG_COST_ESTIM:
               if (cost_estim_cache_[p] == FLT_MAX)
@@ -921,11 +933,12 @@ protected:
         {
           if (!((d[0] == 0) ^ (d[1] == 0)))
             continue;
-          const Astar::Vec next = p + d;
+          Astar::Vec next = p + d;
+          next.cycleUnsigned(map_info_.angle);
           if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
-          const float& gn = cost_estim_cache_[next];
+          const float gn = cost_estim_cache_[next];
           if (gn == FLT_MAX)
             continue;
           if (gn < cost_min)
@@ -1263,8 +1276,6 @@ public:
     pnh_.param("debug_mode", debug_mode, std::string("cost_estim"));
     if (debug_mode == "hyst")
       debug_out_ = DEBUG_HYSTERESIS;
-    else if (debug_mode == "hist")
-      debug_out_ = DEBUG_HISTORY;
     else if (debug_mode == "cost_estim")
       debug_out_ = DEBUG_COST_ESTIM;
 
