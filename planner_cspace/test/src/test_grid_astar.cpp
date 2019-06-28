@@ -158,7 +158,7 @@ TEST(GridAstar, FindPath)
   std::list<Vec> path;
   ASSERT_TRUE(as.findPath(Vec(0), Vec(2), path));
   ASSERT_EQ(path.size(), 3u);
-  auto it = path.begin();
+  auto it = path.cbegin();
   ASSERT_EQ(*(it++), Vec(0));
   ASSERT_EQ(*(it++), Vec(1));
   ASSERT_EQ(*it, Vec(2));
