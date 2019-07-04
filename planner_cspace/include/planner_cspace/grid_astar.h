@@ -200,7 +200,7 @@ protected:
     parents_.clear();
 
     g[s] = 0;
-    open_.push(PriorityVec(cb_cost_estim(s, e), 0, s));
+    open_.emplace(cb_cost_estim(s, e), 0, s);
 
     auto ts = boost::chrono::high_resolution_clock::now();
 
@@ -243,7 +243,7 @@ protected:
           found = true;
           break;
         }
-        centers.push_back(center);
+        centers.push_back(std::move(center));
       }
       if (found)
         break;
@@ -305,8 +305,7 @@ protected:
               if (g[next] > cost_next)
               {
                 updated = true;
-                updates.push_back(
-                    GridmapUpdate(p, next, cost_next + cost_estim, cost_next));
+                updates.emplace_back(p, next, cost_next + cost_estim, cost_next);
               }
 
               break;
@@ -323,7 +322,7 @@ protected:
             {
               g[u.getPos()] = u.getCost();
               parents_[u.getPos()] = u.getParentPos();
-              open_.push(u.getPriorityVec());
+              open_.push(std::move(u.getPriorityVec()));
               if (queue_size_limit_ > 0 && open_.size() > queue_size_limit_)
                 open_.pop_back();
             }

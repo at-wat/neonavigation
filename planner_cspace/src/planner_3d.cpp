@@ -463,13 +463,13 @@ protected:
       {
         if (open.size() < 1)
           break;
-        const auto center = open.top();
+        auto center = open.top();
         open.pop();
         if (center.p_raw_ > g[center.v_])
           continue;
         if (center.p_raw_ - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
           continue;
-        centers.push_back(center);
+        centers.push_back(std::move(center));
       }
 #pragma omp parallel
       {
@@ -532,7 +532,7 @@ protected:
 
             const float cost_next = c + cost;
             if (gnext > cost_next)
-              updates.push_back(Astar::GridmapUpdate(p, next, cost_next, cost_next));
+              updates.emplace_back(p, next, cost_next, cost_next);
           }
         }
 #pragma omp critical
@@ -542,7 +542,7 @@ protected:
             if (g[u.getPos()] > u.getCost())
             {
               g[u.getPos()] = u.getCost();
-              open.push(u.getPriorityVec());
+              open.push(std::move(u.getPriorityVec()));
             }
           }
         }  // omp critical
