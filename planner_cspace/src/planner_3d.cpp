@@ -644,6 +644,7 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
     reservable_priority_queue<Astar::PriorityVec> open;
+    open.reserve(map_info_.width * map_info_.height / 2);
 
     cost_estim_cache_.clear(FLT_MAX);
     if (cm_[e] == 100)
