@@ -177,6 +177,7 @@ protected:
   int max_retry_num_;
 
   int num_task_;
+  int num_cost_estim_task_;
 
   // Cost weights
   class CostCoeff
@@ -448,10 +449,10 @@ protected:
 
     const int num_threads = omp_get_max_threads();
     std::vector<Astar::PriorityVec> centers;
-    centers.reserve(num_task_);
+    centers.reserve(num_cost_estim_task_);
     std::vector<std::vector<Astar::GridmapUpdate>> updates_reserved(num_threads);
     for (auto& u : updates_reserved)
-      u.reserve(num_task_);
+      u.reserve(num_cost_estim_task_);
 
     while (true)
     {
@@ -459,7 +460,7 @@ protected:
         break;
 
       centers.clear();
-      for (size_t i = 0; i < static_cast<size_t>(num_task_); ++i)
+      for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_); ++i)
       {
         if (open.size() < 1)
           break;
@@ -1302,8 +1303,10 @@ public:
     pnh_.param("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
 
-    pnh_.param("num_search_task", num_task_, num_threads * 16);
-    as_.setSearchTaskNum(num_task_);
+    int num_task;
+    pnh_.param("num_search_task", num_task, num_threads * 16);
+    as_.setSearchTaskNum(num_task);
+    pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
 
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
 
