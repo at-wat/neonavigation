@@ -453,6 +453,12 @@ protected:
     std::vector<std::vector<Astar::GridmapUpdate>> updates_reserved(num_threads);
     for (auto& u : updates_reserved)
       u.reserve(num_cost_estim_task_);
+    std::vector<Astar::Gridmap<float>> g_overlay_reserved(num_threads);
+    for (auto& gpt : g_overlay_reserved)
+    {
+      gpt.reset(g.size());
+      gpt.clear(FLT_MAX);
+    }
 
     while (true)
     {
@@ -477,8 +483,7 @@ protected:
         const int thread_num = omp_get_thread_num();
         std::vector<Astar::GridmapUpdate>& updates = updates_reserved[thread_num];
         updates.clear();
-
-        std::unordered_map<Astar::Vec, float, Astar::Vec> g_overlay;
+        Astar::Gridmap<float>& g_overlay = g_overlay_reserved[thread_num];
 
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
@@ -536,11 +541,10 @@ protected:
             const float cost_next = c + cost;
             if (gnext > cost_next)
             {
-              const auto gnext_overlay_it = g_overlay.find(next);
-              if (gnext_overlay_it == g_overlay.end() ||
-                  gnext_overlay_it->second > cost_next)
+              float& gnext_overlay = g_overlay[next];
+              if (gnext_overlay > cost_next)
               {
-                g_overlay[next] = cost_next;
+                gnext_overlay = cost_next;
                 updates.emplace_back(p, next, cost_next, cost_next);
               }
             }
