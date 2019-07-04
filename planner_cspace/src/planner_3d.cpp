@@ -478,6 +478,8 @@ protected:
         std::vector<Astar::GridmapUpdate>& updates = updates_reserved[thread_num];
         updates.clear();
 
+        std::unordered_map<Astar::Vec, float, Astar::Vec> g_overlay;
+
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
         {
@@ -533,7 +535,15 @@ protected:
 
             const float cost_next = c + cost;
             if (gnext > cost_next)
-              updates.emplace_back(p, next, cost_next, cost_next);
+            {
+              const auto gnext_overlay_it = g_overlay.find(next);
+              if (gnext_overlay_it == g_overlay.end() ||
+                  gnext_overlay_it->second > cost_next)
+              {
+                g_overlay[next] = cost_next;
+                updates.emplace_back(p, next, cost_next, cost_next);
+              }
+            }
           }
         }
 #pragma omp critical
