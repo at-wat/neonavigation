@@ -207,7 +207,7 @@ protected:
     Vec better = s;
     int cost_estim_min = cb_cost_estim(s, e);
 
-    const int num_threads = omp_get_num_threads();
+    const int num_threads = omp_get_max_threads();
     std::vector<PriorityVec> centers;
     centers.reserve(search_task_num_);
     std::vector<GridmapUpdate> updates_reserved[num_threads];
