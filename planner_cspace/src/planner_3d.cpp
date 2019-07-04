@@ -921,7 +921,7 @@ protected:
     erase.reserve(map_info_.width * map_info_.height / 2);
 
     if (cost_min != FLT_MAX)
-      erase.push(Astar::PriorityVec(cost_min, cost_min, p_cost_min));
+      erase.emplace(cost_min, cost_min, p_cost_min);
     while (true)
     {
       if (erase.size() < 1)
@@ -952,16 +952,16 @@ protected:
             continue;
           if (gn < cost_min)
           {
-            open.push(Astar::PriorityVec(gn, gn, next));
+            open.emplace(gn, gn, next);
             continue;
           }
-          erase.push(Astar::PriorityVec(gn, gn, next));
+          erase.emplace(gn, gn, next);
         }
       }
     }
     if (open.size() == 0)
     {
-      open.push(Astar::PriorityVec(-ec_rough_[0] * 0.5, -ec_rough_[0] * 0.5, e));
+      open.emplace(-ec_rough_[0] * 0.5, -ec_rough_[0] * 0.5, e);
     }
     {
       Astar::Vec p;
@@ -973,7 +973,7 @@ protected:
           const auto& gp = cost_estim_cache_[p];
           if (gp > rough_cost_max_)
           {
-            open.push(Astar::PriorityVec(gp, gp, p));
+            open.emplace(gp, gp, p);
           }
         }
       }
