@@ -207,6 +207,16 @@ protected:
     Vec better = s;
     int cost_estim_min = cb_cost_estim(s, e);
 
+    const int num_threads = omp_get_num_threads();
+    std::vector<PriorityVec> centers;
+    centers.reserve(search_task_num_);
+    std::vector<GridmapUpdate> updates_reserved[num_threads];
+    std::vector<Vec> dont_reserved[num_threads];
+    for (auto& u : updates_reserved)
+      u.reserve(search_task_num_);
+    for (auto& d : dont_reserved)
+      d.reserve(search_task_num_);
+
     while (true)
     {
       // Fetch tasks to be paralellized
@@ -220,7 +230,7 @@ protected:
         return false;
       }
       bool found(false);
-      std::vector<PriorityVec> centers;
+      centers.clear();
       for (size_t i = 0; i < search_task_num_; ++i)
       {
         if (open_.size() == 0)
@@ -248,8 +258,11 @@ protected:
 
 #pragma omp parallel
       {
-        std::list<GridmapUpdate> updates;
-        std::list<Vec> dont;
+        const int thread_num = omp_get_thread_num();
+        std::vector<GridmapUpdate>& updates = updates_reserved[thread_num];
+        std::vector<Vec>& dont = dont_reserved[thread_num];
+        updates.clear();
+        dont.clear();
 
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)

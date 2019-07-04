@@ -446,12 +446,19 @@ protected:
       }
     }
 
+    const int num_threads = omp_get_num_threads();
+    std::vector<Astar::PriorityVec> centers;
+    centers.reserve(num_task_);
+    std::vector<Astar::GridmapUpdate> updates_reserved[num_threads];
+    for (auto& u : updates_reserved)
+      u.reserve(num_task_);
+
     while (true)
     {
       if (open.size() < 1)
         break;
 
-      std::vector<Astar::PriorityVec> centers;
+      centers.clear();
       for (size_t i = 0; i < static_cast<size_t>(num_task_); ++i)
       {
         if (open.size() < 1)
@@ -466,7 +473,9 @@ protected:
       }
 #pragma omp parallel
       {
-        std::list<Astar::GridmapUpdate> updates;
+        const int thread_num = omp_get_thread_num();
+        std::vector<Astar::GridmapUpdate>& updates = updates_reserved[thread_num];
+        updates.clear();
 
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
