@@ -449,7 +449,7 @@ protected:
     const int num_threads = omp_get_max_threads();
     std::vector<Astar::PriorityVec> centers;
     centers.reserve(num_task_);
-    std::vector<Astar::GridmapUpdate> updates_reserved[num_threads];
+    std::vector<std::vector<Astar::GridmapUpdate>> updates_reserved(num_threads);
     for (auto& u : updates_reserved)
       u.reserve(num_task_);
 
