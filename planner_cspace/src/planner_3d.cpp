@@ -466,7 +466,7 @@ protected:
 #pragma omp single
         {
           centers.clear();
-          for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_); ++i)
+          for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_);)
           {
             if (open.size() < 1)
               break;
@@ -477,6 +477,7 @@ protected:
             if (center.p_raw_ - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
               continue;
             centers.push_back(std::move(center));
+            ++i;
           }
         }  // omp single
 
