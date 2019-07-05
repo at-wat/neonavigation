@@ -456,9 +456,6 @@ protected:
       std::vector<Astar::GridmapUpdate> updates;
       updates.reserve(num_cost_estim_task_);
 
-      Astar::Gridmap<float> g_overlay;
-      g_overlay.reset(g.size());
-      g_overlay.clear(FLT_MAX);
 
       while (true)
       {
@@ -541,12 +538,7 @@ protected:
             const float cost_next = c + cost;
             if (gnext > cost_next)
             {
-              float& gnext_overlay = g_overlay[next];
-              if (gnext_overlay > cost_next)
-              {
-                gnext_overlay = cost_next;
-                updates.emplace_back(p, next, cost_next, cost_next);
-              }
+              updates.emplace_back(p, next, cost_next, cost_next);
             }
           }
         }
