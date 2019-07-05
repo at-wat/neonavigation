@@ -450,40 +450,38 @@ protected:
     const int num_threads = omp_get_max_threads();
     std::vector<Astar::PriorityVec> centers;
     centers.reserve(num_cost_estim_task_);
-    std::vector<std::vector<Astar::GridmapUpdate>> updates_reserved(num_threads);
-    for (auto& u : updates_reserved)
-      u.reserve(num_cost_estim_task_);
-    std::vector<Astar::Gridmap<float>> g_overlay_reserved(num_threads);
-    for (auto& gpt : g_overlay_reserved)
-    {
-      gpt.reset(g.size());
-      gpt.clear(FLT_MAX);
-    }
 
-    while (true)
-    {
-      if (open.size() < 1)
-        break;
-
-      centers.clear();
-      for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_); ++i)
-      {
-        if (open.size() < 1)
-          break;
-        auto center = open.top();
-        open.pop();
-        if (center.p_raw_ > g[center.v_])
-          continue;
-        if (center.p_raw_ - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
-          continue;
-        centers.push_back(std::move(center));
-      }
 #pragma omp parallel
+    {
+      std::vector<Astar::GridmapUpdate> updates;
+      updates.reserve(num_cost_estim_task_);
+
+      Astar::Gridmap<float> g_overlay;
+      g_overlay.reset(g.size());
+      g_overlay.clear(FLT_MAX);
+
+      while (true)
       {
-        const int thread_num = omp_get_thread_num();
-        std::vector<Astar::GridmapUpdate>& updates = updates_reserved[thread_num];
+#pragma omp single
+        {
+          centers.clear();
+          for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_); ++i)
+          {
+            if (open.size() < 1)
+              break;
+            auto center = open.top();
+            open.pop();
+            if (center.p_raw_ > g[center.v_])
+              continue;
+            if (center.p_raw_ - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
+              continue;
+            centers.push_back(std::move(center));
+          }
+        }  // omp single
+
+        if (centers.size() == 0)
+          break;
         updates.clear();
-        Astar::Gridmap<float>& g_overlay = g_overlay_reserved[thread_num];
 
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
@@ -561,8 +559,9 @@ protected:
             }
           }
         }  // omp critical
-      }    // omp parallel
-    }
+#pragma omp barrier
+      }
+    }  // omp parallel
     rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
   }
   bool searchAvailablePos(Astar::Vec& s, const int xy_range, const int angle_range,
