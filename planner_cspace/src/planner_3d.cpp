@@ -429,7 +429,13 @@ protected:
   {
     const Astar::Vec s_rough(s[0], s[1], 0);
 
-    std::vector<Astar::Vec> search_diffs;
+    struct SearchDiffs
+    {
+      Astar::Vec d;
+      std::vector<Astar::Vec> pos;
+      float grid_to_len;
+    };
+    std::vector<SearchDiffs> search_diffs;
     {
       Astar::Vec d;
       d[2] = 0;
@@ -442,7 +448,27 @@ protected:
             continue;
           if (d.sqlen() > range_rough * range_rough)
             continue;
-          search_diffs.push_back(d);
+
+          SearchDiffs diffs;
+
+          const float grid_to_len = d.gridToLenFactor();
+          const int dist = d.len();
+          const float dpx = static_cast<float>(d[0]) / dist;
+          const float dpy = static_cast<float>(d[1]) / dist;
+          Astar::Vecf pos(0, 0, 0);
+          for (int i = 0; i < dist; i++)
+          {
+            Astar::Vec ipos(pos);
+            if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
+            {
+              diffs.pos.push_back(std::move(ipos));
+            }
+            pos[0] += dpx;
+            pos[1] += dpy;
+          }
+          diffs.grid_to_len = grid_to_len;
+          diffs.d = d;
+          search_diffs.push_back(std::move(diffs));
         }
       }
     }
@@ -489,8 +515,9 @@ protected:
           const Astar::Vec p = it->v_;
           const float c = it->p_raw_;
 
-          for (const Astar::Vec& d : search_diffs)
+          for (const SearchDiffs& ds : search_diffs)
           {
+            const Astar::Vec d = ds.d;
             Astar::Vec next = p + d;
             next[2] = 0;
 
@@ -505,27 +532,23 @@ protected:
 
             {
               float sum = 0, sum_hist = 0;
-              const float grid_to_len = d.gridToLenFactor();
-              const int dist = d.len();
-              const float dpx = static_cast<float>(d[0]) / dist;
-              const float dpy = static_cast<float>(d[1]) / dist;
-              Astar::Vec pos(static_cast<int>(p[0]), static_cast<int>(p[1]), 0);
-              int i = 0;
-              for (; i < dist; i++)
+              bool collision = false;
+              for (const auto& d : ds.pos)
               {
+                const Astar::Vec pos = p + d;
                 const char c = cm_rough_[pos];
                 if (c > 99)
+                {
+                  collision = true;
                   break;
+                }
                 sum += c;
-
                 sum_hist += cm_hist_[pos];
-                pos[0] += dpx;
-                pos[1] += dpy;
               }
-              if (i != dist)
+              if (collision)
                 continue;
               cost +=
-                  (map_info_.linear_resolution * grid_to_len / 100.0) *
+                  (map_info_.linear_resolution * ds.grid_to_len / 100.0) *
                   (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
 
               if (cost < 0)
