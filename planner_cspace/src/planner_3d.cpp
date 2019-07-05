@@ -494,7 +494,7 @@ protected:
           for (const Astar::Vec& d : search_diffs)
           {
             Astar::Vec next = p + d;
-            next.cycleUnsigned(map_info_.angle);
+            next[2] = 0;
 
             if (static_cast<size_t>(next[0]) >= static_cast<size_t>(map_info_.width) ||
                 static_cast<size_t>(next[1]) >= static_cast<size_t>(map_info_.height))
@@ -957,7 +957,7 @@ protected:
           if (!((d[0] == 0) ^ (d[1] == 0)))
             continue;
           Astar::Vec next = p + d;
-          next.cycleUnsigned(map_info_.angle);
+          next[2] = 0;
           if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
@@ -984,7 +984,7 @@ protected:
       {
         for (p[1] = 0; p[1] < static_cast<int>(map_info_.height); p[1]++)
         {
-          const auto& gp = cost_estim_cache_[p];
+          const auto gp = cost_estim_cache_[p];
           if (gp > rough_cost_max_)
           {
             open.emplace(gp, gp, p);
