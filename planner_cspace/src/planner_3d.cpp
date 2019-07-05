@@ -462,6 +462,7 @@ protected:
 
       while (true)
       {
+#pragma omp barrier
 #pragma omp single
         {
           centers.clear();
@@ -559,7 +560,6 @@ protected:
             }
           }
         }  // omp critical
-#pragma omp barrier
       }
     }  // omp parallel
     rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
