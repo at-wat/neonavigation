@@ -473,7 +473,6 @@ protected:
       }
     }
 
-    const int num_threads = omp_get_max_threads();
     std::vector<Astar::PriorityVec> centers;
     centers.reserve(num_cost_estim_task_);
 
