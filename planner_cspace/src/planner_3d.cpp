@@ -543,6 +543,7 @@ protected:
             }
           }
         }
+#pragma omp barrier
 #pragma omp critical
         {
           for (const Astar::GridmapUpdate& u : updates)
