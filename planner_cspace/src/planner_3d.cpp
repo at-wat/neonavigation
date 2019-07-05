@@ -456,6 +456,7 @@ protected:
       std::vector<Astar::GridmapUpdate> updates;
       updates.reserve(num_cost_estim_task_);
 
+      const float range_overshoot = ec_rough_[0] * (range_ + local_range_ + longcut_range_);
 
       while (true)
       {
@@ -471,7 +472,7 @@ protected:
             open.pop();
             if (center.p_raw_ > g[center.v_])
               continue;
-            if (center.p_raw_ - ec_rough_[0] * (range_ + local_range_ + longcut_range_) > g[s_rough])
+            if (center.p_raw_ - range_overshoot > g[s_rough])
               continue;
             centers.push_back(std::move(center));
             ++i;
