@@ -258,7 +258,8 @@ protected:
           const Vec p = it->v_;
           const float c = it->p_raw_;
           const float c_estim = it->p_;
-          if (c > g[p])
+          const float gp = g[p];
+          if (c > gp)
             continue;
 
           if (c_estim - c < cost_estim_min)
@@ -272,31 +273,28 @@ protected:
           bool updated(false);
           for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
           {
-            while (1)
+            Vec next = p + *it;
+            next.cycleUnsigned(g.size());
+            if (next.isExceeded(g.size()))
+              continue;
+
+            // Skip as this search task has no chance to find better way.
+            if (g[next] < gp)
+              continue;
+
+            const float cost_estim = cb_cost_estim(next, e);
+            if (cost_estim < 0 || cost_estim == FLT_MAX)
+              continue;
+
+            const float cost = cb_cost(p, next, s, e);
+            if (cost < 0 || cost == FLT_MAX)
+              continue;
+
+            const float cost_next = c + cost;
+            if (g[next] > cost_next)
             {
-              Vec next = p + *it;
-              next.cycleUnsigned(g.size());
-              if (next.isExceeded(g.size()))
-                break;
-              if (g[next] < 0)
-                break;
-
-              const float cost_estim = cb_cost_estim(next, e);
-              if (cost_estim < 0 || cost_estim == FLT_MAX)
-                break;
-
-              const float cost = cb_cost(p, next, s, e);
-              if (cost < 0 || cost == FLT_MAX)
-                break;
-
-              const float cost_next = c + cost;
-              if (g[next] > cost_next)
-              {
-                updated = true;
-                updates.emplace_back(p, next, cost_next + cost_estim, cost_next);
-              }
-
-              break;
+              updated = true;
+              updates.emplace_back(p, next, cost_next + cost_estim, cost_next);
             }
           }
           if (!updated)

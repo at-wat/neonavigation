@@ -512,22 +512,23 @@ protected:
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
         {
           const Astar::Vec p = it->v_;
-          const float c = it->p_raw_;
 
           for (const SearchDiffs& ds : search_diffs)
           {
             const Astar::Vec d = ds.d;
-            Astar::Vec next = p + d;
-            next[2] = 0;
+            const Astar::Vec next = p + d;
 
             if (static_cast<size_t>(next[0]) >= static_cast<size_t>(map_info_.width) ||
                 static_cast<size_t>(next[1]) >= static_cast<size_t>(map_info_.height))
               continue;
-            const float gnext = g[next];
-            if (gnext < 0)
-              continue;
 
-            float cost = 0;
+            float cost = euclidCost(d, ec_rough_);
+
+            const float gnext = g[next];
+
+            // Skip as this search task has no chance to find better way.
+            if (gnext < g[p] + cost)
+              continue;
 
             {
               float sum = 0, sum_hist = 0;
@@ -556,9 +557,8 @@ protected:
                 ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
               }
             }
-            cost += euclidCost(d, ec_rough_);
 
-            const float cost_next = c + cost;
+            const float cost_next = it->p_raw_ + cost;
             if (gnext > cost_next)
             {
               updates.emplace_back(p, next, cost_next, cost_next);
