@@ -28,10 +28,10 @@
   </node>
 
   <node pkg="rostopic" type="rostopic" name="goal"
-      launch-prefix="$(find planner_cspace)/test/script/delayed_launch.sh"
+      launch-prefix="$(find planner_cspace)/test/script/delayed_launch.sh 3"
       args="pub -l /move_base_simple/goal geometry_msgs/PoseStamped
             -f $(find planner_cspace)/test/data/planner_performance_example.yaml" />
-  <node pkg="planner_cspace" type="set_planner_debug_level.sh" name="debug" />
+  <node pkg="planner_cspace" type="set_planner_debug_level.sh" name="debug" args="debug" />
 
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" />
 </launch>
