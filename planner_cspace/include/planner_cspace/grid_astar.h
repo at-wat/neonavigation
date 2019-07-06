@@ -68,14 +68,14 @@ public:
     Vec v_;
 
     PriorityVec()
+      : p_(0)
     {
-      p_ = 0;
     }
-    PriorityVec(const float& p, const float& p_raw, const Vec& v)
+    PriorityVec(const float p, const float p_raw, const Vec& v)
+      : p_(p)
+      , p_raw_(p_raw)
+      , v_(v)
     {
-      p_ = p;
-      p_raw_ = p_raw;
-      v_ = v;
     }
     bool operator<(const PriorityVec& b) const
     {
