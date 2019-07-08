@@ -67,10 +67,6 @@ public:
     float p_raw_;
     Vec v_;
 
-    PriorityVec()
-      : p_(0)
-    {
-    }
     PriorityVec(const float p, const float p_raw, const Vec& v)
       : p_(p)
       , p_raw_(p_raw)
