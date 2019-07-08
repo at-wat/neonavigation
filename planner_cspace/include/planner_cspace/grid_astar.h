@@ -278,9 +278,11 @@ protected:
             if (next.isExceeded(g.size()))
               continue;
 
-            // Skip as this search task has no chance to find better way.
             if (g[next] < gp)
+            {
+              // Skip as this search task has no chance to find better way.
               continue;
+            }
 
             const float cost_estim = cb_cost_estim(next, e);
             if (cost_estim < 0 || cost_estim == FLT_MAX)

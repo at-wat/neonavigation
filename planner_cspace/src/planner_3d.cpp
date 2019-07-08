@@ -526,9 +526,11 @@ protected:
 
             const float gnext = g[next];
 
-            // Skip as this search task has no chance to find better way.
             if (gnext < g[p] + cost)
+            {
+              // Skip as this search task has no chance to find better way.
               continue;
+            }
 
             {
               float sum = 0, sum_hist = 0;
