@@ -101,9 +101,9 @@ TEST(BlockmemGridmap, WriteRead)
   }
 }
 
-TEST(BlockmemGridmap, OuterBoundery)
+TEST(BlockmemGridmap, OuterBoundary)
 {
-  BlockMemGridmap<float, 3, 2, 0x20> gm;
+  BlockMemGridmap<float, 3, 2, 0x20, true> gm;
 
   const int s = 0x30;
   gm.reset(CyclicVecInt<3, 2>(s, s, s));
