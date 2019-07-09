@@ -16,19 +16,11 @@ catkin_add_gtest(test_motion_cache
 )
 target_link_libraries(test_motion_cache ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-if(PLANNER_CSPACE_PERFORMANCE_TESTS)
-
-  catkin_add_gtest(test_blockmem_gridmap_performance
-    src/test_blockmem_gridmap_performance.cpp
-  )
-  target_link_libraries(test_blockmem_gridmap_performance ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-  set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}") # Force release build for performance test.
-
-else()
-
-  message("To perform performance tests for planner_cspace, use -DPLANNER_CSPACE_PERFORMANCE_TESTS:=ON")
-
-endif()
+catkin_add_gtest(test_blockmem_gridmap_performance
+  src/test_blockmem_gridmap_performance.cpp
+)
+target_link_libraries(test_blockmem_gridmap_performance ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")  # Force release build for performance test.
 
 add_rostest_gtest(test_navigate
   test/navigation_rostest.test
