@@ -232,6 +232,8 @@ protected:
 
   MotionCache motion_cache_;
   MotionCache motion_cache_linear_;
+  Astar::Vec min_boundary_;
+  Astar::Vec max_boundary_;
 
   diagnostic_updater::Updater diag_updater_;
   ros::Duration costmap_watchdog_;
@@ -802,7 +804,7 @@ protected:
         sensor_msgs::PointCloud pc;
         pc.header = map_header_;
         pc.header.stamp = now;
-        Astar::Vec p;
+        Astar::Vec p(0, 0, 0);
         for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
         {
           for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
@@ -1158,6 +1160,11 @@ protected:
     cm_base_ = cm_;
     cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
     cm_hist_.clear(0);
+
+    // Make boundary check threshold
+    min_boundary_ = motion_cache_.getMaxRange();
+    max_boundary_ = Astar::Vec(size[0], size[1], size[2]) - min_boundary_;
+    ROS_INFO("x:%d, y:%d grids around the boundary is ignored on path search", min_boundary_[0], min_boundary_[1]);
 
     updateGoal();
   }
@@ -1880,6 +1887,11 @@ protected:
 
       const float curv_radius = (r1 + r2) / 2;
       if (std::abs(curv_radius) < min_curve_raduis_)
+        return -1;
+
+      // Ignore boundary
+      if (s[0] < min_boundary_[0] || s[1] < min_boundary_[1] ||
+          s[0] >= max_boundary_[0] || s[1] >= max_boundary_[1])
         return -1;
 
       if (fabs(max_vel_ / r1) > max_ang_vel_)
