@@ -97,6 +97,11 @@ protected:
                     costmap_cspace::Costmap3dLayerBase::Ptr>(msg, map));
       return;
     }
+    if (isOverlayMapOutOfMap(msg, map))
+    {
+      ROS_ERROR_THROTTLE(1.0, "Given overlay map is not on the static map.");
+      return;
+    }
 
     map->processMapOverlay(msg);
     ROS_DEBUG("C-Space costmap updated");
@@ -146,6 +151,28 @@ protected:
     auto footprint = msg;
     footprint.header.stamp = ros::Time::now();
     pub_footprint_.publish(footprint);
+  }
+  bool isOverlayMapOutOfMap(
+      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      const costmap_cspace::Costmap3dLayerBase::Ptr map)
+  {
+    const costmap_cspace::CSpace3DMsg::Ptr map_msg = map->getMap();
+    const float map_origin_x = map_msg->info.origin.position.x;
+    const float map_origin_y = map_msg->info.origin.position.y;
+    const float map_top_x = map_origin_x + map_msg->info.width * map_msg->info.linear_resolution;
+    const float map_top_y = map_origin_y + map_msg->info.height * map_msg->info.linear_resolution;
+
+    const float costmap_origin_x = msg->info.origin.position.x;
+    const float costmap_origin_y = msg->info.origin.position.y;
+    const float costmap_top_x = costmap_origin_x + msg->info.width * msg->info.resolution;
+    const float costmap_top_y = costmap_origin_y + msg->info.height * msg->info.resolution;
+
+    const bool is_out_of_map_x =
+        costmap_origin_x > map_top_x || map_origin_x > costmap_top_x;
+    const bool is_out_of_map_y =
+        costmap_origin_y > map_top_y || map_origin_y > costmap_top_y;
+
+    return is_out_of_map_x || is_out_of_map_y;
   }
 
   static costmap_cspace::MapOverlayMode getMapOverlayModeFromString(
