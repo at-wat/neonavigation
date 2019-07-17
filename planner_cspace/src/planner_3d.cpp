@@ -106,11 +106,8 @@ protected:
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<float> cost_estim_cache_;
 
-  Astar::Vecf euclid_cost_coef_;
-
-  float euclidCost(const Astar::Vec& v, const Astar::Vecf coef) const
+  float euclidCost(Astar::Vec vc, const Astar::Vecf coef) const
   {
-    Astar::Vec vc = v;
     float cost = 0;
     for (int i = 0; i < as_.getNoncyclic(); i++)
     {
@@ -124,10 +121,6 @@ protected:
     }
     return cost;
   }
-  float euclidCost(const Astar::Vec& v) const
-  {
-    return euclidCost(v, euclid_cost_coef_);
-  }
 
   RotationCache rot_cache_;
   PathInterpolator path_interpolator_;
@@ -139,6 +132,7 @@ protected:
   float freq_;
   float freq_min_;
   float search_range_;
+  bool antialias_start_;
   int range_;
   int local_range_;
   double local_range_f_;
@@ -285,15 +279,13 @@ protected:
       return false;
     }
 
-    const Astar::Vecf euclid_cost_coef = ec_rough_;
-
-    const auto cb_cost = [this, &euclid_cost_coef](
+    const auto cb_cost = [this](
         const Astar::Vec& s, const Astar::Vec& e,
         const std::vector<Astar::VecWithCost>& v_start,
         const Astar::Vec& v_goal) -> float
     {
       const Astar::Vec d = e - s;
-      float cost = euclidCost(d, euclid_cost_coef);
+      float cost = euclidCost(d, ec_rough_);
 
       int sum = 0;
       const auto cache_page = motion_cache_linear_.find(0, d);
@@ -313,11 +305,11 @@ protected:
 
       return cost;
     };
-    const auto cb_cost_estim = [this, &euclid_cost_coef](
+    const auto cb_cost_estim = [this](
         const Astar::Vec& s, const Astar::Vec& e)
     {
       const Astar::Vec d = e - s;
-      const float cost = euclidCost(d, euclid_cost_coef);
+      const float cost = euclidCost(d, ec_rough_);
 
       return cost;
     };
@@ -1249,6 +1241,7 @@ public:
     pnh_.param("freq", freq_, 4.0f);
     pnh_.param("freq_min", freq_min_, 2.0f);
     pnh_.param("search_range", search_range_, 0.4f);
+    pnh_.param("antialias_start", antialias_start_, true);
 
     double costmap_watchdog;
     pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
@@ -1500,15 +1493,59 @@ protected:
   bool makePlan(const geometry_msgs::Pose& gs, const geometry_msgs::Pose& ge,
                 nav_msgs::Path& path, bool hyst)
   {
-    Astar::Vec s, e;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
-    s.cycleUnsigned(map_info_.angle);
+    Astar::Vec e;
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         ge.position.x, ge.position.y, tf2::getYaw(ge.orientation));
     e.cycleUnsigned(map_info_.angle);
+
+    Astar::Vecf sf;
+    grid_metric_converter::metric2Grid(
+        map_info_, sf[0], sf[1], sf[2],
+        gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
+    Astar::Vec s(floor(sf[0]), floor(sf[1]), lroundf(sf[2]));
+    s.cycleUnsigned(map_info_.angle);
+
+    std::vector<Astar::VecWithCost> starts;
+    if (antialias_start_)
+    {
+      const int x_cand[] =
+          {
+            0, ((sf[0] - s[0]) < 0.5 ? -1 : 1)
+          };
+      const int y_cand[] =
+          {
+            0, ((sf[1] - s[1]) < 0.5 ? -1 : 1)
+          };
+      for (const int x : x_cand)
+      {
+        for (const int y : y_cand)
+        {
+          const Astar::Vec p = s + Astar::Vec(x, y, 0);
+          const Astar::Vecf subpx = sf - Astar::Vecf(p[0] + 0.5f, p[1] + 0.5f, 0.0f);
+          if (subpx.sqlen() > 1.0)
+            continue;
+          if (cm_[p] > 99)
+            continue;
+
+          starts.push_back(Astar::VecWithCost(p));
+        }
+      }
+    }
+    else
+    {
+      if (cm_[s] < 100)
+      {
+        starts.push_back(Astar::VecWithCost(s));
+      }
+    }
+    for (Astar::VecWithCost& s : starts)
+    {
+      const Astar::Vecf diff =
+          Astar::Vecf(s.v_[0] + 0.5f, s.v_[1] + 0.5f, 0.0f) - sf;
+      s.c_ = hypotf(diff[0] * ec_rough_[0], diff[1] * ec_rough_[1]);
+      s.c_ += cm_[s.v_] * cc_.weight_costmap_ / 100.0;
+    }
 
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
@@ -1519,7 +1556,7 @@ protected:
     p.pose.position.y = y;
     pub_end_.publish(p);
 
-    if (cm_[s] == 100)
+    if (starts.size() == 0)
     {
       if (!searchAvailablePos(s, tolerance_range_, tolerance_angle_))
       {
@@ -1528,6 +1565,7 @@ protected:
         return false;
       }
       ROS_INFO("Start moved");
+      starts.push_back(Astar::VecWithCost(s));
     }
     const Astar::Vec s_rough(s[0], s[1], 0);
 
@@ -1596,8 +1634,6 @@ protected:
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
 
-    std::vector<Astar::VecWithCost> starts;
-    starts.push_back(Astar::VecWithCost(s));
     std::list<Astar::Vec> path_grid;
     if (!as_.search(
             starts, e, path_grid,
@@ -1711,12 +1747,10 @@ protected:
       if (ds.sqlen() < local_range_sq)
       {
         rough_ = false;
-        euclid_cost_coef_ = ec_;
         return search_list_;
       }
     }
     rough_ = true;
-    euclid_cost_coef_ = ec_rough_;
     return search_list_rough_;
   }
   bool cbProgress(const std::list<Astar::Vec>& path_grid)
@@ -1782,7 +1816,7 @@ protected:
     Astar::Vec d_raw = e - s;
     d_raw.cycle(map_info_.angle);
     const Astar::Vec d = d_raw;
-    float cost = euclidCost(d);
+    float cost = euclidCost(d, ec_);
 
     if (d[0] == 0 && d[1] == 0)
     {
