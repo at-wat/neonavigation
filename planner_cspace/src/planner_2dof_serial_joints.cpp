@@ -568,7 +568,9 @@ private:
     Astar::Vec d = e - s;
     d.cycle(resolution_, resolution_);
 
-    if (cbCost(s, e, std::vector<Astar::Vec>(1, s), e) >= euclidCost(d))
+    if (cbCost(
+            s, e,
+            std::vector<Astar::VecWithCost>(1, Astar::VecWithCost(s)), e) >= euclidCost(d))
     {
       path.push_back(sg);
       path.push_back(eg);
@@ -669,7 +671,7 @@ private:
   }
   std::vector<Astar::Vec>& cbSearch(
       const Astar::Vec& p,
-      const std::vector<Astar::Vec>& ss,
+      const std::vector<Astar::VecWithCost>& ss,
       const Astar::Vec& es)
   {
     return search_list_;
@@ -684,7 +686,7 @@ private:
     return euclidCost(d);
   }
   float cbCost(const Astar::Vec& s, const Astar::Vec& e,
-               const std::vector<Astar::Vec>& v_start,
+               const std::vector<Astar::VecWithCost>& v_start,
                const Astar::Vec& v_goal)
   {
     if ((unsigned int)e[0] >= (unsigned int)resolution_ * 2 ||

@@ -53,6 +53,30 @@ class GridAstar
 public:
   using Vec = CyclicVecInt<DIM, NONCYCLIC>;
   using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
+  class VecWithCost
+  {
+  public:
+    Vec v_;
+    float c_;
+    VecWithCost(const Vec& v, const float c)
+      : v_(v)
+      , c_(c)
+    {
+    }
+    explicit VecWithCost(const Vec& v)
+      : v_(v)
+      , c_(0)
+    {
+    }
+  };
+  using CostFunction =
+      std::function<float(
+          const Vec&, const Vec&, const std::vector<VecWithCost>&, const Vec&)>;
+  using CostEstimFunction = std::function<float(const Vec&, const Vec&)>;
+  using SearchNextFunction =
+      std::function<std::vector<Vec>&(
+          const Vec&, const std::vector<VecWithCost>&, const Vec&)>;
+  using ProgressFunction = std::function<bool(const std::list<Vec>&)>;
 
   template <class T, int block_width = 0x20>
   class Gridmap : public BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
@@ -154,43 +178,45 @@ public:
   bool search(
       const Vec& s, const Vec& e,
       std::list<Vec>& path,
-      std::function<float(const Vec&, const Vec&, const std::vector<Vec>&, const Vec&)> cb_cost,
-      std::function<float(const Vec&, const Vec&)> cb_cost_estim,
-      std::function<std::vector<Vec>&(const Vec&, const std::vector<Vec>&, const Vec&)> cb_search,
-      std::function<bool(const std::list<Vec>&)> cb_progress,
+      CostFunction cb_cost,
+      CostEstimFunction cb_cost_estim,
+      SearchNextFunction cb_search,
+      ProgressFunction cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
   {
-    return searchImpl(g_, std::vector<Vec>(1, s), e, path,
-                      cb_cost, cb_cost_estim, cb_search, cb_progress,
-                      cost_leave, progress_interval, return_best);
+    return searchImpl(
+        g_, std::vector<VecWithCost>(1, VecWithCost(s)), e, path,
+        cb_cost, cb_cost_estim, cb_search, cb_progress,
+        cost_leave, progress_interval, return_best);
   }
   bool search(
-      const std::vector<Vec>& ss, const Vec& e,
+      const std::vector<VecWithCost>& ss, const Vec& e,
       std::list<Vec>& path,
-      std::function<float(const Vec&, const Vec&, const std::vector<Vec>&, const Vec&)> cb_cost,
-      std::function<float(const Vec&, const Vec&)> cb_cost_estim,
-      std::function<std::vector<Vec>&(const Vec&, const std::vector<Vec>&, const Vec&)> cb_search,
-      std::function<bool(const std::list<Vec>&)> cb_progress,
+      CostFunction cb_cost,
+      CostEstimFunction cb_cost_estim,
+      SearchNextFunction cb_search,
+      ProgressFunction cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
   {
-    return searchImpl(g_, ss, e, path,
-                      cb_cost, cb_cost_estim, cb_search, cb_progress,
-                      cost_leave, progress_interval, return_best);
+    return searchImpl(
+        g_, ss, e, path,
+        cb_cost, cb_cost_estim, cb_search, cb_progress,
+        cost_leave, progress_interval, return_best);
   }
 
 protected:
   bool searchImpl(
       Gridmap<float>& g,
-      const std::vector<Vec>& sts, const Vec& en,
+      const std::vector<VecWithCost>& sts, const Vec& en,
       std::list<Vec>& path,
-      std::function<float(const Vec&, const Vec&, const std::vector<Vec>&, const Vec&)> cb_cost,
-      std::function<float(const Vec&, const Vec&)> cb_cost_estim,
-      std::function<std::vector<Vec>&(const Vec&, const std::vector<Vec>&, const Vec&)> cb_search,
-      std::function<bool(const std::list<Vec>&)> cb_progress,
+      CostFunction cb_cost,
+      CostEstimFunction cb_cost_estim,
+      SearchNextFunction cb_search,
+      ProgressFunction cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
@@ -203,19 +229,19 @@ protected:
     open_.clear();
     parents_.clear();
 
-    std::vector<Vec> ss_normalized;
+    std::vector<VecWithCost> ss_normalized;
     Vec better;
     float cost_estim_min = FLT_MAX;
-    for (const Vec& st : sts)
+    for (const VecWithCost& st : sts)
     {
-      if (st == en)
+      if (st.v_ == en)
         return false;
 
-      Vec s = st;
+      Vec s = st.v_;
       s.cycleUnsigned(g.size());
-      ss_normalized.push_back(s);
+      ss_normalized.emplace_back(s, st.c_);
       g[s] = 0;
-      open_.emplace(cb_cost_estim(s, e), 0, s);
+      open_.emplace(cb_cost_estim(s, e) + st.c_, st.c_, s);
 
       const int cost_estim = cb_cost_estim(s, e);
       if (cost_estim_min > cost_estim)
@@ -355,9 +381,9 @@ protected:
   }
   bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
   {
-    return findPath(std::vector<Vec>(1, s), e, path);
+    return findPath(std::vector<VecWithCost>(1, VecWithCost(s)), e, path);
   }
-  bool findPath(const std::vector<Vec>& ss, const Vec& e, std::list<Vec>& path)
+  bool findPath(const std::vector<VecWithCost>& ss, const Vec& e, std::list<Vec>& path)
   {
     Vec n = e;
     while (true)
@@ -365,9 +391,9 @@ protected:
       path.push_front(n);
 
       bool found(false);
-      for (const Vec& s : ss)
+      for (const VecWithCost& s : ss)
       {
-        if (n == s)
+        if (n == s.v_)
         {
           found = true;
           break;

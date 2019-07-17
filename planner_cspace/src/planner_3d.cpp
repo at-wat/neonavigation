@@ -289,7 +289,7 @@ protected:
 
     const auto cb_cost = [this, &euclid_cost_coef](
         const Astar::Vec& s, const Astar::Vec& e,
-        const std::vector<Astar::Vec>& v_start,
+        const std::vector<Astar::VecWithCost>& v_start,
         const Astar::Vec& v_goal) -> float
     {
       const Astar::Vec d = e - s;
@@ -323,7 +323,7 @@ protected:
     };
     const auto cb_search = [this](
         const Astar::Vec& p,
-        const std::vector<Astar::Vec>& s,
+        const std::vector<Astar::VecWithCost>& s,
         const Astar::Vec& e) -> std::vector<Astar::Vec>&
     {
       return search_list_rough_;
@@ -1595,21 +1595,25 @@ protected:
     const auto ts = boost::chrono::high_resolution_clock::now();
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
+
+    std::vector<Astar::VecWithCost> starts;
+    starts.push_back(Astar::VecWithCost(s));
     std::list<Astar::Vec> path_grid;
-    if (!as_.search(s, e, path_grid,
-                    std::bind(&Planner3dNode::cbCost,
-                              this, std::placeholders::_1, std::placeholders::_2,
-                              std::placeholders::_3, std::placeholders::_4, hyst),
-                    std::bind(&Planner3dNode::cbCostEstim,
-                              this, std::placeholders::_1, std::placeholders::_2),
-                    std::bind(&Planner3dNode::cbSearch,
-                              this, std::placeholders::_1,
-                              std::placeholders::_2, std::placeholders::_3),
-                    std::bind(&Planner3dNode::cbProgress,
-                              this, std::placeholders::_1),
-                    range_limit,
-                    1.0f / freq_min_,
-                    true))
+    if (!as_.search(
+            starts, e, path_grid,
+            std::bind(&Planner3dNode::cbCost,
+                      this, std::placeholders::_1, std::placeholders::_2,
+                      std::placeholders::_3, std::placeholders::_4, hyst),
+            std::bind(&Planner3dNode::cbCostEstim,
+                      this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&Planner3dNode::cbSearch,
+                      this, std::placeholders::_1,
+                      std::placeholders::_2, std::placeholders::_3),
+            std::bind(&Planner3dNode::cbProgress,
+                      this, std::placeholders::_1),
+            range_limit,
+            1.0f / freq_min_,
+            true))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
@@ -1696,13 +1700,13 @@ protected:
   }
   std::vector<Astar::Vec>& cbSearch(
       const Astar::Vec& p,
-      const std::vector<Astar::Vec>& ss,
+      const std::vector<Astar::VecWithCost>& ss,
       const Astar::Vec& es)
   {
     const float local_range_sq = local_range_ * local_range_;
-    for (const Astar::Vec& s : ss)
+    for (const Astar::VecWithCost& s : ss)
     {
-      const Astar::Vec ds = s - p;
+      const Astar::Vec ds = s.v_ - p;
 
       if (ds.sqlen() < local_range_sq)
       {
@@ -1771,7 +1775,7 @@ protected:
     return false;
   }
   float cbCost(const Astar::Vec& s, const Astar::Vec& e,
-               const std::vector<Astar::Vec>& v_start,
+               const std::vector<Astar::VecWithCost>& v_start,
                const Astar::Vec& v_goal,
                const bool hyst)
   {
