@@ -67,15 +67,11 @@ public:
     float p_raw_;
     Vec v_;
 
-    PriorityVec()
+    PriorityVec(const float p, const float p_raw, const Vec& v)
+      : p_(p)
+      , p_raw_(p_raw)
+      , v_(v)
     {
-      p_ = 0;
-    }
-    PriorityVec(const float& p, const float& p_raw, const Vec& v)
-    {
-      p_ = p;
-      p_raw_ = p_raw;
-      v_ = v;
     }
     bool operator<(const PriorityVec& b) const
     {
@@ -200,56 +196,57 @@ protected:
     parents_.clear();
 
     g[s] = 0;
-    open_.push(PriorityVec(cb_cost_estim(s, e), 0, s));
+    open_.emplace(cb_cost_estim(s, e), 0, s);
 
     auto ts = boost::chrono::high_resolution_clock::now();
 
     Vec better = s;
     int cost_estim_min = cb_cost_estim(s, e);
 
-    while (true)
-    {
-      // Fetch tasks to be paralellized
-      if (open_.size() < 1)
-      {
-        // No fesible path
-        if (return_best)
-        {
-          findPath(s, better, path);
-        }
-        return false;
-      }
-      bool found(false);
-      std::vector<PriorityVec> centers;
-      for (size_t i = 0; i < search_task_num_; ++i)
-      {
-        if (open_.size() == 0)
-          break;
-        PriorityVec center = open_.top();
-        open_.pop();
-        if (center.v_ == e || center.p_ - center.p_raw_ <= cost_leave)
-        {
-          e = center.v_;
-          found = true;
-          break;
-        }
-        centers.push_back(center);
-      }
-      if (found)
-        break;
-      auto tnow = boost::chrono::high_resolution_clock::now();
-      if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
-      {
-        std::list<Vec> path_tmp;
-        ts = tnow;
-        findPath(s, better, path_tmp);
-        cb_progress(path_tmp);
-      }
+    std::vector<PriorityVec> centers;
+    centers.reserve(search_task_num_);
 
+    bool found(false);
 #pragma omp parallel
+    {
+      std::vector<GridmapUpdate> updates;
+      updates.reserve(search_task_num_);
+      std::vector<Vec> dont;
+      dont.reserve(search_task_num_);
+
+      while (true)
       {
-        std::list<GridmapUpdate> updates;
-        std::list<Vec> dont;
+#pragma omp barrier
+#pragma omp single
+        {
+          // Fetch tasks to be paralellized
+          centers.clear();
+          for (size_t i = 0; i < search_task_num_;)
+          {
+            if (open_.size() == 0)
+              break;
+            PriorityVec center = open_.top();
+            open_.pop();
+            if (center.v_ == e || center.p_ - center.p_raw_ <= cost_leave)
+            {
+              e = center.v_;
+              found = true;
+              break;
+            }
+            centers.push_back(std::move(center));
+            ++i;
+          }
+          const auto tnow = boost::chrono::high_resolution_clock::now();
+          if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
+          {
+            std::list<Vec> path_tmp;
+            ts = tnow;
+            findPath(s, better, path_tmp);
+            cb_progress(path_tmp);
+          }
+        }
+        if (centers.size() < 1 || found)
+          break;
 
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
@@ -257,7 +254,8 @@ protected:
           const Vec p = it->v_;
           const float c = it->p_raw_;
           const float c_estim = it->p_;
-          if (c > g[p])
+          const float gp = g[p];
+          if (c > gp)
             continue;
 
           if (c_estim - c < cost_estim_min)
@@ -271,37 +269,36 @@ protected:
           bool updated(false);
           for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
           {
-            while (1)
+            Vec next = p + *it;
+            next.cycleUnsigned(g.size());
+            if (next.isExceeded(g.size()))
+              continue;
+
+            if (g[next] < gp)
             {
-              Vec next = p + *it;
-              next.cycleUnsigned(g.size());
-              if (next.isExceeded(g.size()))
-                break;
-              if (g[next] < 0)
-                break;
+              // Skip as this search task has no chance to find better way.
+              continue;
+            }
 
-              const float cost_estim = cb_cost_estim(next, e);
-              if (cost_estim < 0 || cost_estim == FLT_MAX)
-                break;
+            const float cost_estim = cb_cost_estim(next, e);
+            if (cost_estim < 0 || cost_estim == FLT_MAX)
+              continue;
 
-              const float cost = cb_cost(p, next, s, e);
-              if (cost < 0 || cost == FLT_MAX)
-                break;
+            const float cost = cb_cost(p, next, s, e);
+            if (cost < 0 || cost == FLT_MAX)
+              continue;
 
-              const float cost_next = c + cost;
-              if (g[next] > cost_next)
-              {
-                updated = true;
-                updates.push_back(
-                    GridmapUpdate(p, next, cost_next + cost_estim, cost_next));
-              }
-
-              break;
+            const float cost_next = c + cost;
+            if (g[next] > cost_next)
+            {
+              updated = true;
+              updates.emplace_back(p, next, cost_next + cost_estim, cost_next);
             }
           }
           if (!updated)
             dont.push_back(p);
         }
+#pragma omp barrier
 #pragma omp critical
         {
           for (const GridmapUpdate& u : updates)
@@ -310,7 +307,7 @@ protected:
             {
               g[u.getPos()] = u.getCost();
               parents_[u.getPos()] = u.getParentPos();
-              open_.push(u.getPriorityVec());
+              open_.push(std::move(u.getPriorityVec()));
               if (queue_size_limit_ > 0 && open_.size() > queue_size_limit_)
                 open_.pop_back();
             }
@@ -320,9 +317,18 @@ protected:
             g[p] = -1;
           }
         }  // omp critical
-      }    // omp parallel
-    }
+      }
+    }  // omp parallel
 
+    if (!found)
+    {
+      // No fesible path
+      if (return_best)
+      {
+        findPath(s, better, path);
+      }
+      return false;
+    }
     return findPath(s, e, path);
   }
   bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
