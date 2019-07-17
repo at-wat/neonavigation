@@ -221,6 +221,9 @@ protected:
       const float progress_interval,
       const bool return_best = false)
   {
+    if (sts.size() == 0)
+      return false;
+
     auto ts = boost::chrono::high_resolution_clock::now();
 
     Vec e = en;
@@ -240,7 +243,7 @@ protected:
       Vec s = st.v_;
       s.cycleUnsigned(g.size());
       ss_normalized.emplace_back(s, st.c_);
-      g[s] = 0;
+      g[s] = st.c_;
       open_.emplace(cb_cost_estim(s, e) + st.c_, st.c_, s);
 
       const int cost_estim = cb_cost_estim(s, e);
