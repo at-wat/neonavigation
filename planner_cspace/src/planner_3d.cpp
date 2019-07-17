@@ -289,8 +289,8 @@ protected:
 
     const auto cb_cost = [this, &euclid_cost_coef](
         const Astar::Vec& s, const Astar::Vec& e,
-        const Astar::Vec& v_goal, const Astar::Vec& v_start,
-        const bool hyst) -> float
+        const std::vector<Astar::Vec>& v_start,
+        const Astar::Vec& v_goal) -> float
     {
       const Astar::Vec d = e - s;
       float cost = euclidCost(d, euclid_cost_coef);
@@ -323,7 +323,8 @@ protected:
     };
     const auto cb_search = [this](
         const Astar::Vec& p,
-        const Astar::Vec& s, const Astar::Vec& e) -> std::vector<Astar::Vec>&
+        const std::vector<Astar::Vec>& s,
+        const Astar::Vec& e) -> std::vector<Astar::Vec>&
     {
       return search_list_rough_;
     };
@@ -337,10 +338,7 @@ protected:
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
     std::list<Astar::Vec> path_grid;
     if (!as_.search(s, e, path_grid,
-                    std::bind(cb_cost,
-                              std::placeholders::_1, std::placeholders::_2,
-                              std::placeholders::_3, std::placeholders::_4, false),
-                    cb_cost_estim, cb_search, cb_progress,
+                    cb_cost, cb_cost_estim, cb_search, cb_progress,
                     0,
                     1.0f / freq_min_,
                     find_best_))
@@ -1698,15 +1696,20 @@ protected:
   }
   std::vector<Astar::Vec>& cbSearch(
       const Astar::Vec& p,
-      const Astar::Vec& s, const Astar::Vec& e)
+      const std::vector<Astar::Vec>& ss,
+      const Astar::Vec& es)
   {
-    const Astar::Vec ds = s - p;
-
-    if (ds.sqlen() < local_range_ * local_range_)
+    const float local_range_sq = local_range_ * local_range_;
+    for (const Astar::Vec& s : ss)
     {
-      rough_ = false;
-      euclid_cost_coef_ = ec_;
-      return search_list_;
+      const Astar::Vec ds = s - p;
+
+      if (ds.sqlen() < local_range_sq)
+      {
+        rough_ = false;
+        euclid_cost_coef_ = ec_;
+        return search_list_;
+      }
     }
     rough_ = true;
     euclid_cost_coef_ = ec_rough_;
@@ -1767,9 +1770,9 @@ protected:
     }
     return false;
   }
-  float cbCost(const Astar::Vec& s, Astar::Vec& e,
+  float cbCost(const Astar::Vec& s, const Astar::Vec& e,
+               const std::vector<Astar::Vec>& v_start,
                const Astar::Vec& v_goal,
-               const Astar::Vec& v_start,
                const bool hyst)
   {
     Astar::Vec d_raw = e - s;
