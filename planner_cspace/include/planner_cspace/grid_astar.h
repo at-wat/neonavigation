@@ -72,10 +72,16 @@ public:
   using CostFunction =
       std::function<float(
           const Vec&, const Vec&, const std::vector<VecWithCost>&, const Vec&)>;
-  using CostEstimFunction = std::function<float(const Vec&, const Vec&)>;
   using SearchNextFunction =
       std::function<std::vector<Vec>&(
           const Vec&, const std::vector<VecWithCost>&, const Vec&)>;
+  using CostFunctionSingleStart =
+      std::function<float(
+          const Vec&, const Vec&, const Vec&, const Vec&)>;
+  using SearchNextFunctionSingleStart =
+      std::function<std::vector<Vec>&(
+          const Vec&, const Vec&, const Vec&)>;
+  using CostEstimFunction = std::function<float(const Vec&, const Vec&)>;
   using ProgressFunction = std::function<bool(const std::list<Vec>&)>;
 
   template <class T, int block_width = 0x20>
@@ -178,17 +184,31 @@ public:
   bool search(
       const Vec& s, const Vec& e,
       std::list<Vec>& path,
-      CostFunction cb_cost,
+      CostFunctionSingleStart cb_cost,
       CostEstimFunction cb_cost_estim,
-      SearchNextFunction cb_search,
+      SearchNextFunctionSingleStart cb_search,
       ProgressFunction cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
   {
+    auto cb_cost_wrapped =
+        [&cb_cost](
+            const Vec& s, const Vec& e,
+            const std::vector<VecWithCost>& gss, const Vec& ge) -> float
+    {
+      return cb_cost(s, e, gss[0].v_, ge);
+    };
+    auto cb_search_wrapped =
+        [&cb_search](
+            const Vec& s,
+            const std::vector<VecWithCost>& gss, const Vec& ge) -> std::vector<Vec>&
+    {
+      return cb_search(s, gss[0].v_, ge);
+    };
     return searchImpl(
         g_, std::vector<VecWithCost>(1, VecWithCost(s)), e, path,
-        cb_cost, cb_cost_estim, cb_search, cb_progress,
+        cb_cost_wrapped, cb_cost_estim, cb_search_wrapped, cb_progress,
         cost_leave, progress_interval, return_best);
   }
   bool search(

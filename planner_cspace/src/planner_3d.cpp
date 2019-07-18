@@ -281,7 +281,7 @@ protected:
 
     const auto cb_cost = [this](
         const Astar::Vec& s, const Astar::Vec& e,
-        const std::vector<Astar::VecWithCost>& v_start,
+        const Astar::Vec& v_start,
         const Astar::Vec& v_goal) -> float
     {
       const Astar::Vec d = e - s;
@@ -315,7 +315,7 @@ protected:
     };
     const auto cb_search = [this](
         const Astar::Vec& p,
-        const std::vector<Astar::VecWithCost>& s,
+        const Astar::Vec& s,
         const Astar::Vec& e) -> std::vector<Astar::Vec>&
     {
       return search_list_rough_;

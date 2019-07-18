@@ -568,9 +568,7 @@ private:
     Astar::Vec d = e - s;
     d.cycle(resolution_, resolution_);
 
-    if (cbCost(
-            s, e,
-            std::vector<Astar::VecWithCost>(1, Astar::VecWithCost(s)), e) >= euclidCost(d))
+    if (cbCost(s, e, s, e) >= euclidCost(d))
     {
       path.push_back(sg);
       path.push_back(eg);
@@ -585,20 +583,21 @@ private:
     float cancel = FLT_MAX;
     if (replan_interval_ >= ros::Duration(0))
       cancel = replan_interval_.toSec();
-    if (!as_.search(s, e, path_grid,
-                    std::bind(&planner2dofSerialJointsNode::cbCost,
-                              this, std::placeholders::_1, std::placeholders::_2,
-                              std::placeholders::_3, std::placeholders::_4),
-                    std::bind(&planner2dofSerialJointsNode::cbCostEstim,
-                              this, std::placeholders::_1, std::placeholders::_2),
-                    std::bind(&planner2dofSerialJointsNode::cbSearch,
-                              this, std::placeholders::_1,
-                              std::placeholders::_2, std::placeholders::_3),
-                    std::bind(&planner2dofSerialJointsNode::cbProgress,
-                              this, std::placeholders::_1),
-                    0,
-                    cancel,
-                    true))
+    if (!as_.search(
+            s, e, path_grid,
+            std::bind(&planner2dofSerialJointsNode::cbCost,
+                      this, std::placeholders::_1, std::placeholders::_2,
+                      std::placeholders::_3, std::placeholders::_4),
+            std::bind(&planner2dofSerialJointsNode::cbCostEstim,
+                      this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&planner2dofSerialJointsNode::cbSearch,
+                      this, std::placeholders::_1,
+                      std::placeholders::_2, std::placeholders::_3),
+            std::bind(&planner2dofSerialJointsNode::cbProgress,
+                      this, std::placeholders::_1),
+            0,
+            cancel,
+            true))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
@@ -671,8 +670,7 @@ private:
   }
   std::vector<Astar::Vec>& cbSearch(
       const Astar::Vec& p,
-      const std::vector<Astar::VecWithCost>& ss,
-      const Astar::Vec& es)
+      const Astar::Vec& ss, const Astar::Vec& es)
   {
     return search_list_;
   }
@@ -685,9 +683,9 @@ private:
     const Astar::Vec d = e - s;
     return euclidCost(d);
   }
-  float cbCost(const Astar::Vec& s, const Astar::Vec& e,
-               const std::vector<Astar::VecWithCost>& v_start,
-               const Astar::Vec& v_goal)
+  float cbCost(
+      const Astar::Vec& s, const Astar::Vec& e,
+      const Astar::Vec& v_start, const Astar::Vec& v_goal)
   {
     if ((unsigned int)e[0] >= (unsigned int)resolution_ * 2 ||
         (unsigned int)e[1] >= (unsigned int)resolution_ * 2)

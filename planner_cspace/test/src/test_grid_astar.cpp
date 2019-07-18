@@ -46,7 +46,7 @@ TEST(GridAstar, ParallelSearch)
   omp_set_num_threads(2);
 
   const auto cb_cost = [](
-      const Vec&, Vec&, const Vec&, const Vec&) -> float
+      const Vec&, const Vec&, const Vec&, const Vec&) -> float
   {
     return 1.0;
   };
