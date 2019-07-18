@@ -54,6 +54,10 @@ TEST(GridAstar, ParallelSearch)
   {
     return 1e-6;
   };
+
+  // create search table of graph edges (relative vector to the connected grid)
+  // 0: connected to 1-14
+  // 1-14: connected to 1-15
   std::vector<Vec> search[16];
   for (int i = 1; i < 15; ++i)
   {
@@ -62,9 +66,9 @@ TEST(GridAstar, ParallelSearch)
     {
       if (i == j)
         continue;
-      search[i].push_back(Vec(j));
+      search[i].push_back(Vec(j - i));
     }
-    search[i].push_back(Vec(15));
+    search[i].push_back(Vec(15 - i));
   }
 
   const auto cb_search = [&search](
