@@ -826,8 +826,6 @@ protected:
     }
 
     {
-      std::cerr << "(" << msg->x << ", " << msg->y << ", " << msg->yaw
-                << "), (" << msg->width << ", " << msg->height << ", " << msg->angle << ")" << std::endl;
       const Astar::Vec center(
           static_cast<int>(msg->width / 2), static_cast<int>(msg->height / 2), 0);
       const Astar::Vec gp(
