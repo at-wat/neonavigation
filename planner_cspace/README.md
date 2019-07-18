@@ -58,6 +58,8 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
     > - "hyst": path hysteresis cost
     > - "cost_estim": estimated cost to the goal used as A\* heuristic function
 * "queue_size_limit" (int, default: 0)
+* "antialias_start" (bool, default: false)
+    > If enabled, the planner searches path from multiple surrounding grids within the grid size to reduce path chattering.
 
 ----
 
