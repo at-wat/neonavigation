@@ -1881,6 +1881,8 @@ protected:
       if (fabs(aspect) < angle_resolution_aspect_)
         return -1;  // large y offset
 
+      cost += ec_[2] * fabs(1.0 / aspect) * map_info_.angular_resolution / (M_PI * 2.0);
+
       // Go-straight
       int sum = 0, sum_hyst = 0;
       Astar::Vec d_index(d[0], d[1], e[2]);
