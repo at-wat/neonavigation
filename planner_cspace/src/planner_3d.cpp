@@ -826,6 +826,8 @@ protected:
     }
 
     {
+      std::cerr << "(" << msg->x << ", " << msg->y << ", " << msg->yaw
+                << "), (" << msg->width << ", " << msg->height << ", " << msg->angle << ")" << std::endl;
       const Astar::Vec center(
           static_cast<int>(msg->width / 2), static_cast<int>(msg->height / 2), 0);
       const Astar::Vec gp(
@@ -1503,7 +1505,7 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, sf[0], sf[1], sf[2],
         gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
-    Astar::Vec s(floor(sf[0]), floor(sf[1]), lroundf(sf[2]));
+    Astar::Vec s(static_cast<int>(floor(sf[0])), static_cast<int>(floor(sf[1])), lroundf(sf[2]));
     s.cycleUnsigned(map_info_.angle);
 
     std::vector<Astar::VecWithCost> starts;
