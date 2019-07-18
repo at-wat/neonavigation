@@ -1241,7 +1241,7 @@ public:
     pnh_.param("freq", freq_, 4.0f);
     pnh_.param("freq_min", freq_min_, 2.0f);
     pnh_.param("search_range", search_range_, 0.4f);
-    pnh_.param("antialias_start", antialias_start_, true);
+    pnh_.param("antialias_start", antialias_start_, false);
 
     double costmap_watchdog;
     pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
