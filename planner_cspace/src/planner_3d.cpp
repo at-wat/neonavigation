@@ -1545,6 +1545,34 @@ protected:
           Astar::Vecf(s.v_[0] + 0.5f, s.v_[1] + 0.5f, 0.0f) - sf;
       s.c_ = hypotf(diff[0] * ec_rough_[0], diff[1] * ec_rough_[1]);
       s.c_ += cm_[s.v_] * cc_.weight_costmap_ / 100.0;
+
+      // Check if arrived to the goal
+      Astar::Vec remain = s.v_ - e;
+      remain.cycle(map_info_.angle);
+      if (remain.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
+          abs(remain[2]) <= goal_tolerance_ang_)
+      {
+        path.poses.resize(1);
+        path.poses[0].header = path.header;
+        if (force_goal_orientation_)
+          path.poses[0].pose = goal_raw_.pose;
+        else
+          path.poses[0].pose = ge;
+
+        if (escaping_)
+        {
+          goal_ = goal_raw_;
+          escaping_ = false;
+          updateGoal();
+          ROS_INFO("Escaped");
+        }
+        else
+        {
+          status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
+          ROS_INFO("Path plan finishing");
+        }
+        return true;
+      }
     }
 
     geometry_msgs::PoseStamped p;
@@ -1599,33 +1627,6 @@ protected:
     p.pose.position.x = x;
     p.pose.position.y = y;
     pub_start_.publish(p);
-
-    Astar::Vec diff = s - e;
-    diff.cycle(map_info_.angle);
-    if (diff.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
-        abs(diff[2]) <= goal_tolerance_ang_)
-    {
-      path.poses.resize(1);
-      path.poses[0].header = path.header;
-      if (force_goal_orientation_)
-        path.poses[0].pose = goal_raw_.pose;
-      else
-        path.poses[0].pose = ge;
-
-      if (escaping_)
-      {
-        goal_ = goal_raw_;
-        escaping_ = false;
-        updateGoal();
-        ROS_INFO("Escaped");
-      }
-      else
-      {
-        status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
-        ROS_INFO("Path plan finishing");
-      }
-      return true;
-    }
 
     const float range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
     angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
