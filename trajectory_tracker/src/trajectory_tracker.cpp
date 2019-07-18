@@ -401,11 +401,17 @@ void TrackerNode::control()
 
   const float dt = 1.0 / hz_;
   // Stop and rotate
-  if ((std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle)) ||
+  const bool large_angle_error = std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle);
+  if (large_angle_error ||
       std::abs(remain_local) < stop_tolerance_dist_ ||
       path_length < min_track_path_ ||
       in_place_turn_)
   {
+    if (large_angle_error)
+    {
+      ROS_INFO_THROTTLE(1.0, "Stop and rotate due to large angular error: %0.3f", angle);
+    }
+
     if (path_length < min_track_path_ || std::abs(remain_local) < stop_tolerance_dist_)
     {
       angle = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
