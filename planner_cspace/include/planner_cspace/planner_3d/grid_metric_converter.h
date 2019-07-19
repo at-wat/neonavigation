@@ -63,6 +63,15 @@ inline void metric2Grid(
   y = static_cast<int>(floor((gy - map_info.origin.position.y) / map_info.linear_resolution));
   yaw = lroundf(gyaw / map_info.angular_resolution);
 }
+inline void metric2Grid(
+    const costmap_cspace_msgs::MapMetaData3D& map_info,
+    float& x, float& y, float& yaw,
+    const float gx, const float gy, const float gyaw)
+{
+  x = (gx - map_info.origin.position.x) / map_info.linear_resolution;
+  y = (gy - map_info.origin.position.y) / map_info.linear_resolution;
+  yaw = gyaw / map_info.angular_resolution;
+}
 
 template <template <class, class> class STL_CONTAINER = std::list>
 void grid2MetricPath(
