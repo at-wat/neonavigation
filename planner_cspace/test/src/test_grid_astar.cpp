@@ -59,16 +59,15 @@ TEST(GridAstar, ParallelSearch)
   // 0: connected to 1-14
   // 1-14: connected to 1-15
   std::vector<Vec> search[16];
-  for (int i = 1; i < 15; ++i)
+  for (int i = 1; i <= 14; ++i)
   {
     search[0].push_back(Vec(i));
-    for (int j = 1; j < 15; ++j)
+    for (int j = 1; j <= 15; ++j)
     {
       if (i == j)
         continue;
       search[i].push_back(Vec(j - i));
     }
-    search[i].push_back(Vec(15 - i));
   }
 
   const auto cb_search = [&search](
@@ -115,17 +114,16 @@ TEST(GridAstar, SearchWithMultipleStarts)
   // 1: connected to 2-14
   // 2-14: connected to 2-15
   std::vector<Vec> search[16];
-  for (int i = 2; i < 15; ++i)
+  for (int i = 2; i <= 14; ++i)
   {
     search[0].push_back(Vec(i));
     search[1].push_back(Vec(i - 1));
-    for (int j = 2; j < 15; ++j)
+    for (int j = 2; j <= 15; ++j)
     {
       if (i == j)
         continue;
       search[i].push_back(Vec(j - i));
     }
-    search[i].push_back(Vec(15 - i));
   }
   const auto cb_search = [&search](
       const Vec& p, const std::vector<GridAstar<1, 1>::VecWithCost>&, const Vec&) -> std::vector<Vec>&
