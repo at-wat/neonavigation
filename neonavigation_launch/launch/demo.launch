@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="use_path_with_velocity" default="true" />
+  <arg name="vel" default="0.5" />
 
   <include file="$(find neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="true" />
     <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
     <arg name="use_path_with_velocity" value="true" />
+    <arg name="vel" value="$(arg vel)" />
   </include>
 
   <node pkg="map_server" type="map_server" name="map_server_local" args="$(find neonavigation_launch)/map/demo_map_local.yaml">
