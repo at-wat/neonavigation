@@ -63,8 +63,8 @@ protected:
     srv_forget_ =
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
-    pub_map_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1);
-    pub_map_local_ = nh_.advertise<nav_msgs::OccupancyGrid>("overlay", 1);
+    pub_map_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+    pub_map_local_ = nh_.advertise<nav_msgs::OccupancyGrid>("overlay", 1, true);
     pub_initial_pose_ =
         nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
   }
