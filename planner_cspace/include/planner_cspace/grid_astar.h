@@ -58,7 +58,7 @@ public:
   public:
     Vec v_;
     float c_;
-    VecWithCost(const Vec& v, const float c = 0.0)
+    explicit VecWithCost(const Vec& v, const float c = 0.0)
       : v_(v)
       , c_(c)
     {
