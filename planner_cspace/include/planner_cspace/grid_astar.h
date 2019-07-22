@@ -403,7 +403,7 @@ protected:
   }
   bool findPath(const std::vector<VecWithCost>& ss, const Vec& e, std::list<Vec>& path) const
   {
-    auto parents = parents_;
+    std::unordered_map<Vec, Vec, Vec> parents = parents_;
     Vec n = e;
     while (true)
     {
