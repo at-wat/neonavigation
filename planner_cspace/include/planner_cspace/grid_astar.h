@@ -421,10 +421,7 @@ protected:
       if (found)
         break;
       if (parents.find(n) == parents.end())
-      {
-        ROS_WARN("Path is incomplete or looped");
         return false;
-      }
 
       const Vec child = n;
       n = parents[child];
