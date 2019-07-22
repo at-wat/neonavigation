@@ -168,7 +168,7 @@ public:
   {
     return parents_;
   }
-  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
+  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path) const
   {
     return GridAstar::findPath(s, e, path);
   }
@@ -221,13 +221,17 @@ TEST(GridAstar, FindPath)
   as.parentMap()[Vec(2)] = Vec(1);
   as.parentMap()[Vec(1)] = Vec(0);
 
-  std::list<Vec> path;
-  ASSERT_TRUE(as.findPath(Vec(0), Vec(2), path));
-  ASSERT_EQ(path.size(), 3u);
-  auto it = path.cbegin();
-  ASSERT_EQ(*(it++), Vec(0));
-  ASSERT_EQ(*(it++), Vec(1));
-  ASSERT_EQ(*it, Vec(2));
+  // findPath must return same result for multiple calls
+  for (int i = 0; i < 2; ++i)
+  {
+    std::list<Vec> path;
+    ASSERT_TRUE(as.findPath(Vec(0), Vec(2), path));
+    ASSERT_EQ(path.size(), 3u);
+    auto it = path.cbegin();
+    ASSERT_EQ(*(it++), Vec(0));
+    ASSERT_EQ(*(it++), Vec(1));
+    ASSERT_EQ(*it, Vec(2));
+  }
 }
 
 int main(int argc, char** argv)
