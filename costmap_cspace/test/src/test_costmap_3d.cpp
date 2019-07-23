@@ -630,6 +630,58 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
   }
 }
 
+TEST(Costmap3dLayerFootprint, CSpaceOutOfBounds)
+{
+  costmap_cspace::Costmap3dLayerFootprint cm;
+
+  // Set example footprint
+  int footprint_offset = 0;
+  XmlRpc::XmlRpcValue footprint_xml;
+  footprint_xml.fromXml(footprint_str, &footprint_offset);
+  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
+
+  // Settings: 4 angular grids, no expand/spread
+  cm.setAngleResolution(4);
+  cm.setExpansion(0.0, 0.0);
+  cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
+
+  const float map_width = 10.0;
+  const float map_height = 10.0;
+
+  // Generate sample map
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = map_width;
+  map->info.height = map_height;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height);
+
+  // Generate local sample map
+  nav_msgs::OccupancyGrid::Ptr map2(new nav_msgs::OccupancyGrid);
+  *map2 = *map;
+
+  // Apply empty map
+  cm.setBaseMap(map);
+
+  ASSERT_TRUE(cm.processMapOverlay(map2));
+
+  map2->info.origin.position.x = map_width - 0.1;
+  map2->info.origin.position.y = map_height - 0.1;
+  ASSERT_TRUE(cm.processMapOverlay(map2));
+
+  map2->info.origin.position.x = map_width + 0.1;
+  map2->info.origin.position.y = map_height + 0.1;
+  ASSERT_FALSE(cm.processMapOverlay(map2));
+
+  map2->info.origin.position.x = -map_width + 0.1;
+  map2->info.origin.position.y = -map_height + 0.1;
+  ASSERT_TRUE(cm.processMapOverlay(map2));
+
+  map2->info.origin.position.x = -map_width - 0.1;
+  map2->info.origin.position.y = -map_height - 0.1;
+  ASSERT_FALSE(cm.processMapOverlay(map2));
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
