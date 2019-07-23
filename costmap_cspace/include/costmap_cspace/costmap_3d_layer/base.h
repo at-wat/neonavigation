@@ -331,25 +331,6 @@ public:
 
     return true;
   }
-  bool isMapOverlayOutOfBaseMap(const nav_msgs::OccupancyGrid::ConstPtr& overlay_map) const
-  {
-    const float map_origin_x = map_->info.origin.position.x;
-    const float map_origin_y = map_->info.origin.position.y;
-    const float map_top_x = map_origin_x + map_->info.width * map_->info.linear_resolution;
-    const float map_top_y = map_origin_y + map_->info.height * map_->info.linear_resolution;
-
-    const float overlay_origin_x = overlay_map->info.origin.position.x;
-    const float overlay_origin_y = overlay_map->info.origin.position.y;
-    const float overlay_top_x = overlay_origin_x + overlay_map->info.width * overlay_map->info.resolution;
-    const float overlay_top_y = overlay_origin_y + overlay_map->info.height * overlay_map->info.resolution;
-
-    const bool is_out_of_map_x =
-        overlay_origin_x > map_top_x || map_origin_x > overlay_top_x;
-    const bool is_out_of_map_y =
-        overlay_origin_y > map_top_y || map_origin_y > overlay_top_y;
-
-    return is_out_of_map_x || is_out_of_map_y;
-  }
   CSpace3DMsg::Ptr getMap()
   {
     return map_;
@@ -413,6 +394,25 @@ protected:
     *map_overlay_ = *map_;
     if (child_)
       child_->setBaseMapChain();
+  }
+  bool isMapOverlayOutOfBaseMap(const nav_msgs::OccupancyGrid::ConstPtr& overlay_map) const
+  {
+    const float map_origin_x = map_->info.origin.position.x;
+    const float map_origin_y = map_->info.origin.position.y;
+    const float map_top_x = map_origin_x + map_->info.width * map_->info.linear_resolution;
+    const float map_top_y = map_origin_y + map_->info.height * map_->info.linear_resolution;
+
+    const float overlay_origin_x = overlay_map->info.origin.position.x;
+    const float overlay_origin_y = overlay_map->info.origin.position.y;
+    const float overlay_top_x = overlay_origin_x + overlay_map->info.width * overlay_map->info.resolution;
+    const float overlay_top_y = overlay_origin_y + overlay_map->info.height * overlay_map->info.resolution;
+
+    const bool is_out_of_map_x =
+        overlay_origin_x > map_top_x || map_origin_x > overlay_top_x;
+    const bool is_out_of_map_y =
+        overlay_origin_y > map_top_y || map_origin_y > overlay_top_y;
+
+    return is_out_of_map_x || is_out_of_map_y;
   }
 };
 }  // namespace costmap_cspace
