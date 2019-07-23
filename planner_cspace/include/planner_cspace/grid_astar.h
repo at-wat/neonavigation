@@ -397,12 +397,13 @@ protected:
     }
     return findPath(ss_normalized, e, path);
   }
-  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
+  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path) const
   {
     return findPath(std::vector<VecWithCost>(1, VecWithCost(s)), e, path);
   }
-  bool findPath(const std::vector<VecWithCost>& ss, const Vec& e, std::list<Vec>& path)
+  bool findPath(const std::vector<VecWithCost>& ss, const Vec& e, std::list<Vec>& path) const
   {
+    std::unordered_map<Vec, Vec, Vec> parents = parents_;
     Vec n = e;
     while (true)
     {
@@ -419,12 +420,12 @@ protected:
       }
       if (found)
         break;
-      if (parents_.find(n) == parents_.end())
+      if (parents.find(n) == parents.end())
         return false;
 
       const Vec child = n;
-      n = parents_[child];
-      parents_.erase(child);
+      n = parents[child];
+      parents.erase(child);
     }
     return true;
   }
