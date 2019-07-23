@@ -632,18 +632,21 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
 
 TEST(Costmap3dLayerFootprint, CSpaceOutOfBounds)
 {
-  costmap_cspace::Costmap3dLayerFootprint cm;
-
   // Set example footprint
   int footprint_offset = 0;
   XmlRpc::XmlRpcValue footprint_xml;
   footprint_xml.fromXml(footprint_str, &footprint_offset);
-  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
+  costmap_cspace::Polygon footprint(footprint_xml);
 
   // Settings: 4 angular grids, no expand/spread
-  cm.setAngleResolution(4);
-  cm.setExpansion(0.0, 0.0);
-  cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
+  costmap_cspace::Costmap3d cms(4);
+  auto cm = cms.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm->setExpansion(0.0, 0.0);
+  cm->setFootprint(footprint);
+  auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_over->setExpansion(0.0, 0.0);
+  cm_over->setFootprint(footprint);
 
   const float map_width = 10.0;
   const float map_height = 10.0;
@@ -661,25 +664,25 @@ TEST(Costmap3dLayerFootprint, CSpaceOutOfBounds)
   *map2 = *map;
 
   // Apply empty map
-  cm.setBaseMap(map);
+  cm->setBaseMap(map);
 
-  ASSERT_TRUE(cm.processMapOverlay(map2));
+  ASSERT_TRUE(cm_over->processMapOverlay(map2));
 
   map2->info.origin.position.x = map_width - 0.1;
   map2->info.origin.position.y = map_height - 0.1;
-  ASSERT_TRUE(cm.processMapOverlay(map2));
+  ASSERT_TRUE(cm_over->processMapOverlay(map2));
 
   map2->info.origin.position.x = map_width + 0.1;
   map2->info.origin.position.y = map_height + 0.1;
-  ASSERT_FALSE(cm.processMapOverlay(map2));
+  ASSERT_FALSE(cm_over->processMapOverlay(map2));
 
   map2->info.origin.position.x = -map_width + 0.1;
   map2->info.origin.position.y = -map_height + 0.1;
-  ASSERT_TRUE(cm.processMapOverlay(map2));
+  ASSERT_TRUE(cm_over->processMapOverlay(map2));
 
   map2->info.origin.position.x = -map_width - 0.1;
   map2->info.origin.position.y = -map_height - 0.1;
-  ASSERT_FALSE(cm.processMapOverlay(map2));
+  ASSERT_FALSE(cm_over->processMapOverlay(map2));
 }
 
 int main(int argc, char** argv)
