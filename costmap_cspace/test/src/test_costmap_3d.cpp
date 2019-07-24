@@ -380,7 +380,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   int footprint_offset = 0;
   XmlRpc::XmlRpcValue footprint_xml;
   footprint_xml.fromXml(footprint_str, &footprint_offset);
-  costmap_cspace::Polygon footprint(footprint_xml);
+  const costmap_cspace::Polygon footprint(footprint_xml);
   cm_ref.setFootprint(footprint);
   cm_base.setFootprint(footprint);
 
@@ -556,7 +556,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
   int footprint_offset = 0;
   XmlRpc::XmlRpcValue footprint_xml;
   footprint_xml.fromXml(footprint_str, &footprint_offset);
-  costmap_cspace::Polygon footprint(footprint_xml);
+  const costmap_cspace::Polygon footprint(footprint_xml);
 
   // Settings: 4 angular grids, no expand/spread
   costmap_cspace::Costmap3d cms(4);
@@ -636,7 +636,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOutOfBounds)
   int footprint_offset = 0;
   XmlRpc::XmlRpcValue footprint_xml;
   footprint_xml.fromXml(footprint_str, &footprint_offset);
-  costmap_cspace::Polygon footprint(footprint_xml);
+  const costmap_cspace::Polygon footprint(footprint_xml);
 
   // Settings: 4 angular grids, no expand/spread
   costmap_cspace::Costmap3d cms(4);
