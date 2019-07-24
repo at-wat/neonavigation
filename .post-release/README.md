@@ -9,6 +9,5 @@ Use Intel or AMD graphic board.
 ```shell
 $ xhost +
 $ ./post-release-test.sh kinetic
-$ ./post-release-test.sh lunar
 $ ./post-release-test.sh melodic
 ```
