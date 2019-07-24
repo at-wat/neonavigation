@@ -99,7 +99,7 @@ protected:
     }
 
     const bool updated = map->processMapOverlay(msg);
-    ROS_DEBUG("C-Space costmap %s", updated? "updated" : "not updated");
+    ROS_DEBUG("C-Space costmap %s", updated ? "updated" : "not updated");
   }
   bool cbUpdateStatic(
       const costmap_cspace::CSpace3DMsg::Ptr map,
