@@ -107,7 +107,7 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 
   ASSERT_EQ(cm.getRangeMax(), static_cast<int>(ceilf(1.5 / 1.0)));
 
-  const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
+  const costmap_cspace::CSpace3Cache &temp = cm.getTemplate();
   // Check template size
   int x, y, a;
   int cx, cy, ca;
@@ -169,7 +169,7 @@ TEST(Costmap3dLayerPlain, CSpaceTemplate)
 
   ASSERT_EQ(cm.getRangeMax(), 0);
 
-  const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
+  const costmap_cspace::CSpace3Cache &temp = cm.getTemplate();
   // Check template size
   int x, y, a;
   int cx, cy, ca;
@@ -232,7 +232,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
   }
 
   // std::cout << "========" << std::endl;
-  for (auto& g : map->data)
+  for (auto &g : map->data)
   {
     g = 100;
   }
@@ -254,7 +254,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
   }
 
   // C shape wall in the map
-  for (auto& g : map->data)
+  for (auto &g : map->data)
   {
     g = 0;
   }
@@ -443,7 +443,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb = [&updated](
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
   {
     updated = update;
     return true;
@@ -498,7 +498,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb_max = [&updated_max](
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
   {
     updated_max = update;
     return true;
@@ -630,7 +630,126 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
   }
 }
 
-int main(int argc, char** argv)
+TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
+{
+  struct TestData
+  {
+    struct Input
+    {
+      float x;
+      float y;
+    };
+    struct Expected
+    {
+      unsigned int x;
+      unsigned int y;
+      unsigned int yaw;
+      unsigned int width;
+      unsigned int height;
+      unsigned int angle;
+    };
+    std::string name;
+    Input input;
+    bool valid;
+    Expected expected;
+  };
+  const TestData dataset[] =
+      {
+        { "inside0", { 0.0, 0.0 }, true, { 0u, 0u, 0u, 2u, 2u, 4u } },
+        { "inside1", { 1.0, 0.0 }, true, { 1u, 0u, 0u, 2u, 2u, 4u } },
+        { "half-outside x0", { -1.0, 0.0 }, true, { 0u, 0u, 0u, 1u, 2u, 4u } },
+        { "half-outside x1", { 3.0, 0.0 }, true, { 3u, 0u, 0u, 1u, 2u, 4u } },
+        { "half-outside y0", { 0.0, -1.0 }, true, { 0u, 0u, 0u, 2u, 1u, 4u } },
+        { "half-outside y1", { 0.0, 3.0 }, true, { 0u, 3u, 0u, 2u, 1u, 4u } },
+        { "half-outside xy0", { -1.0, -1.0 }, true, { 0u, 0u, 0u, 1u, 1u, 4u } },
+        { "half-outside xy1", { 3.0, -1.0 }, true, { 3u, 0u, 0u, 1u, 1u, 4u } },
+        { "half-outside xy2", { 3.0, 3.0 }, true, { 3u, 3u, 0u, 1u, 1u, 4u } },
+        { "half-outside xy3", { -1.0, 3.0 }, true, { 0u, 3u, 0u, 1u, 1u, 4u } },
+        { "boundary x0", { -2.0, 0.0 }, false },
+        { "boundary x1", { 4, 0.0 }, false },
+        { "boundary y0", { 0, -2.0 }, false },
+        { "boundary y1", { 0, 4.0 }, false },
+        { "boundary xy0", { -2.0, -2.0 }, false },
+        { "boundary xy1", { 4.0, -2.0 }, false },
+        { "boundary xy2", { 4.0, 4.0 }, false },
+        { "boundary xy3", { -2.0, 4.0 }, false },
+        { "outside x0", { -3.0, 0.0 }, false },
+        { "outside x1", { 5, 0.0 }, false },
+        { "outside y0", { 0, -3.0 }, false },
+        { "outside y1", { 0, 5.0 }, false },
+        { "outside xy0", { -3.0, -3.0 }, false },
+        { "outside xy1", { 5.0, -3.0 }, false },
+        { "outside xy2", { 5.0, 5.0 }, false },
+        { "outside xy3", { -3.0, 5.0 }, false },
+      };
+
+  for (auto &d : dataset)
+  {
+    const std::string test_name = "Case [" + d.name + "]";
+    // Settings: 4 angular grids
+    costmap_cspace::Costmap3d cms(4);
+    auto cm = cms.addRootLayer<costmap_cspace::Costmap3dLayerPlain>();
+    auto cm_stop = cms.addLayer<costmap_cspace::Costmap3dLayerStopPropagation>();
+    auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerPlain>(
+        costmap_cspace::MapOverlayMode::OVERWRITE);
+    auto cm_output = cms.addLayer<costmap_cspace::Costmap3dLayerOutput>();
+
+    // Generate two sample maps
+    nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+    map->info.width = 4;
+    map->info.height = 4;
+    map->info.resolution = 1.0;
+    map->info.origin.orientation.w = 1.0;
+    map->data.resize(map->info.width * map->info.height);
+
+    nav_msgs::OccupancyGrid::Ptr map2(new nav_msgs::OccupancyGrid);
+    map2->info.width = 2;
+    map2->info.height = 2;
+    map2->info.resolution = 1.0;
+    map2->info.origin.orientation.w = 1.0;
+    map2->info.origin.position.x = d.input.x;
+    map2->info.origin.position.y = d.input.y;
+    map2->data.resize(map->info.width * map->info.height);
+
+    // Apply base map
+    cm->setBaseMap(map);
+
+    // Overlay local map
+    auto cb1 = [](
+        const costmap_cspace::CSpace3DMsg::Ptr &map,
+        const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
+    {
+      return true;
+    };
+    costmap_cspace_msgs::CSpace3DUpdate::Ptr updated;
+    auto cb = [&updated](
+        const costmap_cspace::CSpace3DMsg::Ptr &map,
+        const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
+    {
+      updated = update;
+      return true;
+    };
+    cm_output->setHandler(cb);
+    cm_over->processMapOverlay(map2);
+
+    if (d.valid)
+    {
+      ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
+      EXPECT_EQ(updated->x, d.expected.x) << test_name;
+      EXPECT_EQ(updated->y, d.expected.y) << test_name;
+      EXPECT_EQ(updated->yaw, d.expected.yaw) << test_name;
+      EXPECT_EQ(updated->width, d.expected.width) << test_name;
+      EXPECT_EQ(updated->height, d.expected.height) << test_name;
+      EXPECT_EQ(updated->angle, d.expected.angle) << test_name;
+    }
+    else
+    {
+      EXPECT_FALSE(static_cast<bool>(updated)) << test_name;
+    }
+  }
+}
+
+int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
