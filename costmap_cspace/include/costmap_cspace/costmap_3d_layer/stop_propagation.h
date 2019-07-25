@@ -42,13 +42,13 @@ namespace costmap_cspace
 class Costmap3dLayerStopPropagation : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
+  using Ptr = std::shared_ptr<Costmap3dLayerStopPropagation>;
 
 public:
   void loadConfig(XmlRpc::XmlRpcValue config)
   {
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
   {
   }
 
@@ -60,13 +60,13 @@ protected:
   bool updateChain(const bool output)
   {
     region_ = UpdatedRegion(0, 0, 0, 0, 0, 0, ros::Time(0));
-    for (auto& c : map_overlay_->data)
+    for (auto &c : map_overlay_->data)
       c = -1;
     return false;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
-      const UpdatedRegion& region)
+      const nav_msgs::OccupancyGrid::ConstPtr &map,
+      const UpdatedRegion &region)
   {
   }
 };
