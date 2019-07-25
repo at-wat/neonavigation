@@ -57,7 +57,7 @@ public:
   {
     cb_ = cb;
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D &info)
+  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
   {
   }
 
@@ -74,8 +74,8 @@ protected:
     return true;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr &map,
-      const UpdatedRegion &region)
+      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const UpdatedRegion& region)
   {
   }
   costmap_cspace_msgs::CSpace3DUpdate::Ptr generateUpdateMsg()
@@ -148,10 +148,10 @@ protected:
           const int y2 = update_msg->y + j;
           const int yaw2 = update_msg->yaw + k;
 
-          const auto &m = map_->getCost(x2, y2, yaw2);
+          const auto& m = map_->getCost(x2, y2, yaw2);
           const size_t addr = (k * update_msg->height + j) * update_msg->width + i;
           ROS_ASSERT(addr < update_msg->data.size());
-          auto &up = update_msg->data[addr];
+          auto& up = update_msg->data[addr];
           up = m;
         }
       }

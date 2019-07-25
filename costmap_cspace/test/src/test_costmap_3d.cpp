@@ -107,7 +107,7 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 
   ASSERT_EQ(cm.getRangeMax(), static_cast<int>(ceilf(1.5 / 1.0)));
 
-  const costmap_cspace::CSpace3Cache &temp = cm.getTemplate();
+  const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
   // Check template size
   int x, y, a;
   int cx, cy, ca;
@@ -169,7 +169,7 @@ TEST(Costmap3dLayerPlain, CSpaceTemplate)
 
   ASSERT_EQ(cm.getRangeMax(), 0);
 
-  const costmap_cspace::CSpace3Cache &temp = cm.getTemplate();
+  const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
   // Check template size
   int x, y, a;
   int cx, cy, ca;
@@ -232,7 +232,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
   }
 
   // std::cout << "========" << std::endl;
-  for (auto &g : map->data)
+  for (auto& g : map->data)
   {
     g = 100;
   }
@@ -254,7 +254,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
   }
 
   // C shape wall in the map
-  for (auto &g : map->data)
+  for (auto& g : map->data)
   {
     g = 0;
   }
@@ -443,7 +443,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb = [&updated](
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated = update;
     return true;
@@ -498,7 +498,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb_max = [&updated_max](
       const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated_max = update;
     return true;
@@ -683,7 +683,7 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
         { "outside xy3", { -3.0, 5.0 }, false },
       };
 
-  for (auto &d : dataset)
+  for (auto& d : dataset)
   {
     const std::string test_name = "Case [" + d.name + "]";
     // Settings: 4 angular grids
@@ -717,8 +717,8 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     // Overlay local map
     costmap_cspace_msgs::CSpace3DUpdate::Ptr updated;
     auto cb = [&updated](
-        const costmap_cspace::CSpace3DMsg::Ptr &map,
-        const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
+        const costmap_cspace::CSpace3DMsg::Ptr& map,
+        const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
     {
       updated = update;
       return true;
@@ -743,7 +743,7 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
