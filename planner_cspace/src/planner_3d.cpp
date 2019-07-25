@@ -601,6 +601,9 @@ protected:
               (unsigned int)s2[1] >= (unsigned int)map_info_.height)
             continue;
           s2.cycleUnsigned(map_info_.angle);
+          if (!cm_.validate(s, range_))
+            continue;
+
           if (cm_[s2] >= cost_acceptable)
             continue;
           const auto cost = euclidCost(d, ec_);
@@ -1505,6 +1508,11 @@ protected:
         gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
     Astar::Vec s(static_cast<int>(floor(sf[0])), static_cast<int>(floor(sf[1])), lroundf(sf[2]));
     s.cycleUnsigned(map_info_.angle);
+    if (!cm_.validate(s, range_))
+    {
+      ROS_ERROR("You are on the edge of the world.");
+      return false;
+    }
 
     std::vector<Astar::VecWithCost> starts;
     if (antialias_start_)
@@ -1522,6 +1530,9 @@ protected:
         for (const int y : y_cand)
         {
           const Astar::Vec p = s + Astar::Vec(x, y, 0);
+          if (!cm_.validate(s, range_))
+            continue;
+
           const Astar::Vecf subpx = sf - Astar::Vecf(p[0] + 0.5f, p[1] + 0.5f, 0.0f);
           if (subpx.sqlen() > 1.0)
             continue;
