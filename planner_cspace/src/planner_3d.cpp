@@ -601,7 +601,7 @@ protected:
               (unsigned int)s2[1] >= (unsigned int)map_info_.height)
             continue;
           s2.cycleUnsigned(map_info_.angle);
-          if (!cm_.validate(s, range_))
+          if (!cm_.validate(s2, range_))
             continue;
 
           if (cm_[s2] >= cost_acceptable)
@@ -1530,7 +1530,7 @@ protected:
         for (const int y : y_cand)
         {
           const Astar::Vec p = s + Astar::Vec(x, y, 0);
-          if (!cm_.validate(s, range_))
+          if (!cm_.validate(p, range_))
             continue;
 
           const Astar::Vecf subpx = sf - Astar::Vecf(p[0] + 0.5f, p[1] + 0.5f, 0.0f);
