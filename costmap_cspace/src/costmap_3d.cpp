@@ -61,7 +61,7 @@ protected:
                 costmap_cspace::Costmap3dLayerBase::Ptr>> map_buffer_;
 
   void cbMap(
-      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      const nav_msgs::OccupancyGrid::ConstPtr &msg,
       const costmap_cspace::Costmap3dLayerBase::Ptr map)
   {
     if (map->getAngularGrid() <= 0)
@@ -76,14 +76,14 @@ protected:
 
     if (map_buffer_.size() > 0)
     {
-      for (auto& map : map_buffer_)
+      for (auto &map : map_buffer_)
         cbMapOverlay(map.first, map.second);
       ROS_INFO("%ld buffered costmaps processed", map_buffer_.size());
       map_buffer_.clear();
     }
   }
   void cbMapOverlay(
-      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      const nav_msgs::OccupancyGrid::ConstPtr &msg,
       const costmap_cspace::Costmap3dLayerBase::Ptr map)
   {
     ROS_DEBUG("Overlay 2D costmap received");
@@ -113,11 +113,18 @@ protected:
       const costmap_cspace::CSpace3DMsg::Ptr map,
       const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
   {
-    publishDebug(*map);
-    pub_costmap_update_.publish(*update);
+    if (update)
+    {
+      publishDebug(*map);
+      pub_costmap_update_.publish(*update);
+    }
+    else
+    {
+      ROS_WARN("Updated region of the costmap is empty. The position may be out-of-boundary, or input map is wrong.");
+    }
     return true;
   }
-  void publishDebug(const costmap_cspace_msgs::CSpace3D& map)
+  void publishDebug(const costmap_cspace_msgs::CSpace3D &map)
   {
     if (pub_debug_.getNumSubscribers() == 0)
       return;
@@ -141,7 +148,7 @@ protected:
     }
     pub_debug_.publish(pc);
   }
-  void cbPublishFootprint(const ros::TimerEvent& event, const geometry_msgs::PolygonStamped msg)
+  void cbPublishFootprint(const ros::TimerEvent &event, const geometry_msgs::PolygonStamped msg)
   {
     auto footprint = msg;
     footprint.header.stamp = ros::Time::now();
@@ -193,7 +200,7 @@ public:
     {
       footprint = costmap_cspace::Polygon(footprint_xml);
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
       ROS_FATAL("Invalid footprint");
       throw e;
@@ -372,7 +379,7 @@ public:
   }
 };
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
   ros::init(argc, argv, "costmap_3d");
 
