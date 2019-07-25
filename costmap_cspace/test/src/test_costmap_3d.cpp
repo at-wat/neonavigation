@@ -715,12 +715,6 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     cm->setBaseMap(map);
 
     // Overlay local map
-    auto cb1 = [](
-        const costmap_cspace::CSpace3DMsg::Ptr &map,
-        const costmap_cspace_msgs::CSpace3DUpdate::Ptr &update) -> bool
-    {
-      return true;
-    };
     costmap_cspace_msgs::CSpace3DUpdate::Ptr updated;
     auto cb = [&updated](
         const costmap_cspace::CSpace3DMsg::Ptr &map,
