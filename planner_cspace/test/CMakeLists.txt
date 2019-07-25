@@ -38,6 +38,13 @@ add_rostest(test/navigation_compat_rostest.test
   DEPENDENCIES test_navigate
 )
 
+add_rostest_gtest(test_navigate_boundary
+  test/navigation_boundary_rostest.test
+  src/test_navigate_boundary.cpp
+)
+target_link_libraries(test_navigate_boundary ${catkin_LIBRARIES})
+add_dependencies(test_navigate_boundary planner_3d)
+
 add_rostest_gtest(test_abort
   test/abort_rostest.test
   src/test_abort.cpp
