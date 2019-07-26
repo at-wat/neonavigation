@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <test test-name="test_navigate_boundary" pkg="planner_cspace" type="test_navigate_boundary" time-limit="30.0" />
+
+  <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
+    <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
+    <param name="ang_resolution" value="16"/>
+    <rosparam>
+    static_layers:
+    - name: unknown
+      type: Costmap3dLayerUnknownHandle
+      unknown_cost: 100
+    layers:
+    - name: overlay
+      type: Costmap3dLayerFootprint
+      overlay_mode: max
+    </rosparam>
+  </node>
+  <node pkg="planner_cspace" type="planner_3d" name="planner_3d">
+    <rosparam>
+      freq: 10.0
+      local_range: 0.2
+      antialias_start: true
+    </rosparam>
+  </node>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+      args="0 0 0 0 0 0 map odom" />
+
+  <node pkg="map_server" type="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml"/>
+  <node pkg="map_server" type="map_server" name="map_server_local" args="$(find planner_cspace)/test/data/local_map.yaml">
+    <remap from="map" to="map_with_local_objects" />
+  </node>
+  <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
+    <remap from="map" to="map_with_local_objects" />
+    <remap from="map_local" to="overlay" />
+    <param name="width" value="6" />
+    <param name="hz" value="5.0" />
+  </node>
+</launch>
