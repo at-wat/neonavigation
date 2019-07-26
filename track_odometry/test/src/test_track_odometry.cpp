@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2018-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@
  */
 
 #include <string>
+#include <vector>
 
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
@@ -39,6 +40,9 @@
 
 class TrackOdometryTest : public ::testing::TestWithParam<const char*>
 {
+protected:
+  std::vector<nav_msgs::Odometry> odom_msg_buffer_;
+
 public:
   void initializeNode(const std::string& ns)
   {
@@ -56,7 +60,7 @@ public:
     odom_ = nullptr;
     for (int i = 0; i < 100 && ros::ok(); ++i)
     {
-      imu.header.stamp = odom_raw.header.stamp = ros::Time::now();
+      odom_raw.header.stamp = imu.header.stamp = ros::Time::now();
       pub_odom_.publish(odom_raw);
       pub_imu_.publish(imu);
       rate.sleep();
@@ -73,7 +77,7 @@ public:
     ros::Rate rate(1.0 / dt);
     int cnt(0);
 
-    imu.header.stamp = odom_raw.header.stamp = ros::Time::now();
+    odom_raw.header.stamp = imu.header.stamp = ros::Time::now();
     while (ros::ok())
     {
       tf2::Quaternion quat_odom;
@@ -100,6 +104,7 @@ public:
       if (++cnt >= steps)
         break;
     }
+    flushOdomMsgs();
     return ros::ok();
   }
   void stepAndPublish(
@@ -109,8 +114,22 @@ public:
   {
     odom_raw.header.stamp += ros::Duration(dt);
     imu.header.stamp += ros::Duration(dt);
-    pub_odom_.publish(odom_raw);
     pub_imu_.publish(imu);
+
+    // Buffer odom message to add delay and jitter
+    odom_msg_buffer_.push_back(odom_raw);
+    if (odom_msg_buffer_.size() > 10)
+    {
+      flushOdomMsgs();
+    }
+  }
+  void flushOdomMsgs()
+  {
+    for (nav_msgs::Odometry& o : odom_msg_buffer_)
+    {
+      pub_odom_.publish(o);
+    }
+    odom_msg_buffer_.clear();
   }
   void waitAndSpinOnce()
   {
