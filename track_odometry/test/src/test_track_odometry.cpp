@@ -116,8 +116,11 @@ public:
     imu.header.stamp += ros::Duration(dt);
     pub_imu_.publish(imu);
 
-    // Buffer odom message to add delay and jitter
-    odom_msg_buffer_.push_back(odom_raw);
+    // Buffer odom message to add delay and jitter.
+    // Send odometry in half rate of IMU.
+    ++odom_cnt_;
+    if (odom_cnt_ % 2 == 0)
+      odom_msg_buffer_.push_back(odom_raw);
     if (odom_msg_buffer_.size() > 10)
     {
       flushOdomMsgs();
@@ -142,6 +145,7 @@ protected:
   ros::Publisher pub_imu_;
   ros::Subscriber sub_odom_;
   nav_msgs::Odometry::ConstPtr odom_;
+  size_t odom_cnt_;
 
   void cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
   {
@@ -153,8 +157,8 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
 {
   initializeNode("");
 
-  const float dt = 0.02;
-  const int steps = 100;
+  const float dt = 0.01;
+  const int steps = 200;
 
   nav_msgs::Odometry odom_raw;
   odom_raw.header.frame_id = "odom";
@@ -173,6 +177,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
 
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
+  flushOdomMsgs();
 
   waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 1.0, 1e-3);
@@ -189,6 +194,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   odom_raw.twist.twist.angular.z = 0;
   imu.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI / 2));
   stepAndPublish(odom_raw, imu, dt);
+  flushOdomMsgs();
 
   waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 1.0, 1e-2);
@@ -202,6 +208,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
 
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
+  flushOdomMsgs();
 
   waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 1.0, 5e-2);
@@ -215,8 +222,8 @@ TEST_P(TrackOdometryTest, ZFilterOff)
   const std::string ns_postfix(GetParam());
   initializeNode("no_z_filter" + ns_postfix);
 
-  const float dt = 0.02;
-  const int steps = 100;
+  const float dt = 0.01;
+  const int steps = 200;
 
   nav_msgs::Odometry odom_raw;
   odom_raw.header.frame_id = "odom";
@@ -236,6 +243,7 @@ TEST_P(TrackOdometryTest, ZFilterOff)
 
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
+  flushOdomMsgs();
 
   waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.x, 0.0, 1e-3);
@@ -248,8 +256,8 @@ TEST_P(TrackOdometryTest, ZFilterOn)
   const std::string ns_postfix(GetParam());
   initializeNode("z_filter" + ns_postfix);
 
-  const float dt = 0.02;
-  const int steps = 100;
+  const float dt = 0.01;
+  const int steps = 200;
 
   nav_msgs::Odometry odom_raw;
   odom_raw.header.frame_id = "odom";
@@ -269,6 +277,7 @@ TEST_P(TrackOdometryTest, ZFilterOn)
 
   odom_raw.twist.twist.linear.x = 0.0;
   stepAndPublish(odom_raw, imu, dt);
+  flushOdomMsgs();
 
   waitAndSpinOnce();
   ASSERT_NEAR(odom_->pose.pose.position.z, 1.0 - 1.0 / M_E, 5e-2);
