@@ -105,6 +105,14 @@ protected:
     {
       update_height = map_->info.height - update_y;
     }
+    if (update_width < 0)
+    {
+      update_width = 0;
+    }
+    if (update_height < 0)
+    {
+      update_height = 0;
+    }
     UpdatedRegion region(
         update_x,
         update_y,
@@ -116,6 +124,11 @@ protected:
     region_merged.merge(region_prev_);
     region_prev_ = region;
     region_ = UpdatedRegion();
+
+    if (update_width == 0 || update_height == 0)
+    {
+      return nullptr;
+    }
 
     update_msg->x = region_merged.x_;
     update_msg->y = region_merged.y_;

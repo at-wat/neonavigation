@@ -42,7 +42,7 @@ namespace costmap_cspace
 class Costmap3dLayerStopPropagation : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
+  using Ptr = std::shared_ptr<Costmap3dLayerStopPropagation>;
 
 public:
   void loadConfig(XmlRpc::XmlRpcValue config)
