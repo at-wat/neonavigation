@@ -16,6 +16,7 @@
   <test_depend>rosunit</test_depend>
 
   <depend>geometry_msgs</depend>
+  <depend>message_filters</depend>
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
