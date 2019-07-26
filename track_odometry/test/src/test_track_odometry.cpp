@@ -51,7 +51,7 @@ public:
     pub_imu_ = nh.advertise<sensor_msgs::Imu>("imu/data", 10);
     sub_odom_ = nh.subscribe("odom", 10, &TrackOdometryTest::cbOdom, this);
   }
-  void initializeTrackOdometry(
+  bool initializeTrackOdometry(
       nav_msgs::Odometry& odom_raw,
       sensor_msgs::Imu& imu)
   {
@@ -60,7 +60,8 @@ public:
     odom_ = nullptr;
     for (int i = 0; i < 100 && ros::ok(); ++i)
     {
-      odom_raw.header.stamp = imu.header.stamp = ros::Time::now();
+      odom_raw.header.stamp = ros::Time::now();
+      imu.header.stamp = odom_raw.header.stamp + ros::Duration(0.0001);
       pub_odom_.publish(odom_raw);
       pub_imu_.publish(imu);
       rate.sleep();
@@ -68,6 +69,7 @@ public:
       if (odom_ && i > 50)
         break;
     }
+    return static_cast<bool>(odom_);
   }
   bool run(
       nav_msgs::Odometry& odom_raw,
@@ -77,7 +79,6 @@ public:
     ros::Rate rate(1.0 / dt);
     int cnt(0);
 
-    odom_raw.header.stamp = imu.header.stamp = ros::Time::now();
     while (ros::ok())
     {
       tf2::Quaternion quat_odom;
@@ -169,7 +170,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   imu.orientation.w = 1;
   imu.linear_acceleration.z = 9.8;
 
-  initializeTrackOdometry(odom_raw, imu);
+  ASSERT_TRUE(initializeTrackOdometry(odom_raw, imu));
 
   // Go forward for 1m
   odom_raw.twist.twist.linear.x = 0.5;
@@ -235,7 +236,7 @@ TEST_P(TrackOdometryTest, ZFilterOff)
   imu.orientation.w = cos(-M_PI / 4);
   imu.linear_acceleration.x = -9.8;
 
-  initializeTrackOdometry(odom_raw, imu);
+  ASSERT_TRUE(initializeTrackOdometry(odom_raw, imu));
 
   // Go forward for 1m
   odom_raw.twist.twist.linear.x = 0.5;
@@ -269,7 +270,7 @@ TEST_P(TrackOdometryTest, ZFilterOn)
   imu.orientation.w = cos(-M_PI / 4);
   imu.linear_acceleration.x = -9.8;
 
-  initializeTrackOdometry(odom_raw, imu);
+  ASSERT_TRUE(initializeTrackOdometry(odom_raw, imu));
 
   // Go forward for 1m
   odom_raw.twist.twist.linear.x = 0.5;
