@@ -34,7 +34,8 @@
 #include <std_msgs/Float32.h>
 
 #include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -82,13 +83,16 @@ geometry_msgs::Vector3 toVector3(const Eigen::Vector3f& a)
 class TrackOdometryNode
 {
 private:
+  using SyncPolicy =
+      message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, sensor_msgs::Imu>;
+
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
 
   ros::Subscriber sub_imu_raw_;
   std::shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> sub_odom_;
   std::shared_ptr<message_filters::Subscriber<sensor_msgs::Imu>> sub_imu_;
-  std::shared_ptr<message_filters::TimeSynchronizer<nav_msgs::Odometry, sensor_msgs::Imu>> sync_;
+  std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
 
   ros::Subscriber sub_reset_z_;
   ros::Publisher pub_odom_;
@@ -319,8 +323,8 @@ public:
       int sync_window;
       pnh_.param("sync_window", sync_window, 50);
       sync_.reset(
-          new message_filters::TimeSynchronizer<nav_msgs::Odometry, sensor_msgs::Imu>(
-              *sub_odom_, *sub_imu_, sync_window));
+          new message_filters::Synchronizer<SyncPolicy>(
+              SyncPolicy(sync_window), *sub_odom_, *sub_imu_));
       sync_->registerCallback(boost::bind(&TrackOdometryNode::cbOdomImu, this, _1, _2));
 
       pnh_.param("base_link_id", base_link_id_overwrite_, std::string(""));
