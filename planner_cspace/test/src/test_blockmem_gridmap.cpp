@@ -45,10 +45,10 @@ public:
 };
 TEST(BlockmemGridmap, BlockWidth)
 {
-  ASSERT_EQ(4, BlockMemGridmapHelper<0x10>().getBlockBit());
-  ASSERT_EQ(8, BlockMemGridmapHelper<0x100>().getBlockBit());
-  ASSERT_EQ(12, BlockMemGridmapHelper<0x1000>().getBlockBit());
-  ASSERT_EQ(16, BlockMemGridmapHelper<0x10000>().getBlockBit());
+  ASSERT_EQ(4u, BlockMemGridmapHelper<0x10>().getBlockBit());
+  ASSERT_EQ(8u, BlockMemGridmapHelper<0x100>().getBlockBit());
+  ASSERT_EQ(12u, BlockMemGridmapHelper<0x1000>().getBlockBit());
+  ASSERT_EQ(16u, BlockMemGridmapHelper<0x10000>().getBlockBit());
 }
 
 TEST(BlockmemGridmap, ResetClear)
