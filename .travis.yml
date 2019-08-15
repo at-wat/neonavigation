@@ -46,13 +46,13 @@ script:
 jobs:
   include:
     - stage: prerelease-test
-      if: env(TRAVIS_PULL_REQUEST_BRANCH) =~ ^release-.*$
+      if: head_branch =~ ^release-.*$
       env:
         - ROS_DISTRO_TARGET=kinetic COVERAGE_TEST=false
       before_install: pip install --user gh-pr-comment
       script: .travis/prerelease_test.sh
     - stage: prerelease-test
-      if: env(TRAVIS_PULL_REQUEST_BRANCH) =~ ^release-.*$
+      if: head_branch =~ ^release-.*$
       env:
         - ROS_DISTRO_TARGET=melodic COVERAGE_TEST=false
       before_install: pip install --user gh-pr-comment
