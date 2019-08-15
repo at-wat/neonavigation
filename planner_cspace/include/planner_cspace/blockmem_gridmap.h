@@ -44,9 +44,15 @@ private:
     return v && ((v & (v - 1)) == 0);
   }
   static_assert(isPowOf2(BLOCK_WIDTH), "BLOCK_WIDTH must be power of 2");
+  static_assert(BLOCK_WIDTH > 0, "BLOCK_WIDTH must be >0");
+
+  static constexpr size_t log2Recursive(const size_t v, const size_t depth = 0)
+  {
+    return v == 1 ? depth : log2Recursive(v >> 1, depth + 1);
+  }
 
 protected:
-  constexpr static size_t block_bit_ = std::lround(std::log2(BLOCK_WIDTH));
+  constexpr static size_t block_bit_ = log2Recursive(BLOCK_WIDTH);
   constexpr static size_t block_bit_mask_ = (1 << block_bit_) - 1;
 
   std::unique_ptr<T[]> c_;
