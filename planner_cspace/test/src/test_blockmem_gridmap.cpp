@@ -34,6 +34,23 @@
 
 #include <planner_cspace/blockmem_gridmap.h>
 
+template <int BLOCK_WIDTH>
+class BlockMemGridmapHelper : public BlockMemGridmap<int, 1, 1, BLOCK_WIDTH, false>
+{
+public:
+  size_t getBlockBit() const
+  {
+    return this->block_bit_;
+  }
+};
+TEST(BlockmemGridmap, BlockWidth)
+{
+  ASSERT_EQ(4u, BlockMemGridmapHelper<0x10>().getBlockBit());
+  ASSERT_EQ(8u, BlockMemGridmapHelper<0x100>().getBlockBit());
+  ASSERT_EQ(12u, BlockMemGridmapHelper<0x1000>().getBlockBit());
+  ASSERT_EQ(16u, BlockMemGridmapHelper<0x10000>().getBlockBit());
+}
+
 TEST(BlockmemGridmap, ResetClear)
 {
   BlockMemGridmap<float, 3, 3, 0x20> gm;
