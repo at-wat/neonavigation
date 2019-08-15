@@ -49,5 +49,5 @@ jobs:
           ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET} /catkin_ws/src/${PACKAGE_NAME}/.travis/test.sh
         - bash -c "[ x${COVERAGE_TEST} != xtrue ] && .travis/save_cache.sh || true"
     - stage: prerelease-test
-      if: branch =~ ^release-.*$
+      if: branch =~ ^release-.*$ AND env(COVERAGE_TEST) = false
       script: .travis/prerelease_test.sh
