@@ -4,6 +4,7 @@ Changelog for package planner_cspace
 
 0.4.1 (2019-08-15)
 ------------------
+* planner_cspace: fix debug build compatibility (`#368 <https://github.com/at-wat/neonavigation/issues/368>`_)
 * planner_cspace: fix out-of-boundary validation (`#362 <https://github.com/at-wat/neonavigation/issues/362>`_)
 * planner_cspace: fix incomplete output path after search timeout (`#357 <https://github.com/at-wat/neonavigation/issues/357>`_)
 * planner_cspace: reduce position quantization error on planning (`#351 <https://github.com/at-wat/neonavigation/issues/351>`_)
