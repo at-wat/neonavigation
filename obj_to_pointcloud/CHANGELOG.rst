@@ -2,8 +2,8 @@
 Changelog for package obj_to_pointcloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2019-08-15)
+------------------
 * obj_to_pointcloud: add simple test (`#322 <https://github.com/at-wat/neonavigation/issues/322>`_)
 * Drop ROS Indigo and Ubuntu Trusty support (`#310 <https://github.com/at-wat/neonavigation/issues/310>`_)
 * Contributors: Atsushi Watanabe

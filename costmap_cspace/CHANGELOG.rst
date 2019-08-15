@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2019-08-15)
+------------------
 * costmap_cspace: fix costmap output for out-of-boundary overlay map (`#361 <https://github.com/at-wat/neonavigation/issues/361>`_)
 * Drop ROS Indigo and Ubuntu Trusty support (`#310 <https://github.com/at-wat/neonavigation/issues/310>`_)
 * Fix include directory priority (`#308 <https://github.com/at-wat/neonavigation/issues/308>`_)

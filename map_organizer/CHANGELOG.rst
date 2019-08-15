@@ -2,8 +2,8 @@
 Changelog for package map_organizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2019-08-15)
+------------------
 * map_organizer: fix select_map test sequence (`#333 <https://github.com/at-wat/neonavigation/issues/333>`_)
 * map_organizer: add test for pointcloud_to_maps (`#330 <https://github.com/at-wat/neonavigation/issues/330>`_)
 * map_organizer: add simple test (`#321 <https://github.com/at-wat/neonavigation/issues/321>`_)

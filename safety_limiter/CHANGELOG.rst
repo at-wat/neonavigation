@@ -2,8 +2,8 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2019-08-15)
+------------------
 * safety_limiter: increase simulation test publish rate (`#320 <https://github.com/at-wat/neonavigation/issues/320>`_)
 * safety_limiter: add simulation test conditions for backward motion (`#319 <https://github.com/at-wat/neonavigation/issues/319>`_)
 * safety_limiter: add delay compensation (`#316 <https://github.com/at-wat/neonavigation/issues/316>`_)
