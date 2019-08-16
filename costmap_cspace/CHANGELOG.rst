@@ -2,6 +2,14 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2019-08-15)
+------------------
+* costmap_cspace: fix costmap output for out-of-boundary overlay map (`#361 <https://github.com/at-wat/neonavigation/issues/361>`_)
+* Drop ROS Indigo and Ubuntu Trusty support (`#310 <https://github.com/at-wat/neonavigation/issues/310>`_)
+* Fix include directory priority (`#308 <https://github.com/at-wat/neonavigation/issues/308>`_)
+* planner_cspace, costmap_cspace: minor refactoring (`#305 <https://github.com/at-wat/neonavigation/issues/305>`_)
+* Contributors: Atsushi Watanabe
+
 0.4.0 (2019-05-09)
 ------------------
 * costmap_cspace: add const begin/end to PointcloudAccumurator (`#294 <https://github.com/at-wat/neonavigation/issues/294>`_)

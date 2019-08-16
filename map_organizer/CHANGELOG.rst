@@ -2,6 +2,14 @@
 Changelog for package map_organizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2019-08-15)
+------------------
+* map_organizer: fix select_map test sequence (`#333 <https://github.com/at-wat/neonavigation/issues/333>`_)
+* map_organizer: add test for pointcloud_to_maps (`#330 <https://github.com/at-wat/neonavigation/issues/330>`_)
+* map_organizer: add simple test (`#321 <https://github.com/at-wat/neonavigation/issues/321>`_)
+* Drop ROS Indigo and Ubuntu Trusty support (`#310 <https://github.com/at-wat/neonavigation/issues/310>`_)
+* Contributors: Atsushi Watanabe
+
 0.4.0 (2019-05-09)
 ------------------
 * Add LICENSE file (`#270 <https://github.com/at-wat/neonavigation/issues/270>`_)
