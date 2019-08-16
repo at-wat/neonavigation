@@ -106,27 +106,25 @@ protected:
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<float> cost_estim_cache_;
 
-  static const int MAX_EUCLID_COST_LIN_CACHE_SIZE = 1024;
-  std::vector<float> euclid_cost_lin_cache_;
+  std::array<float, 1024> euclid_cost_lin_cache_;
 
   void createEuclidCostCache()
   {
-    euclid_cost_lin_cache_.resize(MAX_EUCLID_COST_LIN_CACHE_SIZE);
-    for (int rootmean = 0; rootmean < MAX_EUCLID_COST_LIN_CACHE_SIZE; ++rootmean)
+    for (int rootsum = 0; rootsum < euclid_cost_lin_cache_.size(); ++rootsum)
     {
-      euclid_cost_lin_cache_[rootmean] = sqrtf(rootmean) * ec_[0];
+      euclid_cost_lin_cache_[rootsum] = sqrtf(rootsum) * ec_[0];
     }
   }
   float euclidCostRough(const Astar::Vec& vc)
   {
-    int rootmean = 0;
-    for (int i = 0; i < as_.getNoncyclic(); i++)
-      rootmean += vc[i] * vc[i];
+    int rootsum = 0;
+    for (int i = 0; i < as_.getNoncyclic(); ++i)
+      rootsum += vc[i] * vc[i];
 
-    if (rootmean < MAX_EUCLID_COST_LIN_CACHE_SIZE)
-      return euclid_cost_lin_cache_[rootmean];
+    if (rootsum < euclid_cost_lin_cache_.size())
+      return euclid_cost_lin_cache_[rootsum];
 
-    return sqrtf(rootmean) * ec_[0];
+    return sqrtf(rootsum) * ec_[0];
   }
   float euclidCost(Astar::Vec vc)
   {
