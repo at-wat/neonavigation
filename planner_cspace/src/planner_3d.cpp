@@ -498,13 +498,13 @@ protected:
           {
             if (open.size() < 1)
               break;
-            auto center = open.top();
+            Astar::PriorityVec center(open.top());
             open.pop();
             if (center.p_raw_ > g[center.v_])
               continue;
             if (center.p_raw_ - range_overshoot > g[s_rough])
               continue;
-            centers.push_back(std::move(center));
+            centers.emplace_back(center);
             ++i;
           }
         }  // omp single
@@ -967,7 +967,7 @@ protected:
     {
       if (erase.size() < 1)
         break;
-      const Astar::PriorityVec center = erase.top();
+      const Astar::PriorityVec center(erase.top());
       const Astar::Vec p = center.v_;
       erase.pop();
 

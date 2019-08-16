@@ -291,7 +291,7 @@ protected:
           {
             if (open_.size() == 0)
               break;
-            PriorityVec center = open_.top();
+            PriorityVec center(open_.top());
             open_.pop();
             if (center.v_ == e || center.p_ - center.p_raw_ <= cost_leave)
             {
@@ -299,7 +299,7 @@ protected:
               found = true;
               break;
             }
-            centers.push_back(std::move(center));
+            centers.emplace_back(center);
             ++i;
           }
           const auto tnow = boost::chrono::high_resolution_clock::now();
