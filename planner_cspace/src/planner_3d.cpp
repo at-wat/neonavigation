@@ -115,7 +115,7 @@ protected:
       euclid_cost_lin_cache_[rootsum] = sqrtf(rootsum) * ec_[0];
     }
   }
-  float euclidCostRough(const Astar::Vec& vc)
+  float euclidCostRough(const Astar::Vec& vc) const
   {
     int rootsum = 0;
     for (int i = 0; i < as_.getNoncyclic(); ++i)
@@ -126,7 +126,7 @@ protected:
 
     return sqrtf(rootsum) * ec_[0];
   }
-  float euclidCost(Astar::Vec vc)
+  float euclidCost(Astar::Vec vc) const
   {
     float cost = euclidCostRough(vc);
     vc.cycle(cm_.size());
