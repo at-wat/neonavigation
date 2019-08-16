@@ -23,10 +23,13 @@ costmap_3d:
       linear_expand: 0.15
       linear_spread: 0.3
 planner_3d:
-  num_threads: 2
+  num_threads: 3
+  num_search_task: 3
+  num_cost_estim_task: 3
   freq: 2.0
   freq_min: 0.5
   local_range: 2.0
+  weight_hysteresis: 0.0
 spur:
   hz: 30.0
   k_dist: 16.0
