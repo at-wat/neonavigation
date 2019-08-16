@@ -106,19 +106,33 @@ protected:
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<float> cost_estim_cache_;
 
-  float euclidCost(Astar::Vec vc, const Astar::Vecf coef) const
+  static const int MAX_EUCLID_COST_LIN_CACHE_SIZE = 1024;
+  std::vector<float> euclid_cost_lin_cache_;
+
+  void createEuclidCostCache()
   {
-    float cost = 0;
+    euclid_cost_lin_cache_.resize(MAX_EUCLID_COST_LIN_CACHE_SIZE);
+    for (int rootmean = 0; rootmean < MAX_EUCLID_COST_LIN_CACHE_SIZE; ++rootmean)
+    {
+      euclid_cost_lin_cache_[rootmean] = sqrtf(rootmean) * ec_[0];
+    }
+  }
+  float euclidCostRough(const Astar::Vec& vc)
+  {
+    int rootmean = 0;
     for (int i = 0; i < as_.getNoncyclic(); i++)
-    {
-      cost += powf(coef[i] * vc[i], 2.0);
-    }
-    cost = sqrtf(cost);
+      rootmean += vc[i] * vc[i];
+
+    if (rootmean < MAX_EUCLID_COST_LIN_CACHE_SIZE)
+      return euclid_cost_lin_cache_[rootmean];
+
+    return sqrtf(rootmean) * ec_[0];
+  }
+  float euclidCost(Astar::Vec vc)
+  {
+    float cost = euclidCostRough(vc);
     vc.cycle(cm_.size());
-    for (int i = as_.getNoncyclic(); i < as_.getDim(); i++)
-    {
-      cost += fabs(coef[i] * vc[i]);
-    }
+    cost += fabs(ec_[2] * vc[2]);
     return cost;
   }
 
@@ -194,7 +208,6 @@ protected:
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseStamped goal_raw_;
   Astar::Vecf ec_;
-  Astar::Vecf ec_rough_;
   Astar::Vecf resolution_;
   double goal_tolerance_lin_f_;
   double goal_tolerance_ang_f_;
@@ -285,7 +298,7 @@ protected:
         const Astar::Vec& v_goal) -> float
     {
       const Astar::Vec d = e - s;
-      float cost = euclidCost(d, ec_rough_);
+      float cost = euclidCostRough(d);
 
       int sum = 0;
       const auto cache_page = motion_cache_linear_.find(0, d);
@@ -309,7 +322,7 @@ protected:
         const Astar::Vec& s, const Astar::Vec& e)
     {
       const Astar::Vec d = e - s;
-      const float cost = euclidCost(d, ec_rough_);
+      const float cost = euclidCostRough(d);
 
       return cost;
     };
@@ -473,7 +486,7 @@ protected:
       std::vector<Astar::GridmapUpdate> updates;
       updates.reserve(num_cost_estim_task_);
 
-      const float range_overshoot = ec_rough_[0] * (range_ + local_range_ + longcut_range_);
+      const float range_overshoot = ec_[0] * (range_ + local_range_ + longcut_range_);
 
       while (true)
       {
@@ -514,7 +527,7 @@ protected:
                 static_cast<size_t>(next[1]) >= static_cast<size_t>(map_info_.height))
               continue;
 
-            float cost = euclidCost(d, ec_rough_);
+            float cost = euclidCostRough(d);
 
             const float gnext = g[next];
 
@@ -573,7 +586,7 @@ protected:
         }  // omp critical
       }
     }  // omp parallel
-    rough_cost_max_ = g[s_rough] + ec_rough_[0] * (range_ + local_range_);
+    rough_cost_max_ = g[s_rough] + ec_[0] * (range_ + local_range_);
   }
   bool searchAvailablePos(Astar::Vec& s, const int xy_range, const int angle_range,
                           const int cost_acceptable = 50, const int min_xy_range = 0)
@@ -606,7 +619,7 @@ protected:
 
           if (cm_[s2] >= cost_acceptable)
             continue;
-          const auto cost = euclidCost(d, ec_);
+          const auto cost = euclidCost(d);
           if (cost < range_min)
           {
             range_min = cost;
@@ -701,7 +714,7 @@ protected:
     }
 
     e[2] = 0;
-    cost_estim_cache_[e] = -ec_rough_[0] * 0.5;  // Decrement to reduce calculation error
+    cost_estim_cache_[e] = -ec_[0] * 0.5;  // Decrement to reduce calculation error
     open.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
     fillCostmap(open, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
@@ -988,7 +1001,7 @@ protected:
     }
     if (open.size() == 0)
     {
-      open.emplace(-ec_rough_[0] * 0.5, -ec_rough_[0] * 0.5, e);
+      open.emplace(-ec_[0] * 0.5, -ec_[0] * 0.5, e);
     }
     {
       Astar::Vec p;
@@ -1027,14 +1040,11 @@ protected:
     // Stop robot motion until next planning step
     publishEmptyPath();
 
-    const float ec_val[3] =
-        {
-          1.0f / max_vel_,
-          1.0f / max_vel_,
-          1.0f * cc_.weight_ang_vel_ / max_ang_vel_
-        };
-    ec_ = Astar::Vecf(ec_val[0], ec_val[1], ec_val[2]);
-    ec_rough_ = Astar::Vecf(ec_val[0], ec_val[1], 0);
+    ec_ = Astar::Vecf(
+        1.0f / max_vel_,
+        1.0f / max_vel_,
+        1.0f * cc_.weight_ang_vel_ / max_ang_vel_);
+    createEuclidCostCache();
 
     if (map_info_.linear_resolution != msg->info.linear_resolution ||
         map_info_.angular_resolution != msg->info.angular_resolution)
@@ -1554,7 +1564,7 @@ protected:
     {
       const Astar::Vecf diff =
           Astar::Vecf(s.v_[0] + 0.5f, s.v_[1] + 0.5f, 0.0f) - sf;
-      s.c_ = hypotf(diff[0] * ec_rough_[0], diff[1] * ec_rough_[1]);
+      s.c_ = hypotf(diff[0] * ec_[0], diff[1] * ec_[0]);
       s.c_ += cm_[s.v_] * cc_.weight_costmap_ / 100.0;
 
       // Check if arrived to the goal
@@ -1782,7 +1792,7 @@ protected:
     {
       if (s2[2] > static_cast<int>(map_info_.angle) / 2)
         s2[2] -= map_info_.angle;
-      cost += ec_rough_[2] * fabs(s[2]);
+      cost += ec_[2] * fabs(s[2]);
     }
     return cost;
   }
@@ -1828,7 +1838,7 @@ protected:
     Astar::Vec d_raw = e - s;
     d_raw.cycle(map_info_.angle);
     const Astar::Vec d = d_raw;
-    float cost = euclidCost(d, ec_);
+    float cost = euclidCost(d);
 
     if (d[0] == 0 && d[1] == 0)
     {
