@@ -313,6 +313,8 @@ protected:
         }
         if (centers.size() < 1 || found)
           break;
+        updates.clear();
+        dont.clear();
 
 #pragma omp for schedule(static)
         for (auto it = centers.cbegin(); it < centers.cend(); ++it)
@@ -378,12 +380,10 @@ protected:
                 open_.pop_back();
             }
           }
-          updates.clear();
           for (const Vec& p : dont)
           {
             g[p] = -1;
           }
-          dont.clear();
         }  // omp critical
       }
     }  // omp parallel
