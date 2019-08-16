@@ -110,7 +110,8 @@ protected:
 
   void createEuclidCostCache()
   {
-    for (int rootsum = 0; rootsum < euclid_cost_lin_cache_.size(); ++rootsum)
+    for (int rootsum = 0;
+         rootsum < static_cast<int>(euclid_cost_lin_cache_.size()); ++rootsum)
     {
       euclid_cost_lin_cache_[rootsum] = sqrtf(rootsum) * ec_[0];
     }
