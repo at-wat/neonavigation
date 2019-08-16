@@ -121,7 +121,7 @@ protected:
     for (int i = 0; i < as_.getNoncyclic(); ++i)
       rootsum += vc[i] * vc[i];
 
-    if (rootsum < euclid_cost_lin_cache_.size())
+    if (rootsum < static_cast<int>(euclid_cost_lin_cache_.size()))
       return euclid_cost_lin_cache_[rootsum];
 
     return sqrtf(rootsum) * ec_[0];
