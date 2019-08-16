@@ -378,10 +378,12 @@ protected:
                 open_.pop_back();
             }
           }
+          updates.clear();
           for (const Vec& p : dont)
           {
             g[p] = -1;
           }
+          dont.clear();
         }  // omp critical
       }
     }  // omp parallel
