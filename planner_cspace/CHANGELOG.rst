@@ -2,6 +2,35 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2019-08-15)
+------------------
+* planner_cspace: fix debug build compatibility (`#368 <https://github.com/at-wat/neonavigation/issues/368>`_)
+* planner_cspace: fix out-of-boundary validation (`#362 <https://github.com/at-wat/neonavigation/issues/362>`_)
+* planner_cspace: fix incomplete output path after search timeout (`#357 <https://github.com/at-wat/neonavigation/issues/357>`_)
+* planner_cspace: reduce position quantization error on planning (`#351 <https://github.com/at-wat/neonavigation/issues/351>`_)
+* planner_cspace: latch publish data in navigation test (`#353 <https://github.com/at-wat/neonavigation/issues/353>`_)
+* planner_cspace: improve grid search performance (`#342 <https://github.com/at-wat/neonavigation/issues/342>`_)
+* planner_cspace: optimize BlockmemGridmap (`#315 <https://github.com/at-wat/neonavigation/issues/315>`_)
+* planner_cspace: add a launch for planner performance evaluation (`#343 <https://github.com/at-wat/neonavigation/issues/343>`_)
+* planner_cspace: fix parallel memory access (`#306 <https://github.com/at-wat/neonavigation/issues/306>`_)
+* planner_cspace: remove hist mode of debug output (`#336 <https://github.com/at-wat/neonavigation/issues/336>`_)
+* planner_cspace: fix navigation test setup (`#335 <https://github.com/at-wat/neonavigation/issues/335>`_)
+* planner_cspace: add a navigation test case with map update (`#334 <https://github.com/at-wat/neonavigation/issues/334>`_)
+* planner_cspace: add const to the end pos (`#332 <https://github.com/at-wat/neonavigation/issues/332>`_)
+* planner_cspace: reject request if input frame are located at diffrent frame to the map (`#327 <https://github.com/at-wat/neonavigation/issues/327>`_)
+* planner_cspace: publish empty path immediately after planning aborted (`#326 <https://github.com/at-wat/neonavigation/issues/326>`_)
+* planner_cspace: revert default sw_wait parameter (`#313 <https://github.com/at-wat/neonavigation/issues/313>`_)
+* Drop ROS Indigo and Ubuntu Trusty support (`#310 <https://github.com/at-wat/neonavigation/issues/310>`_)
+* planner_cspace: calculate path hysteresis in 3-DOF space (`#304 <https://github.com/at-wat/neonavigation/issues/304>`_)
+* Fix include directory priority (`#308 <https://github.com/at-wat/neonavigation/issues/308>`_)
+* planner_cspace: fix CyclicVector dimension of planner_2dof_serial_joints (`#307 <https://github.com/at-wat/neonavigation/issues/307>`_)
+* planner_cspace, costmap_cspace: minor refactoring (`#305 <https://github.com/at-wat/neonavigation/issues/305>`_)
+* Fix empty path publish (`#301 <https://github.com/at-wat/neonavigation/issues/301>`_)
+* planner_cspace: refactor CyclicVec (`#300 <https://github.com/at-wat/neonavigation/issues/300>`_)
+* planner_cspace: refactor rotation cache (`#299 <https://github.com/at-wat/neonavigation/issues/299>`_)
+* planner_cspace: fix path cost calculation and interpolation (`#298 <https://github.com/at-wat/neonavigation/issues/298>`_)
+* Contributors: Atsushi Watanabe, Daiki Maekawa, Yuta Koga
+
 0.4.0 (2019-05-09)
 ------------------
 * planner_cspace: limit negative cost to avoid infinite search loop (`#288 <https://github.com/at-wat/neonavigation/issues/288>`_)

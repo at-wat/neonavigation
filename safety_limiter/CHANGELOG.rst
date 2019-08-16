@@ -2,6 +2,15 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2019-08-15)
+------------------
+* safety_limiter: increase simulation test publish rate (`#320 <https://github.com/at-wat/neonavigation/issues/320>`_)
+* safety_limiter: add simulation test conditions for backward motion (`#319 <https://github.com/at-wat/neonavigation/issues/319>`_)
+* safety_limiter: add delay compensation (`#316 <https://github.com/at-wat/neonavigation/issues/316>`_)
+* safety_limiter: fix footprint radius calculation (`#317 <https://github.com/at-wat/neonavigation/issues/317>`_)
+* Drop ROS Indigo and Ubuntu Trusty support (`#310 <https://github.com/at-wat/neonavigation/issues/310>`_)
+* Contributors: Atsushi Watanabe, Yuta Koga
+
 0.4.0 (2019-05-09)
 ------------------
 * safety_limiter: fix backward motion limit (`#292 <https://github.com/at-wat/neonavigation/issues/292>`_)

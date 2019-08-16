@@ -2,6 +2,13 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2019-08-15)
+------------------
+* track_odometry: synchronize Odometry and IMU (`#363 <https://github.com/at-wat/neonavigation/issues/363>`_)
+* Drop ROS Indigo and Ubuntu Trusty support (`#310 <https://github.com/at-wat/neonavigation/issues/310>`_)
+* Fix include directory priority (`#308 <https://github.com/at-wat/neonavigation/issues/308>`_)
+* Contributors: Atsushi Watanabe
+
 0.4.0 (2019-05-09)
 ------------------
 * track_odometry: fix z_filter unit to seconds (`#290 <https://github.com/at-wat/neonavigation/issues/290>`_)
