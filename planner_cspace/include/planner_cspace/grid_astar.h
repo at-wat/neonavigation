@@ -276,7 +276,11 @@ protected:
 #pragma omp parallel
     {
       std::vector<GridmapUpdate> updates;
-      updates.reserve(search_task_num_);
+      // Reserve buffer using example search diff list
+      updates.reserve(
+          search_task_num_ *
+          cb_search(ss_normalized[0].v_, ss_normalized, e).size() /
+          omp_get_num_threads());
       std::vector<Vec> dont;
       dont.reserve(search_task_num_);
 

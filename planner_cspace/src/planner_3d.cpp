@@ -483,7 +483,7 @@ protected:
 #pragma omp parallel
     {
       std::vector<Astar::GridmapUpdate> updates;
-      updates.reserve(num_cost_estim_task_);
+      updates.reserve(num_cost_estim_task_ * search_diffs.size() / omp_get_num_threads());
 
       const float range_overshoot = ec_[0] * (range_ + local_range_ + longcut_range_);
 
