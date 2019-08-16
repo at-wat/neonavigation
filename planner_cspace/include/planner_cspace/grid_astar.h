@@ -299,7 +299,7 @@ protected:
               found = true;
               break;
             }
-            centers.emplace_back(center);
+            centers.emplace_back(std::move(center));
             ++i;
           }
           const auto tnow = boost::chrono::high_resolution_clock::now();

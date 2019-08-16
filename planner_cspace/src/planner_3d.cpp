@@ -503,7 +503,7 @@ protected:
               continue;
             if (center.p_raw_ - range_overshoot > g[s_rough])
               continue;
-            centers.emplace_back(center);
+            centers.emplace_back(std::move(center));
             ++i;
           }
         }  // omp single
