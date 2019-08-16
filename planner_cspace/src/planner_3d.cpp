@@ -581,7 +581,6 @@ protected:
               open.push(std::move(u.getPriorityVec()));
             }
           }
-          updates.clear();
         }  // omp critical
       }
     }  // omp parallel
