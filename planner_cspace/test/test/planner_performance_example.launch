@@ -6,6 +6,9 @@
   <rosparam param="costmap_3d/footprint">
     [[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]
   </rosparam>
+  <rosparam param="planner_3d">
+    weight_hysteresis: 0.0
+  </rosparam>
   <include file="$(find neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="false" />
     <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
