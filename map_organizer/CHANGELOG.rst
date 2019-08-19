@@ -2,6 +2,9 @@
 Changelog for package map_organizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.2 (2019-08-19)
+------------------
+
 0.4.1 (2019-08-15)
 ------------------
 * map_organizer: fix select_map test sequence (`#333 <https://github.com/at-wat/neonavigation/issues/333>`_)
