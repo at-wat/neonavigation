@@ -2,6 +2,9 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.4.1 (2019-08-15)
 ------------------
 * track_odometry: synchronize Odometry and IMU (`#363 <https://github.com/at-wat/neonavigation/issues/363>`_)

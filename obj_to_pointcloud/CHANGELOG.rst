@@ -2,6 +2,9 @@
 Changelog for package obj_to_pointcloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.4.1 (2019-08-15)
 ------------------
 * obj_to_pointcloud: add simple test (`#322 <https://github.com/at-wat/neonavigation/issues/322>`_)
