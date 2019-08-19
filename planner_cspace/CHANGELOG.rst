@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.2 (2019-08-19)
+------------------
 * planner_cspace: fix planner performance (`#369 <https://github.com/at-wat/neonavigation/issues/369>`_)
 * Contributors: Atsushi Watanabe
 
