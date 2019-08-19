@@ -2,6 +2,9 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.2 (2019-08-19)
+------------------
+
 0.4.1 (2019-08-15)
 ------------------
 * trajectory_tracker: update demo params (`#352 <https://github.com/at-wat/neonavigation/issues/352>`_)
