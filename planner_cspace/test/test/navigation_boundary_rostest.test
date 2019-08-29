@@ -23,6 +23,7 @@
       freq: 10.0
       local_range: 0.2
       antialias_start: true
+      retain_last_error_status: true
     </rosparam>
   </node>
   <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"

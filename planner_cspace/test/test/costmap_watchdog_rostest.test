@@ -6,6 +6,7 @@
 
   <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
     <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
+    <param name="retain_last_error_status" value="true"/>
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.1"/>
