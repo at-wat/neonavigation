@@ -1494,6 +1494,7 @@ public:
       }
       else if (!has_goal_)
       {
+        status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
         publishEmptyPath();
       }
       pub_status_.publish(status_);
