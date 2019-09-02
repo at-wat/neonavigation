@@ -177,6 +177,7 @@ protected:
   float remember_miss_odds_;
   bool use_path_with_velocity_;
   float min_curve_raduis_;
+  bool retain_last_error_status_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -1350,6 +1351,7 @@ public:
     as_.setSearchTaskNum(num_task);
     pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
 
+    pnh_.param("retain_last_error_status", retain_last_error_status_, true);
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
 
     has_map_ = false;
@@ -1494,6 +1496,8 @@ public:
       }
       else if (!has_goal_)
       {
+        if (!retain_last_error_status_)
+          status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
         publishEmptyPath();
       }
       pub_status_.publish(status_);
