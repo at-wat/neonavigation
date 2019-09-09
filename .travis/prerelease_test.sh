@@ -23,7 +23,11 @@ esac
 echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/ros-latest.list
 sudo apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 sudo apt-get update -qq
-sudo apt-get install -y --no-install-recommends python3-pip git
+sudo apt-get install -y --no-install-recommends \
+  python3-pip \
+  python3-setuptools \
+  python3-wheel \
+  git
 sudo pip3 install git+https://github.com/ros/catkin
 
 mkdir -p /tmp/prerelease_job
