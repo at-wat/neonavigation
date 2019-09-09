@@ -28,6 +28,8 @@
  */
 
 #include <ros/ros.h>
+
+#include <diagnostic_msgs/DiagnosticStatus.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/PointCloud2.h>
 
@@ -54,6 +56,9 @@ TEST_F(SafetyLimiterTest, Timeouts)
   {
     for (int with_watchdog_reset = 0; with_watchdog_reset < 2; ++with_watchdog_reset)
     {
+      const std::string test_condition =
+          "with_watchdog_reset: " + std::to_string(with_watchdog_reset) +
+          ", with_cloud: " + std::to_string(with_cloud);
       ros::Duration(0.3).sleep();
 
       cmd_vel.reset();
@@ -84,23 +89,37 @@ TEST_F(SafetyLimiterTest, Timeouts)
         {
           if (with_watchdog_reset > 0 && with_cloud > 1)
           {
-            ASSERT_EQ(cmd_vel->linear.x, vel);
-            ASSERT_EQ(cmd_vel->linear.y, 0.0);
-            ASSERT_EQ(cmd_vel->linear.z, 0.0);
-            ASSERT_EQ(cmd_vel->angular.x, 0.0);
-            ASSERT_EQ(cmd_vel->angular.y, 0.0);
-            ASSERT_EQ(cmd_vel->angular.z, ang_vel);
+            ASSERT_EQ(cmd_vel->linear.x, vel) << test_condition;
+            ASSERT_EQ(cmd_vel->linear.y, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->linear.z, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->angular.x, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->angular.y, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->angular.z, ang_vel) << test_condition;
           }
           else
           {
-            ASSERT_EQ(cmd_vel->linear.x, 0.0);
-            ASSERT_EQ(cmd_vel->linear.y, 0.0);
-            ASSERT_EQ(cmd_vel->linear.z, 0.0);
-            ASSERT_EQ(cmd_vel->angular.x, 0.0);
-            ASSERT_EQ(cmd_vel->angular.y, 0.0);
-            ASSERT_EQ(cmd_vel->angular.z, 0.0);
+            ASSERT_EQ(cmd_vel->linear.x, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->linear.y, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->linear.z, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->angular.x, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->angular.y, 0.0) << test_condition;
+            ASSERT_EQ(cmd_vel->angular.z, 0.0) << test_condition;
           }
         }
+      }
+      if (with_watchdog_reset > 0 && with_cloud > 1)
+      {
+        ASSERT_TRUE(hasDiag()) << test_condition;
+        EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+            << test_condition << ", "
+            << "message: " << diag_->status[0].message;
+      }
+      else
+      {
+        ASSERT_TRUE(hasDiag()) << test_condition;
+        EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::ERROR, diag_->status[0].level)
+            << test_condition << ", "
+            << "message: " << diag_->status[0].message;
       }
     }
   }
@@ -202,6 +221,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
       wait.sleep();
       ros::spinOnce();
     }
+    ASSERT_TRUE(hasDiag());
+    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+        << "message: " << diag_->status[0].message;
+
     ASSERT_TRUE(received);
     sub_cmd_vel.shutdown();
   }
@@ -251,6 +274,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
       wait.sleep();
       ros::spinOnce();
     }
+    ASSERT_TRUE(hasDiag());
+    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+        << "message: " << diag_->status[0].message;
+
     ASSERT_TRUE(received);
     sub_cmd_vel.shutdown();
   }
@@ -305,6 +332,18 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
       wait.sleep();
       ros::spinOnce();
     }
+    if (vel < 0)
+    {
+      ASSERT_TRUE(hasDiag());
+      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+          << "message: " << diag_->status[0].message;
+    }
+    else
+    {
+      ASSERT_TRUE(hasDiag());
+      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::WARN, diag_->status[0].level)
+          << "message: " << diag_->status[0].message;
+    }
     ASSERT_TRUE(received);
     sub_cmd_vel.shutdown();
   }
@@ -354,6 +393,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
       wait.sleep();
       ros::spinOnce();
     }
+    ASSERT_TRUE(hasDiag());
+    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+        << "message: " << diag_->status[0].message;
+
     ASSERT_TRUE(received);
     sub_cmd_vel.shutdown();
   }
@@ -388,11 +431,15 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
       received = true;
       failed = true;
       if (vel < 0)
+      {
         // escaping from collision must be allowed
         ASSERT_NEAR(msg->angular.z, vel, 1e-1);
+      }
       else
+      {
         // colliding motion must be limited
         ASSERT_NEAR(msg->angular.z, 0.0, 1e-1);
+      }
       failed = false;
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
@@ -407,6 +454,18 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
 
       wait.sleep();
       ros::spinOnce();
+    }
+    if (vel < 0)
+    {
+      ASSERT_TRUE(hasDiag());
+      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+          << "message: " << diag_->status[0].message;
+    }
+    else
+    {
+      ASSERT_TRUE(hasDiag());
+      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::WARN, diag_->status[0].level)
+          << "message: " << diag_->status[0].message;
     }
     ASSERT_TRUE(received);
     sub_cmd_vel.shutdown();
@@ -447,6 +506,10 @@ TEST_F(SafetyLimiterTest, NoCollision)
         ros::spinOnce();
       }
       ASSERT_TRUE(received);
+
+      ASSERT_TRUE(hasDiag());
+      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+          << "message: " << diag_->status[0].message;
       sub_cmd_vel.shutdown();
     }
   }
