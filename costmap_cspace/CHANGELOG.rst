@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* costmap_cspace: fix memory corruption (`#381 <https://github.com/at-wat/neonavigation/issues/381>`_)
+* Contributors: Atsushi Watanabe
+
 0.4.2 (2019-08-19)
 ------------------
 
