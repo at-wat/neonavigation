@@ -204,6 +204,9 @@ public:
     ROS_ASSERT(dest->info.height == src->info.height);
 
     normalize(src->info.width, src->info.height);
+    if (width_ == 0 || height_ == 0)
+      return;
+
     const size_t copy_length =
         std::min<size_t>(width_, src->info.width - x_) *
         sizeof(src->data[0]);
