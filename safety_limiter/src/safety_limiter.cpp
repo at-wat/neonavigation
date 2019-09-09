@@ -285,6 +285,8 @@ protected:
     watchdog_stop_ = true;
     geometry_msgs::Twist cmd_vel;
     pub_twist_.publish(cmd_vel);
+
+    diag_updater_.force_update();
   }
   void cbPredictTimer(const ros::TimerEvent& event)
   {
@@ -463,9 +465,9 @@ protected:
             std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
 
     float d_r =
-        (std::sqrt(std::abs(2 * acc_[0] * d_col)) + EPSILON) / std::abs(twist_.linear.x);
+        std::sqrt(std::abs(2 * acc_[0] * d_col)) / std::abs(twist_.linear.x);
     float yaw_r =
-        (std::sqrt(std::abs(2 * acc_[1] * yaw_col)) + EPSILON) / std::abs(twist_.angular.z);
+        std::sqrt(std::abs(2 * acc_[1] * yaw_col)) / std::abs(twist_.angular.z);
     if (!std::isfinite(d_r))
       d_r = 1.0;
     if (!std::isfinite(yaw_r))
