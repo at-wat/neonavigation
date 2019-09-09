@@ -2,8 +2,8 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.3 (2019-09-10)
+------------------
 * safety_limiter: fix diagnostics warning condition (`#374 <https://github.com/at-wat/neonavigation/issues/374>`_)
 * Contributors: Atsushi Watanabe
 
