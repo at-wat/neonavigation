@@ -37,6 +37,11 @@ generate_prerelease_script.py \
   --level 1 \
   --output-dir ./
 
+git clone \
+  --depth 1 \
+  -b apt-get-us-east-1 \
+  https://github.com/at-wat/ros_buildfarm.git ros_buildfarm
+
 ./prerelease.sh \
   && gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}-prerelease] PASSED on ${ROS_DISTRO_TARGET}" "" \
   || (gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}-prerelease] FAILED on ${ROS_DISTRO_TARGET}" ""; false)
