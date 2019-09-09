@@ -151,8 +151,7 @@ protected:
           const auto& m = map_->getCost(x2, y2, yaw2);
           const size_t addr = (k * update_msg->height + j) * update_msg->width + i;
           ROS_ASSERT(addr < update_msg->data.size());
-          auto& up = update_msg->data[addr];
-          up = m;
+          update_msg->data[addr] = m;
         }
       }
     }
