@@ -283,6 +283,7 @@ protected:
   {
     ROS_WARN_THROTTLE(1.0, "safety_limiter: Watchdog timed-out");
     watchdog_stop_ = true;
+    r_lim_ = 0;
     geometry_msgs::Twist cmd_vel;
     pub_twist_.publish(cmd_vel);
 
@@ -302,6 +303,8 @@ protected:
       pub_twist_.publish(cmd_vel);
 
       cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+      has_cloud_ = false;
+      r_lim_ = 0;
       return;
     }
 
@@ -612,7 +615,7 @@ protected:
     {
       pub_twist_.publish(twist_);
     }
-    else if (ros::Time::now() - last_cloud_stamp_ > ros::Duration(timeout_) || watchdog_stop_)
+    else if (!has_cloud_ || watchdog_stop_)
     {
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
@@ -663,7 +666,11 @@ protected:
 
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
-    if (r_lim_ == 1.0)
+    if (!has_cloud_ || watchdog_stop_)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Stopped due to data timeout.");
+    }
+    else if (r_lim_ == 1.0)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
@@ -682,6 +689,8 @@ protected:
                        "Reducing velocity to avoid collision.");
     }
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
+    stat.add("Pointcloud Availability", has_cloud_ ? "true" : "false");
+    stat.add("Watchdog Timeout", watchdog_stop_ ? "true" : "false");
   }
 };
 

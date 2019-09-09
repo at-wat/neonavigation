@@ -117,7 +117,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
       else
       {
         ASSERT_TRUE(hasDiag()) << test_condition;
-        EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::WARN, diag_->status[0].level)
+        EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::ERROR, diag_->status[0].level)
             << test_condition << ", "
             << "message: " << diag_->status[0].message;
       }
