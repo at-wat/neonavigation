@@ -177,53 +177,22 @@ public:
     ROS_ASSERT(dest->info.width == src->info.width);
     ROS_ASSERT(dest->info.height == src->info.height);
 
-    int update_x = x_;
-    int update_y = y_;
-    int update_width = width_;
-    int update_height = height_;
-    if (update_x < 0)
-    {
-      update_width += update_x;
-      update_x = 0;
-    }
-    if (update_y < 0)
-    {
-      update_height += update_y;
-      update_y = 0;
-    }
-    if (update_x + update_width > static_cast<int>(src->info.width))
-    {
-      update_width = src->info.width - update_x;
-    }
-    if (update_y + update_height > static_cast<int>(src->info.height))
-    {
-      update_height = src->info.height - update_y;
-    }
-    if (update_width < 0)
-    {
-      update_width = 0;
-    }
-    if (update_height < 0)
-    {
-      update_height = 0;
-    }
-
     normalize();
     const size_t copy_length =
-        std::min<size_t>(update_width, src->info.width - update_x) * sizeof(src->data[0]);
+        std::min<size_t>(width_, src->info.width - x_) *
+        sizeof(src->data[0]);
     for (
         size_t a = yaw_;
         static_cast<int>(a) < yaw_ + angle_ && a < src->info.angle;
         ++a)
     {
-      auto dest_pos = &dest->data[dest->address(update_x, update_y, a)];
-      auto src_pos = &src->data[src->address(update_x, update_y, a)];
+      auto dest_pos = &dest->data[dest->address(x_, y_, a)];
+      auto src_pos = &src->data[src->address(x_, y_, a)];
       const auto dest_stride = dest->info.width * sizeof(dest->data[0]);
       const auto src_stride = src->info.width * sizeof(src->data[0]);
-
       for (
-          size_t y = update_y;
-          static_cast<int>(y) < update_y + update_height && y < src->info.height;
+          size_t y = y_;
+          static_cast<int>(y) < y_ + height_ && y < src->info.height;
           ++y)
       {
         memcpy(
