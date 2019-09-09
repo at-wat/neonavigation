@@ -305,6 +305,8 @@ protected:
       cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
       has_cloud_ = false;
       r_lim_ = 0;
+
+      diag_updater_.force_update();
       return;
     }
 
