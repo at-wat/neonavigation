@@ -484,7 +484,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
       bool failed = false;
       bool en = false;
       const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
-          [this, &received, &failed, &en, vel, ang_vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
+          [&received, &failed, &en, vel, ang_vel](const geometry_msgs::Twist::ConstPtr& msg) -> void
       {
         failed = true;
         received = true;
