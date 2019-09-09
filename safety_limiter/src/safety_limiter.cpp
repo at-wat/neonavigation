@@ -36,6 +36,7 @@
 #include <std_msgs/Empty.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <safety_limiter_msgs/SafetyLimiterStatus.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -95,6 +96,7 @@ protected:
   ros::Publisher pub_twist_;
   ros::Publisher pub_cloud_;
   ros::Publisher pub_debug_;
+  ros::Publisher pub_status_;
   ros::Subscriber sub_twist_;
   std::vector<ros::Subscriber> sub_clouds_;
   ros::Subscriber sub_disable_;
@@ -158,6 +160,7 @@ public:
         pnh_, "cmd_vel_out", 1, true);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
     pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+    pub_status_ = nh_.advertise<safety_limiter_msgs::SafetyLimiterStatus>("status", 1, true);
     sub_twist_ = neonavigation_common::compat::subscribe(
         nh_, "cmd_vel_in",
         pnh_, "cmd_vel_in", 1, &SafetyLimiterNode::cbTwist, this);
@@ -668,16 +671,20 @@ protected:
 
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
+    safety_limiter_msgs::SafetyLimiterStatus status_msg;
     if (!has_cloud_ || watchdog_stop_)
     {
+      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::WATCHDOG_TIMED_OUT;
       stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Stopped due to data timeout.");
     }
     else if (r_lim_ == 1.0)
     {
+      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::NORMAL;
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
     else if (r_lim_ < EPSILON)
     {
+      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::COLLISION_IS_PREDICTED;
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
                    (has_collision_at_now_) ?
                        "Cannot escape from collision." :
@@ -685,6 +692,7 @@ protected:
     }
     else
     {
+      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::NORMAL;
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
                    (has_collision_at_now_) ?
                        "Escaping from collision." :
@@ -693,6 +701,8 @@ protected:
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
     stat.add("Pointcloud Availability", has_cloud_ ? "true" : "false");
     stat.add("Watchdog Timeout", watchdog_stop_ ? "true" : "false");
+    
+    pub_status_.publish(status_msg);
   }
 };
 

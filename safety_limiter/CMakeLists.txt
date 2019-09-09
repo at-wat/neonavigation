@@ -12,6 +12,7 @@ set(CATKIN_DEPENDS
     std_msgs
     tf2_ros
     tf2_sensor_msgs
+    safety_limiter_msgs
 
     neonavigation_common
 )
