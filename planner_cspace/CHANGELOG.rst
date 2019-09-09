@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.3 (2019-09-09)
+------------------
 * planner_cspace: make sure that planner error will be cleared if the goal is aborted (`#372 <https://github.com/at-wat/neonavigation/issues/372>`_)
 * Contributors: Daiki Maekawa
 
