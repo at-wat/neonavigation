@@ -283,8 +283,11 @@ protected:
   {
     ROS_WARN_THROTTLE(1.0, "safety_limiter: Watchdog timed-out");
     watchdog_stop_ = true;
+    r_lim_ = 0;
     geometry_msgs::Twist cmd_vel;
     pub_twist_.publish(cmd_vel);
+
+    diag_updater_.force_update();
   }
   void cbPredictTimer(const ros::TimerEvent& event)
   {
@@ -300,6 +303,10 @@ protected:
       pub_twist_.publish(cmd_vel);
 
       cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+      has_cloud_ = false;
+      r_lim_ = 0;
+
+      diag_updater_.force_update();
       return;
     }
 
@@ -463,9 +470,9 @@ protected:
             std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
 
     float d_r =
-        (std::sqrt(std::abs(2 * acc_[0] * d_col)) + EPSILON) / std::abs(twist_.linear.x);
+        std::sqrt(std::abs(2 * acc_[0] * d_col)) / std::abs(twist_.linear.x);
     float yaw_r =
-        (std::sqrt(std::abs(2 * acc_[1] * yaw_col)) + EPSILON) / std::abs(twist_.angular.z);
+        std::sqrt(std::abs(2 * acc_[1] * yaw_col)) / std::abs(twist_.angular.z);
     if (!std::isfinite(d_r))
       d_r = 1.0;
     if (!std::isfinite(yaw_r))
@@ -610,7 +617,7 @@ protected:
     {
       pub_twist_.publish(twist_);
     }
-    else if (ros::Time::now() - last_cloud_stamp_ > ros::Duration(timeout_) || watchdog_stop_)
+    else if (!has_cloud_ || watchdog_stop_)
     {
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
@@ -661,11 +668,15 @@ protected:
 
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
-    if (r_lim_ == 1.0)
+    if (!has_cloud_ || watchdog_stop_)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Stopped due to data timeout.");
+    }
+    else if (r_lim_ == 1.0)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
-    else if (r_lim_ == 0.0)
+    else if (r_lim_ < EPSILON)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
                    (has_collision_at_now_) ?
@@ -680,6 +691,8 @@ protected:
                        "Reducing velocity to avoid collision.");
     }
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
+    stat.add("Pointcloud Availability", has_cloud_ ? "true" : "false");
+    stat.add("Watchdog Timeout", watchdog_stop_ ? "true" : "false");
   }
 };
 
