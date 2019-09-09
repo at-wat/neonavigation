@@ -83,49 +83,16 @@ protected:
     costmap_cspace_msgs::CSpace3DUpdate::Ptr update_msg(new costmap_cspace_msgs::CSpace3DUpdate);
     update_msg->header = map_->header;
     map_->header.stamp = region_.stamp_;
-    int update_x = region_.x_;
-    int update_y = region_.y_;
-    int update_width = region_.width_;
-    int update_height = region_.height_;
-    if (update_x < 0)
-    {
-      update_width += update_x;
-      update_x = 0;
-    }
-    if (update_y < 0)
-    {
-      update_height += update_y;
-      update_y = 0;
-    }
-    if (update_x + update_width > static_cast<int>(map_->info.width))
-    {
-      update_width = map_->info.width - update_x;
-    }
-    if (update_y + update_height > static_cast<int>(map_->info.height))
-    {
-      update_height = map_->info.height - update_y;
-    }
-    if (update_width < 0)
-    {
-      update_width = 0;
-    }
-    if (update_height < 0)
-    {
-      update_height = 0;
-    }
-    UpdatedRegion region(
-        update_x,
-        update_y,
-        region_.yaw_,
-        update_width,
-        update_height,
-        region_.angle_);
+
+    UpdatedRegion region = region_;
+    region.normalize(map_->info.width, map_->info.height);
+
     UpdatedRegion region_merged = region;
     region_merged.merge(region_prev_);
     region_prev_ = region;
     region_ = UpdatedRegion();
 
-    if (update_width == 0 || update_height == 0)
+    if (region.width_ == 0 || region.height_ == 0)
     {
       return nullptr;
     }
