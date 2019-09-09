@@ -665,7 +665,7 @@ protected:
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
-    else if (r_lim_ == 0.0)
+    else if (r_lim_ < EPSILON)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
                    (has_collision_at_now_) ?
