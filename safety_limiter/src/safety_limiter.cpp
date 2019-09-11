@@ -27,16 +27,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
 #include <diagnostic_updater/diagnostic_updater.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/PointCloud.h>
 #include <geometry_msgs/Twist.h>
+#include <ros/ros.h>
+#include <safety_limiter_msgs/SafetyLimiterStatus.h>
+#include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
-#include <safety_limiter_msgs/SafetyLimiterStatus.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -50,10 +50,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <random>
-#include <string>
 #include <iostream>
+#include <random>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include <neonavigation_common/compatibility.h>
@@ -136,6 +136,7 @@ protected:
   bool has_cloud_;
   bool has_twist_;
   bool has_collision_at_now_;
+  ros::Time stuck_started_since_;
 
   constexpr static float EPSILON = 1e-6;
 
@@ -153,6 +154,7 @@ public:
     , has_cloud_(false)
     , has_twist_(true)
     , has_collision_at_now_(false)
+    , stuck_started_since_(ros::Time(0))
   {
     neonavigation_common::compat::checkCompatMode();
     pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
@@ -449,6 +451,12 @@ protected:
     pub_debug_.publish(debug_points);
     pub_cloud_.publish(col_points);
 
+    if (has_collision)
+      if (stuck_started_since_ == ros::Time(0))
+        stuck_started_since_ = ros::Time::now();
+      else if (stuck_started_since_ != ros::Time(0))
+        stuck_started_since_ = ros::Time(0);
+
     if (!has_collision)
       return 1.0;
 
@@ -672,9 +680,11 @@ protected:
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
     safety_limiter_msgs::SafetyLimiterStatus status_msg;
+    if (watchdog_stop_)
+      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::WATCHDOG_TIMED_OUT;
+
     if (!has_cloud_ || watchdog_stop_)
     {
-      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::WATCHDOG_TIMED_OUT;
       stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Stopped due to data timeout.");
     }
     else if (r_lim_ == 1.0)
@@ -701,7 +711,12 @@ protected:
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
     stat.add("Pointcloud Availability", has_cloud_ ? "true" : "false");
     stat.add("Watchdog Timeout", watchdog_stop_ ? "true" : "false");
-    
+
+    status_msg.limit_ratio = r_lim_;
+    status_msg.is_cloud_available = has_cloud_;
+    status_msg.has_watchdog_timed_out = watchdog_stop_;
+    status_msg.stuck_started_since = stuck_started_since_;
+
     pub_status_.publish(status_msg);
   }
 };
