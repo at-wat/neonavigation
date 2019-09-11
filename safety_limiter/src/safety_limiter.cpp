@@ -452,10 +452,15 @@ protected:
     pub_cloud_.publish(col_points);
 
     if (has_collision)
+    {
       if (stuck_started_since_ == ros::Time(0))
         stuck_started_since_ = ros::Time::now();
-      else if (stuck_started_since_ != ros::Time(0))
+    }
+    else
+    {
+      if (stuck_started_since_ != ros::Time(0))
         stuck_started_since_ = ros::Time(0);
+    }
 
     if (!has_collision)
       return 1.0;
