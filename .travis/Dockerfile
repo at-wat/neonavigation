@@ -18,6 +18,10 @@ RUN mkdir -p /repos-manifests/src \
 # ========================================
 FROM ros:${ROS_DISTRO}-ros-core
 
+RUN sed -e \
+  's/http:\/\/archive\.ubuntu\.com/http:\/\/us-east-1.ec2.archive.ubuntu.com/' \
+  -i /etc/apt/sources.list
+
 RUN apt-get -qq update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
