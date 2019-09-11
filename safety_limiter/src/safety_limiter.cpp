@@ -451,7 +451,7 @@ protected:
     pub_debug_.publish(debug_points);
     pub_cloud_.publish(col_points);
 
-    if (has_collision)
+    if (has_collision_at_now_)
     {
       if (stuck_started_since_ == ros::Time(0))
         stuck_started_since_ = ros::Time::now();
@@ -685,8 +685,6 @@ protected:
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
     safety_limiter_msgs::SafetyLimiterStatus status_msg;
-    if (watchdog_stop_)
-      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::WATCHDOG_TIMED_OUT;
 
     if (!has_cloud_ || watchdog_stop_)
     {
@@ -694,12 +692,10 @@ protected:
     }
     else if (r_lim_ == 1.0)
     {
-      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::NORMAL;
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
     else if (r_lim_ < EPSILON)
     {
-      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::COLLISION_IS_PREDICTED;
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
                    (has_collision_at_now_) ?
                        "Cannot escape from collision." :
@@ -707,7 +703,6 @@ protected:
     }
     else
     {
-      status_msg.status = safety_limiter_msgs::SafetyLimiterStatus::NORMAL;
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK,
                    (has_collision_at_now_) ?
                        "Escaping from collision." :
