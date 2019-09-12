@@ -20,11 +20,11 @@
   <depend>pcl_conversions</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>safety_limiter_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_sensor_msgs</depend>
 
   <depend>neonavigation_common</depend>
+  <depend>safety_limiter_msgs</depend>
 
   <depend>cmake_modules</depend>
   <depend>eigen</depend>
