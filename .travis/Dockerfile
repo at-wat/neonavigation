@@ -9,7 +9,7 @@ WORKDIR /repos
 
 COPY . /repos/src/neonavigation
 RUN cd /repos/src \
-  && git clone --branch=safety-limiter-msgs --depth=1 https://github.com/at-wat/neonavigation_msgs.git \
+  && git clone --depth=1 https://github.com/at-wat/neonavigation_msgs.git \
   && git clone --depth=1 https://github.com/at-wat/neonavigation_rviz_plugins.git
 
 RUN mkdir -p /repos-manifests/src \
