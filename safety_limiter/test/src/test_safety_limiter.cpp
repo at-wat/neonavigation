@@ -373,7 +373,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    ASSERT_NE(status_->stuck_started_since, ros::Time(0));
+    EXPECT_NE(status_->stuck_started_since, ros::Time(0));
 
     ASSERT_TRUE(received);
     sub_cmd_vel.shutdown();
@@ -507,7 +507,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    ASSERT_NE(status_->stuck_started_since, ros::Time(0));
+    EXPECT_NE(status_->stuck_started_since, ros::Time(0));
 
     ASSERT_TRUE(received);
     sub_cmd_vel.shutdown();
