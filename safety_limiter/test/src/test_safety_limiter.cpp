@@ -128,7 +128,9 @@ TEST_F(SafetyLimiterTest, Timeouts)
             << test_condition << ", "
             << "message: " << diag_->status[0].message;
         if (with_watchdog_reset == 0)
+        {
           EXPECT_TRUE(status_->has_watchdog_timed_out) << test_condition;
+        }
       }
     }
   }
