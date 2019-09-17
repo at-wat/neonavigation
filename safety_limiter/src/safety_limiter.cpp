@@ -95,7 +95,6 @@ protected:
   ros::NodeHandle pnh_;
   ros::Publisher pub_twist_;
   ros::Publisher pub_cloud_;
-  ros::Publisher pub_debug_;
   ros::Publisher pub_status_;
   ros::Subscriber sub_twist_;
   std::vector<ros::Subscriber> sub_clouds_;
@@ -161,7 +160,6 @@ public:
         nh_, "cmd_vel",
         pnh_, "cmd_vel_out", 1, true);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
-    pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
     pub_status_ = pnh_.advertise<safety_limiter_msgs::SafetyLimiterStatus>("status", 1, true);
     sub_twist_ = neonavigation_common::compat::subscribe(
         nh_, "cmd_vel_in",
@@ -370,10 +368,8 @@ protected:
     move.setIdentity();
     move_inv.setIdentity();
     sensor_msgs::PointCloud col_points;
-    sensor_msgs::PointCloud debug_points;
     col_points.header.frame_id = frame_id_;
     col_points.header.stamp = ros::Time::now();
-    debug_points.header = col_points.header;
 
     float d_col = 0;
     float yaw_col = 0;
@@ -396,11 +392,6 @@ protected:
 
       pcl::PointXYZ center;
       center = pcl::transformPoint(center, move_inv);
-      geometry_msgs::Point32 p;
-      p.x = center.x;
-      p.y = center.y;
-      p.z = 0.0;
-      debug_points.points.push_back(p);
 
       std::vector<int> indices;
       std::vector<float> dist;
@@ -448,7 +439,6 @@ protected:
         }
       }
     }
-    pub_debug_.publish(debug_points);
     pub_cloud_.publish(col_points);
 
     if (has_collision_at_now_)

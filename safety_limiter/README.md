@@ -18,8 +18,7 @@ safety_limiter node limits vehicle velocity to avoid collisions based on the lin
 ### Published topics
 
 * ~/cmd_vel_out (new: cmd_vel) [geometry_msgs::Twist]
-* ~/collision [sensor_msgs::PointCloud]
-* ~/debug [sensor_msgs::PointCloud]
+* ~/collision (new: collision) [sensor_msgs::PointCloud]
 
 ### Services
 
