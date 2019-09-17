@@ -119,7 +119,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
             << test_condition << ", "
             << "message: " << diag_->status[0].message;
 
-        ASSERT_FALSE(status_->has_watchdog_timed_out) << test_condition;
+        EXPECT_FALSE(status_->has_watchdog_timed_out) << test_condition;
       }
       else
       {
@@ -127,6 +127,8 @@ TEST_F(SafetyLimiterTest, Timeouts)
         EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::ERROR, diag_->status[0].level)
             << test_condition << ", "
             << "message: " << diag_->status[0].message;
+        if (with_watchdog_reset == 0)
+          EXPECT_TRUE(status_->has_watchdog_timed_out) << test_condition;
       }
     }
   }
@@ -233,8 +235,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
         << "message: " << diag_->status[0].message;
 
     ASSERT_TRUE(hasStatus());
-    ASSERT_TRUE(status_->is_cloud_available);
-    ASSERT_FALSE(status_->has_watchdog_timed_out);
+    EXPECT_TRUE(status_->is_cloud_available);
+    EXPECT_FALSE(status_->has_watchdog_timed_out);
     EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
 
     ASSERT_TRUE(received);
@@ -291,8 +293,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
         << "message: " << diag_->status[0].message;
 
     ASSERT_TRUE(hasStatus());
-    ASSERT_TRUE(status_->is_cloud_available);
-    ASSERT_FALSE(status_->has_watchdog_timed_out);
+    EXPECT_TRUE(status_->is_cloud_available);
+    EXPECT_FALSE(status_->has_watchdog_timed_out);
     EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
 
     ASSERT_TRUE(received);
@@ -367,8 +369,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     }
 
     ASSERT_TRUE(hasStatus());
-    ASSERT_TRUE(status_->is_cloud_available);
-    ASSERT_FALSE(status_->has_watchdog_timed_out);
+    EXPECT_TRUE(status_->is_cloud_available);
+    EXPECT_FALSE(status_->has_watchdog_timed_out);
     ASSERT_NE(status_->stuck_started_since, ros::Time(0));
 
     ASSERT_TRUE(received);
@@ -425,8 +427,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
         << "message: " << diag_->status[0].message;
 
     ASSERT_TRUE(hasStatus());
-    ASSERT_TRUE(status_->is_cloud_available);
-    ASSERT_FALSE(status_->has_watchdog_timed_out);
+    EXPECT_TRUE(status_->is_cloud_available);
+    EXPECT_FALSE(status_->has_watchdog_timed_out);
     EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
 
     ASSERT_TRUE(received);
@@ -501,8 +503,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     }
 
     ASSERT_TRUE(hasStatus());
-    ASSERT_TRUE(status_->is_cloud_available);
-    ASSERT_FALSE(status_->has_watchdog_timed_out);
+    EXPECT_TRUE(status_->is_cloud_available);
+    EXPECT_FALSE(status_->has_watchdog_timed_out);
     ASSERT_NE(status_->stuck_started_since, ros::Time(0));
 
     ASSERT_TRUE(received);
@@ -551,8 +553,8 @@ TEST_F(SafetyLimiterTest, NoCollision)
 
       ASSERT_TRUE(hasStatus());
       EXPECT_EQ(1.0, status_->limit_ratio);
-      ASSERT_TRUE(status_->is_cloud_available);
-      ASSERT_FALSE(status_->has_watchdog_timed_out);
+      EXPECT_TRUE(status_->is_cloud_available);
+      EXPECT_FALSE(status_->has_watchdog_timed_out);
       EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
 
       sub_cmd_vel.shutdown();
