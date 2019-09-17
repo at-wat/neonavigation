@@ -12,6 +12,7 @@ set(CATKIN_DEPENDS
     std_msgs
     tf2_ros
     tf2_sensor_msgs
+    safety_limiter_msgs
 
     neonavigation_common
 )
@@ -51,7 +52,7 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 add_executable(safety_limiter src/safety_limiter.cpp)
 target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
+add_dependencies(safety_limiter ${catkin_EXPORTED_TARGETS})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
