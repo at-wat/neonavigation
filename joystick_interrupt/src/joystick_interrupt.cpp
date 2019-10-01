@@ -134,7 +134,8 @@ private:
   void cbTwist(const geometry_msgs::Twist::Ptr msg)
   {
     std_msgs::Bool status;
-    if (ros::Time::now() - last_joy_msg_ > ros::Duration(timeout_))
+    if (ros::Time::now() - last_joy_msg_ > ros::Duration(timeout_) ||
+        (ros::Time::isSimTime() && last_joy_msg_ == ros::Time(0)))
     {
       pub_twist_.publish(*msg);
       status.data = true;
