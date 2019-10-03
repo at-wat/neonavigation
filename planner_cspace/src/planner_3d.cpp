@@ -871,24 +871,22 @@ protected:
         sensor_msgs::PointCloud pc;
         pc.header = map_header_;
         pc.header.stamp = now;
-        for (Astar::Vec p(0, 0, 0); p[1] < bbf_costmap_.size()[1]; p[1]++)
+        const auto generate_pointcloud = [this, &pc](const Astar::Vec& p, bbf::BinaryBayesFilter& bbf)
         {
-          for (p[0] = 0; p[0] < bbf_costmap_.size()[0]; p[0]++)
-          {
-            if (bbf_costmap_.getOdds(p) > bbf::probabilityToOdds(0.1))
-            {
-              float x, y, yaw;
-              grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-              geometry_msgs::Point32 point;
-              point.x = x;
-              point.y = y;
-              point.z = bbf_costmap_.getProbability(p);
-              pc.points.push_back(point);
-            }
-          }
-        }
+          if (bbf.get() <= bbf::probabilityToOdds(0.1))
+            return;
+          float x, y, yaw;
+          grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
+          geometry_msgs::Point32 point;
+          point.x = x;
+          point.y = y;
+          point.z = bbf.getProbability();
+          pc.points.push_back(point);
+        };
+        bbf_costmap_.forEach(generate_pointcloud);
         pub_hist_.publish(pc);
       }
+
       bbf_costmap_.updateCostmap();
     }
     if (!has_goal_)

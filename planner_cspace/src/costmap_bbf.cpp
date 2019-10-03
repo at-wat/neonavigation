@@ -88,5 +88,15 @@ void CostmapBBF::remember(
     }
   }
 }
+void CostmapBBF::forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb)
+{
+  for (Vec p(0, 0, 0); p[1] < size_[1]; p[1]++)
+  {
+    for (p[0] = 0; p[0] < size_[0]; p[0]++)
+    {
+      cb(p, cm_hist_bbf_[VecInternal(p[0], p[1])]);
+    }
+  }
+}
 }  // namespace planner_3d
 }  // namespace planner_cspace

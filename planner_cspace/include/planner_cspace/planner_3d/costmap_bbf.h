@@ -30,6 +30,8 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
 #define PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
 
+#include <functional>
+
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/blockmem_gridmap.h>
 
@@ -71,18 +73,6 @@ public:
   {
     cm_observed_[VecInternal(p[0], p[1])] = flag;
   }
-  inline float getOdds(const Vec& p)
-  {
-    return cm_hist_bbf_[VecInternal(p[0], p[1])].get();
-  }
-  inline float getProbability(const Vec& p)
-  {
-    return cm_hist_bbf_[VecInternal(p[0], p[1])].getProbability();
-  }
-  inline const Vec& size() const
-  {
-    return size_;
-  }
   inline char getCost(const Vec& p) const
   {
     return cm_hist_[VecInternal(p[0], p[1])];
@@ -94,6 +84,7 @@ public:
       const float remember_hit_odds, const float remember_miss_odds,
       const int range_min, const int range_max);
   void updateCostmap();
+  void forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb);
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
