@@ -64,6 +64,7 @@ public:
   {
     size_ = size;
     cm_hist_bbf_.reset(VecInternal(size[0], size[1]));
+    cm_hist_.reset(VecInternal(size[0], size[1]));
     cm_observed_.reset(VecInternal(size[0], size[1]));
   }
   inline void clear()
