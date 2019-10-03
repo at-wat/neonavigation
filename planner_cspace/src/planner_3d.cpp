@@ -810,9 +810,6 @@ protected:
       const Astar::Vec gp(
           static_cast<int>(msg->x), static_cast<int>(msg->y), static_cast<int>(msg->yaw));
       const Astar::Vec gp_rough(gp[0], gp[1], 0);
-      const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
-      const int hist_ignore_range_max_sq =
-          hist_ignore_range_max_ * hist_ignore_range_max_;
       Astar::Vec p;
       for (p[0] = 0; p[0] < static_cast<int>(msg->width); p[0]++)
       {
