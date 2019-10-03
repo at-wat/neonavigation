@@ -805,8 +805,6 @@ protected:
     cm_rough_ = cm_rough_base_;
 
     {
-      const Astar::Vec center(
-          static_cast<int>(msg->width / 2), static_cast<int>(msg->height / 2), 0);
       const Astar::Vec gp(
           static_cast<int>(msg->x), static_cast<int>(msg->y), static_cast<int>(msg->yaw));
       const Astar::Vec gp_rough(gp[0], gp[1], 0);
