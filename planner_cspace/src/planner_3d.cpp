@@ -810,8 +810,7 @@ protected:
       const Astar::Vec gp(
           static_cast<int>(msg->x), static_cast<int>(msg->y), static_cast<int>(msg->yaw));
       const Astar::Vec gp_rough(gp[0], gp[1], 0);
-      Astar::Vec p;
-      for (p[0] = 0; p[0] < static_cast<int>(msg->width); p[0]++)
+      for (Astar::Vec p(0, 0, 0); p[0] < static_cast<int>(msg->width); p[0]++)
       {
         for (p[1] = 0; p[1] < static_cast<int>(msg->height); p[1]++)
         {
@@ -896,8 +895,7 @@ protected:
         sensor_msgs::PointCloud pc;
         pc.header = map_header_;
         pc.header.stamp = now;
-        Astar::Vec p(0, 0, 0);
-        for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
+        for (Astar::Vec p(0, 0, 0); p[1] < cm_hist_bbf_.size()[1]; p[1]++)
         {
           for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
           {
@@ -920,7 +918,6 @@ protected:
       {
         for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
         {
-          p[2] = 0;
           cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
         }
       }
