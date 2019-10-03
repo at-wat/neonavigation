@@ -75,14 +75,14 @@ void CostmapBBF::remember(
         if (r_sq > range_min_sq &&
             r_sq < range_max_sq)
         {
-          cm_hist_bbf_[p].update(remember_hit_odds);
+          cm_hist_bbf_[gp].update(remember_hit_odds);
         }
       }
       else if (c >= 0)
       {
         if (r_sq < range_max_sq)
         {
-          cm_hist_bbf_[p].update(remember_miss_odds);
+          cm_hist_bbf_[gp].update(remember_miss_odds);
         }
       }
     }
