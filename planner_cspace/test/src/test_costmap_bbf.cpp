@@ -122,7 +122,7 @@ TEST(CostmapBBF, Update)
   bbf.forEach(cb_cleared);
   for (int i = 0; i < 3; ++i)
     for (int j = 0; j < 3; ++j)
-      EXPECT_EQ(0, bbf.getCost(CostmapBBF::Vec(i, j)));
+      EXPECT_EQ(0, bbf.getCost(CostmapBBF::Vec(i, j, 0)));
 }
 }  // namespace planner_3d
 }  // namespace planner_cspace
