@@ -803,43 +803,6 @@ protected:
 
     cm_ = cm_base_;
     cm_rough_ = cm_rough_base_;
-    if (remember_updates_)
-    {
-      if (pub_hist_.getNumSubscribers() > 0)
-      {
-        sensor_msgs::PointCloud pc;
-        pc.header = map_header_;
-        pc.header.stamp = now;
-        Astar::Vec p(0, 0, 0);
-        for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
-        {
-          for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
-          {
-            if (cm_hist_bbf_[p].get() > bbf::probabilityToOdds(0.1))
-            {
-              float x, y, yaw;
-              grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-              geometry_msgs::Point32 point;
-              point.x = x;
-              point.y = y;
-              point.z = cm_hist_bbf_[p].getProbability();
-              pc.points.push_back(point);
-            }
-          }
-        }
-        pub_hist_.publish(pc);
-      }
-      Astar::Vec p;
-      cm_hist_.clear(0);
-      for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
-      {
-        for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
-        {
-          p[2] = 0;
-          cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
-        }
-      }
-    }
 
     {
       const Astar::Vec center(
@@ -869,28 +832,6 @@ protected:
             cm_rough_[gp_rough + p] = cost_min;
           }
 
-          Astar::Vec pos = gp + p;
-          pos[2] = 0;
-          if (cost_min == 100)
-          {
-            const Astar::Vec p2 = p - center;
-            const float sqlen = p2.sqlen();
-            if (sqlen > hist_ignore_range_sq &&
-                sqlen < hist_ignore_range_max_sq)
-            {
-              cm_hist_bbf_[pos].update(remember_hit_odds_);
-            }
-          }
-          else if (cost_min >= 0)
-          {
-            const Astar::Vec p2 = p - center;
-            const float sqlen = p2.sqlen();
-            if (sqlen < hist_ignore_range_max_sq)
-            {
-              cm_hist_bbf_[pos].update(remember_miss_odds_);
-            }
-          }
-
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
@@ -909,7 +850,85 @@ protected:
         }
       }
     }
-    if (!has_goal_ || !has_start_)
+
+    if (!has_start_)
+      return;
+
+    Astar::Vec s;
+    grid_metric_converter::metric2Grid(
+        map_info_, s[0], s[1], s[2],
+        start_.pose.position.x, start_.pose.position.y,
+        tf2::getYaw(start_.pose.orientation));
+    s.cycleUnsigned(map_info_.angle);
+
+    if (remember_updates_)
+    {
+      const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
+      const int hist_ignore_range_max_sq =
+          hist_ignore_range_max_ * hist_ignore_range_max_;
+      for (Astar::Vec p(-hist_ignore_range_max_, 0, 0); p[0] <= hist_ignore_range_max_; p[0]++)
+      {
+        for (p[1] = -hist_ignore_range_max_; p[1] < hist_ignore_range_max_; p[1]++)
+        {
+          const Astar::Vec gp = Astar::Vec(s[0], s[1], 0) + p;
+          if ((unsigned int)gp[0] >= (unsigned int)map_info_.width ||
+              (unsigned int)gp[1] >= (unsigned int)map_info_.height)
+            continue;
+
+          const int cost_min = cm_rough_[gp];
+          const float r_sq = p.sqlen();
+          if (cost_min == 100)
+          {
+            if (r_sq > hist_ignore_range_sq &&
+                r_sq < hist_ignore_range_max_sq)
+            {
+              cm_hist_bbf_[gp].update(remember_hit_odds_);
+            }
+          }
+          else if (cost_min >= 0)
+          {
+            if (r_sq < hist_ignore_range_max_sq)
+            {
+              cm_hist_bbf_[gp].update(remember_miss_odds_);
+            }
+          }
+        }
+      }
+      if (pub_hist_.getNumSubscribers() > 0)
+      {
+        sensor_msgs::PointCloud pc;
+        pc.header = map_header_;
+        pc.header.stamp = now;
+        Astar::Vec p(0, 0, 0);
+        for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
+        {
+          for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
+          {
+            if (cm_hist_bbf_[p].get() > bbf::probabilityToOdds(0.1))
+            {
+              float x, y, yaw;
+              grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
+              geometry_msgs::Point32 point;
+              point.x = x;
+              point.y = y;
+              point.z = cm_hist_bbf_[p].getProbability();
+              pc.points.push_back(point);
+            }
+          }
+        }
+        pub_hist_.publish(pc);
+      }
+      cm_hist_.clear(0);
+      for (Astar::Vec p(0, 0, 0); p[1] < cm_hist_bbf_.size()[1]; p[1]++)
+      {
+        for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
+        {
+          p[2] = 0;
+          cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
+        }
+      }
+    }
+    if (!has_goal_)
       return;
 
     if (!fast_map_update_)
@@ -918,12 +937,7 @@ protected:
       return;
     }
 
-    Astar::Vec s, e;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        start_.pose.position.x, start_.pose.position.y,
-        tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(map_info_.angle);
+    Astar::Vec e;
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
