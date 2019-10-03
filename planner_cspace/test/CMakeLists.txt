@@ -10,6 +10,12 @@ target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 catkin_add_gtest(test_grid_metric_converter src/test_grid_metric_converter.cpp)
 target_link_libraries(test_grid_metric_converter ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+catkin_add_gtest(test_costmap_bbf
+  src/test_costmap_bbf.cpp
+  ../src/costmap_bbf.cpp
+)
+target_link_libraries(test_costmap_bbf ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 catkin_add_gtest(test_motion_cache
   src/test_motion_cache.cpp
   ../src/motion_cache.cpp
