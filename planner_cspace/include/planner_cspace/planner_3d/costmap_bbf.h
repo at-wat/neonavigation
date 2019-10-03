@@ -66,7 +66,7 @@ public:
   inline void clear()
   {
     cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-    cm_observed_.clear(0);
+    cm_observed_.clear(false);
     cm_hist_.clear(0);
   }
   inline void setObserved(const Vec& p, const bool flag)
