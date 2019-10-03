@@ -100,6 +100,7 @@ protected:
   Astar::Gridmap<char, 0x40> cm_;
   Astar::Gridmap<bbf::BinaryBayesFilter, 0x20> cm_hist_bbf_;
   Astar::Gridmap<char, 0x40> cm_hist_;
+  Astar::Gridmap<char, 0x80> cm_observed_;
   Astar::Gridmap<char, 0x80> cm_rough_;
   Astar::Gridmap<char, 0x40> cm_base_;
   Astar::Gridmap<char, 0x80> cm_rough_base_;
@@ -251,7 +252,10 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
+    {
       cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+      cm_observed_.clear(0);
+    }
 
     return true;
   }
@@ -826,6 +830,11 @@ protected:
             cm_rough_[gp_rough + p] = cost_min;
           }
 
+          if (cost_min >= 0)
+            cm_observed_[gp_rough + p] = 1;
+          else
+            cm_observed_[gp_rough + p] = 0;
+
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
@@ -867,6 +876,10 @@ protected:
           const Astar::Vec gp = Astar::Vec(s[0], s[1], 0) + p;
           if ((unsigned int)gp[0] >= (unsigned int)map_info_.width ||
               (unsigned int)gp[1] >= (unsigned int)map_info_.height)
+            continue;
+
+          // The cell marked as unknown must be ignored
+          if (cm_observed_[gp] == 0)
             continue;
 
           const int cost_min = cm_rough_[gp];
@@ -1139,6 +1152,7 @@ protected:
     cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
     cm_hist_.reset(Astar::Vec(size[0], size[1], 1));
     cm_hist_bbf_.reset(Astar::Vec(size[0], size[1], 1));
+    cm_observed_.reset(Astar::Vec(size[0], size[1], 1));
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1168,6 +1182,7 @@ protected:
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
     cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+    cm_observed_.clear(0);
     cm_hist_.clear(0);
 
     // Make boundary check threshold
@@ -1391,6 +1406,7 @@ public:
         if (jump_.detectJump())
         {
           cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+          cm_observed_.clear(0);
         }
 
         if (!goal_updated_ && has_goal_)
