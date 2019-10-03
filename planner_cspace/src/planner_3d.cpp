@@ -861,37 +861,11 @@ protected:
 
     if (remember_updates_)
     {
-      const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
-      const int hist_ignore_range_max_sq =
-          hist_ignore_range_max_ * hist_ignore_range_max_;
-      for (Astar::Vec p(-hist_ignore_range_max_, 0, 0); p[0] <= hist_ignore_range_max_; p[0]++)
-      {
-        for (p[1] = -hist_ignore_range_max_; p[1] < hist_ignore_range_max_; p[1]++)
-        {
-          const Astar::Vec gp = Astar::Vec(s[0], s[1], 0) + p;
-          if ((unsigned int)gp[0] >= (unsigned int)map_info_.width ||
-              (unsigned int)gp[1] >= (unsigned int)map_info_.height)
-            continue;
+      bbf_costmap_.remember(
+          &cm_rough_, s,
+          remember_hit_odds_, remember_miss_odds_,
+          hist_ignore_range_, hist_ignore_range_max_);
 
-          const int cost_min = cm_rough_[gp];
-          const float r_sq = p.sqlen();
-          if (cost_min == 100)
-          {
-            if (r_sq > hist_ignore_range_sq &&
-                r_sq < hist_ignore_range_max_sq)
-            {
-              bbf_costmap_.update(gp, remember_hit_odds_);
-            }
-          }
-          else if (cost_min >= 0)
-          {
-            if (r_sq < hist_ignore_range_max_sq)
-            {
-              bbf_costmap_.update(gp, remember_miss_odds_);
-            }
-          }
-        }
-      }
       if (pub_hist_.getNumSubscribers() > 0)
       {
         sensor_msgs::PointCloud pc;

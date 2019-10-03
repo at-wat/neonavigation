@@ -27,80 +27,63 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
-#define PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
-
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/blockmem_gridmap.h>
+#include <planner_cspace/planner_3d/costmap_bbf.h>
 
 namespace planner_cspace
 {
 namespace planner_3d
 {
-class CostmapBBF
+void CostmapBBF::updateCostmap()
 {
-public:
-  using Vec = CyclicVecInt<3, 2>;
+  cm_hist_.clear(0);
+  for (VecInternal p(0, 0); p[1] < size_[1]; p[1]++)
+  {
+    for (p[0] = 0; p[0] < size_[0]; p[0]++)
+    {
+      cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
+    }
+  }
+}
+void CostmapBBF::remember(
+    const BlockMemGridmapBase<char, 3, 2>* costmap,
+    const Vec& center,
+    const float remember_hit_odds, const float remember_miss_odds,
+    const int range_min, const int range_max)
+{
+  const size_t width = costmap->size()[0];
+  const size_t height = costmap->size()[1];
+  const int range_min_sq = range_min * range_min;
+  const int range_max_sq = range_max * range_max;
+  for (VecInternal p(-range_max, 0); p[0] <= range_max; p[0]++)
+  {
+    for (p[1] = -range_max; p[1] < range_max; p[1]++)
+    {
+      const VecInternal gp = VecInternal(center[0], center[1]) + p;
+      if (static_cast<size_t>(gp[0]) >= width ||
+          static_cast<size_t>(gp[1]) >= height)
+        continue;
 
-private:
-  using VecInternal = CyclicVecInt<2, 2>;
-  BlockMemGridmap<bbf::BinaryBayesFilter, 2, 2, 0x20> cm_hist_bbf_;
-  BlockMemGridmap<char, 2, 2, 0x80> cm_hist_;
-  BlockMemGridmap<bool, 2, 2, 0x80> cm_observed_;
-  Vec size_;
-
-  inline void update(const VecInternal& p, const float odds)
-  {
-    if (cm_observed_[p])
-      cm_hist_bbf_[p].update(odds);
+      const int c = costmap->operator[](Vec(gp[0], gp[1], 0));
+      const float r_sq = p.sqlen();
+      if (c == 100)
+      {
+        if (r_sq > range_min_sq &&
+            r_sq < range_max_sq)
+        {
+          update(gp, remember_hit_odds);
+        }
+      }
+      else if (c >= 0)
+      {
+        if (r_sq < range_max_sq)
+        {
+          update(gp, remember_miss_odds);
+        }
+      }
+    }
   }
-
-public:
-  inline CostmapBBF()
-    : size_(0, 0, 0)
-  {
-  }
-  inline void reset(const Vec& size)
-  {
-    size_ = size;
-    cm_hist_bbf_.reset(VecInternal(size[0], size[1]));
-    cm_observed_.reset(VecInternal(size[0], size[1]));
-  }
-  inline void clear()
-  {
-    cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-    cm_observed_.clear(0);
-    cm_hist_.clear(0);
-  }
-  inline void setObserved(const Vec& p, const bool flag)
-  {
-    cm_observed_[VecInternal(p[0], p[1])] = flag;
-  }
-  inline float getOdds(const Vec& p)
-  {
-    return cm_hist_bbf_[VecInternal(p[0], p[1])].get();
-  }
-  inline float getProbability(const Vec& p)
-  {
-    return cm_hist_bbf_[VecInternal(p[0], p[1])].getProbability();
-  }
-  inline const Vec& size() const
-  {
-    return size_;
-  }
-  inline char getCost(const Vec& p) const
-  {
-    return cm_hist_[VecInternal(p[0], p[1])];
-  }
-
-  void remember(
-      const BlockMemGridmapBase<char, 3, 2>* costmap,
-      const Vec& center,
-      const float remember_hit_odds, const float remember_miss_odds,
-      const int range_min, const int range_max);
-  void updateCostmap();
-};
+}
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
