@@ -49,12 +49,6 @@ private:
   BlockMemGridmap<bool, 2, 2, 0x80> cm_observed_;
   Vec size_;
 
-  inline void update(const VecInternal& p, const float odds)
-  {
-    if (cm_observed_[p])
-      cm_hist_bbf_[p].update(odds);
-  }
-
 public:
   inline CostmapBBF()
     : size_(0, 0, 0)

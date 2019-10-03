@@ -52,8 +52,8 @@ void CostmapBBF::remember(
     const float remember_hit_odds, const float remember_miss_odds,
     const int range_min, const int range_max)
 {
-  const size_t width = costmap->size()[0];
-  const size_t height = costmap->size()[1];
+  const size_t width = size_[0];
+  const size_t height = size_[1];
   const int range_min_sq = range_min * range_min;
   const int range_max_sq = range_max * range_max;
   for (VecInternal p(-range_max, 0); p[0] <= range_max; p[0]++)
@@ -65,6 +65,9 @@ void CostmapBBF::remember(
           static_cast<size_t>(gp[1]) >= height)
         continue;
 
+      if (!cm_observed_[gp])
+        continue;
+
       const int c = costmap->operator[](Vec(gp[0], gp[1], 0));
       const float r_sq = p.sqlen();
       if (c == 100)
@@ -72,14 +75,14 @@ void CostmapBBF::remember(
         if (r_sq > range_min_sq &&
             r_sq < range_max_sq)
         {
-          update(gp, remember_hit_odds);
+          cm_hist_bbf_[p].update(remember_hit_odds);
         }
       }
       else if (c >= 0)
       {
         if (r_sq < range_max_sq)
         {
-          update(gp, remember_miss_odds);
+          cm_hist_bbf_[p].update(remember_miss_odds);
         }
       }
     }
