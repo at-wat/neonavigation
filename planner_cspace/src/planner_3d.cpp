@@ -256,10 +256,7 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-    {
       bbf_costmap_.clear();
-      cm_updates_.clear(-1);
-    }
 
     return true;
   }
@@ -811,6 +808,7 @@ protected:
 
     cm_ = cm_base_;
     cm_rough_ = cm_rough_base_;
+    cm_updates_.clear(-1);
 
     {
       const Astar::Vec gp(
@@ -1140,7 +1138,6 @@ protected:
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
     bbf_costmap_.clear();
-    cm_updates_.clear(-1);
 
     // Make boundary check threshold
     min_boundary_ = motion_cache_.getMaxRange();
@@ -1362,10 +1359,7 @@ public:
         updateStart();
 
         if (jump_.detectJump())
-        {
           bbf_costmap_.clear();
-          cm_updates_.clear(-1);
-        }
 
         if (!goal_updated_ && has_goal_)
           updateGoal();
