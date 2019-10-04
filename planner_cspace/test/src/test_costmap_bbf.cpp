@@ -43,7 +43,7 @@ TEST(CostmapBBF, ForEach)
 {
   CostmapBBF bbf;
   const int w = 10, h = 5;
-  bbf.reset(CostmapBBF::Vec(w, h, 0));
+  bbf.reset(CostmapBBF::Vec(w, h, 1));
   bool called[w][h];
   for (int i = 0; i < w; i++)
     for (int j = 0; j < h; j++)
@@ -71,48 +71,59 @@ TEST(CostmapBBF, ForEach)
 TEST(CostmapBBF, Update)
 {
   const float odds_hit = bbf::probabilityToOdds(0.8);
-  const float odds_miss = bbf::probabilityToOdds(0.2);
-  const int measure_cnt = 3;
-  const char costmap[3][3] =
+  const float odds_miss = bbf::probabilityToOdds(0.3);
+  const char costmap0[3][3] =
       {
-        { 0, 1, 0 },
-        { 1, 0, 0 },
-        { 0, 0, 1 },
+        { 10, 100, 100 },
+        { 100, 100, 100 },
+        { 100, 100, 100 },
+      };
+  const char costmap1[3][3] =
+      {
+        { 0, -1, 0 },
+        { 100, 0, 0 },
+        { 0, 0, 100 },
+      };
+  const float expected_odds[3][3] =
+      {
+        { bbf::MIN_ODDS, bbf::MIN_ODDS * odds_hit, bbf::MIN_ODDS * odds_hit * odds_miss },
+        { bbf::MIN_ODDS * odds_hit * odds_hit, bbf::MIN_ODDS * odds_hit * odds_miss, bbf::MIN_ODDS },
+        { bbf::MIN_ODDS * odds_hit * odds_miss, bbf::MIN_ODDS, bbf::MIN_ODDS },
       };
   const char expected_cost[3][3] =
       {
-        { 0, 97, 0 },
-        { 0, 0, 0 },
-        { 0, 0, 0 },
+        { 0, 26, 8 },
+        { 68, 8, 0 },
+        { 8, 0, 0 },
       };
   BlockMemGridmap<char, 3, 2> cm;
-  cm.reset(CostmapBBF::Vec(3, 3, 0));
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-      cm[CostmapBBF::Vec(i, j, 0)] = costmap[i][j] == 1 ? 100 : 0;
 
   CostmapBBF bbf;
-  bbf.reset(CostmapBBF::Vec(3, 3, 0));
+  bbf.reset(CostmapBBF::Vec(3, 3, 1));
   bbf.clear();
 
-  bbf.setObserved(CostmapBBF::Vec(0, 1, 0), true);  // observed and in the range
-  bbf.setObserved(CostmapBBF::Vec(2, 2, 0), true);  // observed and out of the range
+  cm.reset(CostmapBBF::Vec(3, 3, 1));
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j)
+      cm[CostmapBBF::Vec(i, j, 0)] = costmap0[i][j];
 
-  for (int i = 0; i < measure_cnt; ++i)
-    bbf.remember(&cm, CostmapBBF::Vec(0, 0, 0), odds_hit, odds_miss, 0, 2);
+  bbf.remember(&cm, CostmapBBF::Vec(0, 0, 0), odds_hit, odds_miss, 1, 2);
 
-  const auto cb = [odds_hit](const CostmapBBF::Vec& p, bbf::BinaryBayesFilter& b)
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j)
+      cm[CostmapBBF::Vec(i, j, 0)] = costmap1[i][j];
+
+  bbf.remember(&cm, CostmapBBF::Vec(0, 0, 0), odds_hit, odds_miss, 1, 2);
+
+  const auto cb = [expected_odds](const CostmapBBF::Vec& p, bbf::BinaryBayesFilter& b)
   {
-    if (p == CostmapBBF::Vec(0, 1, 0))
-      EXPECT_FLOAT_EQ(bbf::MIN_ODDS * std::pow(odds_hit, measure_cnt), b.get());
-    else
-      EXPECT_FLOAT_EQ(bbf::MIN_ODDS, b.get());
+    EXPECT_FLOAT_EQ(expected_odds[p[0]][p[1]], b.get()) << p[0] << ", " << p[1];
   };
   bbf.forEach(cb);
   bbf.updateCostmap();
   for (int i = 0; i < 3; ++i)
     for (int j = 0; j < 3; ++j)
-      EXPECT_EQ(expected_cost[i][j], bbf.getCost(CostmapBBF::Vec(i, j, 0)));
+      EXPECT_EQ(expected_cost[i][j], bbf.getCost(CostmapBBF::Vec(i, j, 0))) << i << ", " << j;
 
   bbf.clear();
   const auto cb_cleared = [](const CostmapBBF::Vec& p, bbf::BinaryBayesFilter& b)
