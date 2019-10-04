@@ -65,9 +65,6 @@ void CostmapBBF::remember(
           static_cast<size_t>(gp[1]) >= height)
         continue;
 
-      if (!cm_observed_[gp])
-        continue;
-
       const int c = costmap->operator[](Vec(gp[0], gp[1], 0));
       const float r_sq = p.sqlen();
       if (c == 100)

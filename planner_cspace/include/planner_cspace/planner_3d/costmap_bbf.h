@@ -48,7 +48,6 @@ private:
   using VecInternal = CyclicVecInt<2, 2>;
   BlockMemGridmap<bbf::BinaryBayesFilter, 2, 2, 0x20> cm_hist_bbf_;
   BlockMemGridmap<char, 2, 2, 0x80> cm_hist_;
-  BlockMemGridmap<bool, 2, 2, 0x80> cm_observed_;
   Vec size_;
 
 public:
@@ -61,17 +60,11 @@ public:
     size_ = size;
     cm_hist_bbf_.reset(VecInternal(size[0], size[1]));
     cm_hist_.reset(VecInternal(size[0], size[1]));
-    cm_observed_.reset(VecInternal(size[0], size[1]));
   }
   inline void clear()
   {
     cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-    cm_observed_.clear(false);
     cm_hist_.clear(0);
-  }
-  inline void setObserved(const Vec& p, const bool flag)
-  {
-    cm_observed_[VecInternal(p[0], p[1])] = flag;
   }
   inline char getCost(const Vec& p) const
   {

@@ -107,6 +107,7 @@ protected:
   Astar::Gridmap<char, 0x40> cm_base_;
   Astar::Gridmap<char, 0x80> cm_rough_base_;
   Astar::Gridmap<char, 0x80> cm_hyst_;
+  Astar::Gridmap<char, 0x80> cm_updates_;
   Astar::Gridmap<float> cost_estim_cache_;
   CostmapBBF bbf_costmap_;
 
@@ -255,7 +256,10 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
+    {
       bbf_costmap_.clear();
+      cm_updates_.clear(-1);
+    }
 
     return true;
   }
@@ -825,10 +829,9 @@ protected:
               cost_min = c;
           }
           p[2] = 0;
+          cm_updates_[gp_rough + p] = cost_min;
           if (cost_min > cm_rough_[gp_rough + p])
             cm_rough_[gp_rough + p] = cost_min;
-
-          bbf_costmap_.setObserved(gp_rough + p, cost_min >= 0);
 
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
@@ -862,7 +865,7 @@ protected:
     if (remember_updates_)
     {
       bbf_costmap_.remember(
-          &cm_rough_, s,
+          &cm_updates_, s,
           remember_hit_odds_, remember_miss_odds_,
           hist_ignore_range_, hist_ignore_range_max_);
 
@@ -1106,6 +1109,7 @@ protected:
 
     cost_estim_cache_.reset(Astar::Vec(size[0], size[1], 1));
     cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
+    cm_updates_.reset(Astar::Vec(size[0], size[1], 1));
     bbf_costmap_.reset(Astar::Vec(size[0], size[1], 1));
 
     Astar::Vec p;
@@ -1136,6 +1140,7 @@ protected:
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
     bbf_costmap_.clear();
+    cm_updates_.clear(-1);
 
     // Make boundary check threshold
     min_boundary_ = motion_cache_.getMaxRange();
@@ -1357,7 +1362,10 @@ public:
         updateStart();
 
         if (jump_.detectJump())
+        {
           bbf_costmap_.clear();
+          cm_updates_.clear(-1);
+        }
 
         if (!goal_updated_ && has_goal_)
           updateGoal();
