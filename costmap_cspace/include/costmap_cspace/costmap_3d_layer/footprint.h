@@ -65,8 +65,8 @@ public:
   Costmap3dLayerFootprint()
     : linear_expand_(0.0)
     , linear_spread_(0.0)
-    , range_max_(0)
     , keep_unknown_(false)
+    , range_max_(0)
   {
   }
   void loadConfig(XmlRpc::XmlRpcValue config)
