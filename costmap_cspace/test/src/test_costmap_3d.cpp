@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, the neonavigation authors
+ * Copyright (c) 2016-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -222,8 +222,8 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
       for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
-        // All grid must be 0
-        ASSERT_EQ(cost, 0);
+        // All grid must be unknown at initialization
+        ASSERT_EQ(cost, -1);
         // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
       // std::cout << std::endl;
@@ -328,46 +328,57 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
 
   const int max_cost = 80;
   map->data[map->info.width / 2 + (map->info.height / 2) * map->info.width] = max_cost;
-  cm.setBaseMap(map);
+  map->data[map->info.width / 2 + 1 + (map->info.height / 2) * map->info.width] = -1;
 
-  for (int k = 0; k < cm.getAngularGrid(); ++k)
+  for (const bool keep_unknown : { false, true })
   {
-    const int i_center = map->info.width / 2;
-    const int j_center = map->info.height / 2;
-    const int i_center2 = map->info.width / 2 + temp_dir[k][0];
-    const int j_center2 = map->info.height / 2 + temp_dir[k][1];
-
-    for (size_t j = 0; j < map->info.height; ++j)
+    cm.setKeepUnknown(keep_unknown);
+    cm.setBaseMap(map);
+    for (int k = 0; k < cm.getAngularGrid(); ++k)
     {
-      for (size_t i = 0; i < map->info.width; ++i)
+      const int i_center = map->info.width / 2;
+      const int j_center = map->info.height / 2;
+      const int i_center2 = map->info.width / 2 + temp_dir[k][0];
+      const int j_center2 = map->info.height / 2 + temp_dir[k][1];
+
+      for (size_t j = 0; j < map->info.height; ++j)
       {
-        const int cost = cm.getMapOverlay()->getCost(i, j, k);
-        const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
-        const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
-        const float dist = std::min(dist1, dist2);
-        if (dist <= expand)
+        for (size_t i = 0; i < map->info.width; ++i)
         {
-          // Inside expand range must be max_cost
-          EXPECT_EQ(cost, max_cost);
+          const int cost = cm.getMapOverlay()->getCost(i, j, k);
+          const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
+          const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
+          const float dist = std::min(dist1, dist2);
+
+          if (i == i_center + 1 && j == j_center && keep_unknown)
+          {
+            // Unknown cell must be unknown if keep_unknown flag is set
+            EXPECT_EQ(-1, cost);
+          }
+          else if (dist <= expand)
+          {
+            // Inside expand range must be max_cost
+            EXPECT_EQ(max_cost, cost);
+          }
+          else if (dist <= expand + spread)
+          {
+            // Between expand and spread must be intermidiate value
+            EXPECT_NE(0, cost);
+            EXPECT_NE(100, cost);
+          }
+          else if (dist > expand + spread + 1)
+          {
+            // Outside must be zero
+            // Since the template is calculated by the precised footprint not by the grid,
+            // tolerance of test (+1) is needed.
+            EXPECT_EQ(0, cost);
+          }
+          // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
         }
-        else if (dist <= expand + spread)
-        {
-          // Between expand and spread must be intermidiate value
-          EXPECT_NE(cost, 0);
-          EXPECT_NE(cost, 100);
-        }
-        else if (dist > expand + spread + 1)
-        {
-          // Outside must be zero
-          // Since the template is calculated by the precised footprint not by the grid,
-          // tolerance of test (+1) is needed.
-          EXPECT_EQ(cost, 0);
-        }
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // std::cout << std::endl;
       }
-      // std::cout << std::endl;
+      // std::cout << "----" << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 }
 

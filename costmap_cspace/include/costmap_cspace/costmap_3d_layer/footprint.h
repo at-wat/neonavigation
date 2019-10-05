@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2014-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@ protected:
   float linear_expand_;
   float linear_spread_;
   Polygon footprint_p_;
+  bool keep_unknown_;
 
   CSpace3Cache cs_template_;
   int range_max_;
@@ -65,6 +66,7 @@ public:
     : linear_expand_(0.0)
     , linear_spread_(0.0)
     , range_max_(0)
+    , keep_unknown_(false)
   {
   }
   void loadConfig(XmlRpc::XmlRpcValue config)
@@ -73,6 +75,12 @@ public:
         static_cast<double>(config["linear_expand"]),
         static_cast<double>(config["linear_spread"]));
     setFootprint(costmap_cspace::Polygon(config["footprint"]));
+    if (config.hasMember("keep_unknown"))
+      setKeepUnknown(config["keep_unknown"]);
+  }
+  void setKeepUnknown(const bool keep_unknown)
+  {
+    keep_unknown_ = keep_unknown;
   }
   void setExpansion(
       const float linear_expand,
@@ -192,7 +200,7 @@ protected:
     {
       for (size_t yaw = 0; yaw < map->info.angle; yaw++)
       {
-        for (unsigned int i = 0; i < msg->data.size(); i++)
+        for (size_t i = 0; i < msg->data.size(); i++)
         {
           const auto& val = msg->data[i];
           if (val < 0)
@@ -214,12 +222,11 @@ protected:
             {
               const int x2 = x + ox + xp;
               const int y2 = y + oy + yp;
-              if (static_cast<unsigned int>(x2) >= map->info.width ||
-                  static_cast<unsigned int>(y2) >= map->info.height)
+              if (static_cast<size_t>(x2) >= map->info.width ||
+                  static_cast<size_t>(y2) >= map->info.height)
                 continue;
 
-              auto& m = map->getCost(x2, y2, yaw);
-              m = 0;
+              map->getCost(x2, y2, yaw) = -1;
             }
           }
         }
@@ -228,15 +235,15 @@ protected:
     // Get max
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
-      for (unsigned int i = 0; i < msg->data.size(); i++)
+      for (size_t i = 0; i < msg->data.size(); i++)
       {
         const int gx = lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution) + ox;
         const int gy = lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution) + oy;
-        if ((unsigned int)gx >= map->info.width ||
-            (unsigned int)gy >= map->info.height)
+        if (static_cast<size_t>(gx) >= map->info.width ||
+            static_cast<size_t>(gy) >= map->info.height)
           continue;
 
-        auto val = msg->data[i];
+        const char val = msg->data[i];
         if (val <= 0)
           continue;
 
@@ -246,12 +253,19 @@ protected:
           {
             const int x2 = gx + x;
             const int y2 = gy + y;
-            if (static_cast<unsigned int>(x2) >= map->info.width ||
-                static_cast<unsigned int>(y2) >= map->info.height)
+            if (static_cast<size_t>(x2) >= map->info.width ||
+                static_cast<size_t>(y2) >= map->info.height)
               continue;
 
+            if (keep_unknown_)
+            {
+              const size_t i2 = y2 * map->info.width + x2;
+              if (msg->data[i2] < 0)
+                continue;
+            }
+
             auto& m = map->getCost(x2, y2, yaw);
-            const auto c = cs_template_.e(x, y, yaw) * val / 100;
+            const char c = cs_template_.e(x, y, yaw) * val / 100;
             if (m < c)
               m = c;
           }
