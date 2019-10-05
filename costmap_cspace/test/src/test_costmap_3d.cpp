@@ -337,7 +337,9 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
           const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
           const float dist = std::min(dist1, dist2);
 
-          if (i == i_center + 1 && j == j_center && keep_unknown)
+          if (i == static_cast<size_t>(i_center + 1) &&
+              j == static_cast<size_t>(j_center) &&
+              keep_unknown)
           {
             // Unknown cell must be unknown if keep_unknown flag is set
             EXPECT_EQ(-1, cost);
