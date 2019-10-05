@@ -243,9 +243,16 @@ protected:
             static_cast<size_t>(gy) >= map->info.height)
           continue;
 
-        const char val = msg->data[i];
-        if (val <= 0)
+        const int8_t val = msg->data[i];
+        if (val < 0)
           continue;
+        if (val == 0)
+        {
+          int8_t& m = map->getCost(gx, gy, yaw);
+          if (m < 0)
+            m = 0;
+          continue;
+        }
 
         for (int y = -range_max_; y <= range_max_; y++)
         {
@@ -264,8 +271,8 @@ protected:
                 continue;
             }
 
-            auto& m = map->getCost(x2, y2, yaw);
-            const char c = cs_template_.e(x, y, yaw) * val / 100;
+            int8_t& m = map->getCost(x2, y2, yaw);
+            const int8_t c = cs_template_.e(x, y, yaw) * val / 100;
             if (m < c)
               m = c;
           }

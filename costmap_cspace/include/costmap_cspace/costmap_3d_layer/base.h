@@ -311,6 +311,16 @@ public:
             0, 0, 0,
             map_->info.width, map_->info.height, map_->info.angle,
             map_->header.stamp));
+    for (size_t yaw = 0; yaw < map_->info.angle; yaw++)
+    {
+      for (unsigned int i = 0; i < xy_size; i++)
+      {
+        if (base_map->data[i] < 0)
+        {
+          map_->data[i + yaw * xy_size] = -1;
+        }
+      }
+    }
     *map_overlay_ = *map_;
     if (child_)
       child_->setBaseMapChain();

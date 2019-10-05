@@ -220,7 +220,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be unknown at initialization
-        ASSERT_EQ(-1, cost);
+        ASSERT_EQ(0, cost);
       }
     }
   }
@@ -317,51 +317,46 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
   map->data[map->info.width / 2 + (map->info.height / 2) * map->info.width] = max_cost;
   map->data[map->info.width / 2 + 1 + (map->info.height / 2) * map->info.width] = -1;
 
-  for (const bool keep_unknown : { false, true })
+  cm.setBaseMap(map);
+  for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
-    cm.setKeepUnknown(keep_unknown);
-    cm.setBaseMap(map);
-    for (int k = 0; k < cm.getAngularGrid(); ++k)
+    const int i_center = map->info.width / 2;
+    const int j_center = map->info.height / 2;
+    const int i_center2 = map->info.width / 2 + temp_dir[k][0];
+    const int j_center2 = map->info.height / 2 + temp_dir[k][1];
+
+    for (size_t j = 0; j < map->info.height; ++j)
     {
-      const int i_center = map->info.width / 2;
-      const int j_center = map->info.height / 2;
-      const int i_center2 = map->info.width / 2 + temp_dir[k][0];
-      const int j_center2 = map->info.height / 2 + temp_dir[k][1];
-
-      for (size_t j = 0; j < map->info.height; ++j)
+      for (size_t i = 0; i < map->info.width; ++i)
       {
-        for (size_t i = 0; i < map->info.width; ++i)
-        {
-          const int cost = cm.getMapOverlay()->getCost(i, j, k);
-          const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
-          const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
-          const float dist = std::min(dist1, dist2);
+        const int cost = cm.getMapOverlay()->getCost(i, j, k);
+        const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
+        const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
+        const float dist = std::min(dist1, dist2);
 
-          if (i == static_cast<size_t>(i_center + 1) &&
-              j == static_cast<size_t>(j_center) &&
-              keep_unknown)
-          {
-            // Unknown cell must be unknown if keep_unknown flag is set
-            EXPECT_EQ(-1, cost);
-          }
-          else if (dist <= expand)
-          {
-            // Inside expand range must be max_cost
-            EXPECT_EQ(max_cost, cost);
-          }
-          else if (dist <= expand + spread)
-          {
-            // Between expand and spread must be intermidiate value
-            EXPECT_NE(0, cost);
-            EXPECT_NE(100, cost);
-          }
-          else if (dist > expand + spread + 1)
-          {
-            // Outside must be zero
-            // Since the template is calculated by the precised footprint not by the grid,
-            // tolerance of test (+1) is needed.
-            EXPECT_EQ(0, cost);
-          }
+        if (i == static_cast<size_t>(i_center + 1) &&
+            j == static_cast<size_t>(j_center))
+        {
+          // Unknown cell must be unknown
+          EXPECT_EQ(-1, cost);
+        }
+        else if (dist <= expand)
+        {
+          // Inside expand range must be max_cost
+          EXPECT_EQ(max_cost, cost);
+        }
+        else if (dist <= expand + spread)
+        {
+          // Between expand and spread must be intermidiate value
+          EXPECT_NE(0, cost);
+          EXPECT_NE(100, cost);
+        }
+        else if (dist > expand + spread + 1)
+        {
+          // Outside must be zero
+          // Since the template is calculated by the precised footprint not by the grid,
+          // tolerance of test (+1) is needed.
+          EXPECT_EQ(0, cost);
         }
       }
     }
