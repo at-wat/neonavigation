@@ -139,11 +139,8 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
         {
           ASSERT_EQ(temp.e(i, j, k), 0);
         }
-        // std::cout << std::setfill(' ') << std::setw(3) << static_cast<int>(temp.e(i, j, k)) << " ";
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 }
 
@@ -224,14 +221,10 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be unknown at initialization
         ASSERT_EQ(cost, -1);
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 
-  // std::cout << "========" << std::endl;
   for (auto& g : map->data)
   {
     g = 100;
@@ -246,11 +239,8 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be 100
         ASSERT_EQ(cost, 100);
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 
   // C shape wall in the map
@@ -293,11 +283,8 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
         {
           ASSERT_EQ(cost, 0);
         }
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 }
 
@@ -373,11 +360,8 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
             // tolerance of test (+1) is needed.
             EXPECT_EQ(0, cost);
           }
-          // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
         }
-        // std::cout << std::endl;
       }
-      // std::cout << "----" << std::endl;
     }
   }
 }
@@ -488,19 +472,8 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
 
         ASSERT_EQ(cost, cost_ref);
-
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      /*std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
-      {
-        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
-        std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
-      }
-      std::cout << std::endl;
-      */
     }
-    // std::cout << "----" << std::endl;
   }
   // Set MAX mode and check
   cm_over->setAngleResolution(4);
@@ -538,26 +511,8 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
         const int cost_max = std::max(cost_ref, cost_base);
 
         ASSERT_EQ(cost, cost_max);
-
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      /*
-      std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
-      {
-        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
-        std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
-      }
-      std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
-      {
-        const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);
-        std::cout << std::setfill(' ') << std::setw(3) << cost_base << " ";
-      }
-      std::cout << std::endl;
-      */
     }
-    // std::cout << "----" << std::endl;
   }
 }
 
@@ -601,11 +556,6 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
     {
       map2->info.origin.position.x = map2->info.resolution * xp;
       map2->info.origin.position.y = map2->info.resolution * yp;
-      /*
-      std::cout << "=== origin: ("
-                << map2->info.origin.position.x << ", " << map2->info.origin.position.y
-                << ")" << std::endl;
-      */
       cm_over->processMapOverlay(map2);
       for (int k = 0; k < cm_over->getAngularGrid(); ++k)
       {
@@ -631,11 +581,8 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
             {
               ASSERT_EQ(cost, 0);
             }
-            // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
           }
-          // std::cout << std::endl;
         }
-        // std::cout << "----" << std::endl;
       }
     }
   }
