@@ -269,7 +269,12 @@ protected:
               const int mx = lroundf((gx - ox) * map->info.linear_resolution / msg->info.resolution);
               const int my = lroundf((gy - oy) * map->info.linear_resolution / msg->info.resolution);
 
-              const size_t i2 = my * map->info.width + mx;
+              // Out of the updated map is unknown
+              if (static_cast<size_t>(mx) >= msg->info.width ||
+                  static_cast<size_t>(my) >= msg->info.height)
+                continue;
+
+              const size_t i2 = my * msg->info.width + mx;
               if (i2 < msg->data.size() && msg->data[i2] < 0)
                 continue;
             }
