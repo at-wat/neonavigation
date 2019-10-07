@@ -30,6 +30,8 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
+#include <vector>
+
 #include <ros/ros.h>
 
 #include <geometry_msgs/PolygonStamped.h>
