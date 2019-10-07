@@ -679,6 +679,9 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
       return true;
     };
     cm_output->setHandler(cb);
+    // First pass of the processing contains parent layer updates
+    cm_over->processMapOverlay(map2);
+    // Second pass has only local updates
     cm_over->processMapOverlay(map2);
 
     if (d.valid)
