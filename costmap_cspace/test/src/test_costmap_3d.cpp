@@ -685,12 +685,12 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     if (d.valid)
     {
       ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
-      EXPECT_EQ(0, updated->x) << test_name;
-      EXPECT_EQ(0, updated->y) << test_name;
-      EXPECT_EQ(0, updated->yaw) << test_name;
+      EXPECT_EQ(0u, updated->x) << test_name;
+      EXPECT_EQ(0u, updated->y) << test_name;
+      EXPECT_EQ(0u, updated->yaw) << test_name;
       EXPECT_EQ(map->info.width, updated->width) << test_name;
       EXPECT_EQ(map->info.height, updated->height) << test_name;
-      EXPECT_EQ(4, updated->angle) << test_name;
+      EXPECT_EQ(4u, updated->angle) << test_name;
     }
     else
     {
