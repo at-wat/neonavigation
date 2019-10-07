@@ -114,7 +114,7 @@ public:
   }
   int getRangeMax() const
   {
-    return 0;
+    return range_max_;
   }
   const CSpace3Cache& getTemplate() const
   {

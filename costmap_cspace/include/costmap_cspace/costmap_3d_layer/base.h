@@ -377,10 +377,7 @@ protected:
 
   bool updateChainEntry(const UpdatedRegion& region, bool output = true)
   {
-    auto region_expand = region;
-    region_expand.expand(getRangeMax());
-
-    region_.merge(region_expand);
+    region_.merge(region);
 
     auto region_prev_now = region_;
     region_prev_now.merge(region_prev_);
