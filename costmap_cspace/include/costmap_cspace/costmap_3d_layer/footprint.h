@@ -242,11 +242,12 @@ protected:
         if (static_cast<size_t>(gx) >= map->info.width ||
             static_cast<size_t>(gy) >= map->info.height)
           continue;
-
         const int8_t val = msg->data[i];
         if (val < 0)
+        {
           continue;
-        if (val == 0)
+        }
+        else if (val == 0)
         {
           int8_t& m = map->getCost(gx, gy, yaw);
           if (m < 0)
@@ -266,8 +267,8 @@ protected:
 
             if (keep_unknown_)
             {
-              const int mx = lroundf((gx - ox) * map->info.linear_resolution / msg->info.resolution);
-              const int my = lroundf((gy - oy) * map->info.linear_resolution / msg->info.resolution);
+              const int mx = lroundf((x2 - ox) * map->info.linear_resolution / msg->info.resolution);
+              const int my = lroundf((y2 - oy) * map->info.linear_resolution / msg->info.resolution);
 
               // Out of the updated map is unknown
               if (static_cast<size_t>(mx) >= msg->info.width ||
@@ -275,13 +276,13 @@ protected:
                 continue;
 
               const size_t i2 = my * msg->info.width + mx;
-              if (i2 < msg->data.size() && msg->data[i2] < 0)
+              if (msg->data[i2] < 0)
                 continue;
             }
 
             int8_t& m = map->getCost(x2, y2, yaw);
             const int8_t c = cs_template_.e(x, y, yaw) * val / 100;
-            if (m < c)
+            if (m < c && c > 0)
               m = c;
           }
         }
