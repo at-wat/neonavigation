@@ -681,18 +681,34 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     cm_output->setHandler(cb);
     // First pass of the processing contains parent layer updates
     cm_over->processMapOverlay(map2);
+
+    if (d.valid)
+    {
+      ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
+      EXPECT_EQ(0, updated->x) << test_name;
+      EXPECT_EQ(0, updated->y) << test_name;
+      EXPECT_EQ(0, updated->yaw) << test_name;
+      EXPECT_EQ(map->info.width, updated->width) << test_name;
+      EXPECT_EQ(map->info.height, updated->height) << test_name;
+      EXPECT_EQ(4, updated->angle) << test_name;
+    }
+    else
+    {
+      EXPECT_FALSE(static_cast<bool>(updated)) << test_name;
+    }
+
     // Second pass has only local updates
     cm_over->processMapOverlay(map2);
 
     if (d.valid)
     {
       ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
-      EXPECT_EQ(updated->x, d.expected.x) << test_name;
-      EXPECT_EQ(updated->y, d.expected.y) << test_name;
-      EXPECT_EQ(updated->yaw, d.expected.yaw) << test_name;
-      EXPECT_EQ(updated->width, d.expected.width) << test_name;
-      EXPECT_EQ(updated->height, d.expected.height) << test_name;
-      EXPECT_EQ(updated->angle, d.expected.angle) << test_name;
+      EXPECT_EQ(d.expected.x, updated->x) << test_name;
+      EXPECT_EQ(d.expected.y, updated->y) << test_name;
+      EXPECT_EQ(d.expected.yaw, updated->yaw) << test_name;
+      EXPECT_EQ(d.expected.width, updated->width) << test_name;
+      EXPECT_EQ(d.expected.height, updated->height) << test_name;
+      EXPECT_EQ(d.expected.angle, updated->angle) << test_name;
     }
     else
     {
