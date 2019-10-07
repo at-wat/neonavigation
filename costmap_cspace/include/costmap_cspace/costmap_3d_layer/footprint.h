@@ -195,6 +195,8 @@ protected:
     const int oy =
         lroundf((msg->info.origin.position.y - map->info.origin.position.y) /
                 map->info.linear_resolution);
+    const double resolution_scale = msg->info.resolution / map->info.linear_resolution;
+
     // Clear travelable area in OVERWRITE mode
     if (overlay_mode_ == OVERWRITE && !root_)
     {
@@ -206,16 +208,14 @@ protected:
           if (val < 0)
             continue;
 
-          const int x =
-              lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          const int x = lroundf((i % msg->info.width) * resolution_scale);
           if (x < range_max_ || static_cast<int>(msg->info.width) - range_max_ <= x)
             continue;
-          const int y =
-              lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          const int y = lroundf((i / msg->info.width) * resolution_scale);
           if (y < range_max_ || static_cast<int>(msg->info.height) - range_max_ <= y)
             continue;
 
-          const int res_up = ceilf(msg->info.resolution / map->info.linear_resolution);
+          const int res_up = ceilf(resolution_scale);
           for (int yp = 0; yp < res_up; yp++)
           {
             for (int xp = 0; xp < res_up; xp++)
@@ -232,13 +232,27 @@ protected:
         }
       }
     }
+    std::vector<bool> unknown;
     // Get max
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
+      if (keep_unknown_)
+      {
+        unknown.resize(msg->data.size());
+        for (size_t i = 0; i < msg->data.size(); i++)
+        {
+          const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
+          const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+          if (static_cast<size_t>(gx) >= map->info.width ||
+              static_cast<size_t>(gy) >= map->info.height)
+            continue;
+          unknown[i] = msg->data[i] < 0 && map->getCost(gx, gy, yaw) < 0;
+        }
+      }
       for (size_t i = 0; i < msg->data.size(); i++)
       {
-        const int gx = lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution) + ox;
-        const int gy = lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution) + oy;
+        const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
+        const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
         if (static_cast<size_t>(gx) >= map->info.width ||
             static_cast<size_t>(gy) >= map->info.height)
           continue;
@@ -257,34 +271,34 @@ protected:
 
         for (int y = -range_max_; y <= range_max_; y++)
         {
+          const int y2 = gy + y;
+          if (static_cast<size_t>(y2) >= map->info.height)
+            continue;
           for (int x = -range_max_; x <= range_max_; x++)
           {
             const int x2 = gx + x;
-            const int y2 = gy + y;
-            if (static_cast<size_t>(x2) >= map->info.width ||
-                static_cast<size_t>(y2) >= map->info.height)
+            if (static_cast<size_t>(x2) >= map->info.width)
               continue;
-
-            if (keep_unknown_)
-            {
-              const int mx = lroundf((x2 - ox) * map->info.linear_resolution / msg->info.resolution);
-              const int my = lroundf((y2 - oy) * map->info.linear_resolution / msg->info.resolution);
-
-              // Out of the updated map is unknown
-              if (static_cast<size_t>(mx) >= msg->info.width ||
-                  static_cast<size_t>(my) >= msg->info.height)
-                continue;
-
-              const size_t i2 = my * msg->info.width + mx;
-              if (msg->data[i2] < 0)
-                continue;
-            }
 
             int8_t& m = map->getCost(x2, y2, yaw);
             const int8_t c = cs_template_.e(x, y, yaw) * val / 100;
             if (m < c && c > 0)
               m = c;
           }
+        }
+      }
+      if (keep_unknown_)
+      {
+        for (size_t i = 0; i < unknown.size(); i++)
+        {
+          if (!unknown[i])
+            continue;
+          const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
+          const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+          if (static_cast<size_t>(gx) >= map->info.width ||
+              static_cast<size_t>(gy) >= map->info.height)
+            continue;
+          map->getCost(gx, gy, yaw) = -1;
         }
       }
     }
