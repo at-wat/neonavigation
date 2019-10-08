@@ -284,7 +284,7 @@ protected:
 
             int8_t& m = map->getCost(x2, y2, yaw);
             const int8_t c = cs_template_.e(x, y, yaw) * val / 100;
-            if (m < c && c > 0)
+            if (c > 0 && m < c)
               m = c;
           }
         }
