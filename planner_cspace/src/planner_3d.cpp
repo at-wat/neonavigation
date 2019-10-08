@@ -1752,10 +1752,13 @@ protected:
         {
           if (it != it_prev)
           {
-            const float d =
-                CyclicVecFloat<3, 2>(p).distLinestrip2d(*it_prev, *it);
-            if (d < d_min)
-              d_min = d;
+            if (lroundf((*it)[2]) == p[2] || lroundf((*it_prev)[2]) == p[2])
+            {
+              const float d =
+                  CyclicVecFloat<3, 2>(p).distLinestrip2d(*it_prev, *it);
+              if (d < d_min)
+                d_min = d;
+            }
           }
           it_prev = it;
         }
