@@ -759,7 +759,7 @@ protected:
 
               point.z = 100;
               for (p[2] = 0; p[2] < static_cast<int>(map_info_.angle); ++p[2])
-                point.z = std::min(static_cast<float>(cm_hyst_[p]), point.z);
+                point.z = std::min(static_cast<float>(std::max(0, static_cast<int>(cm_hyst_[p]))), point.z);
 
               point.z *= 0.01;
               break;
@@ -864,7 +864,7 @@ protected:
             const char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
-            if (c == 100 && !clear_hysteresis && cm_hyst_[gp + p] == 0)
+            if (c == 100 && !clear_hysteresis && cm_hyst_[gp + p] == -1)
               clear_hysteresis = true;
           }
           p[2] = 0;
@@ -916,7 +916,7 @@ protected:
 
     if (clear_hysteresis)
     {
-      ROS_DEBUG("Previous path may make collision to the obstacle. Clearing hysteresis map.");
+      ROS_INFO("Previous path may cause collision to the obstacle. Clearing hysteresis map.");
       cm_hyst_.clear(100);
     }
 
@@ -1759,8 +1759,15 @@ protected:
           }
           it_prev = it;
         }
-        d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
-        cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
+        if (d_min < 1.0)
+        {
+          cm_hyst_[p] = -1;
+        }
+        else
+        {
+          d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
+          cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
+        }
       }
       const auto tnow = boost::chrono::high_resolution_clock::now();
       ROS_DEBUG("Hysteresis map generated (%0.4f sec.)",
@@ -1938,7 +1945,7 @@ protected:
         sum += c;
 
         if (hyst)
-          sum_hyst += cm_hyst_[pos];
+          sum_hyst += std::max(0, static_cast<int>(cm_hyst_[pos]));
       }
       const float distf = cache_page->second.getDistance();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
@@ -2000,7 +2007,7 @@ protected:
           sum += c;
 
           if (hyst)
-            sum_hyst += cm_hyst_[pos];
+            sum_hyst += std::max(0, static_cast<int>(cm_hyst_[pos]));
         }
         const float distf = cache_page->second.getDistance();
         cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
