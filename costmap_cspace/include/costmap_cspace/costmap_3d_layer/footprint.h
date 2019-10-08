@@ -248,6 +248,10 @@ protected:
           if (static_cast<size_t>(gx) >= map->info.width ||
               static_cast<size_t>(gy) >= map->info.height)
             continue;
+          // If the cell is unknown in parent map and also updated map,
+          // the cell is never measured.
+          // Never measured cells should be marked unknown
+          // to be correctly processed in the planner.
           unknown[i] = msg->data[i] < 0 && map->getCost(gx, gy, yaw) < 0;
         }
       }
