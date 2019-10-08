@@ -841,6 +841,8 @@ protected:
       }
     }
 
+    bool clear_hysteresis(false);
+
     {
       const Astar::Vec center(
           static_cast<int>(msg->width / 2), static_cast<int>(msg->height / 2), 0);
@@ -862,6 +864,8 @@ protected:
             const char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
+            if (c == 100 && !clear_hysteresis && cm_hyst_[gp + p] == 0)
+              clear_hysteresis = true;
           }
           p[2] = 0;
           if (cost_min > cm_rough_[gp_rough + p])
@@ -909,6 +913,13 @@ protected:
         }
       }
     }
+
+    if (clear_hysteresis)
+    {
+      ROS_DEBUG("Previous path may make collision to the obstacle. Clearing hysteresis map.");
+      cm_hyst_.clear(100);
+    }
+
     if (!has_goal_ || !has_start_)
       return;
 
