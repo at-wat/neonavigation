@@ -916,7 +916,7 @@ protected:
 
     if (clear_hysteresis)
     {
-      ROS_DEBUG("Previous path may make collision to the obstacle. Clearing hysteresis map.");
+      ROS_INFO("Previous path may cause collision to the obstacle. Clearing hysteresis map.");
       cm_hyst_.clear(100);
     }
 
