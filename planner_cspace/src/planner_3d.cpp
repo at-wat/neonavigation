@@ -1752,7 +1752,13 @@ protected:
         {
           if (it != it_prev)
           {
-            if (lroundf((*it)[2]) == p[2] || lroundf((*it_prev)[2]) == p[2])
+            int yaw = lroundf((*it)[2]) % map_info_.angle;
+            int yaw_prev = lroundf((*it_prev)[2]) % map_info_.angle;
+            if (yaw < 0)
+              yaw += map_info_.angle;
+            if (yaw_prev < 0)
+              yaw_prev += map_info_.angle;
+            if (yaw == p[2] || yaw_prev == p[2])
             {
               const float d =
                   CyclicVecFloat<3, 2>(p).distLinestrip2d(*it_prev, *it);
