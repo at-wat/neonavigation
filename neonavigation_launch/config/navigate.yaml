@@ -1,7 +1,7 @@
 costmap_3d:
   ang_resolution: 16
   linear_expand: 0.08
-  linear_spread: 0.2
+  linear_spread: 0.3
   static_layers:
     - name: unknown
       type: Costmap3dLayerUnknownHandle
