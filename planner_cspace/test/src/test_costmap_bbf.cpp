@@ -128,12 +128,12 @@ TEST(CostmapBBF, Update)
   bbf.clear();
   const auto cb_cleared = [](const CostmapBBF::Vec& p, bbf::BinaryBayesFilter& b)
   {
-    EXPECT_FLOAT_EQ(bbf::MIN_ODDS, b.get());
+    EXPECT_FLOAT_EQ(bbf::MIN_ODDS, b.get()) << i << ", " << j;
   };
   bbf.forEach(cb_cleared);
   for (int i = 0; i < 3; ++i)
     for (int j = 0; j < 3; ++j)
-      EXPECT_EQ(0, bbf.getCost(CostmapBBF::Vec(i, j, 0)));
+      EXPECT_EQ(0, bbf.getCost(CostmapBBF::Vec(i, j, 0))) << i << ", " << j;
 }
 }  // namespace planner_3d
 }  // namespace planner_cspace
