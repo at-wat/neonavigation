@@ -237,6 +237,8 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
 
     if ((path_.back().pos_ - next.pos_).squaredNorm() >= std::pow(epsilon_, 2))
       path_.push_back(next);
+    else
+      path_.back() = next;
   }
 
   if (path_.size() == 1)
