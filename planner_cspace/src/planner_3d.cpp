@@ -922,6 +922,7 @@ protected:
     {
       ROS_INFO("Previous path may cause collision to the obstacle. Clearing hysteresis map.");
       cm_hyst_.clear(100);
+      has_hysteresis_map_ = false;
     }
 
     if (!has_goal_ || !has_start_)
