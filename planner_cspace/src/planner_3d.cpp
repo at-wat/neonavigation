@@ -163,6 +163,7 @@ protected:
   bool has_map_;
   bool has_goal_;
   bool has_start_;
+  bool has_hysteresis_map_;
   bool goal_updated_;
   bool remember_updates_;
   bool fast_map_update_;
@@ -723,7 +724,10 @@ protected:
     cost_estim_cache_[e] = 0;
 
     if (goal_changed)
+    {
       cm_hyst_.clear(100);
+      has_hysteresis_map_ = false;
+    }
 
     publishCostmap();
 
@@ -914,7 +918,7 @@ protected:
       }
     }
 
-    if (clear_hysteresis)
+    if (clear_hysteresis && has_hysteresis_map_)
     {
       ROS_INFO("Previous path may cause collision to the obstacle. Clearing hysteresis map.");
       cm_hyst_.clear(100);
@@ -1166,7 +1170,9 @@ protected:
       }
     }
     ROS_DEBUG("Map copied");
+
     cm_hyst_.clear(100);
+    has_hysteresis_map_ = false;
 
     has_map_ = true;
 
@@ -1771,6 +1777,7 @@ protected:
         d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
         cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
       }
+      has_hysteresis_map_ = true;
       const auto tnow = boost::chrono::high_resolution_clock::now();
       ROS_DEBUG("Hysteresis map generated (%0.4f sec.)",
                 boost::chrono::duration<float>(tnow - ts).count());
@@ -1946,7 +1953,7 @@ protected:
           return -1;
         sum += c;
 
-        if (hyst)
+        if (hyst && has_hysteresis_map_)
           sum_hyst += cm_hyst_[pos];
       }
       const float distf = cache_page->second.getDistance();
@@ -2008,7 +2015,7 @@ protected:
             return -1;
           sum += c;
 
-          if (hyst)
+          if (hyst && has_hysteresis_map_)
             sum_hyst += cm_hyst_[pos];
         }
         const float distf = cache_page->second.getDistance();
