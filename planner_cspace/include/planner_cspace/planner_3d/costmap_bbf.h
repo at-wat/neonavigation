@@ -72,7 +72,7 @@ public:
   }
 
   void remember(
-      const BlockMemGridmapBase<char, 3, 2>* costmap,
+      const BlockMemGridmapBase<char, 3, 2>* const costmap,
       const Vec& center,
       const float remember_hit_odds, const float remember_miss_odds,
       const int range_min, const int range_max);

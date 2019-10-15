@@ -27,6 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/blockmem_gridmap.h>
 #include <planner_cspace/planner_3d/costmap_bbf.h>
@@ -42,7 +44,7 @@ void CostmapBBF::updateCostmap()
   {
     for (p[0] = 0; p[0] < size_[0]; p[0]++)
     {
-      cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
+      cm_hist_[p] = std::lround(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
     }
   }
 }
@@ -69,7 +71,7 @@ void CostmapBBF::remember(
       if (r_sq > range_max_sq)
         continue;
 
-      const int c = costmap->operator[](Vec(gp[0], gp[1], 0));
+      const int c = (*costmap)[Vec(gp[0], gp[1], 0)];
 
       if (c < 0)
         continue;
