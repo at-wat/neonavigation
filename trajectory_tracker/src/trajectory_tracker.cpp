@@ -223,8 +223,11 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
     return;
 
   auto j = msg->poses.begin();
+  trajectory_tracker::Pose2D in_place_turn_end;
+  bool in_place_turning = false;
+
   path_.push_back(trajectory_tracker::Pose2D(j->pose, getVelocity(*j)));
-  for (auto j = msg->poses.begin(); j != msg->poses.end(); ++j)
+  for (++j; j < msg->poses.end(); ++j)
   {
     const float velocity = getVelocity(*j);
     if (std::isfinite(velocity) && velocity < -0.0)
@@ -236,10 +239,23 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
     const trajectory_tracker::Pose2D next(j->pose, velocity);
 
     if ((path_.back().pos_ - next.pos_).squaredNorm() >= std::pow(epsilon_, 2))
+    {
+      if (in_place_turning)
+      {
+        path_.push_back(in_place_turn_end);
+        in_place_turning = false;
+      }
       path_.push_back(next);
+    }
     else
-      path_.back() = next;
+    {
+      in_place_turn_end = trajectory_tracker::Pose2D(
+          path_.back().pos_, next.yaw_, next.velocity_);
+      in_place_turning = true;
+    }
   }
+  if (in_place_turning)
+    path_.push_back(in_place_turn_end);
 
   if (path_.size() == 1)
   {
