@@ -512,7 +512,8 @@ void TrackerNode::control()
   pub_vel_.publish(cmd_vel);
   status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING;
   if (std::abs(status.distance_remains) < goal_tolerance_dist_ &&
-      std::abs(status.angle_remains) < goal_tolerance_ang_)
+      std::abs(status.angle_remains) < goal_tolerance_ang_ &&
+      it_local_goal == lpath.end())
   {
     status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
   }
