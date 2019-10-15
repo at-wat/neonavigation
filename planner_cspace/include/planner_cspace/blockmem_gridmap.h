@@ -35,8 +35,20 @@
 
 #include <planner_cspace/cyclic_vec.h>
 
+template <class T, int DIM, int NONCYCLIC>
+class BlockMemGridmapBase
+{
+public:
+  virtual const CyclicVecInt<DIM, NONCYCLIC>& size() const = 0;
+  virtual size_t ser_size() const = 0;
+  virtual void clear(const T zero) = 0;
+  virtual void reset(const CyclicVecInt<DIM, NONCYCLIC>& size) = 0;
+  virtual T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) = 0;
+  virtual const T operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) const = 0;
+};
+
 template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20, bool ENABLE_VALIDATION = false>
-class BlockMemGridmap
+class BlockMemGridmap : public BlockMemGridmapBase<T, DIM, NONCYCLIC>
 {
 private:
   static constexpr bool isPowOf2(const int v)
@@ -82,7 +94,7 @@ protected:
   }
 
 public:
-  std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> getAddressor() const
+  std::function<void(CyclicVecInt<DIM, NONCYCLIC>, size_t&, size_t&)> getAddressor() const
   {
     return std::bind(
         &BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH, ENABLE_VALIDATION>::block_addr,

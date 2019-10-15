@@ -60,6 +60,7 @@
 
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/grid_astar.h>
+#include <planner_cspace/planner_3d/costmap_bbf.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/jump_detector.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
@@ -68,6 +69,10 @@
 
 #include <omp.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 class Planner3dNode
 {
 public:
@@ -98,13 +103,13 @@ protected:
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
-  Astar::Gridmap<bbf::BinaryBayesFilter, 0x20> cm_hist_bbf_;
-  Astar::Gridmap<char, 0x40> cm_hist_;
   Astar::Gridmap<char, 0x80> cm_rough_;
   Astar::Gridmap<char, 0x40> cm_base_;
   Astar::Gridmap<char, 0x80> cm_rough_base_;
   Astar::Gridmap<char, 0x80> cm_hyst_;
+  Astar::Gridmap<char, 0x80> cm_updates_;
   Astar::Gridmap<float> cost_estim_cache_;
+  CostmapBBF bbf_costmap_;
 
   std::array<float, 1024> euclid_cost_lin_cache_;
 
@@ -251,7 +256,7 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-      cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
+      bbf_costmap_.clear();
 
     return true;
   }
@@ -550,7 +555,7 @@ protected:
                   break;
                 }
                 sum += c;
-                sum_hist += cm_hist_[pos];
+                sum_hist += bbf_costmap_.getCost(pos);
               }
               if (collision)
                 continue;
@@ -803,55 +808,13 @@ protected:
 
     cm_ = cm_base_;
     cm_rough_ = cm_rough_base_;
-    if (remember_updates_)
-    {
-      if (pub_hist_.getNumSubscribers() > 0)
-      {
-        sensor_msgs::PointCloud pc;
-        pc.header = map_header_;
-        pc.header.stamp = now;
-        Astar::Vec p(0, 0, 0);
-        for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
-        {
-          for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
-          {
-            if (cm_hist_bbf_[p].get() > bbf::probabilityToOdds(0.1))
-            {
-              float x, y, yaw;
-              grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-              geometry_msgs::Point32 point;
-              point.x = x;
-              point.y = y;
-              point.z = cm_hist_bbf_[p].getProbability();
-              pc.points.push_back(point);
-            }
-          }
-        }
-        pub_hist_.publish(pc);
-      }
-      Astar::Vec p;
-      cm_hist_.clear(0);
-      for (p[1] = 0; p[1] < cm_hist_bbf_.size()[1]; p[1]++)
-      {
-        for (p[0] = 0; p[0] < cm_hist_bbf_.size()[0]; p[0]++)
-        {
-          p[2] = 0;
-          cm_hist_[p] = lroundf(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
-        }
-      }
-    }
+    cm_updates_.clear(-1);
 
     {
-      const Astar::Vec center(
-          static_cast<int>(msg->width / 2), static_cast<int>(msg->height / 2), 0);
       const Astar::Vec gp(
           static_cast<int>(msg->x), static_cast<int>(msg->y), static_cast<int>(msg->yaw));
       const Astar::Vec gp_rough(gp[0], gp[1], 0);
-      const int hist_ignore_range_sq = hist_ignore_range_ * hist_ignore_range_;
-      const int hist_ignore_range_max_sq =
-          hist_ignore_range_max_ * hist_ignore_range_max_;
-      Astar::Vec p;
-      for (p[0] = 0; p[0] < static_cast<int>(msg->width); p[0]++)
+      for (Astar::Vec p(0, 0, 0); p[0] < static_cast<int>(msg->width); p[0]++)
       {
         for (p[1] = 0; p[1] < static_cast<int>(msg->height); p[1]++)
         {
@@ -864,32 +827,9 @@ protected:
               cost_min = c;
           }
           p[2] = 0;
+          cm_updates_[gp_rough + p] = cost_min;
           if (cost_min > cm_rough_[gp_rough + p])
-          {
             cm_rough_[gp_rough + p] = cost_min;
-          }
-
-          Astar::Vec pos = gp + p;
-          pos[2] = 0;
-          if (cost_min == 100)
-          {
-            const Astar::Vec p2 = p - center;
-            const float sqlen = p2.sqlen();
-            if (sqlen > hist_ignore_range_sq &&
-                sqlen < hist_ignore_range_max_sq)
-            {
-              cm_hist_bbf_[pos].update(remember_hit_odds_);
-            }
-          }
-          else if (cost_min >= 0)
-          {
-            const Astar::Vec p2 = p - center;
-            const float sqlen = p2.sqlen();
-            if (sqlen < hist_ignore_range_max_sq)
-            {
-              cm_hist_bbf_[pos].update(remember_miss_odds_);
-            }
-          }
 
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
@@ -909,7 +849,48 @@ protected:
         }
       }
     }
-    if (!has_goal_ || !has_start_)
+
+    if (!has_start_)
+      return;
+
+    Astar::Vec s;
+    grid_metric_converter::metric2Grid(
+        map_info_, s[0], s[1], s[2],
+        start_.pose.position.x, start_.pose.position.y,
+        tf2::getYaw(start_.pose.orientation));
+    s.cycleUnsigned(map_info_.angle);
+
+    if (remember_updates_)
+    {
+      bbf_costmap_.remember(
+          &cm_updates_, s,
+          remember_hit_odds_, remember_miss_odds_,
+          hist_ignore_range_, hist_ignore_range_max_);
+
+      if (pub_hist_.getNumSubscribers() > 0)
+      {
+        sensor_msgs::PointCloud pc;
+        pc.header = map_header_;
+        pc.header.stamp = now;
+        const auto generate_pointcloud = [this, &pc](const Astar::Vec& p, bbf::BinaryBayesFilter& bbf)
+        {
+          if (bbf.get() <= bbf::probabilityToOdds(0.1))
+            return;
+          float x, y, yaw;
+          grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
+          geometry_msgs::Point32 point;
+          point.x = x;
+          point.y = y;
+          point.z = bbf.getProbability();
+          pc.points.push_back(point);
+        };
+        bbf_costmap_.forEach(generate_pointcloud);
+        pub_hist_.publish(pc);
+      }
+
+      bbf_costmap_.updateCostmap();
+    }
+    if (!has_goal_)
       return;
 
     if (!fast_map_update_)
@@ -918,12 +899,7 @@ protected:
       return;
     }
 
-    Astar::Vec s, e;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        start_.pose.position.x, start_.pose.position.y,
-        tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(map_info_.angle);
+    Astar::Vec e;
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         goal_.pose.position.x, goal_.pose.position.y,
@@ -1131,8 +1107,8 @@ protected:
 
     cost_estim_cache_.reset(Astar::Vec(size[0], size[1], 1));
     cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
-    cm_hist_.reset(Astar::Vec(size[0], size[1], 1));
-    cm_hist_bbf_.reset(Astar::Vec(size[0], size[1], 1));
+    cm_updates_.reset(Astar::Vec(size[0], size[1], 1));
+    bbf_costmap_.reset(Astar::Vec(size[0], size[1], 1));
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1161,8 +1137,7 @@ protected:
 
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
-    cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-    cm_hist_.clear(0);
+    bbf_costmap_.clear();
 
     // Make boundary check threshold
     min_boundary_ = motion_cache_.getMaxRange();
@@ -1382,10 +1357,9 @@ public:
       if (has_map_)
       {
         updateStart();
+
         if (jump_.detectJump())
-        {
-          cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-        }
+          bbf_costmap_.clear();
 
         if (!goal_updated_ && has_goal_)
           updateGoal();
@@ -2028,13 +2002,15 @@ protected:
     stat.addf("error", "%u", status_.error);
   }
 };
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "planner_3d");
 
-  Planner3dNode jy;
-  jy.spin();
+  planner_cspace::planner_3d::Planner3dNode node;
+  node.spin();
 
   return 0;
 }
