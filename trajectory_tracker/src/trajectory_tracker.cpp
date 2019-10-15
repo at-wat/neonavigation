@@ -107,7 +107,6 @@ private:
   bool limit_vel_by_avel_;
   bool check_old_path_;
   double epsilon_;
-  bool in_place_turn_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
@@ -218,14 +217,13 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   path_header_ = msg->header;
   path_.clear();
   path_step_done_ = 0;
-  in_place_turn_ = false;
   if (msg->poses.size() == 0)
     return;
 
-  auto j = msg->poses.begin();
   trajectory_tracker::Pose2D in_place_turn_end;
   bool in_place_turning = false;
 
+  auto j = msg->poses.begin();
   path_.push_back(trajectory_tracker::Pose2D(j->pose, getVelocity(*j)));
   for (++j; j < msg->poses.end(); ++j)
   {
@@ -256,22 +254,6 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   }
   if (in_place_turning)
     path_.push_back(in_place_turn_end);
-
-  if (path_.size() == 1)
-  {
-    path_.back() = trajectory_tracker::Pose2D(
-        msg->poses.back().pose, std::numeric_limits<float>::quiet_NaN());
-    in_place_turn_ = true;
-    while (path_.size() < 3)
-    {
-      // to make line direction computable, line should have a few points
-      const float yaw = path_.back().yaw_;
-      const trajectory_tracker::Pose2D next(
-          path_.back().pos_ + Eigen::Vector2d(std::cos(yaw), std::sin(yaw)) * epsilon_,
-          yaw, path_.back().velocity_);
-      path_.push_back(next);
-    }
-  }
 }
 void TrackerNode::cbTimer(const ros::TimerEvent& event)
 {
@@ -394,7 +376,7 @@ void TrackerNode::control()
       lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
 
   // Angular error
-  const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[i_nearest - 1].pos_;
+  const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[std::max(0, i_nearest - 1)].pos_;
   float angle = -atan2(vec[1], vec[0]);
   const float angle_pose = allow_backward_ ? lpath[i_nearest].yaw_ : -angle;
   float sign_vel = 1.0;
@@ -416,6 +398,7 @@ void TrackerNode::control()
       i_nearest, i_local_goal, path_step_done_, lpath.size(), remain, remain_local);
 
   bool arrive_local_goal(false);
+  bool in_place_turning = (vec[1] == 0.0 && vec[0] == 0.0);
 
   const float dt = 1.0 / hz_;
   // Stop and rotate
@@ -423,14 +406,16 @@ void TrackerNode::control()
   if (large_angle_error ||
       std::abs(remain_local) < stop_tolerance_dist_ ||
       path_length < min_track_path_ ||
-      in_place_turn_)
+      in_place_turning)
   {
     if (large_angle_error)
     {
       ROS_INFO_THROTTLE(1.0, "Stop and rotate due to large angular error: %0.3f", angle);
     }
 
-    if (path_length < min_track_path_ || std::abs(remain_local) < stop_tolerance_dist_)
+    if (path_length < min_track_path_ ||
+        std::abs(remain_local) < stop_tolerance_dist_ ||
+        in_place_turning)
     {
       angle = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
       status.angle_remains = angle;
@@ -448,7 +433,7 @@ void TrackerNode::control()
         "trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
         angle, w_lim_.get(), transform_delay);
 
-    if (path_length < stop_tolerance_dist_ || in_place_turn_)
+    if (path_length < stop_tolerance_dist_ || in_place_turning)
       status.distance_remains = remain = 0.0;
   }
   else
