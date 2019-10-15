@@ -18,6 +18,8 @@
     <remap from="map_local" to="overlay1" />
     <param name="width" value="60" />
     <param name="hz" value="1.5" />
+    <param name="round_local_map" value="true" />
+    <param name="simulate_occlusion" value="true" />
   </node>
 
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" />

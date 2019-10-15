@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2014-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,8 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
+#include <vector>
+
 #include <ros/ros.h>
 
 #include <geometry_msgs/PolygonStamped.h>
@@ -56,6 +58,7 @@ protected:
   float linear_expand_;
   float linear_spread_;
   Polygon footprint_p_;
+  bool keep_unknown_;
 
   CSpace3Cache cs_template_;
   int range_max_;
@@ -64,6 +67,7 @@ public:
   Costmap3dLayerFootprint()
     : linear_expand_(0.0)
     , linear_spread_(0.0)
+    , keep_unknown_(false)
     , range_max_(0)
   {
   }
@@ -73,6 +77,12 @@ public:
         static_cast<double>(config["linear_expand"]),
         static_cast<double>(config["linear_spread"]));
     setFootprint(costmap_cspace::Polygon(config["footprint"]));
+    if (config.hasMember("keep_unknown"))
+      setKeepUnknown(config["keep_unknown"]);
+  }
+  void setKeepUnknown(const bool keep_unknown)
+  {
+    keep_unknown_ = keep_unknown;
   }
   void setExpansion(
       const float linear_expand,
@@ -187,74 +197,114 @@ protected:
     const int oy =
         lroundf((msg->info.origin.position.y - map->info.origin.position.y) /
                 map->info.linear_resolution);
+    const double resolution_scale = msg->info.resolution / map->info.linear_resolution;
+
     // Clear travelable area in OVERWRITE mode
     if (overlay_mode_ == OVERWRITE && !root_)
     {
       for (size_t yaw = 0; yaw < map->info.angle; yaw++)
       {
-        for (unsigned int i = 0; i < msg->data.size(); i++)
+        for (size_t i = 0; i < msg->data.size(); i++)
         {
           const auto& val = msg->data[i];
           if (val < 0)
             continue;
 
-          const int x =
-              lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          const int x = lroundf((i % msg->info.width) * resolution_scale);
           if (x < range_max_ || static_cast<int>(msg->info.width) - range_max_ <= x)
             continue;
-          const int y =
-              lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution);
+          const int y = lroundf((i / msg->info.width) * resolution_scale);
           if (y < range_max_ || static_cast<int>(msg->info.height) - range_max_ <= y)
             continue;
 
-          const int res_up = ceilf(msg->info.resolution / map->info.linear_resolution);
+          const int res_up = ceilf(resolution_scale);
           for (int yp = 0; yp < res_up; yp++)
           {
             for (int xp = 0; xp < res_up; xp++)
             {
               const int x2 = x + ox + xp;
               const int y2 = y + oy + yp;
-              if (static_cast<unsigned int>(x2) >= map->info.width ||
-                  static_cast<unsigned int>(y2) >= map->info.height)
+              if (static_cast<size_t>(x2) >= map->info.width ||
+                  static_cast<size_t>(y2) >= map->info.height)
                 continue;
 
-              auto& m = map->getCost(x2, y2, yaw);
-              m = 0;
+              map->getCost(x2, y2, yaw) = -1;
             }
           }
         }
       }
     }
+    std::vector<bool> unknown;
     // Get max
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
-      for (unsigned int i = 0; i < msg->data.size(); i++)
+      if (keep_unknown_)
       {
-        const int gx = lroundf((i % msg->info.width) * msg->info.resolution / map->info.linear_resolution) + ox;
-        const int gy = lroundf((i / msg->info.width) * msg->info.resolution / map->info.linear_resolution) + oy;
-        if ((unsigned int)gx >= map->info.width ||
-            (unsigned int)gy >= map->info.height)
+        unknown.resize(msg->data.size());
+        for (size_t i = 0; i < msg->data.size(); i++)
+        {
+          const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
+          const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+          if (static_cast<size_t>(gx) >= map->info.width ||
+              static_cast<size_t>(gy) >= map->info.height)
+            continue;
+          // If the cell is unknown in parent map and also updated map,
+          // the cell is never measured.
+          // Never measured cells should be marked unknown
+          // to be correctly processed in the planner.
+          unknown[i] = msg->data[i] < 0 && map->getCost(gx, gy, yaw) < 0;
+        }
+      }
+      for (size_t i = 0; i < msg->data.size(); i++)
+      {
+        const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
+        const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+        if (static_cast<size_t>(gx) >= map->info.width ||
+            static_cast<size_t>(gy) >= map->info.height)
           continue;
-
-        auto val = msg->data[i];
-        if (val <= 0)
+        const int8_t val = msg->data[i];
+        if (val < 0)
+        {
           continue;
+        }
+        else if (val == 0)
+        {
+          int8_t& m = map->getCost(gx, gy, yaw);
+          if (m < 0)
+            m = 0;
+          continue;
+        }
 
         for (int y = -range_max_; y <= range_max_; y++)
         {
+          const int y2 = gy + y;
+          if (static_cast<size_t>(y2) >= map->info.height)
+            continue;
           for (int x = -range_max_; x <= range_max_; x++)
           {
             const int x2 = gx + x;
-            const int y2 = gy + y;
-            if (static_cast<unsigned int>(x2) >= map->info.width ||
-                static_cast<unsigned int>(y2) >= map->info.height)
+            if (static_cast<size_t>(x2) >= map->info.width)
               continue;
 
-            auto& m = map->getCost(x2, y2, yaw);
-            const auto c = cs_template_.e(x, y, yaw) * val / 100;
-            if (m < c)
+            int8_t& m = map->getCost(x2, y2, yaw);
+            const int8_t c = cs_template_.e(x, y, yaw) * val / 100;
+            if (c > 0 && m < c)
               m = c;
           }
+        }
+      }
+      if (keep_unknown_)
+      {
+        for (size_t i = 0; i < unknown.size(); i++)
+        {
+          if (!unknown[i])
+            continue;
+          const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
+          const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+          if (static_cast<size_t>(gx) >= map->info.width ||
+              static_cast<size_t>(gy) >= map->info.height)
+            continue;
+          map->getCost(gx, gy, yaw) = -1;
         }
       }
     }
