@@ -95,9 +95,12 @@ public:
     ConstIterator it_prev = begin;
     for (ConstIterator it = begin + 1; it < end; ++it)
     {
+      // stop reading forward if the path is switching back or in-place turning
+      if (it->pos_ == it_prev->pos_)
+        return it;
+
       const Eigen::Vector2d inc = it->pos_ - it_prev->pos_;
 
-      // stop reading forward if the path is switching back
       const float angle = atan2(inc[1], inc[0]);
       const float angle_pose = allow_backward_motion ? it->yaw_ : angle;
       const float sign_vel_req = std::cos(angle) * std::cos(angle_pose) + std::sin(angle) * std::sin(angle_pose);
@@ -115,8 +118,8 @@ public:
       const float max_search_range = 0) const
   {
     float distance_path_search = 0;
-    float min_dist = std::numeric_limits<float>::max();
-    ConstIterator it_nearest = Super::end();
+    ConstIterator it_nearest = begin;
+    float min_dist = (begin->pos_ - target).norm();
 
     ConstIterator it_prev = begin;
     for (ConstIterator it = begin + 1; it < end; ++it)
