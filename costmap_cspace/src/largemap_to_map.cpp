@@ -27,12 +27,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <map>
+#include <string>
+#include <vector>
+
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <string>
 #include <neonavigation_common/compatibility.h>
 
 class LargeMapToMapNode
@@ -51,6 +55,9 @@ private:
   std::string robot_frame_;
 
   int width_;
+  bool round_local_map_;
+  bool simulate_occlusion_;
+  std::map<size_t, std::vector<size_t>> occlusion_table_;
 
 public:
   LargeMapToMapNode()
@@ -67,6 +74,34 @@ public:
     sub_largemap_ = nh_.subscribe("map", 2, &LargeMapToMapNode::cbLargeMap, this);
 
     pnh_.param("width", width_, 30);
+    pnh_.param("round_local_map", round_local_map_, false);
+    pnh_.param("simulate_occlusion", simulate_occlusion_, false);
+
+    for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
+    {
+      const int ux = addr % width_;
+      const int uy = addr / width_;
+      const float x = ux - width_ / 2.0;
+      const float y = uy - width_ / 2.0;
+      const float l = std::sqrt(x * x + y * y);
+      for (float r = 1.0; r < l - 1.0; r += 0.5)
+      {
+        const float x2 = x * r / l;
+        const float y2 = y * r / l;
+        const int ux2 = x2 + width_ / 2.0;
+        const int uy2 = y2 + width_ / 2.0;
+        const int addr2 = uy2 * width_ + ux2;
+        occlusion_table_[addr2].push_back(addr);
+      }
+    }
+    for (auto& cell : occlusion_table_)
+    {
+      std::sort(cell.second.begin(), cell.second.end());
+      cell.second.erase(std::unique(cell.second.begin(), cell.second.end()), cell.second.end());
+      const auto self_it = std::find(cell.second.begin(), cell.second.end(), cell.first);
+      if (self_it != cell.second.end())
+        cell.second.erase(self_it);
+    }
 
     double hz;
     pnh_.param("hz", hz, 1.0);
@@ -116,22 +151,43 @@ private:
         lroundf((map.info.origin.position.x - large_map_->info.origin.position.x) / map.info.resolution);
     const int gy =
         lroundf((map.info.origin.position.y - large_map_->info.origin.position.y) / map.info.resolution);
+    const float half_width = width_ / 2.0;
 
     for (int y = gy; y < gy + width_; ++y)
     {
       for (int x = gx; x < gx + width_; ++x)
       {
-        const size_t addr = (y - gy) * width_ + (x - gx);
+        const int lx = x - gx;
+        const int ly = y - gy;
+        const size_t addr = ly * width_ + lx;
         const size_t addr_large = y * large_map_->info.width + x;
-        if (x < 0 || y < 0 ||
-            x >= static_cast<int>(large_map_->info.width) ||
-            y >= static_cast<int>(large_map_->info.height))
+        if (round_local_map_ &&
+            std::pow(lx - half_width, 2) + std::pow(ly - half_width, 2) > std::pow(half_width, 2))
+        {
+          map.data[addr] = -1;
+        }
+        else if (x < 0 || y < 0 ||
+                 x >= static_cast<int>(large_map_->info.width) ||
+                 y >= static_cast<int>(large_map_->info.height))
         {
           map.data[addr] = -1;
         }
         else
         {
           map.data[addr] = large_map_->data[addr_large];
+        }
+      }
+    }
+    if (simulate_occlusion_)
+    {
+      for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
+      {
+        if (map.data[addr] == 100)
+        {
+          for (auto a : occlusion_table_[addr])
+          {
+            map.data[a] = -1;
+          }
         }
       }
     }

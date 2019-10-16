@@ -59,7 +59,8 @@ protected:
   }
   bool updateChain(const bool output)
   {
-    region_ = UpdatedRegion(0, 0, 0, 0, 0, 0, ros::Time(0));
+    region_ = UpdatedRegion(
+        0, 0, 0, map_->info.width, map_->info.height, map_->info.angle, ros::Time(0));
     for (auto& c : map_overlay_->data)
       c = -1;
     return false;

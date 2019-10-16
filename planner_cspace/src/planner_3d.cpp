@@ -168,6 +168,7 @@ protected:
   bool has_map_;
   bool has_goal_;
   bool has_start_;
+  bool has_hysteresis_map_;
   bool goal_updated_;
   bool remember_updates_;
   bool fast_map_update_;
@@ -728,7 +729,10 @@ protected:
     cost_estim_cache_[e] = 0;
 
     if (goal_changed)
+    {
       cm_hyst_.clear(100);
+      has_hysteresis_map_ = false;
+    }
 
     publishCostmap();
 
@@ -810,6 +814,8 @@ protected:
     cm_rough_ = cm_rough_base_;
     cm_updates_.clear(-1);
 
+    bool clear_hysteresis(false);
+
     {
       const Astar::Vec gp(
           static_cast<int>(msg->x), static_cast<int>(msg->y), static_cast<int>(msg->yaw));
@@ -825,6 +831,8 @@ protected:
             const char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
+            if (c == 100 && !clear_hysteresis && cm_hyst_[gp + p] == 0)
+              clear_hysteresis = true;
           }
           p[2] = 0;
           cm_updates_[gp_rough + p] = cost_min;
@@ -848,6 +856,13 @@ protected:
           }
         }
       }
+    }
+
+    if (clear_hysteresis && has_hysteresis_map_)
+    {
+      ROS_INFO("The previous path collides to the obstacle. Clearing hysteresis map.");
+      cm_hyst_.clear(100);
+      has_hysteresis_map_ = false;
     }
 
     if (!has_start_)
@@ -1131,7 +1146,9 @@ protected:
       }
     }
     ROS_DEBUG("Map copied");
+
     cm_hyst_.clear(100);
+    has_hysteresis_map_ = false;
 
     has_map_ = true;
 
@@ -1715,16 +1732,26 @@ protected:
         {
           if (it != it_prev)
           {
-            const float d =
-                CyclicVecFloat<3, 2>(p).distLinestrip2d(*it_prev, *it);
-            if (d < d_min)
-              d_min = d;
+            int yaw = lroundf((*it)[2]) % map_info_.angle;
+            int yaw_prev = lroundf((*it_prev)[2]) % map_info_.angle;
+            if (yaw < 0)
+              yaw += map_info_.angle;
+            if (yaw_prev < 0)
+              yaw_prev += map_info_.angle;
+            if (yaw == p[2] || yaw_prev == p[2])
+            {
+              const float d =
+                  CyclicVecFloat<3, 2>(p).distLinestrip2d(*it_prev, *it);
+              if (d < d_min)
+                d_min = d;
+            }
           }
           it_prev = it;
         }
         d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
         cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
       }
+      has_hysteresis_map_ = true;
       const auto tnow = boost::chrono::high_resolution_clock::now();
       ROS_DEBUG("Hysteresis map generated (%0.4f sec.)",
                 boost::chrono::duration<float>(tnow - ts).count());
@@ -1900,7 +1927,7 @@ protected:
           return -1;
         sum += c;
 
-        if (hyst)
+        if (hyst && has_hysteresis_map_)
           sum_hyst += cm_hyst_[pos];
       }
       const float distf = cache_page->second.getDistance();
@@ -1962,7 +1989,7 @@ protected:
             return -1;
           sum += c;
 
-          if (hyst)
+          if (hyst && has_hysteresis_map_)
             sum_hyst += cm_hyst_[pos];
         }
         const float distf = cache_page->second.getDistance();
