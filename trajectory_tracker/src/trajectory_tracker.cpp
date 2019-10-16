@@ -511,9 +511,10 @@ void TrackerNode::control()
   tracking.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -angle));
   pub_tracking_.publish(tracking);
 
-  path_step_done_ = i_nearest > 0 ? std::max(path_step_done_, i_nearest - 1) : 0;
   if (arrive_local_goal)
     path_step_done_ = i_local_goal;
+  else
+    path_step_done_ = std::max(path_step_done_, i_nearest - 1);
 }
 
 int main(int argc, char** argv)
