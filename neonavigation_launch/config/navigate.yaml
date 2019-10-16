@@ -31,7 +31,6 @@ planner_3d:
   freq: 2.0
   freq_min: 0.5
   local_range: 2.0
-  remember_updates: true
 spur:
   hz: 30.0
   k_dist: 16.0
