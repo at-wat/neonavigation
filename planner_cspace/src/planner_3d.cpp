@@ -42,6 +42,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
@@ -89,8 +90,9 @@ protected:
   ros::Publisher pub_path_;
   ros::Publisher pub_path_velocity_;
   ros::Publisher pub_path_poses_;
-  ros::Publisher pub_debug_;
-  ros::Publisher pub_hist_;
+  ros::Publisher pub_hysteresis_map_;
+  ros::Publisher pub_distance_map_;
+  ros::Publisher pub_remembered_map_;
   ros::Publisher pub_start_;
   ros::Publisher pub_end_;
   ros::Publisher pub_status_;
@@ -221,13 +223,6 @@ protected:
   int goal_tolerance_lin_;
   int goal_tolerance_ang_;
   float angle_resolution_aspect_;
-
-  enum DebugMode
-  {
-    DEBUG_HYSTERESIS,
-    DEBUG_COST_ESTIM
-  };
-  DebugMode debug_out_;
 
   planner_cspace_msgs::PlannerStatus status_;
 
@@ -734,23 +729,20 @@ protected:
       has_hysteresis_map_ = false;
     }
 
-    publishCostmap();
+    publishDebug();
 
     goal_updated_ = true;
 
     return true;
   }
-  void publishCostmap()
+  void publishDebug()
   {
-    if (pub_debug_.getNumSubscribers() == 0)
-      return;
-
-    sensor_msgs::PointCloud debug;
-    debug.header = map_header_;
-    debug.header.stamp = ros::Time::now();
+    if (pub_distance_map_.getNumSubscribers() > 0)
     {
-      Astar::Vec p;
-      for (p[1] = 0; p[1] < cost_estim_cache_.size()[1]; p[1]++)
+      sensor_msgs::PointCloud distance_map;
+      distance_map.header = map_header_;
+      distance_map.header.stamp = ros::Time::now();
+      for (Astar::Vec p(0, 0, 0); p[1] < cost_estim_cache_.size()[1]; p[1]++)
       {
         for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
         {
@@ -760,29 +752,63 @@ protected:
           geometry_msgs::Point32 point;
           point.x = x;
           point.y = y;
-          switch (debug_out_)
-          {
-            case DEBUG_HYSTERESIS:
-              if (cost_estim_cache_[p] == FLT_MAX)
-                continue;
-
-              point.z = 100;
-              for (p[2] = 0; p[2] < static_cast<int>(map_info_.angle); ++p[2])
-                point.z = std::min(static_cast<float>(cm_hyst_[p]), point.z);
-
-              point.z *= 0.01;
-              break;
-            case DEBUG_COST_ESTIM:
-              if (cost_estim_cache_[p] == FLT_MAX)
-                continue;
-              point.z = cost_estim_cache_[p] / 500;
-              break;
-          }
-          debug.points.push_back(point);
+          if (cost_estim_cache_[p] == FLT_MAX)
+            continue;
+          point.z = cost_estim_cache_[p] / 500;
+          distance_map.points.push_back(point);
         }
       }
+      pub_distance_map_.publish(distance_map);
     }
-    pub_debug_.publish(debug);
+
+    if (pub_hysteresis_map_.getNumSubscribers() > 0)
+    {
+      nav_msgs::OccupancyGrid hysteresis_map;
+      hysteresis_map.header.frame_id = map_header_.frame_id;
+      hysteresis_map.info.resolution = map_info_.linear_resolution;
+      hysteresis_map.info.width = map_info_.width;
+      hysteresis_map.info.height = map_info_.height;
+      hysteresis_map.info.origin = map_info_.origin;
+      hysteresis_map.data.resize(map_info_.width * map_info_.height, 100);
+
+      for (Astar::Vec p(0, 0, 0); p[1] < cost_estim_cache_.size()[1]; p[1]++)
+      {
+        for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
+        {
+          if (cost_estim_cache_[p] == FLT_MAX)
+            continue;
+
+          char cost = 100;
+          for (Astar::Vec p2 = p; p2[2] < static_cast<int>(map_info_.angle); ++p2[2])
+          {
+            cost = std::min(cm_hyst_[p2], cost);
+          }
+          hysteresis_map.data[p[0] + p[1] * map_info_.width] = cost;
+        }
+      }
+      pub_hysteresis_map_.publish(hysteresis_map);
+    }
+  }
+  void publishRememberedMap()
+  {
+    if (pub_remembered_map_.getNumSubscribers() > 0 && remember_updates_)
+    {
+      nav_msgs::OccupancyGrid remembered_map;
+      remembered_map.header.frame_id = map_header_.frame_id;
+      remembered_map.info.resolution = map_info_.linear_resolution;
+      remembered_map.info.width = map_info_.width;
+      remembered_map.info.height = map_info_.height;
+      remembered_map.info.origin = map_info_.origin;
+      remembered_map.data.resize(map_info_.width * map_info_.height, 0);
+
+      const auto generate_pointcloud = [this, &remembered_map](const Astar::Vec& p, bbf::BinaryBayesFilter& bbf)
+      {
+        if (bbf.get() > bbf::MIN_ODDS)
+          remembered_map.data[p[0] + p[1] * map_info_.width] = bbf.getProbability() * 100;
+      };
+      bbf_costmap_.forEach(generate_pointcloud);
+      pub_remembered_map_.publish(remembered_map);
+    }
   }
   void publishEmptyPath()
   {
@@ -881,28 +907,7 @@ protected:
           &cm_updates_, s,
           remember_hit_odds_, remember_miss_odds_,
           hist_ignore_range_, hist_ignore_range_max_);
-
-      if (pub_hist_.getNumSubscribers() > 0)
-      {
-        sensor_msgs::PointCloud pc;
-        pc.header = map_header_;
-        pc.header.stamp = now;
-        const auto generate_pointcloud = [this, &pc](const Astar::Vec& p, bbf::BinaryBayesFilter& bbf)
-        {
-          if (bbf.get() <= bbf::probabilityToOdds(0.1))
-            return;
-          float x, y, yaw;
-          grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-          geometry_msgs::Point32 point;
-          point.x = x;
-          point.y = y;
-          point.z = bbf.getProbability();
-          pc.points.push_back(point);
-        };
-        bbf_costmap_.forEach(generate_pointcloud);
-        pub_hist_.publish(pc);
-      }
-
+      publishRememberedMap();
       bbf_costmap_.updateCostmap();
     }
     if (!has_goal_)
@@ -1014,7 +1019,7 @@ protected:
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
-    publishCostmap();
+    publishDebug();
   }
   void cbMap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
@@ -1214,8 +1219,6 @@ public:
     sub_goal_ = neonavigation_common::compat::subscribe(
         nh_, "move_base_simple/goal",
         pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
-    pub_debug_ = pnh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
-    pub_hist_ = pnh_.advertise<sensor_msgs::PointCloud>("remembered", 1, true);
     pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status_ = pnh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
@@ -1223,6 +1226,11 @@ public:
         nh_, "forget_planning_cost",
         pnh_, "forget", &Planner3dNode::cbForget, this);
     srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
+
+    // Debug outputs
+    pub_distance_map_ = pnh_.advertise<sensor_msgs::PointCloud>("distance_map", 1, true);
+    pub_hysteresis_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("hysteresis_map", 1, true);
+    pub_remembered_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("remembered_map", 1, true);
 
     act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
@@ -1311,12 +1319,12 @@ public:
     {
       ROS_WARN("planner_3d: Experimental fast_map_update is enabled. ");
     }
-    std::string debug_mode;
-    pnh_.param("debug_mode", debug_mode, std::string("cost_estim"));
-    if (debug_mode == "hyst")
-      debug_out_ = DEBUG_HYSTERESIS;
-    else if (debug_mode == "cost_estim")
-      debug_out_ = DEBUG_COST_ESTIM;
+    if (pnh_.hasParam("debug_mode"))
+    {
+      ROS_ERROR(
+          "planner_3d: ~/debug_mode parameter and ~/debug topic are deprecated. "
+          "Use ~/distance_map, ~/hysteresis_map, and ~/remembered_map topics instead.");
+    }
 
     bool print_planning_duration;
     pnh_.param("print_planning_duration", print_planning_duration, false);
@@ -1755,7 +1763,7 @@ protected:
       const auto tnow = boost::chrono::high_resolution_clock::now();
       ROS_DEBUG("Hysteresis map generated (%0.4f sec.)",
                 boost::chrono::duration<float>(tnow - ts).count());
-      publishCostmap();
+      publishDebug();
     }
 
     return true;
