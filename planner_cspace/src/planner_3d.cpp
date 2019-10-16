@@ -799,12 +799,12 @@ protected:
       remembered_map.info.width = map_info_.width;
       remembered_map.info.height = map_info_.height;
       remembered_map.info.origin = map_info_.origin;
-      remembered_map.data.resize(map_info_.width * map_info_.height, 0);
+      remembered_map.data.resize(map_info_.width * map_info_.height);
 
       const auto generate_pointcloud = [this, &remembered_map](const Astar::Vec& p, bbf::BinaryBayesFilter& bbf)
       {
-        if (bbf.get() > bbf::MIN_ODDS)
-          remembered_map.data[p[0] + p[1] * map_info_.width] = bbf.getProbability() * 100;
+        remembered_map.data[p[0] + p[1] * map_info_.width] =
+            (bbf.getProbability() - bbf::MIN_PROBABILITY) * 100 / (bbf::MAX_PROBABILITY - bbf::MIN_PROBABILITY);
       };
       bbf_costmap_.forEach(generate_pointcloud);
       pub_remembered_map_.publish(remembered_map);

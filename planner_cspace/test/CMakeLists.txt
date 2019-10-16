@@ -28,6 +28,13 @@ catkin_add_gtest(test_blockmem_gridmap_performance
 target_link_libraries(test_blockmem_gridmap_performance ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")  # Force release build for performance test.
 
+add_rostest_gtest(test_debug_outputs
+  test/debug_outputs_rostest.test
+  src/test_debug_outputs.cpp
+)
+target_link_libraries(test_debug_outputs ${catkin_LIBRARIES})
+add_dependencies(test_debug_outputs planner_3d)
+
 add_rostest_gtest(test_navigate
   test/navigation_rostest.test
   src/test_navigate.cpp
