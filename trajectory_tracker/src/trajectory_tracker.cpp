@@ -333,11 +333,11 @@ void TrackerNode::control()
 
   // Find nearest line strip
   const trajectory_tracker::Path2D::ConstIterator it_local_goal =
-      lpath.findLocalGoal(lpath.begin() + path_step_done_, lpath.end(), allow_backward_);
+      lpath.findLocalGoal(lpath.cbegin() + path_step_done_, lpath.cend(), allow_backward_);
 
   const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
   const trajectory_tracker::Path2D::ConstIterator it_nearest =
-      lpath.findNearest(lpath.begin() + path_step_done_, it_local_goal, origin, max_search_range);
+      lpath.findNearest(lpath.cbegin() + path_step_done_, it_local_goal, origin, max_search_range);
 
   if (it_nearest == lpath.end())
   {
@@ -353,30 +353,29 @@ void TrackerNode::control()
     return;
   }
 
-  const int i_nearest = std::distance(
-      static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_nearest);
-  const int i_local_goal = std::distance(
-      static_cast<trajectory_tracker::Path2D::ConstIterator>(lpath.begin()), it_local_goal);
+  const int i_nearest = std::distance(lpath.cbegin(), it_nearest);
+  const int i_nearest_prev = std::max(0, i_nearest - 1);
+  const int i_local_goal = std::distance(lpath.cbegin(), it_local_goal);
 
   const Eigen::Vector2d pos_on_line =
-      trajectory_tracker::projection2d(lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
+      trajectory_tracker::projection2d(lpath[i_nearest_prev].pos_, lpath[i_nearest].pos_, origin);
 
   const float linear_vel =
       std::isnan(lpath[i_nearest].velocity_) ? vel_[0] : lpath[i_nearest].velocity_;
 
   // Remained distance to the local goal
-  float remain_local = lpath.remainedDistance(lpath.begin(), it_nearest, it_local_goal, pos_on_line);
+  float remain_local = lpath.remainedDistance(lpath.cbegin(), it_nearest, it_local_goal, pos_on_line);
   // Remained distance to the final goal
-  float remain = lpath.remainedDistance(lpath.begin(), it_nearest, lpath.end(), pos_on_line);
+  float remain = lpath.remainedDistance(lpath.cbegin(), it_nearest, lpath.cend(), pos_on_line);
   if (path_length < no_pos_cntl_dist_)
     remain = remain_local = 0;
 
   // Signed distance error
   const float dist_err = trajectory_tracker::lineDistance(
-      lpath[i_nearest - 1].pos_, lpath[i_nearest].pos_, origin);
+      lpath[i_nearest_prev].pos_, lpath[i_nearest].pos_, origin);
 
   // Angular error
-  const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[std::max(0, i_nearest - 1)].pos_;
+  const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[i_nearest_prev].pos_;
   float angle = -atan2(vec[1], vec[0]);
   const float angle_pose = allow_backward_ ? lpath[i_nearest].yaw_ : -angle;
   float sign_vel = 1.0;
