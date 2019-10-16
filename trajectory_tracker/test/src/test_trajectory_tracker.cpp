@@ -374,52 +374,70 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
       };
   for (const float init_yaw : init_yaw_array)
   {
-    initState(Eigen::Vector2d(0, 0), init_yaw);
-
-    const float target_angle_array[] =
+    const std::vector<float> target_angle_array[] =
         {
-          0.5,
-          -0.5
+          { 0.5 },
+          { -0.5 },
+          { 0.1, 0.2, 0.3, 0.4, 0.5 },
+          { -0.1, -0.2, -0.3, -0.4, -0.5 },
         };
-    for (const float ang : target_angle_array)
+    for (const auto& angles : target_angle_array)
     {
-      std::vector<Eigen::Vector3d> poses;
-      poses.push_back(Eigen::Vector3d(0.0, 0.0, init_yaw + ang));
-      publishPath(poses);
-
-      waitUntilStart();
-
-      ros::Rate rate(50);
-      const ros::Time start = ros::Time::now();
-      while (ros::ok())
+      for (const bool& has_short_path : { false, true })
       {
-        ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+        std::stringstream condition_name;
+        condition_name
+            << "init_yaw: " << init_yaw
+            << ", angles: " << angles.front() << "-" << angles.back()
+            << ", has_short_path: " << has_short_path;
 
-        publishTransform();
-        rate.sleep();
-        ros::spinOnce();
+        initState(Eigen::Vector2d(0, 0), init_yaw);
 
-        if (cmd_vel_)
+        std::vector<Eigen::Vector3d> poses;
+        if (has_short_path)
         {
-          ASSERT_GT(cmd_vel_->angular.z * ang, -1e-2);
+          poses.push_back(Eigen::Vector3d(-std::cos(init_yaw) * 0.01, std::sin(init_yaw) * 0.01, init_yaw));
         }
-        if (status_)
+        for (float ang : angles)
         {
-          ASSERT_LT(status_->angle_remains * ang, 1e-2);
+          poses.push_back(Eigen::Vector3d(0.0, 0.0, init_yaw + ang));
+        }
+        publishPath(poses);
+
+        waitUntilStart();
+
+        ros::Rate rate(50);
+        const ros::Time start = ros::Time::now();
+        while (ros::ok())
+        {
+          ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0)) << condition_name.str();
+
+          publishTransform();
+          rate.sleep();
+          ros::spinOnce();
+
+          if (cmd_vel_)
+          {
+            ASSERT_GT(cmd_vel_->angular.z * angles.back(), -1e-2) << condition_name.str();
+          }
+          if (status_)
+          {
+            ASSERT_LT(status_->angle_remains * angles.back(), 1e-2) << condition_name.str();
+          }
+
+          if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+            break;
+        }
+        ASSERT_TRUE(static_cast<bool>(cmd_vel_)) << condition_name.str();
+        for (int i = 0; i < 25; ++i)
+        {
+          publishTransform();
+          rate.sleep();
+          ros::spinOnce();
         }
 
-        if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
-          break;
+        ASSERT_NEAR(yaw_, init_yaw + angles.back(), 1e-2) << condition_name.str();
       }
-      ASSERT_TRUE(static_cast<bool>(cmd_vel_));
-      for (int i = 0; i < 25; ++i)
-      {
-        publishTransform();
-        rate.sleep();
-        ros::spinOnce();
-      }
-
-      ASSERT_NEAR(yaw_, init_yaw + ang, 1e-2);
     }
   }
 }
