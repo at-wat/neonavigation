@@ -825,33 +825,35 @@ protected:
         for (p[1] = 0; p[1] < static_cast<int>(msg->height); p[1]++)
         {
           int cost_min = 100;
-          for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
+          for (Astar::Vec p2 = p; p2[2] < static_cast<int>(msg->angle); p2[2]++)
           {
-            const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
+            const size_t addr = ((p2[2] * msg->height) + p2[1]) * msg->width + p2[0];
             const char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
-            if (c == 100 && !clear_hysteresis && cm_hyst_[gp + p] == 0)
+            if (c == 100 && !clear_hysteresis && cm_hyst_[gp + p2] == 0)
               clear_hysteresis = true;
           }
-          p[2] = 0;
-          cm_updates_[gp_rough + p] = cost_min;
-          if (cost_min > cm_rough_[gp_rough + p])
-            cm_rough_[gp_rough + p] = cost_min;
 
-          for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
+          if (cost_min > cm_rough_[gp_rough + p])
           {
-            const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
+            cm_rough_[gp_rough + p] = cost_min;
+            cm_updates_[gp_rough + p] = cost_min;
+          }
+
+          for (Astar::Vec p2 = p; p2[2] < static_cast<int>(msg->angle); p2[2]++)
+          {
+            const size_t addr = ((p2[2] * msg->height) + p2[1]) * msg->width + p2[0];
             const char c = msg->data[addr];
             if (overwrite_cost_)
             {
               if (c >= 0)
-                cm_[gp + p] = c;
+                cm_[gp + p2] = c;
             }
             else
             {
-              if (cm_[gp + p] < c)
-                cm_[gp + p] = c;
+              if (cm_[gp + p2] < c)
+                cm_[gp + p2] = c;
             }
           }
         }
