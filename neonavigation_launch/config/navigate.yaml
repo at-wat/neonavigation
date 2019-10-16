@@ -1,6 +1,6 @@
 costmap_3d:
   ang_resolution: 16
-  linear_expand: 0.08
+  linear_expand: 0.15
   linear_spread: 0.3
   static_layers:
     - name: unknown
@@ -23,7 +23,7 @@ costmap_3d:
     - name: overlay1
       type: Costmap3dLayerFootprint
       overlay_mode: max
-      linear_expand: 0.15
+      linear_expand: 0.05
       linear_spread: 0.3
       keep_unknown: true
 planner_3d:
