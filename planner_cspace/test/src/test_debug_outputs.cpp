@@ -64,7 +64,8 @@ protected:
   }
   void cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
-    ++cnt_path_;
+    if (msg->poses.size() > 0)
+      ++cnt_path_;
   }
 
   ros::NodeHandle nh_;
