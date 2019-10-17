@@ -30,6 +30,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
 
 #include <gtest/gtest.h>
 
@@ -37,18 +38,18 @@ class DebugOutputsTest : public ::testing::Test
 {
 public:
   DebugOutputsTest()
-    : cnt_path_(0)
+    : cnt_planner_ready_(0)
   {
-    sub_path_ = nh_.subscribe("path", 1, &DebugOutputsTest::cbPath, this);
+    sub_status_ = nh_.subscribe("/planner_3d/status", 1, &DebugOutputsTest::cbStatus, this);
     sub_hysteresis_ = nh_.subscribe("/planner_3d/hysteresis_map", 1, &DebugOutputsTest::cbHysteresis, this);
     sub_remembered_ = nh_.subscribe("/planner_3d/remembered_map", 1, &DebugOutputsTest::cbRemembered, this);
 
-    // Wait until receiving some paths
+    // Wait planner
     while (ros::ok())
     {
       ros::Duration(0.1).sleep();
       ros::spinOnce();
-      if (cnt_path_ > 10)
+      if (cnt_planner_ready_ > 5)
         break;
     }
   }
@@ -62,19 +63,20 @@ protected:
   {
     map_remembered_ = msg;
   }
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
-    if (msg->poses.size() > 0)
-      ++cnt_path_;
+    if (msg->error == planner_cspace_msgs::PlannerStatus::GOING_WELL &&
+        msg->status == planner_cspace_msgs::PlannerStatus::DOING)
+      ++cnt_planner_ready_;
   }
 
   ros::NodeHandle nh_;
   nav_msgs::OccupancyGrid::ConstPtr map_hysteresis_;
   nav_msgs::OccupancyGrid::ConstPtr map_remembered_;
-  ros::Subscriber sub_path_;
+  ros::Subscriber sub_status_;
   ros::Subscriber sub_hysteresis_;
   ros::Subscriber sub_remembered_;
-  int cnt_path_;
+  int cnt_planner_ready_;
 };
 
 struct PositionAndValue
