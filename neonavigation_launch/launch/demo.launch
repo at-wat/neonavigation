@@ -3,13 +3,6 @@
   <arg name="use_path_with_velocity" default="true" />
   <arg name="vel" default="0.5" />
 
-  <rosparam>
-    planner_3d:
-      remember_updates: true
-      hist_ignore_range: 0.0
-      hist_ignore_range_max: 1.5
-  </rosparam>
-
   <include file="$(find neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="true" />
     <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
