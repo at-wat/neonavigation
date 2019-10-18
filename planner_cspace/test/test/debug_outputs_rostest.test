@@ -37,7 +37,7 @@
   </node>
 
   <node pkg="rostopic" type="rostopic" name="pub_goal"
-    args="pub /goal geometry_msgs/PoseStamped -f $(find planner_cspace)/test/data/goal_debug_outputs.yaml" />
+    args="pub -l /goal geometry_msgs/PoseStamped -f $(find planner_cspace)/test/data/goal_debug_outputs.yaml" />
 
   <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
