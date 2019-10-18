@@ -1705,9 +1705,6 @@ protected:
 
     if (hyst)
     {
-      const std::list<Astar::Vecf> path_interpolated =
-          path_interpolator_.interpolate(path_grid, 0.5, local_range_);
-
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
@@ -1735,8 +1732,8 @@ protected:
       {
         const Astar::Vec& p = ps.first;
         float d_min = FLT_MAX;
-        auto it_prev = path_interpolated.begin();
-        for (auto it = path_interpolated.begin(); it != path_interpolated.end(); it++)
+        auto it_prev = path_interpolated.cbegin();
+        for (auto it = path_interpolated.cbegin(); it != path_interpolated.cend(); it++)
         {
           if (it != it_prev)
           {
