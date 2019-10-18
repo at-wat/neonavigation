@@ -25,6 +25,8 @@
     <param name="remember_hit_miss" value="0.01" />
     <param name="hist_ignore_range" value="0.0" />
     <param name="hist_ignore_range_max" value="1.0" />
+    <param name="pos_jump" value="100.0" />
+    <param name="yaw_jump" value="100.0" />
   </node>
 
   <node pkg="map_server" type="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml" />
