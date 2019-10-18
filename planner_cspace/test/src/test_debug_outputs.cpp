@@ -39,8 +39,10 @@ class DebugOutputsTest : public ::testing::Test
 public:
   DebugOutputsTest()
     : cnt_planner_ready_(0)
+    , cnt_path_(0)
   {
     sub_status_ = nh_.subscribe("/planner_3d/status", 1, &DebugOutputsTest::cbStatus, this);
+    sub_path_ = nh_.subscribe("path", 1, &DebugOutputsTest::cbPath, this);
     sub_hysteresis_ = nh_.subscribe("/planner_3d/hysteresis_map", 1, &DebugOutputsTest::cbHysteresis, this);
     sub_remembered_ = nh_.subscribe("/planner_3d/remembered_map", 1, &DebugOutputsTest::cbRemembered, this);
 
@@ -49,7 +51,7 @@ public:
     {
       ros::Duration(0.1).sleep();
       ros::spinOnce();
-      if (cnt_planner_ready_ > 5)
+      if (cnt_planner_ready_ > 5 && cnt_path_ > 5)
         break;
     }
   }
@@ -69,14 +71,21 @@ protected:
         msg->status == planner_cspace_msgs::PlannerStatus::DOING)
       ++cnt_planner_ready_;
   }
+  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  {
+    if (msg->poses.size() > 0)
+      ++cnt_path_;
+  }
 
   ros::NodeHandle nh_;
   nav_msgs::OccupancyGrid::ConstPtr map_hysteresis_;
   nav_msgs::OccupancyGrid::ConstPtr map_remembered_;
   ros::Subscriber sub_status_;
+  ros::Subscriber sub_path_;
   ros::Subscriber sub_hysteresis_;
   ros::Subscriber sub_remembered_;
   int cnt_planner_ready_;
+  int cnt_path_;
 };
 
 struct PositionAndValue
