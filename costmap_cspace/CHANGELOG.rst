@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.0 (2019-10-21)
+------------------
 * costmap_cspace: fix unknown handling (`#392 <https://github.com/at-wat/neonavigation/issues/392>`_)
 * Contributors: Atsushi Watanabe
 
