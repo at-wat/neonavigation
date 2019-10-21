@@ -2,6 +2,11 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2019-10-21)
+------------------
+* joystick_interrupt: publish twist soon after simulator starts (`#389 <https://github.com/at-wat/neonavigation/issues/389>`_)
+* Contributors: Naotaka Hatao
+
 0.4.3 (2019-09-10)
 ------------------
 
