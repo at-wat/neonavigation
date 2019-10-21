@@ -2,6 +2,11 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* trajectory_tracker: track interpolated rotation (`#394 <https://github.com/at-wat/neonavigation/issues/394>`_)
+* Contributors: Atsushi Watanabe
+
 0.4.3 (2019-09-10)
 ------------------
 
