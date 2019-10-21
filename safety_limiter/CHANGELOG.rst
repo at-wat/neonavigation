@@ -2,6 +2,12 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2019-10-21)
+------------------
+* safety_limiter: remove debug output (`#385 <https://github.com/at-wat/neonavigation/issues/385>`_)
+* safety_limiter: status broadcasting from safety_limiter node (`#383 <https://github.com/at-wat/neonavigation/issues/383>`_)
+* Contributors: Atsushi Watanabe, Daiki Maekawa
+
 0.4.3 (2019-09-10)
 ------------------
 * safety_limiter: fix diagnostics warning condition (`#374 <https://github.com/at-wat/neonavigation/issues/374>`_)

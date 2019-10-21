@@ -2,6 +2,14 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2019-10-21)
+------------------
+* planner_cspace: fix debug output test stability (`#399 <https://github.com/at-wat/neonavigation/issues/399>`_)
+* planner_cspace: publish internally used maps as OccupancyGrid (`#396 <https://github.com/at-wat/neonavigation/issues/396>`_)
+* planner_cspace: clear hysteresis if new obstacle is on the previous path (`#393 <https://github.com/at-wat/neonavigation/issues/393>`_)
+* planner_cspace: fix remember_updates feature (`#391 <https://github.com/at-wat/neonavigation/issues/391>`_)
+* Contributors: Atsushi Watanabe
+
 0.4.3 (2019-09-10)
 ------------------
 * planner_cspace: make sure that planner error will be cleared if the goal is aborted (`#372 <https://github.com/at-wat/neonavigation/issues/372>`_)
