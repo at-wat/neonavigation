@@ -36,10 +36,11 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 
 add_executable(planner_3d
-  src/planner_3d.cpp
   src/costmap_bbf.cpp
+  src/grid_astar_model_3dof.cpp
   src/motion_cache.cpp
   src/path_interpolator.cpp
+  src/planner_3d.cpp
   src/rotation_cache.cpp
 )
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
