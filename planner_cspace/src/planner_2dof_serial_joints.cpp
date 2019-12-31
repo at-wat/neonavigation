@@ -171,6 +171,7 @@ private:
   sensor_msgs::JointState joint_;
   ros::Time replan_prev_;
   ros::Duration replan_interval_;
+  bool has_joint_states_;
 
   void cbJoint(const sensor_msgs::JointState::ConstPtr& msg)
   {
@@ -189,10 +190,11 @@ private:
     }
     links_[0].current_th_ = msg->position[id[0]];
     links_[1].current_th_ = msg->position[id[1]];
+    has_joint_states_ = true;
 
-    if (replan_prev_ + replan_interval_ < ros::Time::now() &&
-        replan_interval_ > ros::Duration(0) &&
-        replan_prev_ != ros::Time(0))
+    if ((replan_prev_ + replan_interval_ < ros::Time::now() ||
+         replan_prev_ == ros::Time(0)) &&
+        replan_interval_ > ros::Duration(0))
     {
       replan();
     }
@@ -234,6 +236,9 @@ private:
   }
   void replan()
   {
+    if (!has_joint_states_)
+      return;
+
     replan_prev_ = ros::Time::now();
     if (id[0] == -1 || id[1] == -1)
       return;
@@ -376,6 +381,7 @@ public:
     : nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
+    , has_joint_states_(false)
   {
     neonavigation_common::compat::checkCompatMode();
     group_ = group_name;
