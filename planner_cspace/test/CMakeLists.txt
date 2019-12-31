@@ -1,11 +1,20 @@
 catkin_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+catkin_add_gtest(test_grid_astar src/test_grid_astar.cpp)
+target_link_libraries(test_grid_astar ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+
 catkin_add_gtest(test_cyclic_vec src/test_cyclic_vec.cpp)
 target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 catkin_add_gtest(test_grid_metric_converter src/test_grid_metric_converter.cpp)
 target_link_libraries(test_grid_metric_converter ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+catkin_add_gtest(test_costmap_bbf
+  src/test_costmap_bbf.cpp
+  ../src/costmap_bbf.cpp
+)
+target_link_libraries(test_costmap_bbf ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 catkin_add_gtest(test_motion_cache
   src/test_motion_cache.cpp
@@ -13,19 +22,18 @@ catkin_add_gtest(test_motion_cache
 )
 target_link_libraries(test_motion_cache ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-if(PLANNER_CSPACE_PERFORMANCE_TESTS)
+catkin_add_gtest(test_blockmem_gridmap_performance
+  src/test_blockmem_gridmap_performance.cpp
+)
+target_link_libraries(test_blockmem_gridmap_performance ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")  # Force release build for performance test.
 
-  catkin_add_gtest(test_blockmem_gridmap_performance
-    src/test_blockmem_gridmap_performance.cpp
-  )
-  target_link_libraries(test_blockmem_gridmap_performance ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-  set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}") # Force release build for performance test.
-
-else()
-
-  message("To perform performance tests for planner_cspace, use -DPLANNER_CSPACE_PERFORMANCE_TESTS:=ON")
-
-endif()
+add_rostest_gtest(test_debug_outputs
+  test/debug_outputs_rostest.test
+  src/test_debug_outputs.cpp
+)
+target_link_libraries(test_debug_outputs ${catkin_LIBRARIES})
+add_dependencies(test_debug_outputs planner_3d)
 
 add_rostest_gtest(test_navigate
   test/navigation_rostest.test
@@ -34,12 +42,21 @@ add_rostest_gtest(test_navigate
 target_link_libraries(test_navigate ${catkin_LIBRARIES})
 add_dependencies(test_navigate planner_3d)
 
-add_rostest_gtest(test_navigate_compat
-  test/navigation_compat_rostest.test
-  src/test_navigate.cpp
+add_rostest(test/navigation_rostest.test
+  ARGS antialias_start:=true
+  DEPENDENCIES test_navigate
 )
-target_link_libraries(test_navigate_compat ${catkin_LIBRARIES})
-add_dependencies(test_navigate_compat planner_3d)
+
+add_rostest(test/navigation_compat_rostest.test
+  DEPENDENCIES test_navigate
+)
+
+add_rostest_gtest(test_navigate_boundary
+  test/navigation_boundary_rostest.test
+  src/test_navigate_boundary.cpp
+)
+target_link_libraries(test_navigate_boundary ${catkin_LIBRARIES})
+add_dependencies(test_navigate_boundary planner_3d)
 
 add_rostest_gtest(test_abort
   test/abort_rostest.test

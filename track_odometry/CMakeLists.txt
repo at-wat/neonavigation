@@ -6,6 +6,7 @@ set(CATKIN_DEPENDS
   cmake_modules
 
   geometry_msgs
+  message_filters
   nav_msgs
   sensor_msgs
   std_msgs

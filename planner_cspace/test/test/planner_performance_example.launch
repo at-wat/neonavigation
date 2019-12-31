@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+  <rosparam param="safety_limiter/footprint">
+    [[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]
+  </rosparam>
+  <rosparam param="costmap_3d/footprint">
+    [[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]
+  </rosparam>
+  <rosparam param="planner_3d">
+    weight_hysteresis: 0.0
+  </rosparam>
+  <include file="$(find neonavigation_launch)/launch/navigate.launch">
+    <arg name="simulate" value="false" />
+    <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
+    <arg name="use_path_with_velocity" value="true" />
+  </include>
+  <node pkg="planner_cspace" type="dummy_robot" name="dummy_robot">
+    <remap from="cmd_vel" to="cmd_vel_dummy" />
+  </node>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+      args="0 0 0 0 0 0 map odom" />
+
+  <node pkg="map_server" type="map_server" name="map_server_local" args="$(find neonavigation_launch)/map/demo_map_local.yaml">
+    <remap from="map" to="map_with_local_objects" />
+  </node>
+  <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
+    <remap from="map" to="map_with_local_objects" />
+    <remap from="map_local" to="overlay1" />
+    <param name="width" value="60" />
+    <param name="hz" value="1.5" />
+  </node>
+
+  <node pkg="rostopic" type="rostopic" name="goal"
+      launch-prefix="$(find planner_cspace)/test/script/delayed_launch.sh 3"
+      args="pub -l /move_base_simple/goal geometry_msgs/PoseStamped
+            -f $(find planner_cspace)/test/data/planner_performance_example.yaml" />
+  <node pkg="planner_cspace" type="set_planner_debug_level.sh" name="debug" args="debug" />
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" />
+</launch>
+

@@ -33,10 +33,13 @@
 #include <string>
 
 #include <ros/ros.h>
+
+#include <diagnostic_msgs/DiagnosticArray.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Empty.h>
+#include <safety_limiter_msgs/SafetyLimiterStatus.h>
 
 #include <gtest/gtest.h>
 
@@ -71,14 +74,31 @@ protected:
   ros::Publisher pub_cmd_vel_;
   ros::Publisher pub_cloud_;
   ros::Publisher pub_watchdog_;
+  ros::Subscriber sub_diag_;
+  ros::Subscriber sub_status_;
+
+  inline void cbDiag(const diagnostic_msgs::DiagnosticArray::ConstPtr& msg)
+  {
+    diag_ = msg;
+  }
+
+  inline void cbStatus(const safety_limiter_msgs::SafetyLimiterStatus::ConstPtr& msg)
+  {
+    status_ = msg;
+  }
 
 public:
+  diagnostic_msgs::DiagnosticArray::ConstPtr diag_;
+  safety_limiter_msgs::SafetyLimiterStatus::ConstPtr status_;
+
   inline SafetyLimiterTest()
     : nh_()
   {
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_in", 1);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 1);
     pub_watchdog_ = nh_.advertise<std_msgs::Empty>("watchdog_reset", 1);
+    sub_diag_ = nh_.subscribe("diagnostics", 1, &SafetyLimiterTest::cbDiag, this);
+    sub_status_ = nh_.subscribe("/safety_limiter/status", 1, &SafetyLimiterTest::cbStatus, this);
   }
   inline void publishWatchdogReset()
   {
@@ -106,6 +126,18 @@ public:
     cmd_vel_out.linear.x = lin;
     cmd_vel_out.angular.z = ang;
     pub_cmd_vel_.publish(cmd_vel_out);
+  }
+  inline bool hasDiag() const
+  {
+    if (!diag_)
+      return false;
+    if (diag_->status.size() == 0)
+      return false;
+    return true;
+  }
+  inline bool hasStatus() const
+  {
+    return static_cast<bool>(status_);
   }
 };
 

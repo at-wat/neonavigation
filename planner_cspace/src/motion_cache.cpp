@@ -42,6 +42,7 @@ void MotionCache::reset(
 {
   const int angle = std::lround(M_PI * 2 / angular_resolution);
 
+  CyclicVecInt<3, 2> max_range(0, 0, 0);
   page_size_ = angle;
   cache_.resize(angle);
   for (int syaw = 0; syaw < angle; syaw++)
@@ -89,6 +90,8 @@ void MotionCache::reset(
               if (registered.find(pos) == registered.end())
               {
                 page.motion_.push_back(pos);
+                for (int i = 0; i < 3; ++i)
+                  max_range[i] = std::max(max_range[i], std::abs(pos[i]));
                 registered[pos] = true;
               }
             }
@@ -164,4 +167,5 @@ void MotionCache::reset(
       std::sort(cache.second.motion_.begin(), cache.second.motion_.end(), comp);
     }
   }
+  max_range_ = max_range;
 }

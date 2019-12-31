@@ -85,6 +85,9 @@ protected:
   RotationCache rot_cache_;
   MotionCache motion_cache_;
   MotionCache motion_cache_linear_;
+  Vec min_boundary_;
+  Vec max_boundary_;
+  std::array<float, 1024> euclid_cost_lin_cache_;
 
 public:
   explicit GridAstarModel3D(
@@ -126,6 +129,17 @@ public:
         range_,
         cm_.getAddressor());
 
+    // Make boundary check threshold
+    min_boundary_ = motion_cache_.getMaxRange();
+    max_boundary_ =
+        Vec(static_cast<int>(map_info_.width),
+            static_cast<int>(map_info_.height),
+            static_cast<int>(map_info_.angle)) -
+        min_boundary_;
+    ROS_INFO("x:%d, y:%d grids around the boundary is ignored on path search", min_boundary_[0], min_boundary_[1]);
+
+    createEuclidCostCache();
+
     Vec d;
     search_list_.clear();
     for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -158,25 +172,39 @@ public:
   {
     hysteresis_ = enable;
   }
+  void createEuclidCostCache()
+  {
+    for (int rootsum = 0;
+         rootsum < static_cast<int>(euclid_cost_lin_cache_.size()); ++rootsum)
+    {
+      euclid_cost_lin_cache_[rootsum] = sqrtf(rootsum) * euclid_cost_coef_[0];
+    }
+  }
   float euclidCost(const Vec& v) const
   {
     float cost = euclidCostRough(v);
 
-    for (int i = 2; i < 3; i++)
-      cost += fabs(euclid_cost_coef_[i] * v[i]);
-
+    int angle = v[2];
+    while (angle > static_cast<int>(map_info_.angle) / 2)
+      angle -= static_cast<int>(map_info_.angle);
+    while (angle < -static_cast<int>(map_info_.angle) / 2)
+      angle += static_cast<int>(map_info_.angle);
+    cost += fabs(euclid_cost_coef_[2] * angle);
     return cost;
   }
   float euclidCostRough(const Vec& v) const
   {
-    float cost = 0;
-    for (int i = 0; i < 2; i++)
-      cost += powf(euclid_cost_coef_[i] * v[i], 2.0);
+    int rootsum = 0;
+    for (int i = 0; i < 2; ++i)
+      rootsum += v[i] * v[i];
 
-    return sqrtf(cost);
+    if (rootsum < static_cast<int>(euclid_cost_lin_cache_.size()))
+      return euclid_cost_lin_cache_[rootsum];
+
+    return sqrtf(rootsum) * euclid_cost_coef_[0];
   }
   float cost(
-      const Vec& cur, const Vec& next, const Vec& start, const Vec& goal) const override
+      const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const override
   {
     Vec d_raw = next - cur;
     d_raw.cycle(map_info_.angle);
@@ -246,6 +274,8 @@ public:
       if (fabs(aspect) < cc_.angle_resolution_aspect_)
         return -1;  // large y offset
 
+      cost += euclid_cost_coef_[2] * fabs(1.0 / aspect) * map_info_.angular_resolution / (M_PI * 2.0);
+
       // Go-straight
       int sum = 0, sum_hyst = 0;
       Vec d_index(d[0], d[1], next[2]);
@@ -293,6 +323,11 @@ public:
 
       const float curv_radius = (r1 + r2) / 2;
       if (std::abs(curv_radius) < cc_.min_curve_raduis_)
+        return -1;
+
+      // Ignore boundary
+      if (cur[0] < min_boundary_[0] || cur[1] < min_boundary_[1] ||
+          cur[0] >= max_boundary_[0] || cur[1] >= max_boundary_[1])
         return -1;
 
       if (fabs(cc_.max_vel_ / r1) > cc_.max_ang_vel_)
@@ -352,12 +387,19 @@ public:
     return cost;
   }
   const std::vector<Vec>& searchGrids(
-      const Vec& cur, const Vec& start, const Vec& goal) const override
+      const Vec& p,
+      const std::vector<VecWithCost>& ss,
+      const Vec& es) const override
   {
-    const Vec ds = start - cur;
-    if (ds.sqlen() < local_range_ * local_range_)
+    const float local_range_sq = local_range_ * local_range_;
+    for (const VecWithCost& s : ss)
     {
-      return search_list_;
+      const Vec ds = s.v_ - p;
+
+      if (ds.sqlen() < local_range_sq)
+      {
+        return search_list_;
+      }
     }
     return search_list_rough_;
   }
@@ -375,7 +417,7 @@ public:
   }
 
   float cost(
-      const Vec& cur, const Vec& next, const Vec& start, const Vec& goal) const override
+      const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const override
   {
     Vec d = next - cur;
     d[2] = 0;
@@ -409,7 +451,7 @@ public:
     return cost;
   }
   const std::vector<Vec>& searchGrids(
-      const Vec& cur, const Vec& start, const Vec& goal) const override
+      const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const override
   {
     return base_->search_list_rough_;
   }

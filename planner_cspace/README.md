@@ -18,6 +18,9 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 
 * ~/path (new: path) [nav_msgs::Path]
 * ~/debug [sensor_msgs::PointCloud]
+    > debug output of planner internal costmap
+* ~/remembered [sensor_msgs::PointCloud]
+    > debug output of obstacles probability estimated by BBF
 * ~/path_start [geometry_msgs::PoseStamped]
 * ~/path_end [geometry_msgs::PoseStamped]
 * ~/status [planner_cspace_msgs::PlannerStatus]
@@ -51,7 +54,12 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 * "temporary_escape" (bool, default: true)
 * "fast_map_update" (bool, default: false)
 * "debug_mode" (string, default: std::string("cost_estim"))
+    > debug output data type
+    > - "hyst": path hysteresis cost
+    > - "cost_estim": estimated cost to the goal used as A\* heuristic function
 * "queue_size_limit" (int, default: 0)
+* "antialias_start" (bool, default: false)
+    > If enabled, the planner searches path from multiple surrounding grids within the grid size to reduce path chattering.
 
 ----
 

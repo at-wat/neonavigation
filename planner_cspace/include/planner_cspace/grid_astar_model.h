@@ -43,12 +43,24 @@ public:
   using Vec = CyclicVecInt<DIM, NONCYCLIC>;
   using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
 
+  class VecWithCost
+  {
+  public:
+    Vec v_;
+    float c_;
+    explicit VecWithCost(const Vec& v, const float c = 0.0)
+      : v_(v)
+      , c_(c)
+    {
+    }
+  };
+
   virtual float cost(
-      const Vec& cur, const Vec& next, const Vec& start, const Vec& goal) const = 0;
+      const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const = 0;
   virtual float costEstim(
       const Vec& cur, const Vec& next) const = 0;
   virtual const std::vector<Vec>& searchGrids(
-      const Vec& cur, const Vec& start, const Vec& goal) const = 0;
+      const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const = 0;
 };
 
 #endif  // PLANNER_CSPACE_GRID_ASTAR_MODEL_H

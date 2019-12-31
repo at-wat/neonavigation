@@ -25,7 +25,9 @@ Panels:
     Experimental: true
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Distance Map (debug output)
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -184,14 +186,35 @@ Visualization Manager:
       Size (Pixels): 5
       Size (m): 0.05000000074505806
       Style: Flat Squares
-      Topic: /planner_3d/debug
+      Topic: /planner_3d/distance_map
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: false
       Value: true
+    - Alpha: 0.200000003
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: false
+      Name: Hysteresis Map (debug output)
+      Topic: /planner_3d/hysteresis_map
+      Unreliable: false
+      Use Timestamp: false
+      Value: false
+    - Alpha: 0.300000012
+      Class: rviz/Map
+      Color Scheme: costmap
+      Draw Behind: false
+      Enabled: false
+      Name: Remembered Costmap (debug output)
+      Topic: /planner_3d/remembered_map
+      Unreliable: false
+      Use Timestamp: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
+    Default Light: true
     Fixed Frame: map
     Frame Rate: 5
   Name: root

@@ -27,11 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
 #include <diagnostic_updater/diagnostic_updater.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/PointCloud.h>
 #include <geometry_msgs/Twist.h>
+#include <ros/ros.h>
+#include <safety_limiter_msgs/SafetyLimiterStatus.h>
+#include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
 #include <tf2_ros/transform_listener.h>
@@ -49,10 +50,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <random>
-#include <string>
 #include <iostream>
+#include <random>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include <neonavigation_common/compatibility.h>
@@ -94,7 +95,7 @@ protected:
   ros::NodeHandle pnh_;
   ros::Publisher pub_twist_;
   ros::Publisher pub_cloud_;
-  ros::Publisher pub_debug_;
+  ros::Publisher pub_status_;
   ros::Subscriber sub_twist_;
   std::vector<ros::Subscriber> sub_clouds_;
   ros::Subscriber sub_disable_;
@@ -134,6 +135,7 @@ protected:
   bool has_cloud_;
   bool has_twist_;
   bool has_collision_at_now_;
+  ros::Time stuck_started_since_;
 
   constexpr static float EPSILON = 1e-6;
 
@@ -151,13 +153,14 @@ public:
     , has_cloud_(false)
     , has_twist_(true)
     , has_collision_at_now_(false)
+    , stuck_started_since_(ros::Time(0))
   {
     neonavigation_common::compat::checkCompatMode();
     pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
         nh_, "cmd_vel",
         pnh_, "cmd_vel_out", 1, true);
     pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud>("collision", 1, true);
-    pub_debug_ = nh_.advertise<sensor_msgs::PointCloud>("debug", 1, true);
+    pub_status_ = pnh_.advertise<safety_limiter_msgs::SafetyLimiterStatus>("status", 1, true);
     sub_twist_ = neonavigation_common::compat::subscribe(
         nh_, "cmd_vel_in",
         pnh_, "cmd_vel_in", 1, &SafetyLimiterNode::cbTwist, this);
@@ -283,8 +286,11 @@ protected:
   {
     ROS_WARN_THROTTLE(1.0, "safety_limiter: Watchdog timed-out");
     watchdog_stop_ = true;
+    r_lim_ = 0;
     geometry_msgs::Twist cmd_vel;
     pub_twist_.publish(cmd_vel);
+
+    diag_updater_.force_update();
   }
   void cbPredictTimer(const ros::TimerEvent& event)
   {
@@ -300,6 +306,10 @@ protected:
       pub_twist_.publish(cmd_vel);
 
       cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+      has_cloud_ = false;
+      r_lim_ = 0;
+
+      diag_updater_.force_update();
       return;
     }
 
@@ -358,10 +368,8 @@ protected:
     move.setIdentity();
     move_inv.setIdentity();
     sensor_msgs::PointCloud col_points;
-    sensor_msgs::PointCloud debug_points;
     col_points.header.frame_id = frame_id_;
     col_points.header.stamp = ros::Time::now();
-    debug_points.header = col_points.header;
 
     float d_col = 0;
     float yaw_col = 0;
@@ -384,11 +392,6 @@ protected:
 
       pcl::PointXYZ center;
       center = pcl::transformPoint(center, move_inv);
-      geometry_msgs::Point32 p;
-      p.x = center.x;
-      p.y = center.y;
-      p.z = 0.0;
-      debug_points.points.push_back(p);
 
       std::vector<int> indices;
       std::vector<float> dist;
@@ -436,8 +439,18 @@ protected:
         }
       }
     }
-    pub_debug_.publish(debug_points);
     pub_cloud_.publish(col_points);
+
+    if (has_collision_at_now_)
+    {
+      if (stuck_started_since_ == ros::Time(0))
+        stuck_started_since_ = ros::Time::now();
+    }
+    else
+    {
+      if (stuck_started_since_ != ros::Time(0))
+        stuck_started_since_ = ros::Time(0);
+    }
 
     if (!has_collision)
       return 1.0;
@@ -463,9 +476,9 @@ protected:
             std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
 
     float d_r =
-        (std::sqrt(std::abs(2 * acc_[0] * d_col)) + EPSILON) / std::abs(twist_.linear.x);
+        std::sqrt(std::abs(2 * acc_[0] * d_col)) / std::abs(twist_.linear.x);
     float yaw_r =
-        (std::sqrt(std::abs(2 * acc_[1] * yaw_col)) + EPSILON) / std::abs(twist_.angular.z);
+        std::sqrt(std::abs(2 * acc_[1] * yaw_col)) / std::abs(twist_.angular.z);
     if (!std::isfinite(d_r))
       d_r = 1.0;
     if (!std::isfinite(yaw_r))
@@ -610,7 +623,7 @@ protected:
     {
       pub_twist_.publish(twist_);
     }
-    else if (ros::Time::now() - last_cloud_stamp_ > ros::Duration(timeout_) || watchdog_stop_)
+    else if (!has_cloud_ || watchdog_stop_)
     {
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
@@ -661,11 +674,17 @@ protected:
 
   void diagnoseCollision(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
-    if (r_lim_ == 1.0)
+    safety_limiter_msgs::SafetyLimiterStatus status_msg;
+
+    if (!has_cloud_ || watchdog_stop_)
+    {
+      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Stopped due to data timeout.");
+    }
+    else if (r_lim_ == 1.0)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
     }
-    else if (r_lim_ == 0.0)
+    else if (r_lim_ < EPSILON)
     {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
                    (has_collision_at_now_) ?
@@ -680,6 +699,15 @@ protected:
                        "Reducing velocity to avoid collision.");
     }
     stat.addf("Velocity Limit Ratio", "%.2f", r_lim_);
+    stat.add("Pointcloud Availability", has_cloud_ ? "true" : "false");
+    stat.add("Watchdog Timeout", watchdog_stop_ ? "true" : "false");
+
+    status_msg.limit_ratio = r_lim_;
+    status_msg.is_cloud_available = has_cloud_;
+    status_msg.has_watchdog_timed_out = watchdog_stop_;
+    status_msg.stuck_started_since = stuck_started_since_;
+
+    pub_status_.publish(status_msg);
   }
 };
 

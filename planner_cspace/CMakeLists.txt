@@ -37,6 +37,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(planner_3d
   src/planner_3d.cpp
+  src/costmap_bbf.cpp
   src/motion_cache.cpp
   src/path_interpolator.cpp
   src/rotation_cache.cpp

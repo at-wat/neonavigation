@@ -1,0 +1,16 @@
+header:
+  seq: 0
+  stamp:
+    secs: 0
+    nsecs: 0
+  frame_id: 'map'
+pose:
+  position:
+    x: 1.0
+    y: 0.475
+    z: 0.0
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: 1.0
+    w: 0.0

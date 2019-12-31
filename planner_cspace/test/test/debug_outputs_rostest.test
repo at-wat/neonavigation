@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
+    <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
+    <param name="ang_resolution" value="16"/>
+    <param name="linear_expand" value="0.1"/>
+    <param name="linear_spread" value="0.0"/>
+    <rosparam>
+    static_layers:
+    - name: unknown
+      type: Costmap3dLayerUnknownHandle
+      unknown_cost: 100
+    layers:
+    - name: overlay
+      type: Costmap3dLayerFootprint
+      overlay_mode: max
+    </rosparam>
+  </node>
+  <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="screen">
+    <remap from="move_base_simple/goal" to="goal" />
+    <param name="remember_updates" value="true" />
+    <param name="remember_hit_prob" value="0.99" />
+    <param name="remember_hit_miss" value="0.01" />
+    <param name="hist_ignore_range" value="0.0" />
+    <param name="hist_ignore_range_max" value="1.0" />
+    <param name="pos_jump" value="100.0" />
+    <param name="yaw_jump" value="100.0" />
+  </node>
+
+  <node pkg="map_server" type="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml" />
+  <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
+    <remap from="map_local" to="overlay" />
+    <param name="width" value="15" />
+    <param name="hz" value="5.0" />
+  </node>
+
+  <node pkg="rostopic" type="rostopic" name="pub_goal"
+    args="pub -l /goal geometry_msgs/PoseStamped -f $(find planner_cspace)/test/data/goal_debug_outputs.yaml" />
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+      args="0 0 0 0 0 0 map odom" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf2"
+      args="2.5 0.5 0 3.14 0 0 odom base_link" />
+
+  <test test-name="test_debug_outputs" pkg="planner_cspace" type="test_debug_outputs" time-limit="15.0" />
+</launch>

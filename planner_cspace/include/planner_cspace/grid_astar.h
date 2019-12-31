@@ -54,6 +54,7 @@ class GridAstar
 public:
   using Vec = CyclicVecInt<DIM, NONCYCLIC>;
   using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
+  using VecWithCost = typename GridAstarModelBase<DIM, NONCYCLIC>::VecWithCost;
 
   template <class T, int block_width = 0x20>
   class Gridmap : public BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
@@ -68,15 +69,11 @@ public:
     float p_raw_;
     Vec v_;
 
-    PriorityVec()
+    PriorityVec(const float p, const float p_raw, const Vec& v)
+      : p_(p)
+      , p_raw_(p_raw)
+      , v_(v)
     {
-      p_ = 0;
-    }
-    PriorityVec(const float& p, const float& p_raw, const Vec& v)
-    {
-      p_ = p;
-      p_raw_ = p_raw;
-      v_ = v;
     }
     bool operator<(const PriorityVec& b) const
     {
@@ -84,13 +81,41 @@ public:
       return p_ > b.p_;
     }
   };
+  class GridmapUpdate
+  {
+  private:
+    const Vec p0_;
+    const Vec p1_;
+    const float cost_estim_;
+    const float cost_;
 
-protected:
-  Gridmap<float> g_;
-  std::unordered_map<Vec, Vec, Vec> parents_;
-  reservable_priority_queue<PriorityVec> open_;
-  size_t queue_size_limit_;
-  size_t search_task_num_;
+  public:
+    GridmapUpdate(
+        const Vec& p0, const Vec& p1,
+        const float cost_estim, const float cost)
+      : p0_(p0)
+      , p1_(p1)
+      , cost_estim_(cost_estim)
+      , cost_(cost)
+    {
+    }
+    const Vec& getParentPos() const
+    {
+      return p0_;
+    }
+    const Vec& getPos() const
+    {
+      return p1_;
+    }
+    const float getCost() const
+    {
+      return cost_;
+    }
+    const PriorityVec getPriorityVec() const
+    {
+      return PriorityVec(cost_estim_, cost_, p1_);
+    }
+  };
 
 public:
   constexpr int getDim() const
@@ -129,7 +154,7 @@ public:
   }
 
   bool search(
-      const Vec& s, const Vec& e,
+      const std::vector<VecWithCost>& ss, const Vec& e,
       std::list<Vec>& path,
       const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
       std::function<bool(const std::list<Vec>&)> cb_progress,
@@ -137,13 +162,16 @@ public:
       const float progress_interval,
       const bool return_best = false)
   {
-    return searchImpl(g_, s, e, path,
-                      model, cb_progress,
-                      cost_leave, progress_interval, return_best);
+    return searchImpl(
+        g_, ss, e, path,
+        model, cb_progress,
+        cost_leave, progress_interval, return_best);
   }
+
+protected:
   bool searchImpl(
       Gridmap<float>& g,
-      const Vec& st, const Vec& en,
+      const std::vector<VecWithCost>& sts, const Vec& en,
       std::list<Vec>& path,
       const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
       std::function<bool(const std::list<Vec>&)> cb_progress,
@@ -151,157 +179,211 @@ public:
       const float progress_interval,
       const bool return_best = false)
   {
-    if (st == en)
-    {
+    if (sts.size() == 0)
       return false;
-    }
-    Vec s = st;
+
+    auto ts = boost::chrono::high_resolution_clock::now();
+
     Vec e = en;
-    for (int i = NONCYCLIC; i < DIM; i++)
-    {
-      s.cycleUnsigned(g.size());
-      e.cycleUnsigned(g.size());
-    }
+    e.cycleUnsigned(g.size());
     g.clear(FLT_MAX);
     open_.clear();
     parents_.clear();
 
-    g[s] = 0;
-    open_.push(PriorityVec(model->costEstim(s, e), 0, s));
-
-    auto ts = boost::chrono::high_resolution_clock::now();
-
-    Vec better = s;
-    int cost_estim_min = model->costEstim(s, e);
-
-    while (true)
+    std::vector<VecWithCost> ss_normalized;
+    Vec better;
+    int cost_estim_min = INT_MAX;
+    for (const VecWithCost& st : sts)
     {
-      // Fetch tasks to be paralellized
-      if (open_.size() < 1)
-      {
-        // No fesible path
-        if (return_best)
-        {
-          findPath(s, better, path);
-        }
+      if (st.v_ == en)
         return false;
-      }
-      bool found(false);
-      std::vector<PriorityVec> centers;
-      for (size_t i = 0; i < search_task_num_; ++i)
+
+      Vec s = st.v_;
+      s.cycleUnsigned(g.size());
+      ss_normalized.emplace_back(s, st.c_);
+      g[s] = st.c_;
+
+      const int cost_estim = model->costEstim(s, e);
+      open_.emplace(cost_estim + st.c_, st.c_, s);
+      if (cost_estim_min > cost_estim)
       {
-        if (open_.size() == 0)
-          break;
-        PriorityVec center = open_.top();
-        open_.pop();
-        if (center.v_ == e || center.p_ - center.p_raw_ <= cost_leave)
+        cost_estim_min = cost_estim;
+        better = s;
+      }
+    }
+
+    std::vector<PriorityVec> centers;
+    centers.reserve(search_task_num_);
+
+    bool found(false);
+#pragma omp parallel
+    {
+      std::vector<GridmapUpdate> updates;
+      // Reserve buffer using example search diff list
+      updates.reserve(
+          search_task_num_ *
+          model->searchGrids(ss_normalized[0].v_, ss_normalized, e).size() /
+          omp_get_num_threads());
+      std::vector<Vec> dont;
+      dont.reserve(search_task_num_);
+
+      while (true)
+      {
+#pragma omp barrier
+#pragma omp single
         {
-          e = center.v_;
-          found = true;
-          break;
+          // Fetch tasks to be paralellized
+          centers.clear();
+          for (size_t i = 0; i < search_task_num_;)
+          {
+            if (open_.size() == 0)
+              break;
+            PriorityVec center(open_.top());
+            open_.pop();
+            if (center.v_ == e || center.p_ - center.p_raw_ <= cost_leave)
+            {
+              e = center.v_;
+              found = true;
+              break;
+            }
+            centers.emplace_back(std::move(center));
+            ++i;
+          }
+          const auto tnow = boost::chrono::high_resolution_clock::now();
+          if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
+          {
+            std::list<Vec> path_tmp;
+            ts = tnow;
+            findPath(ss_normalized, better, path_tmp);
+            cb_progress(path_tmp);
+          }
         }
-        centers.push_back(center);
-      }
-      if (found)
-        break;
-      auto tnow = boost::chrono::high_resolution_clock::now();
-      if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
-      {
-        std::list<Vec> path_tmp;
-        ts = tnow;
-        findPath(s, better, path_tmp);
-        cb_progress(path_tmp);
-      }
+        if (centers.size() < 1 || found)
+          break;
+        updates.clear();
+        dont.clear();
 
-#pragma omp parallel for schedule(static)
-      for (auto it = centers.begin(); it < centers.end(); ++it)
-      {
-        const Vec p = it->v_;
-        const float c = it->p_raw_;
-        const float c_estim = it->p_;
-        float& gp = g[p];
-        if (c > gp)
-          continue;
-
-        if (c_estim - c < cost_estim_min)
+#pragma omp for schedule(static)
+        for (auto it = centers.cbegin(); it < centers.cend(); ++it)
         {
-          cost_estim_min = c_estim - c;
-          better = p;
-        }
+          const Vec p = it->v_;
+          const float c = it->p_raw_;
+          const float c_estim = it->p_;
+          const float gp = g[p];
+          if (c > gp)
+            continue;
 
-        const std::vector<Vec>& search_list = model->searchGrids(p, s, e);
-        int updates = 0;
+          if (c_estim - c < cost_estim_min)
+          {
+            cost_estim_min = c_estim - c;
+            better = p;
+          }
 
-        for (auto it = search_list.begin(); it < search_list.end(); ++it)
-        {
-          while (1)
+          const std::vector<Vec> search_list = model->searchGrids(p, ss_normalized, e);
+
+          bool updated(false);
+          for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
           {
             Vec next = p + *it;
-            for (int i = NONCYCLIC; i < DIM; i++)
+            next.cycleUnsigned(g.size());
+            if (next.isExceeded(g.size()))
+              continue;
+
+            if (g[next] < gp)
             {
-              next.cycleUnsigned(g.size());
+              // Skip as this search task has no chance to find better way.
+              continue;
             }
-            if ((unsigned int)next[0] >= (unsigned int)g.size()[0] ||
-                (unsigned int)next[1] >= (unsigned int)g.size()[1])
-              break;
-            if (g[next] < 0)
-              break;
 
             const float cost_estim = model->costEstim(next, e);
             if (cost_estim < 0 || cost_estim == FLT_MAX)
-              break;
+              continue;
 
-            const float cost = model->cost(p, next, s, e);
+            const float cost = model->cost(p, next, ss_normalized, e);
             if (cost < 0 || cost == FLT_MAX)
-              break;
+              continue;
 
-            float& gnext = g[next];
-            if (gnext > c + cost)
+            const float cost_next = c + cost;
+            if (g[next] > cost_next)
             {
-              gnext = c + cost;
-#pragma omp critical
-              {
-                parents_[next] = p;
-                open_.push(PriorityVec(c + cost + cost_estim, c + cost, next));
-                if (queue_size_limit_ > 0 &&
-                    open_.size() > queue_size_limit_)
-                  open_.pop_back();
-              }
-              updates++;
+              updated = true;
+              updates.emplace_back(p, next, cost_next + cost_estim, cost_next);
             }
-            break;
           }
+          if (!updated)
+            dont.push_back(p);
         }
-        if (updates == 0)
+#pragma omp barrier
+#pragma omp critical
         {
-          gp = -1;
-        }
+          for (const GridmapUpdate& u : updates)
+          {
+            if (g[u.getPos()] > u.getCost())
+            {
+              g[u.getPos()] = u.getCost();
+              parents_[u.getPos()] = u.getParentPos();
+              open_.push(std::move(u.getPriorityVec()));
+              if (queue_size_limit_ > 0 && open_.size() > queue_size_limit_)
+                open_.pop_back();
+            }
+          }
+          for (const Vec& p : dont)
+          {
+            g[p] = -1;
+          }
+        }  // omp critical
       }
-      // printf("(parents %d)\n", (int)parents_.size());
-    }
-    // printf("AStar search finished (parents %d)\n", (int)parents_.size());
+    }  // omp parallel
 
-    return findPath(s, e, path);
+    if (!found)
+    {
+      // No fesible path
+      if (return_best)
+      {
+        findPath(ss_normalized, better, path);
+      }
+      return false;
+    }
+    return findPath(ss_normalized, e, path);
   }
-  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path)
+  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path) const
   {
+    return findPath(std::vector<VecWithCost>(1, VecWithCost(s)), e, path);
+  }
+  bool findPath(const std::vector<VecWithCost>& ss, const Vec& e, std::list<Vec>& path) const
+  {
+    std::unordered_map<Vec, Vec, Vec> parents = parents_;
     Vec n = e;
     while (true)
     {
       path.push_front(n);
-      // printf("p- %d %d %d   %0.4f\n", n[0], n[1], n[2], g_[n]);
-      if (n == s)
-        break;
-      if (parents_.find(n) == parents_.end())
+
+      bool found(false);
+      for (const VecWithCost& s : ss)
       {
-        n = parents_[n];
-        // printf("px %d %d %d\n", n[0], n[1], n[2]);
-        return false;
+        if (n == s.v_)
+        {
+          found = true;
+          break;
+        }
       }
-      n = parents_[n];
+      if (found)
+        break;
+      if (parents.find(n) == parents.end())
+        return false;
+
+      const Vec child = n;
+      n = parents[child];
+      parents.erase(child);
     }
     return true;
   }
+
+  Gridmap<float> g_;
+  std::unordered_map<Vec, Vec, Vec> parents_;
+  reservable_priority_queue<PriorityVec> open_;
+  size_t queue_size_limit_;
+  size_t search_task_num_;
 };
 
 #endif  // PLANNER_CSPACE_GRID_ASTAR_H

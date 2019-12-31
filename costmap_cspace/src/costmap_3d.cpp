@@ -113,8 +113,15 @@ protected:
       const costmap_cspace::CSpace3DMsg::Ptr map,
       const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
   {
-    publishDebug(*map);
-    pub_costmap_update_.publish(*update);
+    if (update)
+    {
+      publishDebug(*map);
+      pub_costmap_update_.publish(*update);
+    }
+    else
+    {
+      ROS_WARN("Updated region of the costmap is empty. The position may be out-of-boundary, or input map is wrong.");
+    }
     return true;
   }
   void publishDebug(const costmap_cspace_msgs::CSpace3D& map)

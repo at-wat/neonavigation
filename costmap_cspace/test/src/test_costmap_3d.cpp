@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, the neonavigation authors
+ * Copyright (c) 2016-2019, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,17 +82,17 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 
   // Check local footprint
   const costmap_cspace::Polygon polygon = cm.getFootprint();
-  ASSERT_EQ(polygon.v.size(), 3u + 1u);
-  ASSERT_EQ(polygon.v[0][0], 1.5);
-  ASSERT_EQ(polygon.v[0][1], 0.0);
-  ASSERT_EQ(polygon.v[1][0], -0.5);
-  ASSERT_EQ(polygon.v[1][1], -0.5);
-  ASSERT_EQ(polygon.v[2][0], -0.5);
-  ASSERT_EQ(polygon.v[2][1], 0.5);
+  ASSERT_EQ(3u + 1u, polygon.v.size());
+  ASSERT_EQ(1.5, polygon.v[0][0]);
+  ASSERT_EQ(0.0, polygon.v[0][1]);
+  ASSERT_EQ(-0.5, polygon.v[1][0]);
+  ASSERT_EQ(-0.5, polygon.v[1][1]);
+  ASSERT_EQ(-0.5, polygon.v[2][0]);
+  ASSERT_EQ(0.5, polygon.v[2][1]);
   // Last point is same as the first point
-  ASSERT_EQ(polygon.v[3][0], 1.5);
-  ASSERT_EQ(polygon.v[3][1], 0.0);
-  ASSERT_EQ(cm.getFootprintRadius(), 1.5);
+  ASSERT_EQ(1.5, polygon.v[3][0]);
+  ASSERT_EQ(0.0, polygon.v[3][1]);
+  ASSERT_EQ(1.5, cm.getFootprintRadius());
 
   // Generate CSpace pattern around the robot
   costmap_cspace_msgs::MapMetaData3D map_info;
@@ -105,7 +105,7 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 
   cm.setMapMetaData(map_info);
 
-  ASSERT_EQ(cm.getRangeMax(), static_cast<int>(ceilf(1.5 / 1.0)));
+  ASSERT_EQ(static_cast<int>(ceilf(1.5 / 1.0)), cm.getRangeMax());
 
   const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
   // Check template size
@@ -113,12 +113,12 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
   int cx, cy, ca;
   temp.getSize(x, y, a);
   temp.getCenter(cx, cy, ca);
-  ASSERT_EQ(x, 2 * 2 + 1);
-  ASSERT_EQ(y, 2 * 2 + 1);
-  ASSERT_EQ(a, 4);
-  ASSERT_EQ(cx, 2);
-  ASSERT_EQ(cy, 2);
-  ASSERT_EQ(ca, 0);
+  ASSERT_EQ(2 * 2 + 1, x);
+  ASSERT_EQ(2 * 2 + 1, y);
+  ASSERT_EQ(4, a);
+  ASSERT_EQ(2, cx);
+  ASSERT_EQ(2, cy);
+  ASSERT_EQ(0, ca);
 
   // Check generated template
   for (int k = -ca; k < a - ca; ++k)
@@ -129,21 +129,18 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
       {
         if (i == 0 && j == 0)
         {
-          ASSERT_EQ(temp.e(i, j, k), 100);
+          ASSERT_EQ(100, temp.e(i, j, k));
         }
         else if (i == temp_dir[k + ca][0] && j == temp_dir[k + ca][1])
         {
-          ASSERT_EQ(temp.e(i, j, k), 100);
+          ASSERT_EQ(100, temp.e(i, j, k));
         }
         else
         {
-          ASSERT_EQ(temp.e(i, j, k), 0);
+          ASSERT_EQ(0, temp.e(i, j, k));
         }
-        // std::cout << std::setfill(' ') << std::setw(3) << static_cast<int>(temp.e(i, j, k)) << " ";
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 }
 
@@ -167,7 +164,7 @@ TEST(Costmap3dLayerPlain, CSpaceTemplate)
 
   cm.setMapMetaData(map_info);
 
-  ASSERT_EQ(cm.getRangeMax(), 0);
+  ASSERT_EQ(0, cm.getRangeMax());
 
   const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
   // Check template size
@@ -175,17 +172,17 @@ TEST(Costmap3dLayerPlain, CSpaceTemplate)
   int cx, cy, ca;
   temp.getSize(x, y, a);
   temp.getCenter(cx, cy, ca);
-  ASSERT_EQ(x, 1);
-  ASSERT_EQ(y, 1);
-  ASSERT_EQ(a, 4);
-  ASSERT_EQ(cx, 0);
-  ASSERT_EQ(cy, 0);
-  ASSERT_EQ(ca, 0);
+  ASSERT_EQ(1, x);
+  ASSERT_EQ(1, y);
+  ASSERT_EQ(4, a);
+  ASSERT_EQ(0, cx);
+  ASSERT_EQ(0, cy);
+  ASSERT_EQ(0, ca);
 
   // Check generated template
   for (int k = -ca; k < a - ca; ++k)
   {
-    ASSERT_EQ(temp.e(0, 0, k), 100);
+    ASSERT_EQ(100, temp.e(0, 0, k));
   }
 }
 
@@ -222,16 +219,12 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
       for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
-        // All grid must be 0
-        ASSERT_EQ(cost, 0);
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        // All grid must be unknown at initialization
+        ASSERT_EQ(0, cost);
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 
-  // std::cout << "========" << std::endl;
   for (auto& g : map->data)
   {
     g = 100;
@@ -245,12 +238,9 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
         // All grid must be 100
-        ASSERT_EQ(cost, 100);
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        ASSERT_EQ(100, cost);
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 
   // C shape wall in the map
@@ -287,17 +277,14 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
         }
         if (map->data[i + j * map->info.width] == 100 || cost_offset == 100)
         {
-          ASSERT_EQ(cost, 100);
+          ASSERT_EQ(100, cost);
         }
         else
         {
-          ASSERT_EQ(cost, 0);
+          ASSERT_EQ(0, cost);
         }
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 }
 
@@ -328,8 +315,9 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
 
   const int max_cost = 80;
   map->data[map->info.width / 2 + (map->info.height / 2) * map->info.width] = max_cost;
-  cm.setBaseMap(map);
+  map->data[map->info.width / 2 + 1 + (map->info.height / 2) * map->info.width] = -1;
 
+  cm.setBaseMap(map);
   for (int k = 0; k < cm.getAngularGrid(); ++k)
   {
     const int i_center = map->info.width / 2;
@@ -345,29 +333,33 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
         const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
         const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
         const float dist = std::min(dist1, dist2);
-        if (dist <= expand)
+
+        if (i == static_cast<size_t>(i_center + 1) &&
+            j == static_cast<size_t>(j_center))
+        {
+          // Unknown cell must be unknown
+          EXPECT_EQ(-1, cost);
+        }
+        else if (dist <= expand)
         {
           // Inside expand range must be max_cost
-          EXPECT_EQ(cost, max_cost);
+          EXPECT_EQ(max_cost, cost);
         }
         else if (dist <= expand + spread)
         {
           // Between expand and spread must be intermidiate value
-          EXPECT_NE(cost, 0);
-          EXPECT_NE(cost, 100);
+          EXPECT_NE(0, cost);
+          EXPECT_NE(100, cost);
         }
         else if (dist > expand + spread + 1)
         {
           // Outside must be zero
           // Since the template is calculated by the precised footprint not by the grid,
           // tolerance of test (+1) is needed.
-          EXPECT_EQ(cost, 0);
+          EXPECT_EQ(0, cost);
         }
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
       }
-      // std::cout << std::endl;
     }
-    // std::cout << "----" << std::endl;
   }
 }
 
@@ -452,12 +444,12 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm_over->processMapOverlay(map2);
 
   // In this case, updated map must have same size as the base map. Check it.
-  ASSERT_EQ(updated->x, 0u);
-  ASSERT_EQ(updated->y, 0u);
-  ASSERT_EQ(updated->yaw, 0u);
-  ASSERT_EQ(updated->width, map->info.width);
-  ASSERT_EQ(updated->height, map->info.height);
-  ASSERT_EQ(updated->angle, static_cast<size_t>(cm_over->getAngularGrid()));
+  ASSERT_EQ(0u, updated->x);
+  ASSERT_EQ(0u, updated->y);
+  ASSERT_EQ(0u, updated->yaw);
+  ASSERT_EQ(map->info.width, updated->width);
+  ASSERT_EQ(map->info.height, updated->height);
+  ASSERT_EQ(static_cast<size_t>(cm_over->getAngularGrid()), updated->angle);
 
   // Generate reference local and base cspace map
   cm_ref.setBaseMap(map2);
@@ -476,20 +468,9 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
         const int cost = updated->data[addr];
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
 
-        ASSERT_EQ(cost, cost_ref);
-
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        ASSERT_EQ(cost_ref, cost);
       }
-      /*std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
-      {
-        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
-        std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
-      }
-      std::cout << std::endl;
-      */
     }
-    // std::cout << "----" << std::endl;
   }
   // Set MAX mode and check
   cm_over->setAngleResolution(4);
@@ -506,12 +487,12 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm_output->setHandler(cb_max);
   cm_over->processMapOverlay(map2);
 
-  ASSERT_EQ(updated_max->x, 0u);
-  ASSERT_EQ(updated_max->y, 0u);
-  ASSERT_EQ(updated_max->yaw, 0u);
-  ASSERT_EQ(updated_max->width, map->info.width);
-  ASSERT_EQ(updated_max->height, map->info.height);
-  ASSERT_EQ(updated_max->angle, static_cast<size_t>(cm_over->getAngularGrid()));
+  ASSERT_EQ(0u, updated_max->x);
+  ASSERT_EQ(0u, updated_max->y);
+  ASSERT_EQ(0u, updated_max->yaw);
+  ASSERT_EQ(map->info.width, updated_max->width);
+  ASSERT_EQ(map->info.height, updated_max->height);
+  ASSERT_EQ(static_cast<size_t>(cm_over->getAngularGrid()), updated_max->angle);
 
   for (int k = 0; k < cm_over->getAngularGrid(); ++k)
   {
@@ -526,27 +507,9 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
         const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);
         const int cost_max = std::max(cost_ref, cost_base);
 
-        ASSERT_EQ(cost, cost_max);
-
-        // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
+        ASSERT_EQ(cost_max, cost);
       }
-      /*
-      std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
-      {
-        const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
-        std::cout << std::setfill(' ') << std::setw(3) << cost_ref << " ";
-      }
-      std::cout << "  |  ";
-      for (int i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
-      {
-        const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);
-        std::cout << std::setfill(' ') << std::setw(3) << cost_base << " ";
-      }
-      std::cout << std::endl;
-      */
     }
-    // std::cout << "----" << std::endl;
   }
 }
 
@@ -590,11 +553,6 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
     {
       map2->info.origin.position.x = map2->info.resolution * xp;
       map2->info.origin.position.y = map2->info.resolution * yp;
-      /*
-      std::cout << "=== origin: ("
-                << map2->info.origin.position.x << ", " << map2->info.origin.position.y
-                << ")" << std::endl;
-      */
       cm_over->processMapOverlay(map2);
       for (int k = 0; k < cm_over->getAngularGrid(); ++k)
       {
@@ -614,18 +572,147 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
                 (i == i_center + xp && j == j_center + yp) ||
                 (i == i_center2 + xp && j == j_center2 + yp))
             {
-              ASSERT_EQ(cost, max_cost);
+              ASSERT_EQ(max_cost, cost);
             }
             else
             {
-              ASSERT_EQ(cost, 0);
+              ASSERT_EQ(0, cost);
             }
-            // std::cout << std::setfill(' ') << std::setw(3) << cost << " ";
           }
-          // std::cout << std::endl;
         }
-        // std::cout << "----" << std::endl;
       }
+    }
+  }
+}
+
+TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
+{
+  struct TestData
+  {
+    struct Input
+    {
+      float x;
+      float y;
+    };
+    struct Expected
+    {
+      unsigned int x;
+      unsigned int y;
+      unsigned int yaw;
+      unsigned int width;
+      unsigned int height;
+      unsigned int angle;
+    };
+    std::string name;
+    Input input;
+    bool valid;
+    Expected expected;
+  };
+  const TestData dataset[] =
+      {
+        { "inside0", { 0.0, 0.0 }, true, { 0u, 0u, 0u, 2u, 2u, 4u } },
+        { "inside1", { 1.0, 0.0 }, true, { 1u, 0u, 0u, 2u, 2u, 4u } },
+        { "half-outside x0", { -1.0, 0.0 }, true, { 0u, 0u, 0u, 1u, 2u, 4u } },
+        { "half-outside x1", { 3.0, 0.0 }, true, { 3u, 0u, 0u, 1u, 2u, 4u } },
+        { "half-outside y0", { 0.0, -1.0 }, true, { 0u, 0u, 0u, 2u, 1u, 4u } },
+        { "half-outside y1", { 0.0, 3.0 }, true, { 0u, 3u, 0u, 2u, 1u, 4u } },
+        { "half-outside xy0", { -1.0, -1.0 }, true, { 0u, 0u, 0u, 1u, 1u, 4u } },
+        { "half-outside xy1", { 3.0, -1.0 }, true, { 3u, 0u, 0u, 1u, 1u, 4u } },
+        { "half-outside xy2", { 3.0, 3.0 }, true, { 3u, 3u, 0u, 1u, 1u, 4u } },
+        { "half-outside xy3", { -1.0, 3.0 }, true, { 0u, 3u, 0u, 1u, 1u, 4u } },
+        { "boundary x0", { -2.0, 0.0 }, false },
+        { "boundary x1", { 4, 0.0 }, false },
+        { "boundary y0", { 0, -2.0 }, false },
+        { "boundary y1", { 0, 4.0 }, false },
+        { "boundary xy0", { -2.0, -2.0 }, false },
+        { "boundary xy1", { 4.0, -2.0 }, false },
+        { "boundary xy2", { 4.0, 4.0 }, false },
+        { "boundary xy3", { -2.0, 4.0 }, false },
+        { "outside x0", { -3.0, 0.0 }, false },
+        { "outside x1", { 5, 0.0 }, false },
+        { "outside y0", { 0, -3.0 }, false },
+        { "outside y1", { 0, 5.0 }, false },
+        { "outside xy0", { -3.0, -3.0 }, false },
+        { "outside xy1", { 5.0, -3.0 }, false },
+        { "outside xy2", { 5.0, 5.0 }, false },
+        { "outside xy3", { -3.0, 5.0 }, false },
+      };
+
+  for (auto& d : dataset)
+  {
+    const std::string test_name = "Case [" + d.name + "]";
+    // Settings: 4 angular grids
+    costmap_cspace::Costmap3d cms(4);
+    auto cm = cms.addRootLayer<costmap_cspace::Costmap3dLayerPlain>();
+    auto cm_stop = cms.addLayer<costmap_cspace::Costmap3dLayerStopPropagation>();
+    auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerPlain>(
+        costmap_cspace::MapOverlayMode::OVERWRITE);
+    auto cm_output = cms.addLayer<costmap_cspace::Costmap3dLayerOutput>();
+
+    // Generate two sample maps
+    nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+    map->info.width = 4;
+    map->info.height = 4;
+    map->info.resolution = 1.0;
+    map->info.origin.orientation.w = 1.0;
+    map->data.resize(map->info.width * map->info.height);
+
+    nav_msgs::OccupancyGrid::Ptr map2(new nav_msgs::OccupancyGrid);
+    map2->info.width = 2;
+    map2->info.height = 2;
+    map2->info.resolution = 1.0;
+    map2->info.origin.orientation.w = 1.0;
+    map2->info.origin.position.x = d.input.x;
+    map2->info.origin.position.y = d.input.y;
+    map2->data.resize(map->info.width * map->info.height);
+
+    // Apply base map
+    cm->setBaseMap(map);
+
+    // Overlay local map
+    costmap_cspace_msgs::CSpace3DUpdate::Ptr updated;
+    auto cb = [&updated](
+        const costmap_cspace::CSpace3DMsg::Ptr& map,
+        const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+    {
+      updated = update;
+      return true;
+    };
+    cm_output->setHandler(cb);
+    // First pass of the processing contains parent layer updates
+    cm_over->processMapOverlay(map2);
+
+    if (d.valid)
+    {
+      ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
+      EXPECT_EQ(0u, updated->x) << test_name;
+      EXPECT_EQ(0u, updated->y) << test_name;
+      EXPECT_EQ(0u, updated->yaw) << test_name;
+      EXPECT_EQ(map->info.width, updated->width) << test_name;
+      EXPECT_EQ(map->info.height, updated->height) << test_name;
+      EXPECT_EQ(4u, updated->angle) << test_name;
+    }
+    else
+    {
+      EXPECT_FALSE(static_cast<bool>(updated)) << test_name;
+    }
+
+    // Second pass has only local updates
+    cm_over->processMapOverlay(map2);
+
+    if (d.valid)
+    {
+      ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
+      EXPECT_EQ(d.expected.x, updated->x) << test_name;
+      EXPECT_EQ(d.expected.y, updated->y) << test_name;
+      EXPECT_EQ(d.expected.yaw, updated->yaw) << test_name;
+      EXPECT_EQ(d.expected.width, updated->width) << test_name;
+      EXPECT_EQ(d.expected.height, updated->height) << test_name;
+      EXPECT_EQ(d.expected.angle, updated->angle) << test_name;
+    }
+    else
+    {
+      EXPECT_FALSE(static_cast<bool>(updated)) << test_name;
     }
   }
 }

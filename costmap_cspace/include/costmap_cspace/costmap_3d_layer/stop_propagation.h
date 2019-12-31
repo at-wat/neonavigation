@@ -42,7 +42,7 @@ namespace costmap_cspace
 class Costmap3dLayerStopPropagation : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
+  using Ptr = std::shared_ptr<Costmap3dLayerStopPropagation>;
 
 public:
   void loadConfig(XmlRpc::XmlRpcValue config)
@@ -59,7 +59,8 @@ protected:
   }
   bool updateChain(const bool output)
   {
-    region_ = UpdatedRegion(0, 0, 0, 0, 0, 0, ros::Time(0));
+    region_ = UpdatedRegion(
+        0, 0, 0, map_->info.width, map_->info.height, map_->info.angle, ros::Time(0));
     for (auto& c : map_overlay_->data)
       c = -1;
     return false;
