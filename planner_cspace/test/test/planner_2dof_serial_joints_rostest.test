@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="neonavigation_compatible" value="1" />
+
+  <test test-name="test_planner_2dof_serial_joints" pkg="planner_cspace" type="test_planner_2dof_serial_joints" time-limit="60.0" />
+
+  <node pkg="planner_cspace" type="planner_2dof_serial_joints" name="planner_2dof_serial_joints" output="screen">
+    <param name="num_groups" value="1" />
+    <param name="replan_interval" value="1.0" />
+
+    <param name="group0/link0_name" value="front" />
+    <param name="group0/link1_name" value="rear" />
+    <param name="group0/resolution" value="128" />
+    <param name="group0/weight_cost" value="4.0" />
+    <param name="group0/expand" value="0.15" />
+
+    <param name="group0/link0_joint_radius" value="0.5" />
+    <param name="group0/link1_joint_radius" value="0.5" />
+    <param name="group0/link0_end_radius" value="0.5" />
+    <param name="group0/link1_end_radius" value="0.5" />
+    <param name="group0/link0_x" value="1.0" />
+    <param name="group0/link1_x" value="-1.0" />
+    <param name="group0/link0_y" value="0.0" />
+    <param name="group0/link1_y" value="0.0" />
+    <param name="group0/link0_th" value="0.0" />
+    <param name="group0/link1_th" value="0.0" />
+    <param name="group0/link0_gain_th" value="-1.0" />
+    <param name="group0/link1_gain_th" value="1.0" />
+    <param name="group0/link0_length" value="1.0" />
+    <param name="group0/link1_length" value="1.0" />
+  </node>
+</launch>

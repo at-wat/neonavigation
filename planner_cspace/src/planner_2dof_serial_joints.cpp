@@ -171,6 +171,7 @@ private:
   sensor_msgs::JointState joint_;
   ros::Time replan_prev_;
   ros::Duration replan_interval_;
+  bool has_joint_states_;
 
   void cbJoint(const sensor_msgs::JointState::ConstPtr& msg)
   {
@@ -189,29 +190,30 @@ private:
     }
     links_[0].current_th_ = msg->position[id[0]];
     links_[1].current_th_ = msg->position[id[1]];
+    has_joint_states_ = true;
 
-    if (replan_prev_ + replan_interval_ < ros::Time::now() &&
-        replan_interval_ > ros::Duration(0) &&
-        replan_prev_ != ros::Time(0))
+    if ((replan_prev_ + replan_interval_ < ros::Time::now() ||
+         replan_prev_ == ros::Time(0)) &&
+        replan_interval_ > ros::Duration(0))
     {
       replan();
     }
   }
-  std::pair<ros::Duration, std::pair<float, float>> cmd_prev;
-  trajectory_msgs::JointTrajectory traj_prev;
-  int id[2];
+  std::pair<ros::Duration, std::pair<float, float>> cmd_prev_;
+  trajectory_msgs::JointTrajectory traj_prev_;
+  int id_[2];
   void cbTrajectory(const trajectory_msgs::JointTrajectory::ConstPtr& msg)
   {
-    id[0] = -1;
-    id[1] = -1;
+    id_[0] = -1;
+    id_[1] = -1;
     for (size_t i = 0; i < msg->joint_names.size(); i++)
     {
       if (msg->joint_names[i].compare(links_[0].name_) == 0)
-        id[0] = i;
+        id_[0] = i;
       else if (msg->joint_names[i].compare(links_[1].name_) == 0)
-        id[1] = i;
+        id_[1] = i;
     }
-    if (id[0] == -1 || id[1] == -1)
+    if (id_[0] == -1 || id_[1] == -1)
     {
       ROS_ERROR("joint_trajectory does not contains link group %s.", group_.c_str());
       return;
@@ -220,34 +222,37 @@ private:
     {
       ROS_ERROR("single trajectory point required.");
     }
-    decltype(cmd_prev) cmd;
+    decltype(cmd_prev_) cmd;
     cmd.first = msg->points[0].time_from_start;
-    cmd.second.first = msg->points[0].positions[id[0]];
-    cmd.second.second = msg->points[0].positions[id[1]];
-    if (cmd_prev == cmd)
+    cmd.second.first = msg->points[0].positions[id_[0]];
+    cmd.second.second = msg->points[0].positions[id_[1]];
+    if (cmd_prev_ == cmd)
       return;
-    cmd_prev = cmd;
-    traj_prev = *msg;
+    cmd_prev_ = cmd;
+    traj_prev_ = *msg;
     avg_vel_ = -1.0;
 
     replan();
   }
   void replan()
   {
+    if (!has_joint_states_)
+      return;
+
     replan_prev_ = ros::Time::now();
-    if (id[0] == -1 || id[1] == -1)
+    if (id_[0] == -1 || id_[1] == -1)
       return;
 
     Astar::Vecf start(
         links_[0].current_th_,
         links_[1].current_th_);
     Astar::Vecf end(
-        static_cast<float>(traj_prev.points[0].positions[id[0]]),
-        static_cast<float>(traj_prev.points[0].positions[id[1]]));
+        static_cast<float>(traj_prev_.points[0].positions[id_[0]]),
+        static_cast<float>(traj_prev_.points[0].positions[id_[1]]));
 
     ROS_INFO("link %s: %0.3f, %0.3f", group_.c_str(),
-             traj_prev.points[0].positions[id[0]],
-             traj_prev.points[0].positions[id[1]]);
+             traj_prev_.points[0].positions[id_[0]],
+             traj_prev_.points[0].positions[id_[1]]);
 
     ROS_INFO("Start searching");
     std::list<Astar::Vecf> path;
@@ -271,13 +276,13 @@ private:
             pos_sum += diff_max;
           }
         }
-        if (traj_prev.points[0].time_from_start <= ros::Duration(0))
+        if (traj_prev_.points[0].time_from_start <= ros::Duration(0))
         {
           avg_vel_ = std::min(links_[0].vmax_, links_[1].vmax_);
         }
         else
         {
-          avg_vel_ = pos_sum / traj_prev.points[0].time_from_start.toSec();
+          avg_vel_ = pos_sum / traj_prev_.points[0].time_from_start.toSec();
           if (avg_vel_ > links_[0].vmax_)
             avg_vel_ = links_[0].vmax_;
           if (avg_vel_ > links_[1].vmax_)
@@ -286,7 +291,7 @@ private:
       }
 
       trajectory_msgs::JointTrajectory out;
-      out.header = traj_prev.header;
+      out.header = traj_prev_.header;
       out.header.stamp = ros::Time(0);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
@@ -352,7 +357,7 @@ private:
     else
     {
       trajectory_msgs::JointTrajectory out;
-      out.header = traj_prev.header;
+      out.header = traj_prev_.header;
       out.header.stamp = ros::Time(0);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
@@ -376,6 +381,7 @@ public:
     : nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
+    , has_joint_states_(false)
   {
     neonavigation_common::compat::checkCompatMode();
     group_ = group_name;
@@ -435,6 +441,8 @@ public:
 
     links_[0].current_th_ = 0.0;
     links_[1].current_th_ = 0.0;
+    id_[0] = -1;
+    id_[1] = -1;
 
     ROS_INFO("link group: %s", group_.c_str());
     ROS_INFO(" - link0: %s", links_[0].name_.c_str());

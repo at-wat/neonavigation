@@ -78,3 +78,10 @@ add_rostest_gtest(test_costmap_watchdog
 )
 target_link_libraries(test_costmap_watchdog ${catkin_LIBRARIES})
 add_dependencies(test_costmap_watchdog planner_3d)
+
+add_rostest_gtest(test_planner_2dof_serial_joints
+  test/planner_2dof_serial_joints_rostest.test
+  src/test_planner_2dof_serial_joints.cpp
+)
+target_link_libraries(test_planner_2dof_serial_joints ${catkin_LIBRARIES})
+add_dependencies(test_planner_2dof_serial_joints planner_2dof_serial_joints)

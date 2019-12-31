@@ -98,6 +98,11 @@ protected:
       const int i,
       const int res, const ArgList&... rest)
   {
+    cycleElement(i, res);
+    cycleElements(i + 1, rest...);
+  }
+  void cycleElement(const int i, const int res)
+  {
     assert(i < DIM);
 
     e_[i] = e_[i] % res;
@@ -105,8 +110,6 @@ protected:
       e_[i] += res;
     else if (e_[i] >= res / 2)
       e_[i] -= res;
-
-    cycleElements(i + 1, rest...);
   }
   void cycleElements(const int i)
   {
@@ -117,13 +120,16 @@ protected:
       const int i,
       const int res, const ArgList&... rest)
   {
+    cycleUnsignedElement(i, res);
+    cycleUnsignedElements(i + 1, rest...);
+  }
+  void cycleUnsignedElement(const int i, const int res)
+  {
     assert(i < DIM);
 
     e_[i] = e_[i] % res;
     if (e_[i] < 0)
       e_[i] += res;
-
-    cycleUnsignedElements(i + 1, rest...);
   }
   void cycleUnsignedElements(const int i)
   {
@@ -287,14 +293,14 @@ public:
     static_assert(
         std::is_same<int, T>(), "cycle is provided only for int");
     for (int i = NONCYCLIC; i < DIM; ++i)
-      cycleElements(i, res[i]);
+      cycleElement(i, res[i]);
   }
   void cycleUnsigned(const CyclicVecBase<DIM, NONCYCLIC, T>& res)
   {
     static_assert(
         std::is_same<int, T>(), "cycle is provided only for int");
     for (int i = NONCYCLIC; i < DIM; ++i)
-      cycleUnsignedElements(i, res[i]);
+      cycleUnsignedElement(i, res[i]);
   }
 
   // Hash
