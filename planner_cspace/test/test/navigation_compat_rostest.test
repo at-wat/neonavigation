@@ -6,6 +6,7 @@
     <remap from="patrol_nodes" to="/patrol/path" />
     <remap from="forget_planning_cost" to="/planner_3d/forget" />
     <remap from="map" to="/map" />
+    <remap from="costmap" to="/costmap_3d/costmap" />
   </test>
 
   <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">

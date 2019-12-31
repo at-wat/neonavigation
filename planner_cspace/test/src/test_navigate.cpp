@@ -35,6 +35,7 @@
 #include <nav_msgs/Path.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace_msgs/CSpace3D.h>
 
 #include <cstddef>
 
@@ -48,8 +49,10 @@ protected:
   tf2_ros::TransformListener tfl_;
   nav_msgs::OccupancyGrid::ConstPtr map_;
   nav_msgs::OccupancyGrid::ConstPtr map_local_;
+  costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_local_;
+  ros::Subscriber sub_costmap_;
   ros::ServiceClient srv_forget_;
   ros::Publisher pub_map_;
   ros::Publisher pub_map_local_;
@@ -60,6 +63,7 @@ protected:
   {
     sub_map_ = nh_.subscribe("map_global", 1, &Navigate::cbMap, this);
     sub_map_local_ = nh_.subscribe("map_local", 1, &Navigate::cbMapLocal, this);
+    sub_costmap_ = nh_.subscribe("costmap", 1, &Navigate::cbCostmap, this);
     srv_forget_ =
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
@@ -89,9 +93,20 @@ protected:
     pub_map_.publish(map_);
     std::cerr << "Map applied." << std::endl;
 
+    while (ros::ok() && !costmap_)
+    {
+      ros::spinOnce();
+      rate.sleep();
+    }
+
     std_srvs::EmptyRequest req;
     std_srvs::EmptyResponse res;
     srv_forget_.call(req, res);
+  }
+  void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
+  {
+    costmap_ = msg;
+    std::cerr << "Costmap received." << std::endl;
   }
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
