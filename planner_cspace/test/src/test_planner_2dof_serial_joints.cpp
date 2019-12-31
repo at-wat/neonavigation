@@ -60,6 +60,9 @@ TEST(Planner2DOFSerialJoints, Plan)
   p.positions.push_back(0.0);
   cmd.points.push_back(p);
 
+  pub_state.publish(s);
+  ros::Duration(1.0).sleep();
+
   ros::Rate rate(1);
   while (ros::ok())
   {

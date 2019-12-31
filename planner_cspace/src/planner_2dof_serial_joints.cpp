@@ -441,6 +441,8 @@ public:
 
     links_[0].current_th_ = 0.0;
     links_[1].current_th_ = 0.0;
+    id[0] = -1;
+    id[1] = -1;
 
     ROS_INFO("link group: %s", group_.c_str());
     ROS_INFO(" - link0: %s", links_[0].name_.c_str());
