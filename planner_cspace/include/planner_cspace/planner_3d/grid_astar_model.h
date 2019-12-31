@@ -132,11 +132,11 @@ public:
   }
 
   float cost(
-      const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const override;
+      const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const final;
   float costEstim(
-      const Vec& cur, const Vec& goal) const override;
+      const Vec& cur, const Vec& goal) const final;
   const std::vector<Vec>& searchGrids(
-      const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const override;
+      const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const final;
 };
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H
