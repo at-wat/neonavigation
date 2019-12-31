@@ -30,6 +30,9 @@
 #include <utility>
 #include <vector>
 
+#include <ros/ros.h>
+#include <costmap_cspace_msgs/MapMetaData3D.h>
+
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
@@ -151,7 +154,7 @@ float GridAstarModel3D::euclidCostRough(const Vec& v) const
   return sqrtf(rootsum) * euclid_cost_coef_[0];
 }
 float GridAstarModel3D::cost(
-    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const override
+    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
 {
   Vec d_raw = next - cur;
   d_raw.cycle(map_info_.angle);
@@ -316,7 +319,7 @@ float GridAstarModel3D::cost(
   return cost;
 }
 float GridAstarModel3D::costEstim(
-    const Vec& cur, const Vec& goal) const override
+    const Vec& cur, const Vec& goal) const
 {
   Vec s2(cur[0], cur[1], 0);
   float cost = cost_estim_cache_[s2];
@@ -333,10 +336,10 @@ float GridAstarModel3D::costEstim(
 
   return cost;
 }
-const std::vector<Vec>& GridAstarModel3D::searchGrids(
+const std::vector<GridAstarModel3D::Vec>& GridAstarModel3D::searchGrids(
     const Vec& p,
     const std::vector<VecWithCost>& ss,
-    const Vec& es) const override
+    const Vec& es) const
 {
   const float local_range_sq = local_range_ * local_range_;
   for (const VecWithCost& s : ss)
@@ -352,7 +355,7 @@ const std::vector<Vec>& GridAstarModel3D::searchGrids(
 }
 
 float GridAstarModel2D::cost(
-    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const override
+    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
 {
   Vec d = next - cur;
   d[2] = 0;
@@ -378,16 +381,15 @@ float GridAstarModel2D::cost(
   return cost;
 }
 float GridAstarModel2D::costEstim(
-    const Vec& cur, const Vec& goal) const override
+    const Vec& cur, const Vec& goal) const
 {
   const Vec d = goal - cur;
   const float cost = base_->euclidCostRough(d);
 
   return cost;
 }
-const std::vector<Vec>& GridAstarModel2D::searchGrids(
-    const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const override
+const std::vector<GridAstarModel3D::Vec>& GridAstarModel2D::searchGrids(
+    const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const
 {
   return base_->search_list_rough_;
 }
-

@@ -33,10 +33,14 @@
 #include <utility>
 #include <vector>
 
+#include <costmap_cspace_msgs/MapMetaData3D.h>
+
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
+#include <planner_cspace/grid_astar_model.h>
+#include <planner_cspace/blockmem_gridmap.h>
 
 class CostCoeff
 {
@@ -100,18 +104,13 @@ public:
       BlockMemGridmap<char, 3, 2, 0x80>& cm_hyst,
       BlockMemGridmap<char, 3, 2, 0x80>& cm_rough,
       const CostCoeff& cc,
-      const int range)
-    : hysteresis_(false)
-    , map_info_(map_info)
-    , euclid_cost_coef_(euclid_cost_coef)
-    , resolution_(resolution)
-    , local_range_(local_range)
-    , cost_estim_cache_(cost_estim_cache)
-    , cm_(cm)
-    , cm_hyst_(cm_hyst)
-    , cm_rough_(cm_rough)
-    , cc_(cc)
-    , range_(range);
+      const int range);
+  void enableHysteresis(const bool enable);
+  void createEuclidCostCache();
+  float euclidCost(const Vec& v) const;
+  float euclidCostRough(const Vec& v) const;
+  float cost(
+      const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const override;
 
   float costEstim(
       const Vec& cur, const Vec& goal) const override;
