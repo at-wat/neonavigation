@@ -240,7 +240,7 @@ protected:
               break;
             PriorityVec center(open_.top());
             open_.pop();
-            if (center.v_ == e || center.p_ - center.p_raw_ <= cost_leave)
+            if (center.v_ == e || center.p_ - center.p_raw_ < cost_leave)
             {
               e = center.v_;
               found = true;
@@ -345,10 +345,6 @@ protected:
       return false;
     }
     return findPath(ss_normalized, e, path);
-  }
-  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path) const
-  {
-    return findPath(std::vector<VecWithCost>(1, VecWithCost(s)), e, path);
   }
   bool findPath(const std::vector<VecWithCost>& ss, const Vec& e, std::list<Vec>& path) const
   {
