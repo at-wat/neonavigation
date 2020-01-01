@@ -27,7 +27,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+#include <iostream>
+#include <map>
+#include <random>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <ros/ros.h>
+
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <map_organizer_msgs/OccupancyGridArray.h>
@@ -35,15 +45,6 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-
-#include <cmath>
-#include <random>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <map>
-#include <utility>
-#include <vector>
 
 #include <neonavigation_common/compatibility.h>
 

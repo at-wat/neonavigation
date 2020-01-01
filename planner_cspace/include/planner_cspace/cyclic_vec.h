@@ -30,13 +30,13 @@
 #ifndef PLANNER_CSPACE_CYCLIC_VEC_H
 #define PLANNER_CSPACE_CYCLIC_VEC_H
 
-#include <memory>
 #define _USE_MATH_DEFINES
-#include <cmath>
 #include <cfloat>
+#include <cmath>
 #include <initializer_list>
 #include <list>
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 

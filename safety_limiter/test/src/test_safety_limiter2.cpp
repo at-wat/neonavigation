@@ -27,16 +27,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
+#include <string>
+
 #include <ros/ros.h>
+
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include <algorithm>
-#include <string>
+#include <test_safety_limiter_base.h>
 
 #include <gtest/gtest.h>
-
-#include <test_safety_limiter_base.h>
 
 TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 {

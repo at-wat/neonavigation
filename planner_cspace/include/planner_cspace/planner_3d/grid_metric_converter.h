@@ -30,14 +30,15 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
 #define PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
 
+#include <cmath>
+#include <list>
+#include <memory>
+
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <nav_msgs/Path.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <planner_cspace/cyclic_vec.h>
-
-#include <list>
-#include <memory>
 
 namespace grid_metric_converter
 {

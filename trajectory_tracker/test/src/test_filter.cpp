@@ -27,11 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <cstddef>
 
-#include <gtest/gtest.h>
-
 #include <trajectory_tracker/filter.h>
+
+#include <gtest/gtest.h>
 
 TEST(Filter, LPFCharacteristic)
 {

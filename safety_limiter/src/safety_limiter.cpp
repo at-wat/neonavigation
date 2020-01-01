@@ -27,9 +27,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <random>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <ros/ros.h>
+
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <geometry_msgs/Twist.h>
-#include <ros/ros.h>
 #include <safety_limiter_msgs/SafetyLimiterStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -38,23 +50,12 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-
 #include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <random>
-#include <sstream>
-#include <string>
-#include <vector>
 
 #include <neonavigation_common/compatibility.h>
 

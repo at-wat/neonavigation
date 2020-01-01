@@ -27,11 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <cstddef>
 
-#include <gtest/gtest.h>
-
 #include <planner_cspace/cyclic_vec.h>
+
+#include <gtest/gtest.h>
 
 TEST(CyclicVec, InitFloat)
 {

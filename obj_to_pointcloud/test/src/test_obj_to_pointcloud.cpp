@@ -27,11 +27,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+#include <string>
+
 #include <ros/ros.h>
+
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
-
-#include <string>
 
 #include <gtest/gtest.h>
 

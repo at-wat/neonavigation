@@ -28,11 +28,14 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <list>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <omp.h>
 
 #include <ros/ros.h>
 
@@ -68,8 +71,6 @@
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
-
-#include <omp.h>
 
 namespace planner_cspace
 {

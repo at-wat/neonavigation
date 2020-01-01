@@ -27,11 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+
 #include <ros/ros.h>
+
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/transform_datatypes.h>
 
 #include <track_odometry/tf_projection.h>
+
 #include <gtest/gtest.h>
 
 void testTransform(

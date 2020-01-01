@@ -30,8 +30,10 @@
 #ifndef COSTMAP_CSPACE_POLYGON_H
 #define COSTMAP_CSPACE_POLYGON_H
 
-#include <ros/ros.h>
+#include <cmath>
 #include <vector>
+
+#include <ros/ros.h>
 
 #include <xmlrpcpp/XmlRpcException.h>
 

@@ -28,11 +28,13 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
 
 #include <ros/ros.h>
+
 #include <nav_msgs/OccupancyGrid.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>

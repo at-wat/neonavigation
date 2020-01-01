@@ -27,15 +27,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <string>
-#include <algorithm>
-
-#include <gtest/gtest.h>
 
 #include <ros/ros.h>
-#include <nav_msgs/OccupancyGrid.h>
+
 #include <costmap_cspace/costmap_3d.h>
+#include <nav_msgs/OccupancyGrid.h>
+
+#include <gtest/gtest.h>
 
 const std::string footprint_str(
     "<value><array><data>"

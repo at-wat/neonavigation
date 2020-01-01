@@ -27,18 +27,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <utility>
 #include <vector>
 
 #include <ros/ros.h>
+
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 
 #include <planner_cspace/cyclic_vec.h>
-#include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/planner_3d/rotation_cache.h>
-#include <planner_cspace/planner_3d/path_interpolator.h>
-
 #include <planner_cspace/planner_3d/grid_astar_model.h>
+#include <planner_cspace/planner_3d/motion_cache.h>
+#include <planner_cspace/planner_3d/path_interpolator.h>
+#include <planner_cspace/planner_3d/rotation_cache.h>
 
 GridAstarModel3D::GridAstarModel3D(
     const costmap_cspace_msgs::MapMetaData3D& map_info,

@@ -27,24 +27,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
+#include <list>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <omp.h>
+
 #include <ros/ros.h>
+
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <sensor_msgs/JointState.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <utility>
-#include <algorithm>
-#include <string>
-#include <list>
-#include <vector>
-
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_2dof_serial_joints/grid_astar_model.h>
 
 #include <neonavigation_common/compatibility.h>
-
-#include <omp.h>
 
 class planner2dofSerialJointsNode
 {

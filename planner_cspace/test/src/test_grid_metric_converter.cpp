@@ -27,15 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <vector>
+
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <tf2/utils.h>
 
 #include <gtest/gtest.h>
-
-#define _USE_MATH_DEFINES
-#include <cmath>
-#include <vector>
 
 TEST(GridMetricConverter, SinglePose)
 {

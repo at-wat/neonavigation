@@ -30,6 +30,11 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
 
+#include <algorithm>
+#include <cmath>
+#include <map>
+#include <string>
+
 #include <ros/ros.h>
 
 #include <geometry_msgs/PolygonStamped.h>
@@ -37,10 +42,6 @@
 
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
-
-#include <algorithm>
-#include <map>
-#include <string>
 
 namespace costmap_cspace
 {

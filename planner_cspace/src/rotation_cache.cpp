@@ -33,7 +33,6 @@
 #include <vector>
 
 #include <planner_cspace/cyclic_vec.h>
-
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
 void RotationCache::Page::reset(const CyclicVecInt<3, 2>& size)

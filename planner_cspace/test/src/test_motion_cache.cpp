@@ -27,13 +27,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <cstddef>
-
-#include <gtest/gtest.h>
 
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/blockmem_gridmap.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
+
+#include <gtest/gtest.h>
 
 TEST(MotionCache, Generate)
 {
