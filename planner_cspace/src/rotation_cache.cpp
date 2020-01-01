@@ -80,7 +80,7 @@ void RotationCache::reset(
           const float cos_v = std::cos(v[2]);
           const float r1 = v[1] + v[0] * cos_v / sin_v;
           const float r2 = std::copysign(
-              std::sqrt(std::pow(v[0], 2.0) + powf(v[0] * cos_v / sin_v, 2.0)),
+              std::sqrt(std::pow(v[0], 2.0) + std::pow(v[0] * cos_v / sin_v, 2.0)),
               v[0] * sin_v);
           r.radiuses(d) = std::pair<float, float>(r1, r2);
         }

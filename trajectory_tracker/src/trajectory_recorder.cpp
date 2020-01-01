@@ -94,7 +94,7 @@ RecorderNode::~RecorderNode()
 
 float dist2d(geometry_msgs::Point& a, geometry_msgs::Point& b)
 {
-  return std::sqrt(std::pow(a.x - b.x, 2) + powf(a.y - b.y, 2));
+  return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
 
 void RecorderNode::spin()

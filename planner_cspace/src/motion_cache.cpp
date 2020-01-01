@@ -104,7 +104,7 @@ void MotionCache::reset(
           float distf = 0.0;
           const float r1 = motion[1] + motion[0] * cos_v / sin_v;
           const float r2 = std::copysign(
-              std::sqrt(std::pow(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
+              std::sqrt(std::pow(motion[0], 2.0) + std::pow(motion[0] * cos_v / sin_v, 2.0)),
               motion[0] * sin_v);
 
           float dyaw = yaw_e - yaw;
