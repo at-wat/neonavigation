@@ -7,7 +7,7 @@ header:
 pose:
   position:
     x: 1.0
-    y: 0.475
+    y: 0.525
     z: 0.0
   orientation:
     x: 0.0
