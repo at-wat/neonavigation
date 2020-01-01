@@ -131,11 +131,12 @@ public:
       publishTransform();
       rate.sleep();
       ros::spinOnce();
-      if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
+      if (status_ &&
+          status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
       ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
           << "trajectory_tracker status timeout, status: "
-          << static_cast<int>(status_->status);
+          << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
   }
   void publishPath(const std::vector<Eigen::Vector3d>& poses)
