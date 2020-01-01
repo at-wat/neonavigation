@@ -36,16 +36,20 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 
 add_executable(planner_3d
-  src/planner_3d.cpp
   src/costmap_bbf.cpp
+  src/grid_astar_model_3dof.cpp
   src/motion_cache.cpp
   src/path_interpolator.cpp
+  src/planner_3d.cpp
   src/rotation_cache.cpp
 )
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
 
-add_executable(planner_2dof_serial_joints src/planner_2dof_serial_joints.cpp)
+add_executable(planner_2dof_serial_joints
+  src/planner_2dof_serial_joints.cpp
+  src/grid_astar_model_2dof_joints.cpp
+)
 target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(planner_2dof_serial_joints ${catkin_EXPORTED_TARGETS})
 
@@ -71,7 +75,7 @@ endif()
 install(TARGETS
     dummy_robot
     patrol
-    planner_2dof_serial_joints
+    #planner_2dof_serial_joints
     planner_3d
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
