@@ -203,6 +203,7 @@ public:
 
 TEST_F(TrajectoryTrackerTest, StraightStop)
 {
+  std::cerr << "StraightStop" << std::endl;
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector3d> poses;
@@ -239,6 +240,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
 TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 {
+  std::cerr << "StraightStopConvergence" << std::endl;
   const double vels[] =
       {
         0.02, 0.05, 0.1, 0.2, 0.5, 1.0
@@ -285,6 +287,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 
 TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
 {
+  std::cerr << "StraightVelocityChange" << std::endl;
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector4d> poses;
@@ -332,6 +335,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
 
 TEST_F(TrajectoryTrackerTest, CurveFollow)
 {
+  std::cerr << "CurveFollow" << std::endl;
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector3d> poses;
@@ -376,6 +380,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 
 TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 {
+  std::cerr << "InPlaceTurn" << std::endl;
   const float init_yaw_array[] =
       {
         0.0,
@@ -453,6 +458,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
 TEST_F(TrajectoryTrackerTest, SwitchBack)
 {
+  std::cerr << "SwitchBack" << std::endl;
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector3d> poses;
@@ -497,6 +503,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
 
 TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 {
+  std::cerr << "SwitchBackWithPathUpdate" << std::endl;
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector3d> poses;
