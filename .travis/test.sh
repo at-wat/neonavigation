@@ -59,23 +59,27 @@ sed -i -e "5a set(CMAKE_CXX_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
 
 CM_OPTIONS=${CM_OPTIONS:-}
 
-catkin_make ${CM_OPTIONS} \
-  || (gh-pr-comment "${build_number} FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)
-catkin_make tests ${CM_OPTIONS} \
-  || (gh-pr-comment "${build_number} FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
-catkin_make run_tests ${CM_OPTIONS} --make-args -j1 -l1 \
-  || (gh-pr-comment "${build_number} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
+#catkin_make ${CM_OPTIONS} \
+#  || (gh-pr-comment "${build_number} FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)
+#catkin_make tests ${CM_OPTIONS} \
+#  || (gh-pr-comment "${build_number} FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
 
-if [ x${COVERAGE_TEST} == "xtrue" ]
-then
-  set -o pipefail
-  cd src/neonavigation/
-  cp -r /catkin_ws/build ./
-  rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
-  bash <(curl -s https://codecov.io/bash) -y .codecov.yml -Z \
-    | grep -i -e error -e fail
-  exit 0
-fi
+for i in {1..20}
+do
+  catkin_make run_tests_trajectory_tracker_rostest_test_test_trajectory_tracker_rostest.test ${CM_OPTIONS} --make-args -j1 -l1
+  catkin_test_results || break
+done
+
+#if [ x${COVERAGE_TEST} == "xtrue" ]
+#then
+#  set -o pipefail
+#  cd src/neonavigation/
+#  cp -r /catkin_ws/build ./
+#  rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
+#  bash <(curl -s https://codecov.io/bash) -y .codecov.yml -Z \
+#    | grep -i -e error -e fail
+#  exit 0
+#fi
 
 if [ catkin_test_results ];
 then
