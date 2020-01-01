@@ -257,6 +257,9 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
 }
 void TrackerNode::cbTimer(const ros::TimerEvent& event)
 {
+  static int cnt = 0;
+  if (cnt++ % 10 == 0)
+    std::cerr << "control" << std::endl;
   control();
 }
 
@@ -269,7 +272,6 @@ void TrackerNode::spin()
 
 void TrackerNode::control()
 {
-  std::cerr << "control" << std::endl;
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
   status.header.stamp = ros::Time::now();
   status.distance_remains = 0.0;
