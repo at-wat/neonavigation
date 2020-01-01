@@ -139,7 +139,7 @@ float GridAstarModel3D::euclidCost(const Vec& v) const
     angle -= static_cast<int>(map_info_.angle);
   while (angle < -static_cast<int>(map_info_.angle) / 2)
     angle += static_cast<int>(map_info_.angle);
-  cost += fabs(euclid_cost_coef_[2] * angle);
+  cost += std::abs(euclid_cost_coef_[2] * angle);
   return cost;
 }
 float GridAstarModel3D::euclidCostRough(const Vec& v) const
@@ -180,18 +180,14 @@ float GridAstarModel3D::cost(
       sum += c;
     }
 
-    const float cost =
+    cost +=
         sum * map_info_.angular_resolution * euclid_cost_coef_[2] / euclid_cost_coef_[0] +
         sum * map_info_.angular_resolution * cc_.weight_costmap_turn_ / 100.0;
     // simplified from sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * abs(d[2]))
     return cc_.in_place_turn_ + cost;
   }
 
-  Vec d2;
-  d2[0] = d[0] + range_;
-  d2[1] = d[1] + range_;
-  d2[2] = next[2];
-
+  const Vec d2(d[0] + range_, d[1] + range_, next[2]);
   const Vecf motion = rot_cache_.getMotion(cur[2], d2);
   const Vecf motion_grid = motion * resolution_;
 
