@@ -121,13 +121,16 @@ public:
     }
     std::cerr << "status received" << std::endl;
   }
-  void waitUntilStart()
+  void waitUntilStart(const std::function<void()> func = nullptr)
   {
     ros::Rate rate(50);
     std::cerr << "waiting start" << std::endl;
     const auto start = ros::Time::now();
     while (ros::ok())
     {
+      if (func)
+        func();
+
       publishTransform();
       rate.sleep();
       ros::spinOnce();
@@ -214,9 +217,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   for (double x = 0.0; x < 0.5; x += 0.01)
     poses.push_back(Eigen::Vector3d(x, 0.0, 0.0));
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
@@ -260,9 +261,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     for (double x = 0.0; x < path_length; x += 0.01)
       poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, vel));
     poses.push_back(Eigen::Vector4d(path_length, 0.0, 0.0, vel));
-    publishPathVelocity(poses);
-
-    waitUntilStart();
+    waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
     ros::Rate rate(50);
     const ros::Time start = ros::Time::now();
@@ -300,9 +299,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   for (double x = 0.6; x < 1.5; x += 0.01)
     poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, 0.5));
   poses.push_back(Eigen::Vector4d(1.5, 0.0, 0.0, 0.5));
-  publishPathVelocity(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
@@ -356,9 +353,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
     p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.0);
     poses.push_back(p);
   }
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
@@ -422,9 +417,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         {
           poses.push_back(Eigen::Vector3d(0.0, 0.0, init_yaw + ang));
         }
-        publishPath(poses);
-
-        waitUntilStart();
+        waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
         ros::Rate rate(50);
         const ros::Time start = ros::Time::now();
@@ -479,9 +472,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
     p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.01);
     poses.push_back(p);
   }
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
@@ -527,9 +518,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     poses.push_back(p);
     poses_second_half.push_back(p);
   }
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   int cnt_arrive_local_goal(0);
   ros::Rate rate(50);
