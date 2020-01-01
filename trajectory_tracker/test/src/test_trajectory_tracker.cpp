@@ -308,11 +308,13 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0));
 
     publishTransform();
     rate.sleep();
     ros::spinOnce();
+    std::cerr << pos_[0] << " " << pos_[1] << "   " << cmd_vel_->linear.x << std::endl;
+
     if (0.3 < pos_[0] && pos_[0] < 0.35)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.3, 1e-2);
