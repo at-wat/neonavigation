@@ -183,8 +183,8 @@ TrackerNode::TrackerNode()
   pub_vel_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
       nh_, "cmd_vel",
       pnh_, topic_cmd_vel_, 10);
-  pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10);
-  pub_tracking_ = pnh_.advertise<geometry_msgs::PoseStamped>("tracking", 10);
+  pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10, true);
+  pub_tracking_ = pnh_.advertise<geometry_msgs::PoseStamped>("tracking", 10, true);
 }
 TrackerNode::~TrackerNode()
 {

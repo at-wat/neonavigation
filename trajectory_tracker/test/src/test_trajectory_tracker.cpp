@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -69,7 +70,7 @@ private:
     const ros::Time now = ros::Time::now();
     if (cmd_vel_time_ == ros::Time(0))
       cmd_vel_time_ = now;
-    const float dt = (now - cmd_vel_time_).toSec();
+    const float dt = std::min((now - cmd_vel_time_).toSec(), 0.1);
 
     yaw_ += msg->angular.z * dt;
     pos_ += Eigen::Vector2d(std::cos(yaw_), std::sin(yaw_)) * msg->linear.x * dt;
@@ -95,35 +96,48 @@ public:
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
-    nav_msgs::Path path;
-    path.header.frame_id = "odom";
-    path.header.stamp = ros::Time::now();
-    pub_path_.publish(path);
-
-    // Wait until trajectory_tracker node
+    // Wait trajectory_tracker node
     ros::Rate rate(10);
+    const auto start = ros::Time::now();
     while (ros::ok())
     {
+      nav_msgs::Path path;
+      path.header.frame_id = "odom";
+      path.header.stamp = ros::Time::now();
+      pub_path_.publish(path);
+
       yaw_ = yaw;
       pos_ = pos;
       publishTransform();
 
       rate.sleep();
       ros::spinOnce();
-      if (status_)
+      if (status_ &&
+          status_->status != trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
+      ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
+          << "trajectory_tracker status timeout, status: "
+          << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
   }
-  void waitUntilStart()
+  void waitUntilStart(const std::function<void()> func = nullptr)
   {
     ros::Rate rate(50);
+    const auto start = ros::Time::now();
     while (ros::ok())
     {
+      if (func)
+        func();
+
       publishTransform();
       rate.sleep();
       ros::spinOnce();
-      if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
+      if (status_ &&
+          status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
+      ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
+          << "trajectory_tracker status timeout, status: "
+          << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
   }
   void publishPath(const std::vector<Eigen::Vector3d>& poses)
@@ -200,9 +214,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   for (double x = 0.0; x < 0.5; x += 0.01)
     poses.push_back(Eigen::Vector3d(x, 0.0, 0.0));
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
@@ -245,9 +257,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     for (double x = 0.0; x < path_length; x += 0.01)
       poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, vel));
     poses.push_back(Eigen::Vector4d(path_length, 0.0, 0.0, vel));
-    publishPathVelocity(poses);
-
-    waitUntilStart();
+    waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
     ros::Rate rate(50);
     const ros::Time start = ros::Time::now();
@@ -279,29 +289,28 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector4d> poses;
-  for (double x = 0.0; x < 0.5; x += 0.01)
+  for (double x = 0.0; x < 0.6; x += 0.01)
     poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, 0.3));
-  for (double x = 0.5; x < 1.5; x += 0.01)
+  for (double x = 0.6; x < 1.5; x += 0.01)
     poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, 0.5));
   poses.push_back(Eigen::Vector4d(1.5, 0.0, 0.0, 0.5));
-  publishPathVelocity(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0));
 
     publishTransform();
     rate.sleep();
     ros::spinOnce();
-    if (0.3 < pos_[0] && pos_[0] < 0.4)
+
+    if (0.3 < pos_[0] && pos_[0] < 0.35)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.3, 1e-2);
     }
-    else if (0.9 < pos_[0] && pos_[0] < 1.0)
+    else if (0.95 < pos_[0] && pos_[0] < 1.0)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.5, 1e-2);
     }
@@ -337,9 +346,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
     p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.0);
     poses.push_back(p);
   }
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
@@ -402,9 +409,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         {
           poses.push_back(Eigen::Vector3d(0.0, 0.0, init_yaw + ang));
         }
-        publishPath(poses);
-
-        waitUntilStart();
+        waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
         ros::Rate rate(50);
         const ros::Time start = ros::Time::now();
@@ -458,9 +463,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
     p += Eigen::Vector3d(std::cos(p[2]) * 0.05, std::sin(p[2]) * 0.05, 0.01);
     poses.push_back(p);
   }
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
@@ -505,9 +508,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     poses.push_back(p);
     poses_second_half.push_back(p);
   }
-  publishPath(poses);
-
-  waitUntilStart();
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   int cnt_arrive_local_goal(0);
   ros::Rate rate(50);
