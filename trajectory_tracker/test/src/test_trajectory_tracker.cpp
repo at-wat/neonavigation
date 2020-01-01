@@ -117,7 +117,8 @@ public:
 
       rate.sleep();
       ros::spinOnce();
-      if (status_)
+      if (status_ &&
+          status_->status != trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
       ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0)) << "trajectory_tracker status timeout";
     }
