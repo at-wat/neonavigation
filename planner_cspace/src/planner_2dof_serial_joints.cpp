@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2014-2020, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,7 @@
 #include <vector>
 
 #include <planner_cspace/grid_astar.h>
+#include <planner_cspace/planner_2dof_serial_joints/grid_astar_model.h>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -64,32 +65,11 @@ private:
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
-
-  Astar::Vecf euclid_cost_coef_;
-
-  float euclidCost(const Astar::Vec& v, const Astar::Vecf coef)
-  {
-    auto vc = v;
-    float cost = 0;
-    for (int i = 0; i < as_.getDim(); i++)
-    {
-      cost += fabs(coef[i] * vc[i]);
-    }
-    return cost;
-  }
-  float euclidCost(const Astar::Vec& v)
-  {
-    return euclidCost(v, euclid_cost_coef_);
-  }
+  GridAstarModel2DoFSerialJoint::Ptr model_;
 
   float freq_;
   float freq_min_;
-  bool has_goal_;
-  bool has_start_;
-  std::vector<Astar::Vec> search_list_;
   int resolution_;
-  float weight_cost_;
-  float expand_;
   float avg_vel_;
   enum PointVelMode
   {
@@ -413,9 +393,6 @@ public:
 
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
 
-    has_goal_ = false;
-    has_start_ = false;
-
     cm_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
     as_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
     cm_.clear(0);
@@ -448,11 +425,13 @@ public:
     ROS_INFO(" - link0: %s", links_[0].name_.c_str());
     ROS_INFO(" - link1: %s", links_[1].name_.c_str());
 
-    nh_group.param("link0_coef", euclid_cost_coef_[0], 1.0f);
-    nh_group.param("link1_coef", euclid_cost_coef_[1], 1.5f);
+    Astar::Vecf euclid_cost_coef;
+    nh_group.param("link0_coef", euclid_cost_coef[0], 1.0f);
+    nh_group.param("link1_coef", euclid_cost_coef[1], 1.5f);
 
-    nh_group.param("weight_cost", weight_cost_, 4.0f);
-    nh_group.param("expand", expand_, 0.1f);
+    CostCoeff cc;
+    nh_group.param("weight_cost", cc.weight_cost_, 4.0f);
+    nh_group.param("expand", cc.expand_, 0.1f);
 
     std::string point_vel_mode;
     nh_group.param("point_vel_mode", point_vel_mode, std::string("prev"));
@@ -491,7 +470,7 @@ public:
           continue;
 
         Astar::Vec d;
-        int range = lroundf(expand_ * resolution_ / (2.0 * M_PI));
+        int range = lroundf(cc.expand_ * resolution_ / (2.0 * M_PI));
         for (d[0] = -range; d[0] <= range; d[0]++)
         {
           for (d[1] = -range; d[1] <= range; d[1]++)
@@ -511,19 +490,17 @@ public:
 
     int range;
     nh_group.param("range", range, 8);
-    for (p[0] = -range; p[0] <= range; p[0]++)
-    {
-      for (p[1] = -range; p[1] <= range; p[1]++)
-      {
-        search_list_.push_back(p);
-      }
-    }
+
+    model_.reset(new GridAstarModel2DoFSerialJoint(
+        euclid_cost_coef,
+        resolution_,
+        cm_,
+        cc,
+        range));
 
     int num_threads;
     nh_group.param("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
-
-    has_start_ = has_goal_ = true;
   }
 
 private:
@@ -576,7 +553,10 @@ private:
     Astar::Vec d = e - s;
     d.cycle(resolution_, resolution_);
 
-    if (cbCost(s, e, s, e) >= euclidCost(d))
+    std::vector<Astar::VecWithCost> starts;
+    starts.emplace_back(s);
+
+    if (model_->cost(s, e, starts, e) >= model_->euclidCost(d))
     {
       path.push_back(sg);
       path.push_back(eg);
@@ -592,20 +572,9 @@ private:
     if (replan_interval_ >= ros::Duration(0))
       cancel = replan_interval_.toSec();
     if (!as_.search(
-            s, e, path_grid,
-            std::bind(&planner2dofSerialJointsNode::cbCost,
-                      this, std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, std::placeholders::_4),
-            std::bind(&planner2dofSerialJointsNode::cbCostEstim,
-                      this, std::placeholders::_1, std::placeholders::_2),
-            std::bind(&planner2dofSerialJointsNode::cbSearch,
-                      this, std::placeholders::_1,
-                      std::placeholders::_2, std::placeholders::_3),
-            std::bind(&planner2dofSerialJointsNode::cbProgress,
-                      this, std::placeholders::_1),
-            0,
-            cancel,
-            true))
+            starts, e, path_grid, model_,
+            std::bind(&planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1),
+            0, cancel, true))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
@@ -676,57 +645,9 @@ private:
 
     return true;
   }
-  std::vector<Astar::Vec>& cbSearch(
-      const Astar::Vec& p,
-      const Astar::Vec& ss, const Astar::Vec& es)
-  {
-    return search_list_;
-  }
   bool cbProgress(const std::list<Astar::Vec>& path_grid)
   {
     return false;
-  }
-  float cbCostEstim(const Astar::Vec& s, const Astar::Vec& e)
-  {
-    const Astar::Vec d = e - s;
-    return euclidCost(d);
-  }
-  float cbCost(
-      const Astar::Vec& s, const Astar::Vec& e,
-      const Astar::Vec& v_start, const Astar::Vec& v_goal)
-  {
-    if ((unsigned int)e[0] >= (unsigned int)resolution_ * 2 ||
-        (unsigned int)e[1] >= (unsigned int)resolution_ * 2)
-      return -1;
-    Astar::Vec d = e - s;
-    d.cycle(resolution_, resolution_);
-
-    float cost = euclidCost(d);
-
-    float distf = hypotf(static_cast<float>(d[0]), static_cast<float>(d[1]));
-    float v[2], dp[2];
-    int sum = 0;
-    const int dist = distf;
-    distf /= dist;
-    v[0] = s[0];
-    v[1] = s[1];
-    dp[0] = static_cast<float>(d[0]) / dist;
-    dp[1] = static_cast<float>(d[1]) / dist;
-    Astar::Vec pos;
-    for (int i = 0; i < dist; i++)
-    {
-      pos[0] = lroundf(v[0]);
-      pos[1] = lroundf(v[1]);
-      pos.cycleUnsigned(resolution_, resolution_);
-      const auto c = cm_[pos];
-      if (c > 99)
-        return -1;
-      sum += c;
-      v[0] += dp[0];
-      v[1] += dp[1];
-    }
-    cost += sum * weight_cost_ / 100.0;
-    return cost;
   }
 };
 

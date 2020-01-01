@@ -45,36 +45,44 @@ TEST(GridAstar, ParallelSearch)
   as.setSearchTaskNum(8);
   omp_set_num_threads(2);
 
-  const auto cb_cost = [](
-      const Vec&, const Vec&, const Vec&, const Vec&) -> float
+  class Model : public GridAstarModelBase<1, 1>
   {
-    return 1.0;
-  };
-  const auto cb_cost_estim = [](const Vec&, const Vec&) -> float
-  {
-    return 1e-6;
-  };
+  private:
+    std::vector<std::vector<Vec>> search_;
 
-  // create search table of graph edges (relative vector to the connected grid)
-  // 0: connected to 1-14
-  // 1-14: connected to 1-15
-  std::vector<Vec> search[16];
-  for (int i = 1; i <= 14; ++i)
-  {
-    search[0].push_back(Vec(i));
-    for (int j = 1; j <= 15; ++j)
+  public:
+    Model()
+      : search_(16)
     {
-      if (i == j)
-        continue;
-      search[i].push_back(Vec(j - i));
+      // create search table of graph edges (relative vector to the connected grid)
+      // 0: connected to 1-14
+      // 1-14: connected to 1-15
+      for (int i = 1; i <= 14; ++i)
+      {
+        search_[0].push_back(Vec(i));
+        for (int j = 1; j <= 15; ++j)
+        {
+          if (i == j)
+            continue;
+          search_[i].push_back(Vec(j - i));
+        }
+      }
     }
-  }
-
-  const auto cb_search = [&search](
-      const Vec& p, const Vec&, const Vec&) -> std::vector<Vec>&
-  {
-    return search[p[0]];
+    float cost(const Vec&, const Vec&, const std::vector<VecWithCost>&, const Vec&) const final
+    {
+      return 1.0;
+    }
+    float costEstim(const Vec& s, const Vec& e) const final
+    {
+      return 0.0;
+    }
+    const std::vector<Vec>& searchGrids(const Vec& p, const std::vector<VecWithCost>&, const Vec&) const final
+    {
+      return search_[p[0]];
+    }
   };
+  Model::Ptr model(new Model());
+
   const auto cb_progress = [](const std::list<Vec>&)
   {
     return true;
@@ -83,11 +91,14 @@ TEST(GridAstar, ParallelSearch)
   for (int i = 0; i < 1000; ++i)
   {
     std::list<Vec> path;
+    std::vector<Model::VecWithCost> starts;
+    starts.emplace_back(Vec(0));
     ASSERT_TRUE(
         as.search(
-            Vec(0), Vec(15), path,
-            cb_cost, cb_cost_estim, cb_search, cb_progress,
+            starts, Vec(15), path,
+            model, cb_progress,
             0, 1.0));
+
     ASSERT_EQ(path.size(), 3u);
     ASSERT_EQ(path.front(), Vec(0));
     ASSERT_EQ(path.back(), Vec(15));
@@ -100,36 +111,46 @@ TEST(GridAstar, SearchWithMultipleStarts)
   GridAstar<1, 1> as(Vec(16));
   as.setSearchTaskNum(1);
 
-  const auto cb_cost = [](
-      const Vec&, const Vec&, const std::vector<GridAstar<1, 1>::VecWithCost>&, const Vec&) -> float
+  class Model : public GridAstarModelBase<1, 1>
   {
-    return 1.0;
-  };
-  const auto cb_cost_estim = [](const Vec&, const Vec&) -> float
-  {
-    return 1e-6;
-  };
-  // create search table of graph edges (relative vector to the connected grid)
-  // 0: connected to 2-14
-  // 1: connected to 2-14
-  // 2-14: connected to 2-15
-  std::vector<Vec> search[16];
-  for (int i = 2; i <= 14; ++i)
-  {
-    search[0].push_back(Vec(i));
-    search[1].push_back(Vec(i - 1));
-    for (int j = 2; j <= 15; ++j)
+  private:
+    std::vector<std::vector<Vec>> search_;
+
+  public:
+    Model()
+      : search_(16)
     {
-      if (i == j)
-        continue;
-      search[i].push_back(Vec(j - i));
+      // create search table of graph edges (relative vector to the connected grid)
+      // 0: connected to 2-14
+      // 1: connected to 2-14
+      // 2-14: connected to 2-15
+      for (int i = 2; i <= 14; ++i)
+      {
+        search_[0].push_back(Vec(i));
+        search_[1].push_back(Vec(i - 1));
+        for (int j = 2; j <= 15; ++j)
+        {
+          if (i == j)
+            continue;
+          search_[i].push_back(Vec(j - i));
+        }
+      }
     }
-  }
-  const auto cb_search = [&search](
-      const Vec& p, const std::vector<GridAstar<1, 1>::VecWithCost>&, const Vec&) -> std::vector<Vec>&
-  {
-    return search[p[0]];
+    float cost(const Vec&, const Vec&, const std::vector<VecWithCost>&, const Vec&) const final
+    {
+      return 1.0;
+    }
+    float costEstim(const Vec& s, const Vec& e) const final
+    {
+      return 0.0;
+    }
+    const std::vector<Vec>& searchGrids(const Vec& p, const std::vector<VecWithCost>&, const Vec&) const final
+    {
+      return search_[p[0]];
+    }
   };
+  Model::Ptr model(new Model());
+
   const auto cb_progress = [](const std::list<Vec>&)
   {
     return true;
@@ -146,8 +167,9 @@ TEST(GridAstar, SearchWithMultipleStarts)
     ASSERT_TRUE(
         as.search(
             starts, Vec(15), path,
-            cb_cost, cb_cost_estim, cb_search, cb_progress,
-            0, 1.0));
+            model, cb_progress,
+            0, 1.0))
+        << add_cost_to;
     ASSERT_EQ(path.size(), 3u);
     ASSERT_EQ(path.back(), Vec(15));
     if (add_cost_to == 0)
@@ -168,9 +190,9 @@ public:
   {
     return parents_;
   }
-  bool findPath(const Vec& s, const Vec& e, std::list<Vec>& path) const
+  bool findPath(const std::vector<VecWithCost>& ss, const Vec& e, std::list<Vec>& path) const
   {
-    return GridAstar::findPath(s, e, path);
+    return GridAstar::findPath(ss, e, path);
   }
 };
 
@@ -198,7 +220,9 @@ TEST(GridAstar, FindPathLooped)
     abort();
   };
   boost::thread timeout(timeout_func);
-  ASSERT_FALSE(as.findPath(Vec(0), Vec(3), path));
+  std::vector<GridAstarTestWrapper::VecWithCost> starts;
+  starts.emplace_back(Vec(0));
+  ASSERT_FALSE(as.findPath(starts, Vec(3), path));
   timeout.interrupt();
 }
 
@@ -210,7 +234,9 @@ TEST(GridAstar, FindPathUnconnected)
   as.parentMap()[Vec(2)] = Vec(1);
 
   std::list<Vec> path;
-  ASSERT_FALSE(as.findPath(Vec(0), Vec(2), path));
+  std::vector<GridAstarTestWrapper::VecWithCost> starts;
+  starts.emplace_back(Vec(0));
+  ASSERT_FALSE(as.findPath(starts, Vec(2), path));
 }
 
 TEST(GridAstar, FindPath)
@@ -225,7 +251,9 @@ TEST(GridAstar, FindPath)
   for (int i = 0; i < 2; ++i)
   {
     std::list<Vec> path;
-    ASSERT_TRUE(as.findPath(Vec(0), Vec(2), path));
+    std::vector<GridAstarTestWrapper::VecWithCost> starts;
+    starts.emplace_back(Vec(0));
+    ASSERT_TRUE(as.findPath(starts, Vec(2), path));
     ASSERT_EQ(path.size(), 3u);
     auto it = path.cbegin();
     ASSERT_EQ(*(it++), Vec(0));

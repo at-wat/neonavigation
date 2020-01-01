@@ -55,7 +55,7 @@ public:
         break;
     }
   }
-  static void showMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  void showMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
     std::cerr << std::hex;
     for (size_t y = 0; y < msg->info.height; ++y)
@@ -67,6 +67,14 @@ public:
       std::cerr << std::endl;
     }
     std::cerr << std::dec;
+
+    std::streamsize ss = std::cerr.precision();
+    std::cerr << "path:" << std::endl
+              << std::setprecision(3);
+    for (const auto& p : path_->poses)
+      std::cerr << p.pose.position.x << ", " << p.pose.position.y << ", " << std::endl;
+
+    std::cerr << std::setprecision(ss);
   }
 
 protected:
@@ -87,12 +95,16 @@ protected:
   void cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
     if (msg->poses.size() > 0)
+    {
       ++cnt_path_;
+      path_ = msg;
+    }
   }
 
   ros::NodeHandle nh_;
   nav_msgs::OccupancyGrid::ConstPtr map_hysteresis_;
   nav_msgs::OccupancyGrid::ConstPtr map_remembered_;
+  nav_msgs::Path::ConstPtr path_;
   ros::Subscriber sub_status_;
   ros::Subscriber sub_path_;
   ros::Subscriber sub_hysteresis_;

@@ -10,6 +10,14 @@ target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 catkin_add_gtest(test_grid_metric_converter src/test_grid_metric_converter.cpp)
 target_link_libraries(test_grid_metric_converter ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+catkin_add_gtest(test_planner_3d_cost
+  src/test_planner_3d_cost.cpp
+  ../src/grid_astar_model_3dof.cpp
+  ../src/motion_cache.cpp
+  ../src/rotation_cache.cpp
+)
+target_link_libraries(test_planner_3d_cost ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 catkin_add_gtest(test_costmap_bbf
   src/test_costmap_bbf.cpp
   ../src/costmap_bbf.cpp
