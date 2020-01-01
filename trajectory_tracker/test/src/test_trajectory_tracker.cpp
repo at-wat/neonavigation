@@ -107,7 +107,6 @@ public:
 
     // Wait until trajectory_tracker node
     ros::Rate rate(10);
-    std::cerr << "waiting status" << std::endl;
     while (ros::ok())
     {
       yaw_next_ = yaw_ = yaw;
@@ -119,12 +118,10 @@ public:
       if (status_)
         break;
     }
-    std::cerr << "status received" << std::endl;
   }
   void waitUntilStart()
   {
     ros::Rate rate(50);
-    std::cerr << "waiting start" << std::endl;
     while (ros::ok())
     {
       publishTransform();
@@ -133,7 +130,6 @@ public:
       if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
     }
-    std::cerr << "started" << std::endl;
   }
   void publishPath(const std::vector<Eigen::Vector3d>& poses)
   {
