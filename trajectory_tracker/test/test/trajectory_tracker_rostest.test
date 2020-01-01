@@ -3,15 +3,15 @@
   <param name="neonavigation_compatible" value="1" />
   <param name="use_sim_time" value="true" /><!-- clock is provided by the test node -->
 
-  <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="290.0" />
+  <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="120.0" />
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="trajectory_tracker" output="screen">
     <param name="max_vel" value="1.0" />
     <param name="max_acc" value="2.0" />
     <param name="max_angvel" value="0.5" />
     <param name="max_angacc" value="2.0" />
-    <param name="goal_tolerance_dist" value="0.01" />
-    <param name="goal_tolerance_ang" value="0.01" />
+    <param name="goal_tolerance_dist" value="0.0075" />
+    <param name="goal_tolerance_ang" value="0.0075" />
     <param name="stop_tolerance_dist" value="0.005" />
     <param name="stop_tolerance_ang" value="0.005" />
     <param name="look_forward" value="0.0" />
