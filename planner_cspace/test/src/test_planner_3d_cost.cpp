@@ -66,8 +66,6 @@ TEST(GridAstarModel3D, Cost)
   GridAstarModel3D model(
       map_info,
       GridAstarModel3D::Vecf(1.0f, 1.0f, 0.1f),
-      GridAstarModel3D::Vecf(
-          map_info.linear_resolution, map_info.linear_resolution, map_info.angular_resolution),
       100.0,
       cost_estim_cache, cm, cm, cm,
       cc, 10);

@@ -43,7 +43,6 @@
 GridAstarModel3D::GridAstarModel3D(
     const costmap_cspace_msgs::MapMetaData3D& map_info,
     const Vecf& euclid_cost_coef,
-    const Vecf& resolution,
     const int local_range,
     BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
     BlockMemGridmapBase<char, 3, 2>& cm,
@@ -54,7 +53,10 @@ GridAstarModel3D::GridAstarModel3D(
   : hysteresis_(false)
   , map_info_(map_info)
   , euclid_cost_coef_(euclid_cost_coef)
-  , resolution_(resolution)
+  , resolution_(
+        1.0f / map_info.linear_resolution,
+        1.0f / map_info.linear_resolution,
+        1.0f / map_info.angular_resolution)
   , local_range_(local_range)
   , cost_estim_cache_(cost_estim_cache)
   , cm_(cm)

@@ -97,7 +97,6 @@ public:
   explicit GridAstarModel3D(
       const costmap_cspace_msgs::MapMetaData3D& map_info,
       const Vecf& euclid_cost_coef,
-      const Vecf& resolution,
       const int local_range,
       BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
       BlockMemGridmapBase<char, 3, 2>& cm,

@@ -171,7 +171,6 @@ protected:
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseStamped goal_raw_;
   Astar::Vecf ec_;
-  Astar::Vecf resolution_;
   double goal_tolerance_lin_f_;
   double goal_tolerance_ang_f_;
   double goal_tolerance_ang_finish_;
@@ -960,9 +959,6 @@ protected:
         map_info_.angular_resolution != msg->info.angular_resolution)
     {
       map_info_ = msg->info;
-      resolution_[0] = 1.0 / map_info_.linear_resolution;
-      resolution_[1] = 1.0 / map_info_.linear_resolution;
-      resolution_[2] = 1.0 / map_info_.angular_resolution;
 
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
       hist_ignore_range_ = lroundf(hist_ignore_range_f_ / map_info_.linear_resolution);
@@ -979,7 +975,7 @@ protected:
       model_.reset(
           new GridAstarModel3D(
               map_info_,
-              ec_, resolution_,
+              ec_,
               local_range_,
               cost_estim_cache_, cm_, cm_hyst_, cm_rough_,
               cc_, range_));
