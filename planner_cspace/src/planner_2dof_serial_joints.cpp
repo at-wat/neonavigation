@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <list>
 #include <string>
 #include <utility>
@@ -570,7 +571,7 @@ private:
     }
     std::list<Astar::Vec> path_grid;
     // const auto ts = std::chrono::high_resolution_clock::now();
-    float cancel = FLT_MAX;
+    float cancel = std::numeric_limits<float>::max();
     if (replan_interval_ >= ros::Duration(0))
       cancel = replan_interval_.toSec();
     if (!as_.search(

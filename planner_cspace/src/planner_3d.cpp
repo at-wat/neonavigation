@@ -509,7 +509,7 @@ protected:
   {
     ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
 
-    float range_min = FLT_MAX;
+    float range_min = std::numeric_limits<float>::max();
     Astar::Vec s_out;
     Astar::Vec d;
     for (d[2] = -angle_range; d[2] <= angle_range; d[2]++)
@@ -545,7 +545,7 @@ protected:
       }
     }
 
-    if (range_min == FLT_MAX)
+    if (range_min == std::numeric_limits<float>::max())
     {
       if (cost_acceptable != 100)
       {
@@ -603,7 +603,7 @@ protected:
     reservable_priority_queue<Astar::PriorityVec> open;
     open.reserve(map_info_.width * map_info_.height / 2);
 
-    cost_estim_cache_.clear(FLT_MAX);
+    cost_estim_cache_.clear(std::numeric_limits<float>::max());
     if (cm_[e] == 100)
     {
       if (!searchAvailablePos(e, tolerance_range_, tolerance_angle_))
@@ -667,7 +667,7 @@ protected:
           geometry_msgs::Point32 point;
           point.x = x;
           point.y = y;
-          if (cost_estim_cache_[p] == FLT_MAX)
+          if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
             continue;
           point.z = cost_estim_cache_[p] / 500;
           distance_map.points.push_back(point);
@@ -690,7 +690,7 @@ protected:
       {
         for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
         {
-          if (cost_estim_cache_[p] == FLT_MAX)
+          if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
             continue;
 
           char cost = 100;
@@ -853,7 +853,7 @@ protected:
 
     Astar::Vec p, p_cost_min;
     p[2] = 0;
-    float cost_min = FLT_MAX;
+    float cost_min = std::numeric_limits<float>::max();
     for (p[1] = static_cast<int>(msg->y); p[1] < static_cast<int>(msg->y + msg->height); p[1]++)
     {
       for (p[0] = static_cast<int>(msg->x); p[0] < static_cast<int>(msg->x + msg->width); p[0]++)
@@ -871,7 +871,7 @@ protected:
     open.reserve(map_info_.width * map_info_.height / 2);
     erase.reserve(map_info_.width * map_info_.height / 2);
 
-    if (cost_min != FLT_MAX)
+    if (cost_min != std::numeric_limits<float>::max())
       erase.emplace(cost_min, cost_min, p_cost_min);
     while (true)
     {
@@ -881,9 +881,9 @@ protected:
       const Astar::Vec p = center.v_;
       erase.pop();
 
-      if (cost_estim_cache_[p] == FLT_MAX)
+      if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
         continue;
-      cost_estim_cache_[p] = FLT_MAX;
+      cost_estim_cache_[p] = std::numeric_limits<float>::max();
 
       Astar::Vec d;
       d[2] = 0;
@@ -899,7 +899,7 @@ protected:
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
           const float gn = cost_estim_cache_[next];
-          if (gn == FLT_MAX)
+          if (gn == std::numeric_limits<float>::max())
             continue;
           if (gn < cost_min)
           {
@@ -1490,7 +1490,7 @@ protected:
     }
     const Astar::Vec s_rough(s[0], s[1], 0);
 
-    if (cost_estim_cache_[s_rough] == FLT_MAX)
+    if (cost_estim_cache_[s_rough] == std::numeric_limits<float>::max())
     {
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable.");
@@ -1594,7 +1594,7 @@ protected:
       for (auto& ps : path_points)
       {
         const Astar::Vec& p = ps.first;
-        float d_min = FLT_MAX;
+        float d_min = std::numeric_limits<float>::max();
         auto it_prev = path_interpolated.cbegin();
         for (auto it = path_interpolated.cbegin(); it != path_interpolated.cend(); it++)
         {

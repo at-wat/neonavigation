@@ -28,6 +28,7 @@
  */
 
 #include <cmath>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -322,8 +323,8 @@ float GridAstarModel3D::costEstim(
 {
   Vec s2(cur[0], cur[1], 0);
   float cost = cost_estim_cache_[s2];
-  if (cost == FLT_MAX)
-    return FLT_MAX;
+  if (cost == std::numeric_limits<float>::max())
+    return std::numeric_limits<float>::max();
 
   int diff = cur[2] - goal[2];
   while (diff > static_cast<int>(map_info_.angle) / 2)

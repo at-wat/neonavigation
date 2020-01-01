@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <sstream>
 #include <string>
@@ -598,7 +599,7 @@ protected:
     }
     float dist(const vec& a) const
     {
-      float dist = FLT_MAX;
+      float dist = std::numeric_limits<float>::max();
       for (size_t i = 0; i < v.size() - 1; i++)
       {
         auto& v1 = v[i];

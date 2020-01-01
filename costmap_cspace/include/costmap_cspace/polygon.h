@@ -31,6 +31,7 @@
 #define COSTMAP_CSPACE_POLYGON_H
 
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include <ros/ros.h>
@@ -178,7 +179,7 @@ public:
   }
   float dist(const Vec& a) const
   {
-    float dist = FLT_MAX;
+    float dist = std::numeric_limits<float>::max();
     for (size_t i = 0; i < v.size() - 1; i++)
     {
       auto& v1 = v[i];

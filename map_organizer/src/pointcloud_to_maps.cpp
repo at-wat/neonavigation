@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <random>
 #include <sstream>
@@ -97,9 +98,9 @@ public:
     floor_tolerance = std::lround(floor_tolerance_f / grid);
 
     std::map<int, int> hist;
-    int x_min = INT_MAX, x_max = 0;
-    int y_min = INT_MAX, y_max = 0;
-    int h_min = INT_MAX, h_max = 0;
+    int x_min = std::numeric_limits<int>::max(), x_max = 0;
+    int y_min = std::numeric_limits<int>::max(), y_max = 0;
+    int h_min = std::numeric_limits<int>::max(), h_max = 0;
 
     for (const auto& p : pc->points)
     {
@@ -139,7 +140,7 @@ public:
     ROS_INFO("width %d, height %d", mmd.width, mmd.height);
     std::vector<nav_msgs::OccupancyGrid> maps;
 
-    int hist_max = INT_MIN;
+    int hist_max = std::numeric_limits<int>::lowest();
     for (const auto& h : hist)
       if (h.second > hist_max)
         hist_max = h.second;
