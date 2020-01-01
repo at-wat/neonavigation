@@ -69,7 +69,7 @@ private:
     const ros::Time now = ros::Time::now();
     if (cmd_vel_time_ == ros::Time(0))
       cmd_vel_time_ = now;
-    const float dt = (now - cmd_vel_time_).toSec();
+    const float dt = std::min((now - cmd_vel_time_).toSec(), 0.1);
 
     yaw_ += msg->angular.z * dt;
     pos_ += Eigen::Vector2d(std::cos(yaw_), std::sin(yaw_)) * msg->linear.x * dt;
