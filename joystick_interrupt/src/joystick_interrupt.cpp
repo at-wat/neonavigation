@@ -90,7 +90,7 @@ private:
     {
       if (static_cast<size_t>(linear_axis2_) < msg->axes.size())
       {
-        if (fabs(msg->axes[linear_axis2_]) > fabs(lin))
+        if (std::abs(msg->axes[linear_axis2_]) > std::abs(lin))
           lin = msg->axes[linear_axis2_];
       }
       else
@@ -101,7 +101,7 @@ private:
     {
       if (static_cast<size_t>(angular_axis2_) < msg->axes.size())
       {
-        if (fabs(msg->axes[angular_axis2_]) > fabs(ang))
+        if (std::abs(msg->axes[angular_axis2_]) > std::abs(ang))
           ang = msg->axes[angular_axis2_];
       }
       else

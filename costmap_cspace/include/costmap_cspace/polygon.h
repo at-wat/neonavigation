@@ -68,7 +68,7 @@ public:
   }
   float dist(const Vec& a) const
   {
-    return hypotf((*this)[0] - a[0], (*this)[1] - a[1]);
+    return std::hypot((*this)[0] - a[0], (*this)[1] - a[1]);
   }
   float dist_line(const Vec& a, const Vec& b) const
   {
@@ -80,7 +80,7 @@ public:
       return this->dist(a);
     if ((a - b).dot((*this) - b) <= 0)
       return this->dist(b);
-    return fabs(this->dist_line(a, b));
+    return std::abs(this->dist_line(a, b));
   }
 };
 class Polygon
@@ -139,7 +139,7 @@ public:
     float radius = 0;
     for (const auto& p : v)
     {
-      const auto dist = hypotf(p[0], p[1]);
+      const auto dist = std::hypot(p[0], p[1]);
       if (dist > radius)
         radius = dist;
     }

@@ -320,7 +320,7 @@ protected:
         goal_.pose.orientation.y * goal_.pose.orientation.y +
         goal_.pose.orientation.z * goal_.pose.orientation.z +
         goal_.pose.orientation.w * goal_.pose.orientation.w;
-    if (fabs(len2 - 1.0) < 0.1)
+    if (std::abs(len2 - 1.0) < 0.1)
     {
       escaping_ = false;
       has_goal_ = true;
@@ -1301,7 +1301,7 @@ public:
             yaw_diff -= M_PI * 2.0;
           else if (yaw_diff < -M_PI)
             yaw_diff += M_PI * 2.0;
-          if (fabs(yaw_diff) < goal_tolerance_ang_finish_)
+          if (std::abs(yaw_diff) < goal_tolerance_ang_finish_)
           {
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
@@ -1435,14 +1435,14 @@ protected:
     {
       const Astar::Vecf diff =
           Astar::Vecf(s.v_[0] + 0.5f, s.v_[1] + 0.5f, 0.0f) - sf;
-      s.c_ = hypotf(diff[0] * ec_[0], diff[1] * ec_[0]);
+      s.c_ = std::hypot(diff[0] * ec_[0], diff[1] * ec_[0]);
       s.c_ += cm_[s.v_] * cc_.weight_costmap_ / 100.0;
 
       // Check if arrived to the goal
       Astar::Vec remain = s.v_ - e;
       remain.cycle(map_info_.angle);
       if (remain.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
-          abs(remain[2]) <= goal_tolerance_ang_)
+          std::abs(remain[2]) <= goal_tolerance_ang_)
       {
         path.poses.resize(1);
         path.poses[0].header = path.header;
@@ -1644,7 +1644,7 @@ protected:
     {
       if (!first)
       {
-        const float len = hypotf(
+        const float len = std::hypot(
             p.pose.position.y - p_prev.position.y,
             p.pose.position.x - p_prev.position.x);
         if (len > 0.001)

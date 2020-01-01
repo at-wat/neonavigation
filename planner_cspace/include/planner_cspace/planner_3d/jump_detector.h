@@ -107,7 +107,7 @@ public:
     const auto pos_diff = diff.getOrigin().length();
     const auto yaw_diff = tf2::getYaw(diff.getRotation());
 
-    if (pos_diff > pos_jump_ || fabs(yaw_diff) > yaw_jump_)
+    if (pos_diff > pos_jump_ || std::abs(yaw_diff) > yaw_jump_)
     {
       ROS_ERROR("Position jumped (%0.3f/%0.3f, %0.3f/%0.3f); clearing history",
                 pos_diff, pos_jump_, yaw_diff, yaw_jump_);

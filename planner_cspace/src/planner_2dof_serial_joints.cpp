@@ -95,7 +95,7 @@ private:
 
       float dist(const Vec3dof& b)
       {
-        return hypotf(b.x_ - x_, b.y_ - y_);
+        return std::hypot(b.x_ - x_, b.y_ - y_);
       }
     };
 
@@ -250,8 +250,8 @@ private:
           if (it_next != path.end())
           {
             float diff[2], diff_max;
-            diff[0] = fabs((*it_next)[0] - (*it)[0]);
-            diff[1] = fabs((*it_next)[1] - (*it)[1]);
+            diff[0] = std::abs((*it_next)[0] - (*it)[0]);
+            diff[1] = std::abs((*it_next)[1] - (*it)[1]);
             diff_max = std::max(diff[0], diff[1]);
             pos_sum += diff_max;
           }
@@ -292,8 +292,8 @@ private:
         it_next++;
 
         float diff[2], diff_max;
-        diff[0] = fabs((*it)[0] - (*it_prev)[0]);
-        diff[1] = fabs((*it)[1] - (*it_prev)[1]);
+        diff[0] = std::abs((*it)[0] - (*it_prev)[0]);
+        diff[1] = std::abs((*it)[1] - (*it_prev)[1]);
         diff_max = std::max(diff[0], diff[1]);
         pos_sum += diff_max;
 
@@ -321,7 +321,7 @@ private:
               dir[1] = ((*it_next)[1] - (*it_prev)[1]);
               break;
           }
-          dir_max = std::max(fabs(dir[0]), fabs(dir[1]));
+          dir_max = std::max(std::abs(dir[0]), std::abs(dir[1]));
           float t = dir_max / avg_vel_;
 
           p.velocities[0] = dir[0] / t;
@@ -479,7 +479,7 @@ public:
             if ((unsigned int)p2[0] >= (unsigned int)resolution_ * 2 ||
                 (unsigned int)p2[1] >= (unsigned int)resolution_ * 2)
               continue;
-            int dist = std::max(abs(d[0]), abs(d[1]));
+            int dist = std::max(std::abs(d[0]), abs(d[1]));
             int c = floorf(100.0 * (range - dist) / range);
             if (cm_[p2] < c)
               cm_[p2] = c;

@@ -330,8 +330,8 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
       for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
-        const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
-        const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
+        const float dist1 = std::hypot(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
+        const float dist2 = std::hypot(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
         const float dist = std::min(dist1, dist2);
 
         if (i == static_cast<size_t>(i_center + 1) &&

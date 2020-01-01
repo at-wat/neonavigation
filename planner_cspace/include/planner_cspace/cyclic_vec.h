@@ -223,7 +223,7 @@ public:
     const auto to_b = (*this) - b;
     if ((a - b).dot2d(to_b) <= 0)
       return to_b.len();
-    return fabs(distLine2d(a, b));
+    return std::abs(distLine2d(a, b));
   }
   T& operator[](const int& x)
   {
@@ -244,7 +244,7 @@ public:
   }
   float len() const
   {
-    return sqrtf(sqlen());
+    return std::sqrt(sqlen());
   }
   float gridToLenFactor() const
   {
@@ -256,9 +256,9 @@ public:
     float out = 0;
     for (int i = 0; i < DIM; i++)
     {
-      out += powf(e_[i], 2.0);
+      out += std::pow(e_[i], 2.0);
     }
-    return sqrtf(out);
+    return std::sqrt(out);
   }
 
   void rotate(const float ang)

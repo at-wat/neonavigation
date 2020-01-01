@@ -105,7 +105,7 @@ TEST(MotionCache, Generate)
       const CyclicVecInt<3, 2> goal(
           i * xy_syaw_gyaw[0], i * xy_syaw_gyaw[1], xy_syaw_gyaw[3]);
       const auto c = cache.find(xy_syaw_gyaw[2], goal);
-      if (i * sqrt(2) >= range)
+      if (i * std::sqrt(2.0) >= range)
       {
         ASSERT_EQ(c, cache.end(xy_syaw_gyaw[2]));
         continue;

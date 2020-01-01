@@ -62,7 +62,7 @@ float GridAstarModel2DoFSerialJoint::euclidCost(const Vec& v) const
   float cost = 0;
   for (int i = 0; i < 2; i++)
   {
-    cost += fabs(euclid_cost_coef_[i] * vc[i]);
+    cost += std::abs(euclid_cost_coef_[i] * vc[i]);
   }
   return cost;
 }
@@ -77,7 +77,7 @@ float GridAstarModel2DoFSerialJoint::cost(
 
   float cost = euclidCost(d);
 
-  float distf = hypotf(static_cast<float>(d[0]), static_cast<float>(d[1]));
+  float distf = std::hypot(static_cast<float>(d[0]), static_cast<float>(d[1]));
   float v[2], dp[2];
   int sum = 0;
   const int dist = distf;

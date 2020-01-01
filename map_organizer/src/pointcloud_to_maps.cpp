@@ -159,7 +159,7 @@ public:
           const int z = (p.z / grid);
           const auto v = std::pair<int, int>(x, y);
 
-          if (abs(i - z) <= floor_height)
+          if (std::abs(i - z) <= floor_height)
           {
             if (floor[i].find(v) == floor[i].end())
             {
@@ -229,7 +229,7 @@ public:
     {
       const int h = it->info.origin.position.z / grid;
       const int h_prev = it_prev->info.origin.position.z / grid;
-      if (fabs(it_prev->info.origin.position.z - it->info.origin.position.z) < grid * 1.5)
+      if (std::abs(it_prev->info.origin.position.z - it->info.origin.position.z) < grid * 1.5)
       {
         // merge slopes
         for (size_t i = 0; i < it->data.size(); i++)
@@ -309,7 +309,7 @@ public:
                 if (map_cp[addr] == 100)
                 {
                   if (width_sq < floor_width * floor_width)
-                    floor_width = sqrtf(width_sq);
+                    floor_width = std::sqrt(width_sq);
                 }
               }
             }

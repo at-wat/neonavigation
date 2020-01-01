@@ -252,7 +252,7 @@ public:
       v[1] = static_cast<double>(footprint_xml[i][1]);
       footprint_p.v.push_back(v);
 
-      const float dist = hypotf(v[0], v[1]);
+      const float dist = std::hypot(v[0], v[1]);
       if (dist > footprint_radius_)
         footprint_radius_ = dist;
     }
@@ -547,7 +547,7 @@ protected:
     }
     float dist(const vec& a) const
     {
-      return hypotf((*this)[0] - a[0], (*this)[1] - a[1]);
+      return std::hypot((*this)[0] - a[0], (*this)[1] - a[1]);
     }
     float dist_line(const vec& a, const vec& b) const
     {

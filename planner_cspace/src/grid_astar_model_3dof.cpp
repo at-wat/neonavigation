@@ -129,7 +129,7 @@ void GridAstarModel3D::createEuclidCostCache()
   for (int rootsum = 0;
        rootsum < static_cast<int>(euclid_cost_lin_cache_.size()); ++rootsum)
   {
-    euclid_cost_lin_cache_[rootsum] = sqrtf(rootsum) * euclid_cost_coef_[0];
+    euclid_cost_lin_cache_[rootsum] = std::sqrt(rootsum) * euclid_cost_coef_[0];
   }
 }
 float GridAstarModel3D::euclidCost(const Vec& v) const
@@ -153,7 +153,7 @@ float GridAstarModel3D::euclidCostRough(const Vec& v) const
   if (rootsum < static_cast<int>(euclid_cost_lin_cache_.size()))
     return euclid_cost_lin_cache_[rootsum];
 
-  return sqrtf(rootsum) * euclid_cost_coef_[0];
+  return std::sqrt(rootsum) * euclid_cost_coef_[0];
 }
 float GridAstarModel3D::cost(
     const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
@@ -169,7 +169,7 @@ float GridAstarModel3D::cost(
     int sum = 0;
     const int dir = d[2] < 0 ? -1 : 1;
     Vec pos = cur;
-    for (int i = 0; i < abs(d[2]); i++)
+    for (int i = 0; i < std::abs(d[2]); i++)
     {
       pos[2] += dir;
       if (pos[2] < 0)
@@ -199,7 +199,7 @@ float GridAstarModel3D::cost(
     return -1;
   }
 
-  if (fabs(motion[2]) >= 2.0 * M_PI / 4.0)
+  if (std::abs(motion[2]) >= 2.0 * M_PI / 4.0)
   {
     // Over 90 degree turn
     // must be separated into two curves
@@ -219,10 +219,10 @@ float GridAstarModel3D::cost(
     if (lroundf(motion_grid[0]) == 0)
       return -1;  // side slip
     const float aspect = motion[0] / motion[1];
-    if (fabs(aspect) < cc_.angle_resolution_aspect_)
+    if (std::abs(aspect) < cc_.angle_resolution_aspect_)
       return -1;  // large y offset
 
-    cost += euclid_cost_coef_[2] * fabs(1.0 / aspect) * map_info_.angular_resolution / (M_PI * 2.0);
+    cost += euclid_cost_coef_[2] * std::abs(1.0 / aspect) * map_info_.angular_resolution / (M_PI * 2.0);
 
     // Go-straight
     int sum = 0, sum_hyst = 0;
@@ -263,7 +263,7 @@ float GridAstarModel3D::cost(
     const float r2 = radiuses.second;
 
     // curveture at the start_ pose and the end pose must be same
-    if (fabs(r1 - r2) >= map_info_.linear_resolution * 1.5)
+    if (std::abs(r1 - r2) >= map_info_.linear_resolution * 1.5)
     {
       // Drifted
       return -1;
@@ -278,12 +278,12 @@ float GridAstarModel3D::cost(
         cur[0] >= max_boundary_[0] || cur[1] >= max_boundary_[1])
       return -1;
 
-    if (fabs(cc_.max_vel_ / r1) > cc_.max_ang_vel_)
+    if (std::abs(cc_.max_vel_ / r1) > cc_.max_ang_vel_)
     {
-      const float vel = fabs(curv_radius) * cc_.max_ang_vel_;
+      const float vel = std::abs(curv_radius) * cc_.max_ang_vel_;
 
       // Curve deceleration penalty
-      cost += dist * fabs(vel / cc_.max_vel_) * cc_.weight_decel_;
+      cost += dist * std::abs(vel / cc_.max_vel_) * cc_.weight_decel_;
     }
 
     {
@@ -309,7 +309,7 @@ float GridAstarModel3D::cost(
       }
       const float distf = cache_page->second.getDistance();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
-      cost += sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * num);
+      cost += sum * map_info_.angular_resolution * std::abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * num);
       cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
     }
   }
@@ -330,7 +330,7 @@ float GridAstarModel3D::costEstim(
   while (diff < -static_cast<int>(map_info_.angle) / 2)
     diff += static_cast<int>(map_info_.angle);
 
-  cost += euclid_cost_coef_[2] * abs(diff);
+  cost += euclid_cost_coef_[2] * std::abs(diff);
 
   return cost;
 }

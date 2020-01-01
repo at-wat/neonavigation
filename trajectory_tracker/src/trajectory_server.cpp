@@ -36,7 +36,7 @@
  */
 
 #include <ros/ros.h>
-#include <math.h>
+#include <cmath>
 #include <fstream>
 #include <string>
 

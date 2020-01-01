@@ -40,7 +40,7 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Path.h>
 
-#include <math.h>
+#include <cmath>
 #include <fstream>
 #include <string>
 
