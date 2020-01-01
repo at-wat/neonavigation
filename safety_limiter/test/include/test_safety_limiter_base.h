@@ -45,6 +45,15 @@
 
 namespace
 {
+inline void GenerateEmptyPointcloud2(sensor_msgs::PointCloud2& cloud)
+{
+  cloud.height = 1;
+  cloud.width = 0;
+  cloud.is_bigendian = false;
+  cloud.is_dense = false;
+  sensor_msgs::PointCloud2Modifier modifier(cloud);
+  modifier.setPointCloud2FieldsByString(1, "xyz");
+}
 inline void GenerateSinglePointPointcloud2(
     sensor_msgs::PointCloud2& cloud,
     const float x,
@@ -76,6 +85,7 @@ protected:
   ros::Publisher pub_watchdog_;
   ros::Subscriber sub_diag_;
   ros::Subscriber sub_status_;
+  ros::Subscriber sub_cmd_vel_;
 
   inline void cbDiag(const diagnostic_msgs::DiagnosticArray::ConstPtr& msg)
   {
@@ -87,9 +97,15 @@ protected:
     status_ = msg;
   }
 
+  inline void cbCmdVel(const geometry_msgs::Twist::ConstPtr& msg)
+  {
+    cmd_vel_ = msg;
+  }
+
 public:
   diagnostic_msgs::DiagnosticArray::ConstPtr diag_;
   safety_limiter_msgs::SafetyLimiterStatus::ConstPtr status_;
+  geometry_msgs::Twist::ConstPtr cmd_vel_;
 
   inline SafetyLimiterTest()
     : nh_()
@@ -99,11 +115,36 @@ public:
     pub_watchdog_ = nh_.advertise<std_msgs::Empty>("watchdog_reset", 1);
     sub_diag_ = nh_.subscribe("diagnostics", 1, &SafetyLimiterTest::cbDiag, this);
     sub_status_ = nh_.subscribe("/safety_limiter/status", 1, &SafetyLimiterTest::cbStatus, this);
+    sub_cmd_vel_ = nh_.subscribe("cmd_vel", 1, &SafetyLimiterTest::cbCmdVel, this);
+
+    ros::Rate wait(10.0);
+    // Skip initial state
+    for (int i = 0; i < 10 && ros::ok(); ++i)
+    {
+      publishEmptyPointPointcloud2("base_link", ros::Time::now());
+      publishWatchdogReset();
+
+      wait.sleep();
+      ros::spinOnce();
+    }
+    cmd_vel_.reset();
+    diag_.reset();
+    status_.reset();
   }
   inline void publishWatchdogReset()
   {
     std_msgs::Empty watchdog_reset;
     pub_watchdog_.publish(watchdog_reset);
+  }
+  inline void publishEmptyPointPointcloud2(
+      const std::string frame_id,
+      const ros::Time stamp)
+  {
+    sensor_msgs::PointCloud2 cloud;
+    cloud.header.frame_id = frame_id;
+    cloud.header.stamp = stamp;
+    GenerateEmptyPointcloud2(cloud);
+    pub_cloud_.publish(cloud);
   }
   inline void publishSinglePointPointcloud2(
       const float x,
