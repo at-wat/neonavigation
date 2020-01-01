@@ -257,9 +257,6 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
 }
 void TrackerNode::cbTimer(const ros::TimerEvent& event)
 {
-  static int cnt = 0;
-  if (cnt++ % 10 == 0)
-    std::cerr << "control" << std::endl;
   control();
 }
 
