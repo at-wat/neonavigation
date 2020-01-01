@@ -55,6 +55,19 @@ public:
         break;
     }
   }
+  static void showMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  {
+    std::cerr << std::hex;
+    for (size_t y = 0; y < msg->info.height; ++y)
+    {
+      for (size_t x = 0; x < msg->info.width; ++x)
+      {
+        std::cerr << (msg->data[x + y * msg->info.width] / 0x10);
+      }
+      std::cerr << std::endl;
+    }
+    std::cerr << std::dec;
+  }
 
 protected:
   void cbHysteresis(const nav_msgs::OccupancyGrid::ConstPtr& msg)
@@ -120,6 +133,10 @@ TEST_F(DebugOutputsTest, Hysteresis)
     const size_t addr = data.x + data.y * map_hysteresis_->info.width;
     EXPECT_EQ(data.value, map_hysteresis_->data[addr]) << "x: " << data.x << ", y: " << data.y;
   }
+  if (::testing::Test::HasFailure())
+  {
+    showMap(map_hysteresis_);
+  }
 }
 
 TEST_F(DebugOutputsTest, Remembered)
@@ -142,6 +159,10 @@ TEST_F(DebugOutputsTest, Remembered)
   {
     const size_t addr = data.x + data.y * map_remembered_->info.width;
     EXPECT_EQ(data.value, map_remembered_->data[addr]) << "x: " << data.x << ", y: " << data.y;
+  }
+  if (::testing::Test::HasFailure())
+  {
+    showMap(map_remembered_);
   }
 }
 
