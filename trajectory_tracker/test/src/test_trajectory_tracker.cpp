@@ -123,6 +123,7 @@ public:
   {
     ros::Rate rate(50);
     std::cerr << "waiting start" << std::endl;
+    const auto start = ros::Time::now();
     while (ros::ok())
     {
       publishTransform();
@@ -130,6 +131,7 @@ public:
       ros::spinOnce();
       if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
+      ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0)) << "trajectory_tracker status timeout";
     }
     std::cerr << "started" << std::endl;
   }
