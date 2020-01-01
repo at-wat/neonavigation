@@ -62,7 +62,7 @@ public:
     {
       for (size_t x = 0; x < msg->info.width; ++x)
       {
-        std::cerr << (msg->data[x + y * msg->info.width] / 0x10);
+        std::cerr << (msg->data[x + y * msg->info.width] / 11);
       }
       std::cerr << std::endl;
     }
