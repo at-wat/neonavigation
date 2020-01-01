@@ -289,9 +289,9 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector4d> poses;
-  for (double x = 0.0; x < 0.5; x += 0.01)
+  for (double x = 0.0; x < 0.6; x += 0.01)
     poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, 0.3));
-  for (double x = 0.5; x < 1.5; x += 0.01)
+  for (double x = 0.6; x < 1.5; x += 0.01)
     poses.push_back(Eigen::Vector4d(x, 0.0, 0.0, 0.5));
   poses.push_back(Eigen::Vector4d(1.5, 0.0, 0.0, 0.5));
   publishPathVelocity(poses);
@@ -311,7 +311,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.3, 1e-2);
     }
-    else if (0.9 < pos_[0] && pos_[0] < 1.0)
+    else if (0.95 < pos_[0] && pos_[0] < 1.0)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.5, 1e-2);
     }
