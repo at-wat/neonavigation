@@ -105,7 +105,7 @@ TEST(CyclicVec, LengthInt)
 
   ASSERT_EQ(v.sqlen(), 25);
   ASSERT_EQ(v.len(), 5.0);
-  ASSERT_EQ(v.norm(), std::sqrt(50));
+  ASSERT_EQ(v.norm(), std::sqrt(50.0f));
 }
 
 TEST(CyclicVec, LengthFloat)
@@ -115,7 +115,7 @@ TEST(CyclicVec, LengthFloat)
 
   ASSERT_EQ(v.sqlen(), 25.0);
   ASSERT_EQ(v.len(), 5.0);
-  ASSERT_EQ(v.norm(), std::sqrt(50.0));
+  ASSERT_EQ(v.norm(), std::sqrt(50.0f));
 }
 
 TEST(CyclicVec, Cycle)
