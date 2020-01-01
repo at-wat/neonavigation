@@ -84,7 +84,7 @@ protected:
   BlockMemGridmapBase<char, 3, 2>& cm_;
   BlockMemGridmapBase<char, 3, 2>& cm_hyst_;
   BlockMemGridmapBase<char, 3, 2>& cm_rough_;
-  CostCoeff cc_;
+  const CostCoeff& cc_;
   int range_;
   RotationCache rot_cache_;
   MotionCache motion_cache_;
