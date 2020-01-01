@@ -100,16 +100,17 @@ public:
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
-    nav_msgs::Path path;
-    path.header.frame_id = "odom";
-    path.header.stamp = ros::Time::now();
-    pub_path_.publish(path);
-
-    // Wait until trajectory_tracker node
+    // Wait trajectory_tracker node
     ros::Rate rate(10);
     std::cerr << "waiting status" << std::endl;
+    const auto start = ros::Time::now();
     while (ros::ok())
     {
+      nav_msgs::Path path;
+      path.header.frame_id = "odom";
+      path.header.stamp = ros::Time::now();
+      pub_path_.publish(path);
+
       yaw_next_ = yaw_ = yaw;
       pos_next_ = pos_ = pos;
       publishTransform();
@@ -118,6 +119,7 @@ public:
       ros::spinOnce();
       if (status_)
         break;
+      ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0)) << "trajectory_tracker status timeout";
     }
     std::cerr << "status received" << std::endl;
   }
