@@ -256,7 +256,7 @@ public:
     float out = 0;
     for (int i = 0; i < DIM; i++)
     {
-      out += std::pow(e_[i], 2.0);
+      out += std::pow(e_[i], 2);
     }
     return std::sqrt(out);
   }

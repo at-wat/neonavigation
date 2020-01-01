@@ -198,10 +198,11 @@ private:
           auto a = p1 - p0;
           auto b = p2 - p0;
 
-          float s = 0.5 * std::sqrt(
-                              std::pow(a.y * b.z - a.z * b.y, 2.0) +
-                              std::pow(a.z * b.x - a.x * b.z, 2.0) +
-                              std::pow(a.x * b.y - a.y * b.x, 2.0));
+          float s =
+              0.5 * std::sqrt(
+                        std::pow(a.y * b.z - a.z * b.y, 2) +
+                        std::pow(a.z * b.x - a.x * b.z, 2) +
+                        std::pow(a.x * b.y - a.y * b.x, 2));
           float numf = ppmsq_ * s;
           int num = numf;
           if (numf - num > ud(engine_))

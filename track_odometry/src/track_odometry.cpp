@@ -241,7 +241,7 @@ private:
       const float slip_ratio_per_angvel =
           (w_odom - w_imu) / (w_odom * std::abs(w_odom));
       float slip_ratio_per_angvel_sigma =
-          sigma_odom_ * std::abs(2 * w_odom * sigma_odom_ / std::pow(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2.0));
+          sigma_odom_ * std::abs(2.0 * w_odom * sigma_odom_ / std::pow(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2));
       if (std::abs(w_odom) < sigma_odom_)
         slip_ratio_per_angvel_sigma = std::numeric_limits<float>::infinity();
 
