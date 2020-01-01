@@ -297,7 +297,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
     publishTransform();
     rate.sleep();
     ros::spinOnce();
-    if (0.3 < pos_[0] && pos_[0] < 0.4)
+    if (0.3 < pos_[0] && pos_[0] < 0.35)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.3, 1e-2);
     }
