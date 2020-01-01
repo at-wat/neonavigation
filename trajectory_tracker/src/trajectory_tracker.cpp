@@ -269,6 +269,7 @@ void TrackerNode::spin()
 
 void TrackerNode::control()
 {
+  std::cerr << "control" << std::endl;
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
   status.header.stamp = ros::Time::now();
   status.distance_remains = 0.0;
