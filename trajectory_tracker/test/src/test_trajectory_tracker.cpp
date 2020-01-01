@@ -71,20 +71,15 @@ private:
       cmd_vel_time_ = now;
     const float dt = (now - cmd_vel_time_).toSec();
 
-    yaw_ = yaw_next_;
-    pos_ = pos_next_;
-
-    yaw_next_ = yaw_ + msg->angular.z * dt;
-    pos_next_ = pos_ + Eigen::Vector2d(std::cos(yaw_), std::sin(yaw_)) * msg->linear.x * dt;
+    yaw_ += msg->angular.z * dt;
+    pos_ += Eigen::Vector2d(std::cos(yaw_), std::sin(yaw_)) * msg->linear.x * dt;
     cmd_vel_time_ = now;
     cmd_vel_ = msg;
   }
 
 public:
   Eigen::Vector2d pos_;
-  Eigen::Vector2d pos_next_;
   double yaw_;
-  double yaw_next_;
   trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr status_;
   geometry_msgs::Twist::ConstPtr cmd_vel_;
 
@@ -111,8 +106,8 @@ public:
       path.header.stamp = ros::Time::now();
       pub_path_.publish(path);
 
-      yaw_next_ = yaw_ = yaw;
-      pos_next_ = pos_ = pos;
+      yaw_ = yaw;
+      pos_ = pos;
       publishTransform();
 
       rate.sleep();
@@ -194,8 +189,8 @@ public:
     trans.header.frame_id = "odom";
     trans.header.stamp = ros::Time::now() + ros::Duration(0.1);
     trans.child_frame_id = "base_link";
-    trans.transform.translation.x = pos_next_[0];
-    trans.transform.translation.y = pos_next_[1];
+    trans.transform.translation.x = pos_[0];
+    trans.transform.translation.y = pos_[1];
     trans.transform.rotation.x = q.x();
     trans.transform.rotation.y = q.y();
     trans.transform.rotation.z = q.z();
