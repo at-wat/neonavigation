@@ -961,16 +961,16 @@ protected:
       map_info_ = msg->info;
 
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
-      hist_ignore_range_ = lroundf(hist_ignore_range_f_ / map_info_.linear_resolution);
-      hist_ignore_range_max_ = lroundf(hist_ignore_range_max_f_ / map_info_.linear_resolution);
-      local_range_ = lroundf(local_range_f_ / map_info_.linear_resolution);
-      longcut_range_ = lroundf(longcut_range_f_ / map_info_.linear_resolution);
-      esc_range_ = lroundf(esc_range_f_ / map_info_.linear_resolution);
+      hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
+      hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
+      local_range_ = std::lround(local_range_f_ / map_info_.linear_resolution);
+      longcut_range_ = std::lround(longcut_range_f_ / map_info_.linear_resolution);
+      esc_range_ = std::lround(esc_range_f_ / map_info_.linear_resolution);
       esc_angle_ = map_info_.angle / 8;
-      tolerance_range_ = lroundf(tolerance_range_f_ / map_info_.linear_resolution);
-      tolerance_angle_ = lroundf(tolerance_angle_f_ / map_info_.angular_resolution);
-      goal_tolerance_lin_ = lroundf(goal_tolerance_lin_f_ / map_info_.linear_resolution);
-      goal_tolerance_ang_ = lroundf(goal_tolerance_ang_f_ / map_info_.angular_resolution);
+      tolerance_range_ = std::lround(tolerance_range_f_ / map_info_.linear_resolution);
+      tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
+      goal_tolerance_lin_ = std::lround(goal_tolerance_lin_f_ / map_info_.linear_resolution);
+      goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
 
       model_.reset(
           new GridAstarModel3D(
@@ -1387,7 +1387,7 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, sf[0], sf[1], sf[2],
         gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
-    Astar::Vec s(static_cast<int>(floor(sf[0])), static_cast<int>(floor(sf[1])), lroundf(sf[2]));
+    Astar::Vec s(static_cast<int>(std::floor(sf[0])), static_cast<int>(std::floor(sf[1])), std::lround(sf[2]));
     s.cycleUnsigned(map_info_.angle);
     if (!cm_.validate(s, range_))
     {
@@ -1599,8 +1599,8 @@ protected:
         {
           if (it != it_prev)
           {
-            int yaw = lroundf((*it)[2]) % map_info_.angle;
-            int yaw_prev = lroundf((*it_prev)[2]) % map_info_.angle;
+            int yaw = std::lround((*it)[2]) % map_info_.angle;
+            int yaw_prev = std::lround((*it_prev)[2]) % map_info_.angle;
             if (yaw < 0)
               yaw += map_info_.angle;
             if (yaw_prev < 0)
@@ -1616,7 +1616,7 @@ protected:
           it_prev = it;
         }
         d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
-        cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
+        cm_hyst_[p] = std::lround((d_min - expand_dist) * 100.0 / max_dist);
       }
       has_hysteresis_map_ = true;
       const auto tnow = boost::chrono::high_resolution_clock::now();

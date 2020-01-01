@@ -89,8 +89,8 @@ float GridAstarModel2DoFSerialJoint::cost(
   Vec pos;
   for (int i = 0; i < dist; i++)
   {
-    pos[0] = lroundf(v[0]);
-    pos[1] = lroundf(v[1]);
+    pos[0] = std::lround(v[0]);
+    pos[1] = std::lround(v[1]);
     pos.cycleUnsigned(resolution_, resolution_);
     const auto c = cm_[pos];
     if (c > 99)

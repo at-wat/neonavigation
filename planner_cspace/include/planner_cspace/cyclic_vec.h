@@ -57,7 +57,7 @@ inline void convert(const int val, float& ret)
 }
 inline void convert(const float val, int& ret)
 {
-  ret = lroundf(val);
+  ret = std::lround(val);
 }
 
 inline void normalizeFloatAngle(float& val)

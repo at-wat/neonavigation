@@ -105,7 +105,7 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 
   cm.setMapMetaData(map_info);
 
-  ASSERT_EQ(static_cast<int>(ceilf(1.5 / 1.0)), cm.getRangeMax());
+  ASSERT_EQ(static_cast<int>(std::ceil(1.5 / 1.0)), cm.getRangeMax());
 
   const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
   // Check template size

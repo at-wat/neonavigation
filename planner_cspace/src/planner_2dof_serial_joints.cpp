@@ -470,7 +470,7 @@ public:
           continue;
 
         Astar::Vec d;
-        int range = lroundf(cc.expand_ * resolution_ / (2.0 * M_PI));
+        int range = std::lround(cc.expand_ * resolution_ / (2.0 * M_PI));
         for (d[0] = -range; d[0] <= range; d[0]++)
         {
           for (d[1] = -range; d[1] <= range; d[1]++)
@@ -480,7 +480,7 @@ public:
                 (unsigned int)p2[1] >= (unsigned int)resolution_ * 2)
               continue;
             int dist = std::max(std::abs(d[0]), abs(d[1]));
-            int c = floorf(100.0 * (range - dist) / range);
+            int c = std::floor(100.0 * (range - dist) / range);
             if (cm_[p2] < c)
               cm_[p2] = c;
           }
@@ -515,8 +515,8 @@ private:
       int& t0, int& t1,
       const float gt0, const float gt1)
   {
-    t0 = lroundf(gt0 * resolution_ / (2.0 * M_PI)) + resolution_;
-    t1 = lroundf(gt1 * resolution_ / (2.0 * M_PI)) + resolution_;
+    t0 = std::lround(gt0 * resolution_ / (2.0 * M_PI)) + resolution_;
+    t1 = std::lround(gt1 * resolution_ / (2.0 * M_PI)) + resolution_;
   }
   void grid2Metric(
       const Astar::Vec t,
@@ -610,9 +610,9 @@ private:
     float prec = 2.0 * M_PI / static_cast<float>(resolution_);
     Astar::Vecf egp = eg;
     if (egp[0] < 0)
-      egp[0] += ceilf(-egp[0] / M_PI * 2.0) * M_PI * 2.0;
+      egp[0] += std::ceil(-egp[0] / M_PI * 2.0) * M_PI * 2.0;
     if (egp[1] < 0)
-      egp[1] += ceilf(-egp[1] / M_PI * 2.0) * M_PI * 2.0;
+      egp[1] += std::ceil(-egp[1] / M_PI * 2.0) * M_PI * 2.0;
     path.back()[0] += fmod(egp[0] + prec / 2.0, prec) - prec / 2.0;
     path.back()[1] += fmod(egp[1] + prec / 2.0, prec) - prec / 2.0;
 

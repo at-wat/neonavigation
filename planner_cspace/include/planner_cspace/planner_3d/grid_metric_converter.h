@@ -59,9 +59,9 @@ inline void metric2Grid(
     int& x, int& y, int& yaw,
     const float gx, const float gy, const float gyaw)
 {
-  x = static_cast<int>(floor((gx - map_info.origin.position.x) / map_info.linear_resolution));
-  y = static_cast<int>(floor((gy - map_info.origin.position.y) / map_info.linear_resolution));
-  yaw = lroundf(gyaw / map_info.angular_resolution);
+  x = static_cast<int>(std::floor((gx - map_info.origin.position.x) / map_info.linear_resolution));
+  y = static_cast<int>(std::floor((gy - map_info.origin.position.y) / map_info.linear_resolution));
+  yaw = std::lround(gyaw / map_info.angular_resolution);
 }
 inline void metric2Grid(
     const costmap_cspace_msgs::MapMetaData3D& map_info,

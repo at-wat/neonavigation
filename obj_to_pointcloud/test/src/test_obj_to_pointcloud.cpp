@@ -79,7 +79,7 @@ TEST(ObjToPointCloud, PointCloud)
   ASSERT_TRUE(static_cast<bool>(cloud));
   ASSERT_NEAR(
       cloud->width * cloud->height,
-      lround((0.5 * 0.1 + 0.1 * 0.2) / (0.05 * 0.05)),
+      std::lround((0.5 * 0.1 + 0.1 * 0.2) / (0.05 * 0.05)),
       10);
 
   for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud, "x"), iter_y(*cloud, "y"), iter_z(*cloud, "z");

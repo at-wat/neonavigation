@@ -516,7 +516,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
     float x = 0;
     bool stop = false;
 
-    for (int i = 0; i < lround(10.0 / dt) && ros::ok() && !stop; ++i)
+    for (int i = 0; i < std::lround(10.0 / dt) && ros::ok() && !stop; ++i)
     {
       if (vel > 0)
         publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());

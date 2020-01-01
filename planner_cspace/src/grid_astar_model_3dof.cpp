@@ -193,7 +193,7 @@ float GridAstarModel3D::cost(
   const Vecf motion = rot_cache_.getMotion(cur[2], d2);
   const Vecf motion_grid = motion * resolution_;
 
-  if (lroundf(motion_grid[0]) == 0 && lroundf(motion_grid[1]) != 0)
+  if (std::lround(motion_grid[0]) == 0 && std::lround(motion_grid[1]) != 0)
   {
     // Not non-holonomic
     return -1;
@@ -216,7 +216,7 @@ float GridAstarModel3D::cost(
 
   if (d[2] == 0)
   {
-    if (lroundf(motion_grid[0]) == 0)
+    if (std::lround(motion_grid[0]) == 0)
       return -1;  // side slip
     const float aspect = motion[0] / motion[1];
     if (std::abs(aspect) < cc_.angle_resolution_aspect_)

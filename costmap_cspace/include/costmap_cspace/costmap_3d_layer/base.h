@@ -335,16 +335,16 @@ public:
     ROS_ASSERT(!root_);
     ROS_ASSERT(ang_grid_ > 0);
     const int ox =
-        lroundf((msg->info.origin.position.x - map_->info.origin.position.x) /
-                map_->info.linear_resolution);
+        std::lround((msg->info.origin.position.x - map_->info.origin.position.x) /
+                    map_->info.linear_resolution);
     const int oy =
-        lroundf((msg->info.origin.position.y - map_->info.origin.position.y) /
-                map_->info.linear_resolution);
+        std::lround((msg->info.origin.position.y - map_->info.origin.position.y) /
+                    map_->info.linear_resolution);
 
     const int w =
-        lroundf(msg->info.width * msg->info.resolution / map_->info.linear_resolution);
+        std::lround(msg->info.width * msg->info.resolution / map_->info.linear_resolution);
     const int h =
-        lroundf(msg->info.height * msg->info.resolution / map_->info.linear_resolution);
+        std::lround(msg->info.height * msg->info.resolution / map_->info.linear_resolution);
 
     map_updated_ = msg;
 

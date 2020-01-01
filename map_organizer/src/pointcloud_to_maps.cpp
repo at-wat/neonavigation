@@ -91,9 +91,9 @@ public:
     pnh_.param("floor_tolerance", floor_tolerance_f, 0.2);
     pnh_.param("min_floor_area", min_floor_area, 100.0);
     pnh_.param("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
-    robot_height = lroundf(robot_height_f / grid);
-    floor_height = lroundf(floor_height_f / grid);
-    floor_tolerance = lroundf(floor_tolerance_f / grid);
+    robot_height = std::lround(robot_height_f / grid);
+    floor_height = std::lround(floor_height_f / grid);
+    floor_tolerance = std::lround(floor_tolerance_f / grid);
 
     std::map<int, int> hist;
     int x_min = INT_MAX, x_max = 0;
