@@ -80,10 +80,10 @@ protected:
   std::vector<Vec> search_list_;
   std::vector<Vec> search_list_rough_;
   int local_range_;
-  BlockMemGridmap<float, 3, 2>& cost_estim_cache_;
-  BlockMemGridmap<char, 3, 2, 0x40>& cm_;
-  BlockMemGridmap<char, 3, 2, 0x80>& cm_hyst_;
-  BlockMemGridmap<char, 3, 2, 0x80>& cm_rough_;
+  BlockMemGridmapBase<float, 3, 2>& cost_estim_cache_;
+  BlockMemGridmapBase<char, 3, 2>& cm_;
+  BlockMemGridmapBase<char, 3, 2>& cm_hyst_;
+  BlockMemGridmapBase<char, 3, 2>& cm_rough_;
   CostCoeff cc_;
   int range_;
   RotationCache rot_cache_;
@@ -99,10 +99,10 @@ public:
       const Vecf& euclid_cost_coef,
       const Vecf& resolution,
       const int local_range,
-      BlockMemGridmap<float, 3, 2>& cost_estim_cache,
-      BlockMemGridmap<char, 3, 2, 0x40>& cm,
-      BlockMemGridmap<char, 3, 2, 0x80>& cm_hyst,
-      BlockMemGridmap<char, 3, 2, 0x80>& cm_rough,
+      BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
+      BlockMemGridmapBase<char, 3, 2>& cm,
+      BlockMemGridmapBase<char, 3, 2>& cm_hyst,
+      BlockMemGridmapBase<char, 3, 2>& cm_rough,
       const CostCoeff& cc,
       const int range);
   void enableHysteresis(const bool enable);

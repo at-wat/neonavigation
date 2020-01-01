@@ -56,7 +56,7 @@ protected:
   std::vector<Vec> search_list_;
   Vecf euclid_cost_coef_;
   int resolution_;
-  BlockMemGridmap<char, 2, 0, 0x40>& cm_;
+  BlockMemGridmapBase<char, 2, 0>& cm_;
   CostCoeff cc_;
   int range_;
 
@@ -64,7 +64,7 @@ public:
   GridAstarModel2DoFSerialJoint(
       const Vecf& euclid_cost_coef,
       const int resolution,
-      BlockMemGridmap<char, 2, 0, 0x40>& cm,
+      BlockMemGridmapBase<char, 2, 0>& cm,
       const CostCoeff& cc,
       const int range);
   float euclidCost(const Vec& v) const;

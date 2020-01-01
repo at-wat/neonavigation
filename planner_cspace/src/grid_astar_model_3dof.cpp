@@ -45,10 +45,10 @@ GridAstarModel3D::GridAstarModel3D(
     const Vecf& euclid_cost_coef,
     const Vecf& resolution,
     const int local_range,
-    BlockMemGridmap<float, 3, 2>& cost_estim_cache,
-    BlockMemGridmap<char, 3, 2, 0x40>& cm,
-    BlockMemGridmap<char, 3, 2, 0x80>& cm_hyst,
-    BlockMemGridmap<char, 3, 2, 0x80>& cm_rough,
+    BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
+    BlockMemGridmapBase<char, 3, 2>& cm,
+    BlockMemGridmapBase<char, 3, 2>& cm_hyst,
+    BlockMemGridmapBase<char, 3, 2>& cm_rough,
     const CostCoeff& cc,
     const int range)
   : hysteresis_(false)

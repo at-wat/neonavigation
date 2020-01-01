@@ -39,7 +39,7 @@
 GridAstarModel2DoFSerialJoint::GridAstarModel2DoFSerialJoint(
     const Vecf& euclid_cost_coef,
     const int resolution,
-    BlockMemGridmap<char, 2, 0, 0x40>& cm,
+    BlockMemGridmapBase<char, 2, 0>& cm,
     const CostCoeff& cc,
     const int range)
   : euclid_cost_coef_(euclid_cost_coef)
