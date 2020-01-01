@@ -568,7 +568,7 @@ void timeSource()
 
   ros::Publisher pub = nh.advertise<rosgraph_msgs::Clock>("clock", 1);
 
-  ros::WallRate rate(300.0);  // 300% speed
+  ros::WallRate rate(500.0);  // 500% speed
   ros::WallTime time = ros::WallTime::now();
   while (ros::ok())
   {
