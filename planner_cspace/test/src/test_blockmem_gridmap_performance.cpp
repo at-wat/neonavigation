@@ -33,6 +33,8 @@
 
 #include <planner_cspace/blockmem_gridmap.h>
 
+namespace planner_cspace
+{
 TEST(BlockmemGridmap, SpacialAccessPerformance)
 {
   constexpr int size[3] =
@@ -171,6 +173,7 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   std::cout << "Improvement ratio: " << d1.count() / d0.count() << std::endl;
   ASSERT_LT(d0, d1);
 }
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {
