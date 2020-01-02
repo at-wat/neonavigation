@@ -47,13 +47,13 @@ add_executable(planner_3d
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
-  planner_cspace/bbf.h
-  planner_cspace/blockmem_gridmap.h
-  planner_cspace/cyclic_vec.h
-  planner_cspace/grid_astar.h
-  planner_cspace/grid_astar_model.h
-  planner_cspace/jump_detector.h
-  planner_cspace/reservable_priority_queue.h
+  include/planner_cspace/bbf.h
+  include/planner_cspace/blockmem_gridmap.h
+  include/planner_cspace/cyclic_vec.h
+  include/planner_cspace/grid_astar.h
+  include/planner_cspace/grid_astar_model.h
+  include/planner_cspace/jump_detector.h
+  include/planner_cspace/reservable_priority_queue.h
 )
 
 add_executable(planner_2dof_serial_joints

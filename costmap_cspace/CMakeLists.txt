@@ -32,7 +32,7 @@ add_executable(costmap_3d src/costmap_3d.cpp src/costmap_3d_layers.cpp)
 target_link_libraries(costmap_3d ${catkin_LIBRARIES})
 add_dependencies(costmap_3d ${catkin_EXPORTED_TARGETS})
 set_property(TARGET costmap_3d PROPERTY PUBLIC_HEADER
-  costmap_cpace/pointcloud_accumulator.h
+  include/costmap_cspace/pointcloud_accumulator.h
 )
 
 add_executable(laserscan_to_map src/laserscan_to_map.cpp)
