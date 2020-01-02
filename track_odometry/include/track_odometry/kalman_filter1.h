@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KALMAN_FILTER1_H
-#define KALMAN_FILTER1_H
+#ifndef TRACK_ODOMETRY_KALMAN_FILTER1_H
+#define TRACK_ODOMETRY_KALMAN_FILTER1_H
 
 #include <limits>
 
@@ -76,4 +76,4 @@ public:
 };
 }  // namespace track_odometry
 
-#endif  // KALMAN_FILTER1_H
+#endif  // TRACK_ODOMETRY_KALMAN_FILTER1_H
