@@ -30,6 +30,7 @@
 #ifndef TRAJECTORY_TRACKER_FILTER_H
 #define TRAJECTORY_TRACKER_FILTER_H
 
+#include <cassert>
 #include <cmath>
 
 namespace trajectory_tracker

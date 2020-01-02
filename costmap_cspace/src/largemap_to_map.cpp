@@ -28,11 +28,13 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
 
 #include <ros/ros.h>
+
 #include <nav_msgs/OccupancyGrid.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
@@ -148,9 +150,9 @@ private:
     map.data.resize(width_ * width_);
 
     const int gx =
-        lroundf((map.info.origin.position.x - large_map_->info.origin.position.x) / map.info.resolution);
+        std::lround((map.info.origin.position.x - large_map_->info.origin.position.x) / map.info.resolution);
     const int gy =
-        lroundf((map.info.origin.position.y - large_map_->info.origin.position.y) / map.info.resolution);
+        std::lround((map.info.origin.position.y - large_map_->info.origin.position.y) / map.info.resolution);
     const float half_width = width_ / 2.0;
 
     for (int y = gy; y < gy + width_; ++y)

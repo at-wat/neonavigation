@@ -27,11 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+
 #include <ros/ros.h>
+
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/transform_datatypes.h>
 
 #include <track_odometry/tf_projection.h>
+
 #include <gtest/gtest.h>
 
 void testTransform(
@@ -41,14 +45,14 @@ void testTransform(
 {
   tf2::Transform result = track_odometry::projectTranslation(proj2base, targ2proj);
 
-  const float error_x = fabs(result.getOrigin().x() - truth.getOrigin().x());
-  const float error_y = fabs(result.getOrigin().y() - truth.getOrigin().y());
-  const float error_z = fabs(result.getOrigin().z() - truth.getOrigin().z());
+  const float error_x = std::abs(result.getOrigin().x() - truth.getOrigin().x());
+  const float error_y = std::abs(result.getOrigin().y() - truth.getOrigin().y());
+  const float error_z = std::abs(result.getOrigin().z() - truth.getOrigin().z());
   const tf2::Quaternion error_q = result.getRotation() * truth.getRotation().inverse();
   ASSERT_LT(error_x, 0.001);
   ASSERT_LT(error_y, 0.001);
   ASSERT_LT(error_z, 0.001);
-  ASSERT_LT(fabs(error_q.getAngle()), 0.001);
+  ASSERT_LT(std::abs(error_q.getAngle()), 0.001);
 }
 
 TEST(TfProjection, ProjectionTransform)
@@ -82,7 +86,7 @@ TEST(TfProjection, ProjectionTransform)
       // projected: t(1.0, 1.0, 0.0), r((0.0, 0.0, 1.0), 0.0)
       tf2::Stamped<tf2::Transform>(
           tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), M_PI / 6.0),
-                         tf2::Vector3(0.0, -sqrtf(3.0) / 2.0, 3.0 / 2.0)),
+                         tf2::Vector3(0.0, -std::sqrt(3.0) / 2.0, 3.0 / 2.0)),
           ros::Time(0),
           "odom"),
       // rotate 30deg and offset to make it on z axis

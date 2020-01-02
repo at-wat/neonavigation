@@ -27,7 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+#include <limits>
+#include <string>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 #include <ros/ros.h>
+
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
@@ -40,12 +48,6 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-#include <limits>
-#include <string>
-
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 
 #include <kalman_filter1.h>
 
@@ -230,17 +232,17 @@ private:
         w_imu = w_odom;
 
       slip_.predict(-slip_.x_ * dt * predict_filter_tc_, dt * sigma_predict_);
-      if (fabs(w_odom) > sigma_odom_ * 3)
+      if (std::abs(w_odom) > sigma_odom_ * 3)
       {
         // non-kf mode: calculate slip_ratio if angular vel < 3*sigma
         slip_ratio = w_imu / w_odom;
       }
 
       const float slip_ratio_per_angvel =
-          (w_odom - w_imu) / (w_odom * fabs(w_odom));
+          (w_odom - w_imu) / (w_odom * std::abs(w_odom));
       float slip_ratio_per_angvel_sigma =
-          sigma_odom_ * fabs(2 * w_odom * sigma_odom_ / powf(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2.0));
-      if (fabs(w_odom) < sigma_odom_)
+          sigma_odom_ * std::abs(2.0 * w_odom * sigma_odom_ / std::pow(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2));
+      if (std::abs(w_odom) < sigma_odom_)
         slip_ratio_per_angvel_sigma = std::numeric_limits<float>::infinity();
 
       slip_.measure(slip_ratio_per_angvel, slip_ratio_per_angvel_sigma);

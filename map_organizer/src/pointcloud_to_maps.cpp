@@ -27,7 +27,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <random>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <ros/ros.h>
+
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <map_organizer_msgs/OccupancyGridArray.h>
@@ -35,15 +46,6 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-
-#include <cmath>
-#include <random>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <map>
-#include <utility>
-#include <vector>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -91,14 +93,14 @@ public:
     pnh_.param("floor_tolerance", floor_tolerance_f, 0.2);
     pnh_.param("min_floor_area", min_floor_area, 100.0);
     pnh_.param("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
-    robot_height = lroundf(robot_height_f / grid);
-    floor_height = lroundf(floor_height_f / grid);
-    floor_tolerance = lroundf(floor_tolerance_f / grid);
+    robot_height = std::lround(robot_height_f / grid);
+    floor_height = std::lround(floor_height_f / grid);
+    floor_tolerance = std::lround(floor_tolerance_f / grid);
 
     std::map<int, int> hist;
-    int x_min = INT_MAX, x_max = 0;
-    int y_min = INT_MAX, y_max = 0;
-    int h_min = INT_MAX, h_max = 0;
+    int x_min = std::numeric_limits<int>::max(), x_max = 0;
+    int y_min = std::numeric_limits<int>::max(), y_max = 0;
+    int h_min = std::numeric_limits<int>::max(), h_max = 0;
 
     for (const auto& p : pc->points)
     {
@@ -138,7 +140,7 @@ public:
     ROS_INFO("width %d, height %d", mmd.width, mmd.height);
     std::vector<nav_msgs::OccupancyGrid> maps;
 
-    int hist_max = INT_MIN;
+    int hist_max = std::numeric_limits<int>::lowest();
     for (const auto& h : hist)
       if (h.second > hist_max)
         hist_max = h.second;
@@ -159,7 +161,7 @@ public:
           const int z = (p.z / grid);
           const auto v = std::pair<int, int>(x, y);
 
-          if (abs(i - z) <= floor_height)
+          if (std::abs(i - z) <= floor_height)
           {
             if (floor[i].find(v) == floor[i].end())
             {
@@ -229,7 +231,7 @@ public:
     {
       const int h = it->info.origin.position.z / grid;
       const int h_prev = it_prev->info.origin.position.z / grid;
-      if (fabs(it_prev->info.origin.position.z - it->info.origin.position.z) < grid * 1.5)
+      if (std::abs(it_prev->info.origin.position.z - it->info.origin.position.z) < grid * 1.5)
       {
         // merge slopes
         for (size_t i = 0; i < it->data.size(); i++)
@@ -309,7 +311,7 @@ public:
                 if (map_cp[addr] == 100)
                 {
                   if (width_sq < floor_width * floor_width)
-                    floor_width = sqrtf(width_sq);
+                    floor_width = std::sqrt(width_sq);
                 }
               }
             }

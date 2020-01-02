@@ -35,10 +35,11 @@
    This software was implemented to accomplish the above research.
  */
 
-#include <ros/ros.h>
-#include <math.h>
+#include <cmath>
 #include <fstream>
 #include <string>
+
+#include <ros/ros.h>
 
 #include <geometry_msgs/Twist.h>
 #include <interactive_markers/interactive_marker_server.h>

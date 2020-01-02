@@ -30,10 +30,11 @@
 #ifndef PLANNER_CSPACE_GRID_ASTAR_H
 #define PLANNER_CSPACE_GRID_ASTAR_H
 
-#include <memory>
 #define _USE_MATH_DEFINES
+#include <memory>
 #include <cmath>
 #include <cfloat>
+#include <limits>
 #include <list>
 #include <map>
 #include <unordered_map>
@@ -134,7 +135,7 @@ public:
   void reset(const Vec size)
   {
     g_.reset(size);
-    g_.clear(FLT_MAX);
+    g_.clear(std::numeric_limits<float>::max());
     parents_.reserve(g_.ser_size() / 16);
     open_.reserve(g_.ser_size() / 16);
   }
@@ -186,13 +187,13 @@ protected:
 
     Vec e = en;
     e.cycleUnsigned(g.size());
-    g.clear(FLT_MAX);
+    g.clear(std::numeric_limits<float>::max());
     open_.clear();
     parents_.clear();
 
     std::vector<VecWithCost> ss_normalized;
     Vec better;
-    int cost_estim_min = INT_MAX;
+    int cost_estim_min = std::numeric_limits<int>::max();
     for (const VecWithCost& st : sts)
     {
       if (st.v_ == en)
@@ -296,11 +297,11 @@ protected:
             }
 
             const float cost_estim = model->costEstim(next, e);
-            if (cost_estim < 0 || cost_estim == FLT_MAX)
+            if (cost_estim < 0 || cost_estim == std::numeric_limits<float>::max())
               continue;
 
             const float cost = model->cost(p, next, ss_normalized, e);
-            if (cost < 0 || cost == FLT_MAX)
+            if (cost < 0 || cost == std::numeric_limits<float>::max())
               continue;
 
             const float cost_next = c + cost;

@@ -27,9 +27,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <random>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <ros/ros.h>
+
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <geometry_msgs/Twist.h>
-#include <ros/ros.h>
 #include <safety_limiter_msgs/SafetyLimiterStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -38,23 +51,12 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-
 #include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <random>
-#include <sstream>
-#include <string>
-#include <vector>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -252,7 +254,7 @@ public:
       v[1] = static_cast<double>(footprint_xml[i][1]);
       footprint_p.v.push_back(v);
 
-      const float dist = hypotf(v[0], v[1]);
+      const float dist = std::hypot(v[0], v[1]);
       if (dist > footprint_radius_)
         footprint_radius_ = dist;
     }
@@ -547,7 +549,7 @@ protected:
     }
     float dist(const vec& a) const
     {
-      return hypotf((*this)[0] - a[0], (*this)[1] - a[1]);
+      return std::hypot((*this)[0] - a[0], (*this)[1] - a[1]);
     }
     float dist_line(const vec& a, const vec& b) const
     {
@@ -597,7 +599,7 @@ protected:
     }
     float dist(const vec& a) const
     {
-      float dist = FLT_MAX;
+      float dist = std::numeric_limits<float>::max();
       for (size_t i = 0; i < v.size() - 1; i++)
       {
         auto& v1 = v[i];

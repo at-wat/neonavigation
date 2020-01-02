@@ -27,7 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+#include <iostream>
+#include <random>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include <ros/ros.h>
+
 #include <sensor_msgs/PointCloud2.h>
 
 #include <pcl/point_types.h>
@@ -35,13 +43,6 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/filters/voxel_grid.h>
-
-#include <cmath>
-#include <random>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -197,10 +198,11 @@ private:
           auto a = p1 - p0;
           auto b = p2 - p0;
 
-          float s = 0.5 * sqrtf(
-                              powf(a.y * b.z - a.z * b.y, 2.0) +
-                              powf(a.z * b.x - a.x * b.z, 2.0) +
-                              powf(a.x * b.y - a.y * b.x, 2.0));
+          float s =
+              0.5 * std::sqrt(
+                        std::pow(a.y * b.z - a.z * b.y, 2) +
+                        std::pow(a.z * b.x - a.x * b.z, 2) +
+                        std::pow(a.x * b.y - a.y * b.x, 2));
           float numf = ppmsq_ * s;
           int num = numf;
           if (numf - num > ud(engine_))
