@@ -154,11 +154,11 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
       en = true;
     // safety_limiter: 15 hz, cloud publish: 60 hz
     // safety_limiter must check 4 buffered clouds
-    // 1/3 of pointclouds have collision point
-    if ((i % 3) == 0)
-      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
-    else
+    // 3/4 of pointclouds have collision point
+    if ((i % 4) == 0)
       publishSinglePointPointcloud2(10, 0, 0, "base_link", ros::Time::now());
+    else
+      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
 
     publishWatchdogReset();
     publishTwist(2.0, 0);
