@@ -35,6 +35,8 @@
 
 #include <planner_cspace/cyclic_vec.h>
 
+namespace planner_cspace
+{
 template <int DIM = 3, int NONCYCLIC = 2>
 class GridAstarModelBase
 {
@@ -62,5 +64,6 @@ public:
   virtual const std::vector<Vec>& searchGrids(
       const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const = 0;
 };
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_GRID_ASTAR_MODEL_H

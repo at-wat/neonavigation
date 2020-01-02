@@ -42,6 +42,10 @@
 #include <planner_cspace/grid_astar_model.h>
 #include <planner_cspace/blockmem_gridmap.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 class CostCoeff
 {
 public:
@@ -137,5 +141,7 @@ public:
   const std::vector<Vec>& searchGrids(
       const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const final;
 };
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H

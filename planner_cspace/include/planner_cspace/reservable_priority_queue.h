@@ -32,6 +32,8 @@
 
 #include <queue>
 
+namespace planner_cspace
+{
 template <class T>
 class reservable_priority_queue : public std::priority_queue<T>
 {
@@ -58,5 +60,6 @@ public:
     this->c.pop_back();
   }
 };
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_RESERVABLE_PRIORITY_QUEUE_H

@@ -34,6 +34,8 @@
 
 #include <planner_cspace/blockmem_gridmap.h>
 
+namespace planner_cspace
+{
 template <int BLOCK_WIDTH>
 class BlockMemGridmapHelper : public BlockMemGridmap<int, 1, 1, BLOCK_WIDTH, false>
 {
@@ -149,6 +151,7 @@ TEST(BlockmemGridmap, OuterBoundary)
     }
   }
 }
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {

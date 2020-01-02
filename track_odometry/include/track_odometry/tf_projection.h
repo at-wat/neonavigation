@@ -37,6 +37,6 @@ namespace track_odometry
 {
 tf2::Transform projectTranslation(
     const tf2::Transform& trans, const tf2::Transform& trans_target);
-}  // tf_projection
+}  // namespace track_odometry
 
 #endif  // TRACK_ODOMETRY_TF_PROJECTION_H

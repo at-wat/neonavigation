@@ -49,6 +49,8 @@
 
 #include <omp.h>
 
+namespace planner_cspace
+{
 template <int DIM = 3, int NONCYCLIC = 2>
 class GridAstar
 {
@@ -382,5 +384,6 @@ protected:
   size_t queue_size_limit_;
   size_t search_task_num_;
 };
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_GRID_ASTAR_H

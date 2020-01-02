@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+namespace planner_cspace
+{
 TEST(CyclicVec, InitFloat)
 {
   const float val[3] =
@@ -133,6 +135,7 @@ TEST(CyclicVec, Cycle)
   v.cycleUnsigned(4);
   ASSERT_EQ(v[2], 3);
 }
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {

@@ -37,6 +37,10 @@
 #include <planner_cspace/grid_astar_model.h>
 #include <planner_cspace/blockmem_gridmap.h>
 
+namespace planner_cspace
+{
+namespace planner_2dof_serial_joints
+{
 class CostCoeff
 {
 public:
@@ -77,5 +81,7 @@ public:
       const std::vector<VecWithCost>& ss,
       const Vec& es) const override;
 };
+}  // namespace planner_2dof_serial_joints
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_PLANNER_2DOF_SERIAL_JOINTS_GRID_ASTAR_MODEL_H
