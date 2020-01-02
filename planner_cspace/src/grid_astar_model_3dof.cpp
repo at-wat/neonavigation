@@ -42,6 +42,10 @@
 #include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 GridAstarModel3D::GridAstarModel3D(
     const costmap_cspace_msgs::MapMetaData3D& map_info,
     const Vecf& euclid_cost_coef,
@@ -393,3 +397,5 @@ const std::vector<GridAstarModel3D::Vec>& GridAstarModel2D::searchGrids(
 {
   return base_->search_list_rough_;
 }
+}  // namespace planner_3d
+}  // namespace planner_cspace

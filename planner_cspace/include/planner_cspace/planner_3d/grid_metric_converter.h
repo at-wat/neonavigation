@@ -40,6 +40,10 @@
 
 #include <planner_cspace/cyclic_vec.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 namespace grid_metric_converter
 {
 template <typename T>
@@ -97,5 +101,7 @@ void grid2MetricPath(
   }
 }
 }  // namespace grid_metric_converter
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H

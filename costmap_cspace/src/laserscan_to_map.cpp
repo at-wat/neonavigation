@@ -38,7 +38,7 @@
 
 #include <string>
 
-#include <costmap_cspace/pointcloud_accumulator/accumulator.h>
+#include <costmap_cspace/pointcloud_accumulator.h>
 #include <neonavigation_common/compatibility.h>
 
 class LaserscanToMapNode
@@ -65,7 +65,7 @@ private:
   float origin_x_;
   float origin_y_;
 
-  PointcloudAccumurator<sensor_msgs::PointCloud2> accum_;
+  costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2> accum_;
 
 public:
   LaserscanToMapNode()
@@ -121,7 +121,7 @@ private:
     {
       ROS_WARN("%s", e.what());
     }
-    accum_.push(PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
+    accum_.push(costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
     ros::Time now = scan->header.stamp;

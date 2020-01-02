@@ -38,6 +38,10 @@
 
 #include <planner_cspace/cyclic_vec.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 class RotationCache
 {
 private:
@@ -99,5 +103,7 @@ public:
       const float interval,
       const int local_range) const;
 };
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H

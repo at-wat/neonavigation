@@ -27,11 +27,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KALMAN_FILTER1_H
-#define KALMAN_FILTER1_H
+#ifndef TRACK_ODOMETRY_KALMAN_FILTER1_H
+#define TRACK_ODOMETRY_KALMAN_FILTER1_H
 
 #include <limits>
 
+namespace track_odometry
+{
 class KalmanFilter1
 {
 public:
@@ -72,5 +74,6 @@ public:
     sigma_ = (1.0 - kt) * sigma_;
   }
 };
+}  // namespace track_odometry
 
-#endif  // KALMAN_FILTER1_H
+#endif  // TRACK_ODOMETRY_KALMAN_FILTER1_H

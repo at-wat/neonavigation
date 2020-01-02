@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_JUMP_DETECTOR_H
-#define PLANNER_CSPACE_PLANNER_3D_JUMP_DETECTOR_H
+#ifndef PLANNER_CSPACE_JUMP_DETECTOR_H
+#define PLANNER_CSPACE_JUMP_DETECTOR_H
 
 #include <cmath>
 #include <string>
@@ -39,6 +39,10 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 class JumpDetector
 {
 protected:
@@ -117,5 +121,7 @@ public:
     return false;
   }
 };
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_PLANNER_3D_JUMP_DETECTOR_H
+#endif  // PLANNER_CSPACE_JUMP_DETECTOR_H

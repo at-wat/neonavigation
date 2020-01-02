@@ -49,7 +49,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <kalman_filter1.h>
+#include <track_odometry/kalman_filter1.h>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -122,7 +122,7 @@ private:
   float dist_;
   bool without_odom_;
 
-  KalmanFilter1 slip_;
+  track_odometry::KalmanFilter1 slip_;
 
   bool has_imu_;
   bool has_odom_;

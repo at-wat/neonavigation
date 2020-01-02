@@ -35,6 +35,10 @@
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 void MotionCache::reset(
     const float linear_resolution,
     const float angular_resolution,
@@ -170,3 +174,5 @@ void MotionCache::reset(
   }
   max_range_ = max_range;
 }
+}  // namespace planner_3d
+}  // namespace planner_cspace

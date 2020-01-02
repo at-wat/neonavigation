@@ -30,6 +30,8 @@
 #ifndef PLANNER_CSPACE_BBF_H
 #define PLANNER_CSPACE_BBF_H
 
+namespace planner_cspace
+{
 namespace bbf
 {
 constexpr float oddsToProbability(const float& o)
@@ -81,5 +83,6 @@ public:
   }
 };
 };  // namespace bbf
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_BBF_H

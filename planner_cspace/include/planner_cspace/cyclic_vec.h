@@ -44,6 +44,8 @@
 
 #include <planner_cspace/reservable_priority_queue.h>
 
+namespace planner_cspace
+{
 namespace cyclic_vec_type_conversion_rule
 {
 template <typename T>
@@ -333,5 +335,7 @@ template <int DIM, int NONCYCLIC>
 using CyclicVecInt = CyclicVecBase<DIM, NONCYCLIC, int>;
 template <int DIM, int NONCYCLIC>
 using CyclicVecFloat = CyclicVecBase<DIM, NONCYCLIC, float>;
+
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_CYCLIC_VEC_H
