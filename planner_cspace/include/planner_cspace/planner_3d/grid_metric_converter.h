@@ -30,14 +30,15 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
 #define PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
 
+#include <cmath>
+#include <list>
+#include <memory>
+
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <nav_msgs/Path.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <planner_cspace/cyclic_vec.h>
-
-#include <list>
-#include <memory>
 
 namespace grid_metric_converter
 {
@@ -59,9 +60,9 @@ inline void metric2Grid(
     int& x, int& y, int& yaw,
     const float gx, const float gy, const float gyaw)
 {
-  x = static_cast<int>(floor((gx - map_info.origin.position.x) / map_info.linear_resolution));
-  y = static_cast<int>(floor((gy - map_info.origin.position.y) / map_info.linear_resolution));
-  yaw = lroundf(gyaw / map_info.angular_resolution);
+  x = static_cast<int>(std::floor((gx - map_info.origin.position.x) / map_info.linear_resolution));
+  y = static_cast<int>(std::floor((gy - map_info.origin.position.y) / map_info.linear_resolution));
+  yaw = std::lround(gyaw / map_info.angular_resolution);
 }
 inline void metric2Grid(
     const costmap_cspace_msgs::MapMetaData3D& map_info,

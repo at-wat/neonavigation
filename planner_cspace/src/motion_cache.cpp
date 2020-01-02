@@ -28,6 +28,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
 #include <vector>
 
@@ -77,7 +78,7 @@ void MotionCache::reset(
 
           const float inter = 1.0 / d.len();
 
-          if (fabs(sin_v) < 0.1)
+          if (std::abs(sin_v) < 0.1)
           {
             for (float i = 0; i < 1.0; i += inter)
             {
@@ -103,7 +104,7 @@ void MotionCache::reset(
           float distf = 0.0;
           const float r1 = motion[1] + motion[0] * cos_v / sin_v;
           const float r2 = std::copysign(
-              sqrtf(powf(motion[0], 2.0) + powf(motion[0] * cos_v / sin_v, 2.0)),
+              std::sqrt(std::pow(motion[0], 2) + std::pow(motion[0] * cos_v / sin_v, 2)),
               motion[0] * sin_v);
 
           float dyaw = yaw_e - yaw;

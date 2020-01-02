@@ -28,11 +28,14 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <list>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <omp.h>
 
 #include <ros/ros.h>
 
@@ -68,8 +71,6 @@
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
-
-#include <omp.h>
 
 namespace planner_cspace
 {
@@ -320,7 +321,7 @@ protected:
         goal_.pose.orientation.y * goal_.pose.orientation.y +
         goal_.pose.orientation.z * goal_.pose.orientation.z +
         goal_.pose.orientation.w * goal_.pose.orientation.w;
-    if (fabs(len2 - 1.0) < 0.1)
+    if (std::abs(len2 - 1.0) < 0.1)
     {
       escaping_ = false;
       has_goal_ = true;
@@ -508,7 +509,7 @@ protected:
   {
     ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
 
-    float range_min = FLT_MAX;
+    float range_min = std::numeric_limits<float>::max();
     Astar::Vec s_out;
     Astar::Vec d;
     for (d[2] = -angle_range; d[2] <= angle_range; d[2]++)
@@ -544,7 +545,7 @@ protected:
       }
     }
 
-    if (range_min == FLT_MAX)
+    if (range_min == std::numeric_limits<float>::max())
     {
       if (cost_acceptable != 100)
       {
@@ -602,7 +603,7 @@ protected:
     reservable_priority_queue<Astar::PriorityVec> open;
     open.reserve(map_info_.width * map_info_.height / 2);
 
-    cost_estim_cache_.clear(FLT_MAX);
+    cost_estim_cache_.clear(std::numeric_limits<float>::max());
     if (cm_[e] == 100)
     {
       if (!searchAvailablePos(e, tolerance_range_, tolerance_angle_))
@@ -666,7 +667,7 @@ protected:
           geometry_msgs::Point32 point;
           point.x = x;
           point.y = y;
-          if (cost_estim_cache_[p] == FLT_MAX)
+          if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
             continue;
           point.z = cost_estim_cache_[p] / 500;
           distance_map.points.push_back(point);
@@ -689,7 +690,7 @@ protected:
       {
         for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
         {
-          if (cost_estim_cache_[p] == FLT_MAX)
+          if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
             continue;
 
           char cost = 100;
@@ -852,7 +853,7 @@ protected:
 
     Astar::Vec p, p_cost_min;
     p[2] = 0;
-    float cost_min = FLT_MAX;
+    float cost_min = std::numeric_limits<float>::max();
     for (p[1] = static_cast<int>(msg->y); p[1] < static_cast<int>(msg->y + msg->height); p[1]++)
     {
       for (p[0] = static_cast<int>(msg->x); p[0] < static_cast<int>(msg->x + msg->width); p[0]++)
@@ -870,7 +871,7 @@ protected:
     open.reserve(map_info_.width * map_info_.height / 2);
     erase.reserve(map_info_.width * map_info_.height / 2);
 
-    if (cost_min != FLT_MAX)
+    if (cost_min != std::numeric_limits<float>::max())
       erase.emplace(cost_min, cost_min, p_cost_min);
     while (true)
     {
@@ -880,9 +881,9 @@ protected:
       const Astar::Vec p = center.v_;
       erase.pop();
 
-      if (cost_estim_cache_[p] == FLT_MAX)
+      if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
         continue;
-      cost_estim_cache_[p] = FLT_MAX;
+      cost_estim_cache_[p] = std::numeric_limits<float>::max();
 
       Astar::Vec d;
       d[2] = 0;
@@ -898,7 +899,7 @@ protected:
               (unsigned int)next[1] >= (unsigned int)map_info_.height)
             continue;
           const float gn = cost_estim_cache_[next];
-          if (gn == FLT_MAX)
+          if (gn == std::numeric_limits<float>::max())
             continue;
           if (gn < cost_min)
           {
@@ -961,16 +962,16 @@ protected:
       map_info_ = msg->info;
 
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
-      hist_ignore_range_ = lroundf(hist_ignore_range_f_ / map_info_.linear_resolution);
-      hist_ignore_range_max_ = lroundf(hist_ignore_range_max_f_ / map_info_.linear_resolution);
-      local_range_ = lroundf(local_range_f_ / map_info_.linear_resolution);
-      longcut_range_ = lroundf(longcut_range_f_ / map_info_.linear_resolution);
-      esc_range_ = lroundf(esc_range_f_ / map_info_.linear_resolution);
+      hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
+      hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
+      local_range_ = std::lround(local_range_f_ / map_info_.linear_resolution);
+      longcut_range_ = std::lround(longcut_range_f_ / map_info_.linear_resolution);
+      esc_range_ = std::lround(esc_range_f_ / map_info_.linear_resolution);
       esc_angle_ = map_info_.angle / 8;
-      tolerance_range_ = lroundf(tolerance_range_f_ / map_info_.linear_resolution);
-      tolerance_angle_ = lroundf(tolerance_angle_f_ / map_info_.angular_resolution);
-      goal_tolerance_lin_ = lroundf(goal_tolerance_lin_f_ / map_info_.linear_resolution);
-      goal_tolerance_ang_ = lroundf(goal_tolerance_ang_f_ / map_info_.angular_resolution);
+      tolerance_range_ = std::lround(tolerance_range_f_ / map_info_.linear_resolution);
+      tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
+      goal_tolerance_lin_ = std::lround(goal_tolerance_lin_f_ / map_info_.linear_resolution);
+      goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
 
       model_.reset(
           new GridAstarModel3D(
@@ -1301,7 +1302,7 @@ public:
             yaw_diff -= M_PI * 2.0;
           else if (yaw_diff < -M_PI)
             yaw_diff += M_PI * 2.0;
-          if (fabs(yaw_diff) < goal_tolerance_ang_finish_)
+          if (std::abs(yaw_diff) < goal_tolerance_ang_finish_)
           {
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;
@@ -1387,7 +1388,7 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, sf[0], sf[1], sf[2],
         gs.position.x, gs.position.y, tf2::getYaw(gs.orientation));
-    Astar::Vec s(static_cast<int>(floor(sf[0])), static_cast<int>(floor(sf[1])), lroundf(sf[2]));
+    Astar::Vec s(static_cast<int>(std::floor(sf[0])), static_cast<int>(std::floor(sf[1])), std::lround(sf[2]));
     s.cycleUnsigned(map_info_.angle);
     if (!cm_.validate(s, range_))
     {
@@ -1435,14 +1436,14 @@ protected:
     {
       const Astar::Vecf diff =
           Astar::Vecf(s.v_[0] + 0.5f, s.v_[1] + 0.5f, 0.0f) - sf;
-      s.c_ = hypotf(diff[0] * ec_[0], diff[1] * ec_[0]);
+      s.c_ = std::hypot(diff[0] * ec_[0], diff[1] * ec_[0]);
       s.c_ += cm_[s.v_] * cc_.weight_costmap_ / 100.0;
 
       // Check if arrived to the goal
       Astar::Vec remain = s.v_ - e;
       remain.cycle(map_info_.angle);
       if (remain.sqlen() <= goal_tolerance_lin_ * goal_tolerance_lin_ &&
-          abs(remain[2]) <= goal_tolerance_ang_)
+          std::abs(remain[2]) <= goal_tolerance_ang_)
       {
         path.poses.resize(1);
         path.poses[0].header = path.header;
@@ -1489,7 +1490,7 @@ protected:
     }
     const Astar::Vec s_rough(s[0], s[1], 0);
 
-    if (cost_estim_cache_[s_rough] == FLT_MAX)
+    if (cost_estim_cache_[s_rough] == std::numeric_limits<float>::max())
     {
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable.");
@@ -1593,14 +1594,14 @@ protected:
       for (auto& ps : path_points)
       {
         const Astar::Vec& p = ps.first;
-        float d_min = FLT_MAX;
+        float d_min = std::numeric_limits<float>::max();
         auto it_prev = path_interpolated.cbegin();
         for (auto it = path_interpolated.cbegin(); it != path_interpolated.cend(); it++)
         {
           if (it != it_prev)
           {
-            int yaw = lroundf((*it)[2]) % map_info_.angle;
-            int yaw_prev = lroundf((*it_prev)[2]) % map_info_.angle;
+            int yaw = std::lround((*it)[2]) % map_info_.angle;
+            int yaw_prev = std::lround((*it_prev)[2]) % map_info_.angle;
             if (yaw < 0)
               yaw += map_info_.angle;
             if (yaw_prev < 0)
@@ -1616,7 +1617,7 @@ protected:
           it_prev = it;
         }
         d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
-        cm_hyst_[p] = lroundf((d_min - expand_dist) * 100.0 / max_dist);
+        cm_hyst_[p] = std::lround((d_min - expand_dist) * 100.0 / max_dist);
       }
       has_hysteresis_map_ = true;
       const auto tnow = boost::chrono::high_resolution_clock::now();
@@ -1644,7 +1645,7 @@ protected:
     {
       if (!first)
       {
-        const float len = hypotf(
+        const float len = std::hypot(
             p.pose.position.y - p_prev.position.y,
             p.pose.position.x - p_prev.position.x);
         if (len > 0.001)

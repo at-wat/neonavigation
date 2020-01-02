@@ -27,18 +27,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
+#include <string>
+
 #include <ros/ros.h>
 
 #include <diagnostic_msgs/DiagnosticStatus.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include <algorithm>
-#include <string>
+#include <test_safety_limiter_base.h>
 
 #include <gtest/gtest.h>
-
-#include <test_safety_limiter_base.h>
 
 TEST_F(SafetyLimiterTest, Timeouts)
 {
@@ -516,7 +517,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
     float x = 0;
     bool stop = false;
 
-    for (int i = 0; i < lround(10.0 / dt) && ros::ok() && !stop; ++i)
+    for (int i = 0; i < std::lround(10.0 / dt) && ros::ok() && !stop; ++i)
     {
       if (vel > 0)
         publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());

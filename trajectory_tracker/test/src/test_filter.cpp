@@ -27,18 +27,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <cstddef>
 
-#include <gtest/gtest.h>
-
 #include <trajectory_tracker/filter.h>
+
+#include <gtest/gtest.h>
 
 TEST(Filter, LPFCharacteristic)
 {
   for (int time_const = 20; time_const < 100; time_const += 20)
   {
     trajectory_tracker::Filter lpf(trajectory_tracker::Filter::FILTER_LPF, time_const, 0.0);
-    ASSERT_LT(fabs(lpf.get()), 1e-6);
+    ASSERT_LT(std::abs(lpf.get()), 1e-6);
 
     // Input step function
     float ret = 0;
@@ -48,7 +49,7 @@ TEST(Filter, LPFCharacteristic)
     }
     // Check value at 1 time unit
     ASSERT_TRUE(ret == lpf.get());
-    ASSERT_LT(fabs(ret - (1.0 - expf(-1.0))), 1e-2);
+    ASSERT_LT(std::abs(ret - (1.0 - expf(-1.0))), 1e-2);
 
     for (int i = time_const; i < time_const * 100; ++i)
     {
@@ -56,13 +57,13 @@ TEST(Filter, LPFCharacteristic)
     }
     // Check value at inf time
     ASSERT_TRUE(ret == lpf.get());
-    ASSERT_LT(fabs(ret - 1.0), 1e-2);
+    ASSERT_LT(std::abs(ret - 1.0), 1e-2);
 
     // Check set
     lpf.set(1.0);
-    ASSERT_LT(fabs(lpf.get() - 1.0), 1e-2);
+    ASSERT_LT(std::abs(lpf.get() - 1.0), 1e-2);
     lpf.in(1.0);
-    ASSERT_LT(fabs(lpf.get() - 1.0), 1e-2);
+    ASSERT_LT(std::abs(lpf.get() - 1.0), 1e-2);
   }
 }
 
@@ -81,7 +82,7 @@ TEST(Filter, HPFCharacteristic)
       ret_h = hpf.in(1.0);
 
       // Check complementarity against LPF
-      ASSERT_LT(fabs(ret_l + ret_h - 1.0), 1e-2);
+      ASSERT_LT(std::abs(ret_l + ret_h - 1.0), 1e-2);
     }
   }
 }
@@ -96,8 +97,8 @@ TEST(Filter, AugleLPF)
 
     trajectory_tracker::Filter lpf(trajectory_tracker::Filter::FILTER_LPF, 10, start1);
     trajectory_tracker::Filter lpf_angle(trajectory_tracker::Filter::FILTER_LPF, 10, start1, true);
-    ASSERT_LT(fabs(lpf.get() - start1), 1e-6);
-    ASSERT_LT(fabs(lpf_angle.get() - start1), 1e-6);
+    ASSERT_LT(std::abs(lpf.get() - start1), 1e-6);
+    ASSERT_LT(std::abs(lpf_angle.get() - start1), 1e-6);
 
     for (int i = 0; i < 100; ++i)
     {
@@ -106,8 +107,8 @@ TEST(Filter, AugleLPF)
       ASSERT_GT(lpf.get(), start1);
       ASSERT_LT(lpf_angle.get(), start1);
     }
-    ASSERT_LT(fabs(lpf.get() - end1), 1e-2);
-    ASSERT_LT(fabs(lpf_angle.get() - (zero - 0.5)), 1e-2);
+    ASSERT_LT(std::abs(lpf.get() - end1), 1e-2);
+    ASSERT_LT(std::abs(lpf_angle.get() - (zero - 0.5)), 1e-2);
 
     // Check 2pi - 0.5 to 0.5 rad transition
     const float start2 = zero - 0.5;
@@ -115,8 +116,8 @@ TEST(Filter, AugleLPF)
 
     lpf.set(start2);
     lpf_angle.set(start2);
-    ASSERT_LT(fabs(lpf.get() - start2), 1e-6);
-    ASSERT_LT(fabs(lpf_angle.get() - start2), 1e-6);
+    ASSERT_LT(std::abs(lpf.get() - start2), 1e-6);
+    ASSERT_LT(std::abs(lpf_angle.get() - start2), 1e-6);
 
     for (int i = 0; i < 100; ++i)
     {
@@ -125,8 +126,8 @@ TEST(Filter, AugleLPF)
       ASSERT_LT(lpf.get(), start2);
       ASSERT_GT(lpf_angle.get(), start2);
     }
-    ASSERT_LT(fabs(lpf.get() - end2), 1e-2);
-    ASSERT_LT(fabs(lpf_angle.get() - (zero + 0.5)), 1e-2);
+    ASSERT_LT(std::abs(lpf.get() - end2), 1e-2);
+    ASSERT_LT(std::abs(lpf_angle.get() - (zero + 0.5)), 1e-2);
   }
 }
 

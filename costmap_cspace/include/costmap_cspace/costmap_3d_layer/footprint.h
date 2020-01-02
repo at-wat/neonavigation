@@ -30,6 +30,7 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
+#include <cmath>
 #include <vector>
 
 #include <ros/ros.h>
@@ -127,7 +128,7 @@ public:
     ROS_ASSERT(footprint_p_.v.size() > 2);
 
     range_max_ =
-        ceilf((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
+        std::ceil((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
     cs_template_.reset(range_max_, range_max_, info.angle);
 
     // C-Space template
@@ -192,11 +193,11 @@ protected:
   {
     ROS_ASSERT(ang_grid_ > 0);
     const int ox =
-        lroundf((msg->info.origin.position.x - map->info.origin.position.x) /
-                map->info.linear_resolution);
+        std::lround((msg->info.origin.position.x - map->info.origin.position.x) /
+                    map->info.linear_resolution);
     const int oy =
-        lroundf((msg->info.origin.position.y - map->info.origin.position.y) /
-                map->info.linear_resolution);
+        std::lround((msg->info.origin.position.y - map->info.origin.position.y) /
+                    map->info.linear_resolution);
     const double resolution_scale = msg->info.resolution / map->info.linear_resolution;
 
     // Clear travelable area in OVERWRITE mode
@@ -210,14 +211,14 @@ protected:
           if (val < 0)
             continue;
 
-          const int x = lroundf((i % msg->info.width) * resolution_scale);
+          const int x = std::lround((i % msg->info.width) * resolution_scale);
           if (x < range_max_ || static_cast<int>(msg->info.width) - range_max_ <= x)
             continue;
-          const int y = lroundf((i / msg->info.width) * resolution_scale);
+          const int y = std::lround((i / msg->info.width) * resolution_scale);
           if (y < range_max_ || static_cast<int>(msg->info.height) - range_max_ <= y)
             continue;
 
-          const int res_up = ceilf(resolution_scale);
+          const int res_up = std::ceil(resolution_scale);
           for (int yp = 0; yp < res_up; yp++)
           {
             for (int xp = 0; xp < res_up; xp++)
@@ -243,8 +244,8 @@ protected:
         unknown.resize(msg->data.size());
         for (size_t i = 0; i < msg->data.size(); i++)
         {
-          const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
-          const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+          const int gx = std::lround((i % msg->info.width) * resolution_scale) + ox;
+          const int gy = std::lround((i / msg->info.width) * resolution_scale) + oy;
           if (static_cast<size_t>(gx) >= map->info.width ||
               static_cast<size_t>(gy) >= map->info.height)
             continue;
@@ -257,8 +258,8 @@ protected:
       }
       for (size_t i = 0; i < msg->data.size(); i++)
       {
-        const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
-        const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+        const int gx = std::lround((i % msg->info.width) * resolution_scale) + ox;
+        const int gy = std::lround((i / msg->info.width) * resolution_scale) + oy;
         if (static_cast<size_t>(gx) >= map->info.width ||
             static_cast<size_t>(gy) >= map->info.height)
           continue;
@@ -299,8 +300,8 @@ protected:
         {
           if (!unknown[i])
             continue;
-          const int gx = lroundf((i % msg->info.width) * resolution_scale) + ox;
-          const int gy = lroundf((i / msg->info.width) * resolution_scale) + oy;
+          const int gx = std::lround((i % msg->info.width) * resolution_scale) + ox;
+          const int gy = std::lround((i / msg->info.width) * resolution_scale) + oy;
           if (static_cast<size_t>(gx) >= map->info.width ||
               static_cast<size_t>(gy) >= map->info.height)
             continue;

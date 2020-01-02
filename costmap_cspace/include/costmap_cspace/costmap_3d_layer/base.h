@@ -30,6 +30,11 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
 
+#include <algorithm>
+#include <cmath>
+#include <map>
+#include <string>
+
 #include <ros/ros.h>
 
 #include <geometry_msgs/PolygonStamped.h>
@@ -37,10 +42,6 @@
 
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
-
-#include <algorithm>
-#include <map>
-#include <string>
 
 namespace costmap_cspace
 {
@@ -335,16 +336,16 @@ public:
     ROS_ASSERT(!root_);
     ROS_ASSERT(ang_grid_ > 0);
     const int ox =
-        lroundf((msg->info.origin.position.x - map_->info.origin.position.x) /
-                map_->info.linear_resolution);
+        std::lround((msg->info.origin.position.x - map_->info.origin.position.x) /
+                    map_->info.linear_resolution);
     const int oy =
-        lroundf((msg->info.origin.position.y - map_->info.origin.position.y) /
-                map_->info.linear_resolution);
+        std::lround((msg->info.origin.position.y - map_->info.origin.position.y) /
+                    map_->info.linear_resolution);
 
     const int w =
-        lroundf(msg->info.width * msg->info.resolution / map_->info.linear_resolution);
+        std::lround(msg->info.width * msg->info.resolution / map_->info.linear_resolution);
     const int h =
-        lroundf(msg->info.height * msg->info.resolution / map_->info.linear_resolution);
+        std::lround(msg->info.height * msg->info.resolution / map_->info.linear_resolution);
 
     map_updated_ = msg;
 

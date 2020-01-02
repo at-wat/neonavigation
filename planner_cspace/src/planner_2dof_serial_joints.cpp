@@ -27,24 +27,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <list>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <omp.h>
+
 #include <ros/ros.h>
+
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <sensor_msgs/JointState.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <utility>
-#include <algorithm>
-#include <string>
-#include <list>
-#include <vector>
-
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_2dof_serial_joints/grid_astar_model.h>
 
 #include <neonavigation_common/compatibility.h>
-
-#include <omp.h>
 
 class planner2dofSerialJointsNode
 {
@@ -95,7 +98,7 @@ private:
 
       float dist(const Vec3dof& b)
       {
-        return hypotf(b.x_ - x_, b.y_ - y_);
+        return std::hypot(b.x_ - x_, b.y_ - y_);
       }
     };
 
@@ -250,8 +253,8 @@ private:
           if (it_next != path.end())
           {
             float diff[2], diff_max;
-            diff[0] = fabs((*it_next)[0] - (*it)[0]);
-            diff[1] = fabs((*it_next)[1] - (*it)[1]);
+            diff[0] = std::abs((*it_next)[0] - (*it)[0]);
+            diff[1] = std::abs((*it_next)[1] - (*it)[1]);
             diff_max = std::max(diff[0], diff[1]);
             pos_sum += diff_max;
           }
@@ -292,8 +295,8 @@ private:
         it_next++;
 
         float diff[2], diff_max;
-        diff[0] = fabs((*it)[0] - (*it_prev)[0]);
-        diff[1] = fabs((*it)[1] - (*it_prev)[1]);
+        diff[0] = std::abs((*it)[0] - (*it_prev)[0]);
+        diff[1] = std::abs((*it)[1] - (*it_prev)[1]);
         diff_max = std::max(diff[0], diff[1]);
         pos_sum += diff_max;
 
@@ -321,7 +324,7 @@ private:
               dir[1] = ((*it_next)[1] - (*it_prev)[1]);
               break;
           }
-          dir_max = std::max(fabs(dir[0]), fabs(dir[1]));
+          dir_max = std::max(std::abs(dir[0]), std::abs(dir[1]));
           float t = dir_max / avg_vel_;
 
           p.velocities[0] = dir[0] / t;
@@ -470,7 +473,7 @@ public:
           continue;
 
         Astar::Vec d;
-        int range = lroundf(cc.expand_ * resolution_ / (2.0 * M_PI));
+        int range = std::lround(cc.expand_ * resolution_ / (2.0 * M_PI));
         for (d[0] = -range; d[0] <= range; d[0]++)
         {
           for (d[1] = -range; d[1] <= range; d[1]++)
@@ -479,8 +482,8 @@ public:
             if ((unsigned int)p2[0] >= (unsigned int)resolution_ * 2 ||
                 (unsigned int)p2[1] >= (unsigned int)resolution_ * 2)
               continue;
-            int dist = std::max(abs(d[0]), abs(d[1]));
-            int c = floorf(100.0 * (range - dist) / range);
+            int dist = std::max(std::abs(d[0]), abs(d[1]));
+            int c = std::floor(100.0 * (range - dist) / range);
             if (cm_[p2] < c)
               cm_[p2] = c;
           }
@@ -515,8 +518,8 @@ private:
       int& t0, int& t1,
       const float gt0, const float gt1)
   {
-    t0 = lroundf(gt0 * resolution_ / (2.0 * M_PI)) + resolution_;
-    t1 = lroundf(gt1 * resolution_ / (2.0 * M_PI)) + resolution_;
+    t0 = std::lround(gt0 * resolution_ / (2.0 * M_PI)) + resolution_;
+    t1 = std::lround(gt1 * resolution_ / (2.0 * M_PI)) + resolution_;
   }
   void grid2Metric(
       const Astar::Vec t,
@@ -568,7 +571,7 @@ private:
     }
     std::list<Astar::Vec> path_grid;
     // const auto ts = std::chrono::high_resolution_clock::now();
-    float cancel = FLT_MAX;
+    float cancel = std::numeric_limits<float>::max();
     if (replan_interval_ >= ros::Duration(0))
       cancel = replan_interval_.toSec();
     if (!as_.search(
@@ -610,9 +613,9 @@ private:
     float prec = 2.0 * M_PI / static_cast<float>(resolution_);
     Astar::Vecf egp = eg;
     if (egp[0] < 0)
-      egp[0] += ceilf(-egp[0] / M_PI * 2.0) * M_PI * 2.0;
+      egp[0] += std::ceil(-egp[0] / M_PI * 2.0) * M_PI * 2.0;
     if (egp[1] < 0)
-      egp[1] += ceilf(-egp[1] / M_PI * 2.0) * M_PI * 2.0;
+      egp[1] += std::ceil(-egp[1] / M_PI * 2.0) * M_PI * 2.0;
     path.back()[0] += fmod(egp[0] + prec / 2.0, prec) - prec / 2.0;
     path.back()[1] += fmod(egp[1] + prec / 2.0, prec) - prec / 2.0;
 

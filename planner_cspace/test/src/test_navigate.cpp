@@ -27,7 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+#include <cstddef>
+
 #include <ros/ros.h>
+
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
@@ -36,8 +40,6 @@
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace_msgs/CSpace3D.h>
-
-#include <cstddef>
 
 #include <gtest/gtest.h>
 
@@ -173,7 +175,7 @@ TEST_F(Navigate, Navigate)
 
     auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
-        fabs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
+        std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << "Navagation success." << std::endl;
       ros::Duration(2.0).sleep();
@@ -245,7 +247,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
 
     auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
-        fabs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
+        std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << "Navagation success." << std::endl;
       ros::Duration(2.0).sleep();

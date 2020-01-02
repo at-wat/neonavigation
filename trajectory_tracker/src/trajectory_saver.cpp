@@ -35,14 +35,14 @@
    This software was implemented to accomplish the above research.
  */
 
+#include <cmath>
+#include <fstream>
+#include <string>
+
 #include <ros/ros.h>
 
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Path.h>
-
-#include <math.h>
-#include <fstream>
-#include <string>
 
 #include <neonavigation_common/compatibility.h>
 

@@ -27,15 +27,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <string>
-#include <algorithm>
-
-#include <gtest/gtest.h>
 
 #include <ros/ros.h>
-#include <nav_msgs/OccupancyGrid.h>
+
 #include <costmap_cspace/costmap_3d.h>
+#include <nav_msgs/OccupancyGrid.h>
+
+#include <gtest/gtest.h>
 
 const std::string footprint_str(
     "<value><array><data>"
@@ -105,7 +107,7 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 
   cm.setMapMetaData(map_info);
 
-  ASSERT_EQ(static_cast<int>(ceilf(1.5 / 1.0)), cm.getRangeMax());
+  ASSERT_EQ(static_cast<int>(std::ceil(1.5 / 1.0)), cm.getRangeMax());
 
   const costmap_cspace::CSpace3Cache& temp = cm.getTemplate();
   // Check template size
@@ -330,8 +332,8 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
       for (size_t i = 0; i < map->info.width; ++i)
       {
         const int cost = cm.getMapOverlay()->getCost(i, j, k);
-        const float dist1 = hypotf(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
-        const float dist2 = hypotf(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
+        const float dist1 = std::hypot(static_cast<int>(i) - i_center, static_cast<int>(j) - j_center);
+        const float dist2 = std::hypot(static_cast<int>(i) - i_center2, static_cast<int>(j) - j_center2);
         const float dist = std::min(dist1, dist2);
 
         if (i == static_cast<size_t>(i_center + 1) &&
