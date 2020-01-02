@@ -27,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
 find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
 catkin_package(
+  INCLUDE_DIRS include
   CATKIN_DEPENDS ${CATKIN_DEPENDS}
 )
 
@@ -45,6 +46,15 @@ add_executable(planner_3d
 )
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
+set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
+  planner_cspace/bbf.h
+  planner_cspace/blockmem_gridmap.h
+  planner_cspace/cyclic_vec.h
+  planner_cspace/grid_astar.h
+  planner_cspace/grid_astar_model.h
+  planner_cspace/jump_detector.h
+  planner_cspace/reservable_priority_queue.h
+)
 
 add_executable(planner_2dof_serial_joints
   src/planner_2dof_serial_joints.cpp
@@ -75,9 +85,10 @@ endif()
 install(TARGETS
     dummy_robot
     patrol
-    #planner_2dof_serial_joints
+    planner_2dof_serial_joints
     planner_3d
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  PUBLIC_HEADER DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )

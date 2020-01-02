@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-#include <costmap_cspace/pointcloud_accumulator/accumulator.h>
+#include <costmap_cspace/pointcloud_accumulator.h>
 #include <neonavigation_common/compatibility.h>
 
 class Pointcloud2ToMapNode
