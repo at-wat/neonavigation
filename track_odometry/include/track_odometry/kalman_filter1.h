@@ -32,6 +32,8 @@
 
 #include <limits>
 
+namespace track_odometry
+{
 class KalmanFilter1
 {
 public:
@@ -72,5 +74,6 @@ public:
     sigma_ = (1.0 - kt) * sigma_;
   }
 };
+}  // namespace track_odometry
 
 #endif  // KALMAN_FILTER1_H

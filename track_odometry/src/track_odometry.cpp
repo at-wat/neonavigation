@@ -122,7 +122,7 @@ private:
   float dist_;
   bool without_odom_;
 
-  KalmanFilter1 slip_;
+  track_odometry::KalmanFilter1 slip_;
 
   bool has_imu_;
   bool has_odom_;

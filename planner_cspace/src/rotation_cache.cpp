@@ -35,6 +35,10 @@
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 void RotationCache::Page::reset(const CyclicVecInt<3, 2>& size)
 {
   size_t ser_size = 1;
@@ -88,3 +92,5 @@ void RotationCache::reset(
     }
   }
 }
+}  // namespace planner_3d
+}  // namespace planner_cspace

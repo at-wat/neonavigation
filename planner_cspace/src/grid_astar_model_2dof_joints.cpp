@@ -37,6 +37,10 @@
 
 #include <planner_cspace/planner_2dof_serial_joints/grid_astar_model.h>
 
+namespace planner_cspace
+{
+namespace planner_2dof_serial_joints
+{
 GridAstarModel2DoFSerialJoint::GridAstarModel2DoFSerialJoint(
     const Vecf& euclid_cost_coef,
     const int resolution,
@@ -117,4 +121,5 @@ const std::vector<GridAstarModel2DoFSerialJoint::Vec>& GridAstarModel2DoFSerialJ
 {
   return search_list_;
 }
-
+}  // namespace planner_2dof_serial_joints
+}  // namespace planner_cspace
