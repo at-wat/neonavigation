@@ -38,6 +38,8 @@
 
 #include <planner_cspace/grid_astar.h>
 
+namespace planner_cspace
+{
 TEST(GridAstar, ParallelSearch)
 {
   using Vec = CyclicVecInt<1, 1>;
@@ -261,6 +263,7 @@ TEST(GridAstar, FindPath)
     ASSERT_EQ(*it, Vec(2));
   }
 }
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {

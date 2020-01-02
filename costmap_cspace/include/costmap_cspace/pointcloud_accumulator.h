@@ -27,13 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
-#define COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#ifndef COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
+#define COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
 
 #include <ros/ros.h>
 
 #include <list>
 
+namespace costmap_cspace
+{
 template <typename T>
 class PointcloudAccumurator
 {
@@ -106,5 +108,6 @@ protected:
   ros::Duration time_to_hold_;
   std::list<Points> points_;
 };
+}  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_ACCUMULATOR_H
+#endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H

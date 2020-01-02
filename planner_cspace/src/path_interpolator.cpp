@@ -33,6 +33,10 @@
 #include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 std::list<CyclicVecFloat<3, 2>> PathInterpolator::interpolate(
     const std::list<CyclicVecInt<3, 2>>& path_grid,
     const float interval,
@@ -109,3 +113,5 @@ std::list<CyclicVecFloat<3, 2>> PathInterpolator::interpolate(
   path.push_back(CyclicVecFloat<3, 2>(path_grid.back()));
   return path;
 }
+}  // namespace planner_3d
+}  // namespace planner_cspace

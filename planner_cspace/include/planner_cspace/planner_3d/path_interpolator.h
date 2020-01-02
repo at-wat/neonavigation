@@ -35,6 +35,10 @@
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 class PathInterpolator
 {
 private:
@@ -56,5 +60,7 @@ public:
       const float interval,
       const int local_range) const;
 };
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_PATH_INTERPOLATOR_H

@@ -35,6 +35,8 @@
 
 #include <planner_cspace/cyclic_vec.h>
 
+namespace planner_cspace
+{
 template <class T, int DIM, int NONCYCLIC>
 class BlockMemGridmapBase
 {
@@ -215,5 +217,6 @@ public:
     return *this;
   }
 };
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H

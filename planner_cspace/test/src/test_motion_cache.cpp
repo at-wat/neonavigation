@@ -36,6 +36,10 @@
 
 #include <gtest/gtest.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 TEST(MotionCache, Generate)
 {
   const int range = 4;
@@ -125,6 +129,8 @@ TEST(MotionCache, Generate)
     }
   }
 }
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {

@@ -35,6 +35,10 @@
 
 #include <gtest/gtest.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 TEST(GridAstarModel3D, Cost)
 {
   costmap_cspace_msgs::MapMetaData3D map_info;
@@ -90,6 +94,8 @@ TEST(GridAstarModel3D, Cost)
   EXPECT_LT(c_straight, c_drift_curve);
   EXPECT_EQ(-1, c_curve_sign_err);
 }
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {

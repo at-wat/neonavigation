@@ -33,6 +33,8 @@
 
 #include <planner_cspace/blockmem_gridmap.h>
 
+namespace planner_cspace
+{
 TEST(BlockmemGridmap, SpacialAccessPerformance)
 {
   constexpr int size[3] =
@@ -46,8 +48,8 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   constexpr int range = 0x10;
   constexpr int repeat = 4;
 
-  BlockMemGridmap<float, 3, 2, 0x20> gm;
-  BlockMemGridmap<float, 3, 2, 0x20> gm_ret;
+  planner_cspace::BlockMemGridmap<float, 3, 2, 0x20> gm;
+  planner_cspace::BlockMemGridmap<float, 3, 2, 0x20> gm_ret;
 
   using Vec = CyclicVecInt<3, 2>;
   using ThreeDimArrayFloat = std::array<std::array<std::array<float, size[0]>, size[1]>, size[2]>;
@@ -171,6 +173,7 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   std::cout << "Improvement ratio: " << d1.count() / d0.count() << std::endl;
   ASSERT_LT(d0, d1);
 }
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {

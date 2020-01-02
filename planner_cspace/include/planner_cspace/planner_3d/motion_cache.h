@@ -35,6 +35,10 @@
 
 #include <planner_cspace/cyclic_vec.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 class MotionCache
 {
 public:
@@ -96,5 +100,7 @@ protected:
   int page_size_;
   CyclicVecInt<3, 2> max_range_;
 };
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 #endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H

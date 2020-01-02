@@ -49,10 +49,15 @@
 
 #include <neonavigation_common/compatibility.h>
 
-class planner2dofSerialJointsNode
+namespace planner_cspace
+{
+namespace planner_2dof_serial_joints
+{
+class Planner2dofSerialJointsNode
 {
 public:
   using Astar = GridAstar<2, 0>;
+  using Ptr = std::shared_ptr<Planner2dofSerialJointsNode>;
 
 private:
   ros::NodeHandle nh_;
@@ -360,7 +365,7 @@ private:
   }
 
 public:
-  explicit planner2dofSerialJointsNode(const std::string group_name)
+  explicit Planner2dofSerialJointsNode(const std::string group_name)
     : nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
@@ -375,10 +380,10 @@ public:
         pnh_, "trajectory_out", 1, true);
     sub_trajectory_ = neonavigation_common::compat::subscribe(
         nh_, "trajectory_in",
-        pnh_, "trajectory_in", 1, &planner2dofSerialJointsNode::cbTrajectory, this);
+        pnh_, "trajectory_in", 1, &Planner2dofSerialJointsNode::cbTrajectory, this);
     sub_joint_ = neonavigation_common::compat::subscribe(
         nh_, "joint_states",
-        pnh_, "joint", 1, &planner2dofSerialJointsNode::cbJoint, this);
+        pnh_, "joint", 1, &Planner2dofSerialJointsNode::cbJoint, this);
 
     pub_status_ = nh_group.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
 
@@ -576,7 +581,7 @@ private:
       cancel = replan_interval_.toSec();
     if (!as_.search(
             starts, e, path_grid, model_,
-            std::bind(&planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1),
+            std::bind(&Planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1),
             0, cancel, true))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
@@ -653,13 +658,15 @@ private:
     return false;
   }
 };
+}  // namespace planner_2dof_serial_joints
+}  // namespace planner_cspace
 
 int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "planner_2dof_serial_joints");
   ros::NodeHandle pnh("~");
 
-  std::vector<std::shared_ptr<planner2dofSerialJointsNode>> jys;
+  std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;
   int n;
   pnh.param("num_groups", n, 1);
   for (int i = 0; i < n; i++)
@@ -667,9 +674,9 @@ int main(int argc, char* argv[])
     std::string name;
     pnh.param("group" + std::to_string(i) + "_name",
               name, std::string("group") + std::to_string(i));
-    std::shared_ptr<planner2dofSerialJointsNode> jy;
+    planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr jy;
 
-    jy.reset(new planner2dofSerialJointsNode(name));
+    jy.reset(new planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode(name));
     jys.push_back(jy);
   }
 
