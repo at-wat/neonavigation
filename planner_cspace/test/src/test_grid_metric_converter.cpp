@@ -37,6 +37,10 @@
 
 #include <gtest/gtest.h>
 
+namespace planner_cspace
+{
+namespace planner_3d
+{
 TEST(GridMetricConverter, SinglePose)
 {
   costmap_cspace_msgs::MapMetaData3D map_info;
@@ -143,6 +147,8 @@ TEST(GridMetricConverter, Path)
   // some reference points are not met
   ASSERT_TRUE(false);
 }
+}  // namespace planner_3d
+}  // namespace planner_cspace
 
 int main(int argc, char** argv)
 {

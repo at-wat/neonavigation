@@ -46,8 +46,8 @@ TEST(BlockmemGridmap, SpacialAccessPerformance)
   constexpr int range = 0x10;
   constexpr int repeat = 4;
 
-  BlockMemGridmap<float, 3, 2, 0x20> gm;
-  BlockMemGridmap<float, 3, 2, 0x20> gm_ret;
+  planner_cspace::BlockMemGridmap<float, 3, 2, 0x20> gm;
+  planner_cspace::BlockMemGridmap<float, 3, 2, 0x20> gm_ret;
 
   using Vec = CyclicVecInt<3, 2>;
   using ThreeDimArrayFloat = std::array<std::array<std::array<float, size[0]>, size[1]>, size[2]>;
