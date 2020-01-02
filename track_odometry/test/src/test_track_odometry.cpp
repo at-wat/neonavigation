@@ -65,6 +65,7 @@ public:
       pub_odom_.publish(odom_raw);
       pub_imu_.publish(imu);
       rate.sleep();
+      odom_.reset();
       ros::spinOnce();
       if (odom_ && i > 50)
         break;
@@ -137,8 +138,18 @@ public:
   }
   void waitAndSpinOnce()
   {
-    ros::Duration(0.1).sleep();
-    ros::spinOnce();
+    nav_msgs::Odometry::ConstPtr odom_prev = odom_;
+    while (true)
+    {
+      ros::Duration(0.1).sleep();
+      ros::spinOnce();
+      if (odom_prev == odom_)
+      {
+        // no more new messages
+        return;
+      }
+      odom_prev = odom_;
+    }
   }
 
 protected:
