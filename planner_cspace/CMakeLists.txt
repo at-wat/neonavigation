@@ -75,7 +75,7 @@ endif()
 install(TARGETS
     dummy_robot
     patrol
-    #planner_2dof_serial_joints
+    planner_2dof_serial_joints
     planner_3d
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
