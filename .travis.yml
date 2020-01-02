@@ -13,8 +13,7 @@ env:
     - DOCKER_CACHE_REGISTRY=atwat/ros-neonavigation-cache
     - secure: "qFXkdy85OQvELuGpGooz5S+BJucNfHPj3HcI2bcoDwqQXp4cNKVE8zyIgwmB5u4Csh3ccv6RGz8ZMMaqyOdaoTTUocU4hmyky5WdidBVo78suOi7Ka88poyZT+wcH+jE7wpRkc1G/IMp25wd2k2jBJk95D2mHclo4fCUfS3qxNYcylO3zAQZKLLAyVlp3Ae8094612LkYD9F5Fha4Ey2dgE3Qd2b01CwZc5PPi3XjrZQ1yl/zV4xaV0eRnGIMym+wo9tLE4qG99FW/lxMa5omddU5oSwu/bn7quV67J0U9xDzfPYhJzwYxXtl+IMfIJM+y3H1grjJ1lkXVk4FOd4J6iCOAHqrOVNWnwSPklB/5ei8O7RqUoNc0YG9fYS2PpwstaSCvC1bWHHLCF35wddz9wd2EUQv8g55oUVMAdKGK5H4eZb7CjkAhxNTeYHOteotkArMhI00lXhrHmHzv6vHdJvPFCNDPnkcCGyS84zF0S3lqyCrJSqo7YYgzP/JwHN3uk9VYQ6kduq+uDEND6iA6yKf76r7I7++RTtYY0CV1QVKcn7dESHfGeKz0LjHkQp8IwKxbYOSrLE8xRRhXMlHqHIAN/esJ54EgAgIEij9rJNSdzlteyA6D0iWrcTkkhDkrvkl+uUHqggm3CLT0k/MDfeEoQbwVdvbmxhlz6XOXo="
   matrix:
-    - ROS_DISTRO_TARGET=kinetic COVERAGE_TEST=false
-    - ROS_DISTRO_TARGET=melodic COVERAGE_TEST=false
+    - ROS_DISTRO_TARGET=kinetic COVERAGE_TEST=false  # note: Xenial has buggy version of gcc which doesn't calculate correct coverage.
     - ROS_DISTRO_TARGET=melodic COVERAGE_TEST=true
 branches:
   only:
