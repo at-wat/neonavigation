@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.1 (2020-01-06)
+------------------
 * Fix header namespaces (`#408 <https://github.com/at-wat/neonavigation/issues/408>`_)
 * Migrate from C math functions to C++ (`#407 <https://github.com/at-wat/neonavigation/issues/407>`_)
 * Contributors: Atsushi Watanabe

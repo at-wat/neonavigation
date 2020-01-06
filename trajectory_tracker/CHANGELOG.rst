@@ -2,8 +2,8 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.1 (2020-01-06)
+------------------
 * Migrate from C math functions to C++ (`#407 <https://github.com/at-wat/neonavigation/issues/407>`_)
 * trajectory_tracker: fix test stability (`#405 <https://github.com/at-wat/neonavigation/issues/405>`_)
 * Contributors: Atsushi Watanabe

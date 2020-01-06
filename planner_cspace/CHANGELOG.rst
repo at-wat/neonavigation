@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.1 (2020-01-06)
+------------------
 * planner_cspace: disable blockmem_gridmap_performance test (`#413 <https://github.com/at-wat/neonavigation/issues/413>`_)
 * Fix header namespaces (`#408 <https://github.com/at-wat/neonavigation/issues/408>`_)
 * planner_cspace: fix installing planner_2dof_serial_joints node (`#409 <https://github.com/at-wat/neonavigation/issues/409>`_)
