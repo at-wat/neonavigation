@@ -2,6 +2,11 @@
 Changelog for package map_organizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Migrate from C math functions to C++ (`#407 <https://github.com/at-wat/neonavigation/issues/407>`_)
+* Contributors: Atsushi Watanabe
+
 0.5.0 (2019-10-21)
 ------------------
 
