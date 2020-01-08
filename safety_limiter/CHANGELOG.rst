@@ -2,6 +2,13 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.1 (2020-01-06)
+------------------
+* safety_limiter: fix test stability (`#411 <https://github.com/at-wat/neonavigation/issues/411>`_)
+* Migrate from C math functions to C++ (`#407 <https://github.com/at-wat/neonavigation/issues/407>`_)
+* safety_limiter: fix test stability (`#406 <https://github.com/at-wat/neonavigation/issues/406>`_)
+* Contributors: Atsushi Watanabe
+
 0.5.0 (2019-10-21)
 ------------------
 * safety_limiter: remove debug output (`#385 <https://github.com/at-wat/neonavigation/issues/385>`_)
