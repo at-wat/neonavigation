@@ -2,6 +2,13 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.1 (2020-01-06)
+------------------
+* track_odometry: fix test stability (`#412 <https://github.com/at-wat/neonavigation/issues/412>`_)
+* Fix header namespaces (`#408 <https://github.com/at-wat/neonavigation/issues/408>`_)
+* Migrate from C math functions to C++ (`#407 <https://github.com/at-wat/neonavigation/issues/407>`_)
+* Contributors: Atsushi Watanabe
+
 0.5.0 (2019-10-21)
 ------------------
 

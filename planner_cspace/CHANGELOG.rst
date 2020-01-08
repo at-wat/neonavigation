@@ -2,6 +2,18 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.1 (2020-01-06)
+------------------
+* planner_cspace: disable blockmem_gridmap_performance test (`#413 <https://github.com/at-wat/neonavigation/issues/413>`_)
+* Fix header namespaces (`#408 <https://github.com/at-wat/neonavigation/issues/408>`_)
+* planner_cspace: fix installing planner_2dof_serial_joints node (`#409 <https://github.com/at-wat/neonavigation/issues/409>`_)
+* Migrate from C math functions to C++ (`#407 <https://github.com/at-wat/neonavigation/issues/407>`_)
+* planner_cspace: split search model definition (`#323 <https://github.com/at-wat/neonavigation/issues/323>`_)
+* planner_cspace: fix debug output test (`#404 <https://github.com/at-wat/neonavigation/issues/404>`_)
+* planner_cspace: fix navigation test stability (`#403 <https://github.com/at-wat/neonavigation/issues/403>`_)
+* planner_cspace: add planner_2dof_serial_joints node test (`#402 <https://github.com/at-wat/neonavigation/issues/402>`_)
+* Contributors: Atsushi Watanabe
+
 0.5.0 (2019-10-21)
 ------------------
 * planner_cspace: fix debug output test stability (`#399 <https://github.com/at-wat/neonavigation/issues/399>`_)
