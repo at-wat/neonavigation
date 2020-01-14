@@ -214,7 +214,6 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
         ASSERT_NEAR(cmd_vel_->linear.x, expected_vel, 1e-1);
       }
     }
-
     ASSERT_TRUE(hasDiag());
     EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
         << "message: " << diag_->status[0].message;
