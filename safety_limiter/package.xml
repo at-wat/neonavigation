@@ -12,6 +12,7 @@
 
   <depend>roscpp</depend>
   <test_depend>nav_msgs</test_depend>
+  <test_depend>tf2_geometry_msgs</test_depend>
   <test_depend>roslint</test_depend>
   <test_depend>rostest</test_depend>
 

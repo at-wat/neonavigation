@@ -71,6 +71,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
         publishSinglePointPointcloud2(-3.0 - x, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
+      broadcastTF("odom", "base_link", x, 0.0);
 
       wait.sleep();
       ros::spinOnce();
