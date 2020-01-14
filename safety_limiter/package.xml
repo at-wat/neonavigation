@@ -18,6 +18,7 @@
   <depend>diagnostic_updater</depend>
   <depend>geometry_msgs</depend>
   <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>tf2_ros</depend>
