@@ -54,10 +54,11 @@ public:
   RecorderNode();
   ~RecorderNode();
   void spin();
+
+private:
   bool clearPath(std_srvs::Empty::Request& req,
                  std_srvs::Empty::Response& res);
 
-private:
   std::string topic_path_;
   std::string frame_robot_;
   std::string frame_global_;
