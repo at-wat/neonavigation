@@ -95,7 +95,8 @@ TEST(TrajectoryRecorder, TfToPath)
   std_srvs::Empty empty;
   ASSERT_TRUE(client.call(empty));
 
-  while (received_count != 2) {
+  while (received_count != 2)
+  {
     ros::spinOnce();
     ros::Duration(0.1).sleep();
   }
