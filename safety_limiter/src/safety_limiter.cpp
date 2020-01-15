@@ -343,31 +343,43 @@ protected:
       return 0.0;
     }
 
+    geometry_msgs::TransformStamped odom_to_base;
+
+    const bool can_transform = tfbuf_.canTransform(
+        base_frame_id_, cloud_accum_->header.frame_id,
+        pcl_conversions::fromPCL(cloud_accum_->header.stamp));
     try
     {
-      geometry_msgs::TransformStamped odom_to_base = tfbuf_.lookupTransform(
-          base_frame_id_,
-          cloud_accum_->header.frame_id,
-          pcl_conversions::fromPCL(cloud_accum_->header.stamp),
-          ros::Duration(0.1));
-
-      const Eigen::Affine3f odom_to_base_eigen =
-          Eigen::Translation3f(
-              odom_to_base.transform.translation.x,
-              odom_to_base.transform.translation.y,
-              odom_to_base.transform.translation.z) *
-          Eigen::Quaternionf(
-              odom_to_base.transform.rotation.w,
-              odom_to_base.transform.rotation.x,
-              odom_to_base.transform.rotation.y,
-              odom_to_base.transform.rotation.z);
-      pcl::transformPointCloud(*cloud_accum_, *cloud_accum_, odom_to_base_eigen);
+      if (can_transform)
+      {
+        odom_to_base = tfbuf_.lookupTransform(
+            base_frame_id_, cloud_accum_->header.frame_id,
+            pcl_conversions::fromPCL(cloud_accum_->header.stamp));
+      }
+      else
+      {
+        odom_to_base = tfbuf_.lookupTransform(
+            base_frame_id_, cloud_accum_->header.frame_id,
+            ros::Time(0));
+      }
     }
     catch (tf2::TransformException& e)
     {
       ROS_WARN_THROTTLE(1.0, "safety_limiter: Transform failed: %s", e.what());
       return 0.0;
     }
+
+    const Eigen::Affine3f odom_to_base_eigen =
+        Eigen::Translation3f(
+            odom_to_base.transform.translation.x,
+            odom_to_base.transform.translation.y,
+            odom_to_base.transform.translation.z) *
+        Eigen::Quaternionf(
+            odom_to_base.transform.rotation.w,
+            odom_to_base.transform.rotation.x,
+            odom_to_base.transform.rotation.y,
+            odom_to_base.transform.rotation.z);
+    pcl::transformPointCloud(*cloud_accum_, *cloud_accum_, odom_to_base_eigen);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
