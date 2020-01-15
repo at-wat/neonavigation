@@ -103,7 +103,6 @@ float dist2d(geometry_msgs::Point& a, geometry_msgs::Point& b)
   return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
 
-
 bool RecorderNode::clearPath(std_srvs::Empty::Request& /* req */,
                              std_srvs::Empty::Response& /* res */)
 {
