@@ -343,7 +343,7 @@ protected:
       return 0.0;
     }
 
-    geometry_msgs::TransformStamped odom_to_base;
+    geometry_msgs::TransformStamped fixed_to_base;
 
     const bool can_transform = tfbuf_.canTransform(
         base_frame_id_, cloud_accum_->header.frame_id,
@@ -352,13 +352,13 @@ protected:
     {
       if (can_transform)
       {
-        odom_to_base = tfbuf_.lookupTransform(
+        fixed_to_base = tfbuf_.lookupTransform(
             base_frame_id_, cloud_accum_->header.frame_id,
             pcl_conversions::fromPCL(cloud_accum_->header.stamp));
       }
       else
       {
-        odom_to_base = tfbuf_.lookupTransform(
+        fixed_to_base = tfbuf_.lookupTransform(
             base_frame_id_, cloud_accum_->header.frame_id,
             ros::Time(0));
       }
@@ -369,17 +369,17 @@ protected:
       return 0.0;
     }
 
-    const Eigen::Affine3f odom_to_base_eigen =
+    const Eigen::Affine3f fixed_to_base_eigen =
         Eigen::Translation3f(
-            odom_to_base.transform.translation.x,
-            odom_to_base.transform.translation.y,
-            odom_to_base.transform.translation.z) *
+            fixed_to_base.transform.translation.x,
+            fixed_to_base.transform.translation.y,
+            fixed_to_base.transform.translation.z) *
         Eigen::Quaternionf(
-            odom_to_base.transform.rotation.w,
-            odom_to_base.transform.rotation.x,
-            odom_to_base.transform.rotation.y,
-            odom_to_base.transform.rotation.z);
-    pcl::transformPointCloud(*cloud_accum_, *cloud_accum_, odom_to_base_eigen);
+            fixed_to_base.transform.rotation.w,
+            fixed_to_base.transform.rotation.x,
+            fixed_to_base.transform.rotation.y,
+            fixed_to_base.transform.rotation.z);
+    pcl::transformPointCloud(*cloud_accum_, *cloud_accum_, fixed_to_base_eigen);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
