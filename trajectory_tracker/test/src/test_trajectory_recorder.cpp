@@ -100,7 +100,7 @@ TEST(TrajectoryRecorder, TfToPath)
     ros::spinOnce();
     ros::Duration(0.1).sleep();
   }
-  ASSERT_EQ(path->poses.size(), 1);
+  ASSERT_EQ(static_cast<int>(path->poses.size()), 1);
   ASSERT_EQ(path->poses.back().pose.position.x, points[len - 1].getOrigin().x());
   ASSERT_EQ(path->poses.back().pose.position.y, points[len - 1].getOrigin().y());
   ASSERT_EQ(path->poses.back().pose.position.z, points[len - 1].getOrigin().z());
