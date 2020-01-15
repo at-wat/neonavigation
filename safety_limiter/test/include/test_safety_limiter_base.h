@@ -127,6 +127,7 @@ public:
     {
       publishEmptyPointPointcloud2("base_link", ros::Time::now());
       publishWatchdogReset();
+      broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
       ros::spinOnce();
