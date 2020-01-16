@@ -684,12 +684,16 @@ protected:
   }
   void cbCloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
   {
-    sensor_msgs::PointCloud2 cloud_msg_fixed;
+    const bool can_transform = tfbuf_.canTransform(
+        fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
+    const ros::Time stamp =
+        can_transform ? msg->header.stamp : ros::Time(0);
 
+    sensor_msgs::PointCloud2 cloud_msg_fixed;
     try
     {
-      geometry_msgs::TransformStamped cloud_to_fixed = tfbuf_.lookupTransform(
-          fixed_frame_id_, msg->header.frame_id, msg->header.stamp, ros::Duration(0.5 / hz_));
+      const geometry_msgs::TransformStamped cloud_to_fixed =
+          tfbuf_.lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
       tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
     }
     catch (tf2::TransformException& e)
