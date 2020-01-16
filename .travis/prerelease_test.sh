@@ -43,6 +43,7 @@ generate_prerelease_script.py \
   ${ROS_DISTRO_TARGET} default ubuntu ${UBUNTU_DIST_TARGET} amd64 \
   --custom-repo \
     neonavigation__custom-2:git:https://github.com/at-wat/neonavigation.git:${TRAVIS_PULL_REQUEST_BRANCH} \
+    neonavigation_msgs__custom-2:git:https://github.com/at-wat/neonavigation_msgs.git:master \
   --level 1 \
   --output-dir ./
 
