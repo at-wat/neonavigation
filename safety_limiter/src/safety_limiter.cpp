@@ -689,7 +689,7 @@ protected:
     try
     {
       geometry_msgs::TransformStamped cloud_to_fixed = tfbuf_.lookupTransform(
-          fixed_frame_id_, msg->header.frame_id, msg->header.stamp, ros::Duration(0.1));
+          fixed_frame_id_, msg->header.frame_id, msg->header.stamp, ros::Duration(0.5 / hz_));
       tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
     }
     catch (tf2::TransformException& e)
