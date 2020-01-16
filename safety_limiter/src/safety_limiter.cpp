@@ -684,13 +684,13 @@ protected:
   }
   void cbCloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
   {
-    sensor_msgs::PointCloud2 cloud_msg_from_fixed;
+    sensor_msgs::PointCloud2 cloud_msg_fixed;
 
     try
     {
       geometry_msgs::TransformStamped cloud_to_fixed = tfbuf_.lookupTransform(
           fixed_frame_id_, msg->header.frame_id, msg->header.stamp, ros::Duration(0.1));
-      tf2::doTransform(*msg, cloud_msg_from_fixed, cloud_to_fixed);
+      tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
     }
     catch (tf2::TransformException& e)
     {
@@ -698,16 +698,16 @@ protected:
       return;
     }
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_from_fixed(new pcl::PointCloud<pcl::PointXYZ>());
-    cloud_from_fixed->header.frame_id = fixed_frame_id_;
-    pcl::fromROSMsg(cloud_msg_from_fixed, *cloud_from_fixed);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_fixed(new pcl::PointCloud<pcl::PointXYZ>());
+    cloud_fixed->header.frame_id = fixed_frame_id_;
+    pcl::fromROSMsg(cloud_msg_fixed, *cloud_fixed);
 
     if (cloud_clear_)
     {
       cloud_clear_ = false;
       cloud_accum_.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
-    *cloud_accum_ += *cloud_from_fixed;
+    *cloud_accum_ += *cloud_fixed;
     cloud_accum_->header.frame_id = fixed_frame_id_;
     last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
