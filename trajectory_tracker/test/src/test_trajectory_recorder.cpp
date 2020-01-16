@@ -31,6 +31,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Path.h>
+#include <std_srvs/Empty.h>
 
 #include <algorithm>
 #include <string>
@@ -42,9 +43,11 @@ TEST(TrajectoryRecorder, TfToPath)
   ros::NodeHandle nh("");
 
   nav_msgs::Path::ConstPtr path;
+  int received_count = 0;
   const boost::function<void(const nav_msgs::Path::ConstPtr&)> cb_path =
-      [&path](const nav_msgs::Path::ConstPtr& msg) -> void
+      [&path, &received_count](const nav_msgs::Path::ConstPtr& msg) -> void
   {
+    ++received_count;
     path = msg;
   };
   ros::Subscriber sub_path = nh.subscribe("path", 1, cb_path);
@@ -74,7 +77,7 @@ TEST(TrajectoryRecorder, TfToPath)
   }
   ros::spinOnce();
   ASSERT_TRUE(static_cast<bool>(path));
-  sub_path.shutdown();
+  ASSERT_EQ(received_count, 1);
 
   ASSERT_EQ(path->poses.size(), len);
   for (size_t i = 0; i < len; ++i)
@@ -87,6 +90,24 @@ TEST(TrajectoryRecorder, TfToPath)
     ASSERT_EQ(path->poses[i].pose.orientation.z, points[i].getRotation().z());
     ASSERT_EQ(path->poses[i].pose.orientation.w, points[i].getRotation().w());
   }
+
+  ros::ServiceClient client = nh.serviceClient<std_srvs::Empty>("/trajectory_recorder/clear_path");
+  std_srvs::Empty empty;
+  ASSERT_TRUE(client.call(empty));
+
+  while (received_count != 2)
+  {
+    ros::spinOnce();
+    ros::Duration(0.1).sleep();
+  }
+  ASSERT_EQ(static_cast<int>(path->poses.size()), 1);
+  ASSERT_EQ(path->poses.back().pose.position.x, points[len - 1].getOrigin().x());
+  ASSERT_EQ(path->poses.back().pose.position.y, points[len - 1].getOrigin().y());
+  ASSERT_EQ(path->poses.back().pose.position.z, points[len - 1].getOrigin().z());
+  ASSERT_EQ(path->poses.back().pose.orientation.x, points[len - 1].getRotation().x());
+  ASSERT_EQ(path->poses.back().pose.orientation.y, points[len - 1].getRotation().y());
+  ASSERT_EQ(path->poses.back().pose.orientation.z, points[len - 1].getRotation().z());
+  ASSERT_EQ(path->poses.back().pose.orientation.w, points[len - 1].getRotation().w());
 }
 
 int main(int argc, char** argv)
