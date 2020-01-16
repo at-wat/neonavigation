@@ -343,25 +343,17 @@ protected:
       return 0.0;
     }
 
-    geometry_msgs::TransformStamped fixed_to_base;
-
     const bool can_transform = tfbuf_.canTransform(
         base_frame_id_, cloud_accum_->header.frame_id,
         pcl_conversions::fromPCL(cloud_accum_->header.stamp));
+    const ros::Time stamp =
+        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : ros::Time(0);
+
+    geometry_msgs::TransformStamped fixed_to_base;
     try
     {
-      if (can_transform)
-      {
-        fixed_to_base = tfbuf_.lookupTransform(
-            base_frame_id_, cloud_accum_->header.frame_id,
-            pcl_conversions::fromPCL(cloud_accum_->header.stamp));
-      }
-      else
-      {
-        fixed_to_base = tfbuf_.lookupTransform(
-            base_frame_id_, cloud_accum_->header.frame_id,
-            ros::Time(0));
-      }
+      fixed_to_base = tfbuf_.lookupTransform(
+          base_frame_id_, cloud_accum_->header.frame_id, stamp);
     }
     catch (tf2::TransformException& e)
     {
