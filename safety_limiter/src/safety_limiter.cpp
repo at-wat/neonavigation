@@ -57,6 +57,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/transforms.h>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -108,7 +109,7 @@ protected:
 
   geometry_msgs::Twist twist_;
   ros::Time last_cloud_stamp_;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_accum_;
   bool cloud_clear_;
   double hz_;
   double timeout_;
@@ -125,7 +126,8 @@ protected:
   double z_range_[2];
   float footprint_radius_;
   double downsample_grid_;
-  std::string frame_id_;
+  std::string fixed_frame_id_;
+  std::string base_frame_id_;
 
   ros::Time last_disable_cmd_;
   ros::Duration hold_;
@@ -148,7 +150,7 @@ public:
     : nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
-    , cloud_(new pcl::PointCloud<pcl::PointXYZ>)
+    , cloud_accum_(new pcl::PointCloud<pcl::PointXYZ>)
     , cloud_clear_(false)
     , last_disable_cmd_(0)
     , watchdog_stop_(false)
@@ -207,7 +209,8 @@ public:
     pnh_.param("yaw_margin", yaw_margin_, 0.2);
     pnh_.param("yaw_escape", yaw_escape_, 0.05);
     pnh_.param("downsample_grid", downsample_grid_, 0.05);
-    pnh_.param("frame_id", frame_id_, std::string("base_link"));
+    pnh_.param("base_frame", base_frame_id_, std::string("base_link"));
+    pnh_.param("fixed_frame", fixed_frame_id_, std::string("odom"));
     double hold_d;
     pnh_.param("hold", hold_d, 0.0);
     hold_ = ros::Duration(std::max(hold_d, 1.0 / hz_));
@@ -307,7 +310,7 @@ protected:
       geometry_msgs::Twist cmd_vel;
       pub_twist_.publish(cmd_vel);
 
-      cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+      cloud_accum_.reset(new pcl::PointCloud<pcl::PointXYZ>);
       has_cloud_ = false;
       r_lim_ = 0;
 
@@ -330,9 +333,49 @@ protected:
   }
   double predict(const geometry_msgs::Twist& in)
   {
+    if (cloud_accum_->size() == 0)
+    {
+      if (allow_empty_cloud_)
+      {
+        return 1.0;
+      }
+      ROS_WARN_THROTTLE(1.0, "safety_limiter: Empty pointcloud passed.");
+      return 0.0;
+    }
+
+    const bool can_transform = tfbuf_.canTransform(
+        base_frame_id_, cloud_accum_->header.frame_id,
+        pcl_conversions::fromPCL(cloud_accum_->header.stamp));
+    const ros::Time stamp =
+        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : ros::Time(0);
+
+    geometry_msgs::TransformStamped fixed_to_base;
+    try
+    {
+      fixed_to_base = tfbuf_.lookupTransform(
+          base_frame_id_, cloud_accum_->header.frame_id, stamp);
+    }
+    catch (tf2::TransformException& e)
+    {
+      ROS_WARN_THROTTLE(1.0, "safety_limiter: Transform failed: %s", e.what());
+      return 0.0;
+    }
+
+    const Eigen::Affine3f fixed_to_base_eigen =
+        Eigen::Translation3f(
+            fixed_to_base.transform.translation.x,
+            fixed_to_base.transform.translation.y,
+            fixed_to_base.transform.translation.z) *
+        Eigen::Quaternionf(
+            fixed_to_base.transform.rotation.w,
+            fixed_to_base.transform.rotation.x,
+            fixed_to_base.transform.rotation.y,
+            fixed_to_base.transform.rotation.z);
+    pcl::transformPointCloud(*cloud_accum_, *cloud_accum_, fixed_to_base_eigen);
+
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
-    ds.setInputCloud(cloud_);
+    ds.setInputCloud(cloud_accum_);
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
     ds.filter(*pc);
 
@@ -370,7 +413,7 @@ protected:
     move.setIdentity();
     move_inv.setIdentity();
     sensor_msgs::PointCloud col_points;
-    col_points.header.frame_id = frame_id_;
+    col_points.header.frame_id = base_frame_id_;
     col_points.header.stamp = ros::Time::now();
 
     float d_col = 0;
@@ -641,15 +684,17 @@ protected:
   }
   void cbCloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
   {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
+    const bool can_transform = tfbuf_.canTransform(
+        fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
+    const ros::Time stamp =
+        can_transform ? msg->header.stamp : ros::Time(0);
 
+    sensor_msgs::PointCloud2 cloud_msg_fixed;
     try
     {
-      sensor_msgs::PointCloud2 pc2_tmp;
-      geometry_msgs::TransformStamped trans = tfbuf_.lookupTransform(
-          frame_id_, msg->header.frame_id, msg->header.stamp, ros::Duration(0.1));
-      tf2::doTransform(*msg, pc2_tmp, trans);
-      pcl::fromROSMsg(pc2_tmp, *pc);
+      const geometry_msgs::TransformStamped cloud_to_fixed =
+          tfbuf_.lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
+      tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
     }
     catch (tf2::TransformException& e)
     {
@@ -657,12 +702,17 @@ protected:
       return;
     }
 
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_fixed(new pcl::PointCloud<pcl::PointXYZ>());
+    cloud_fixed->header.frame_id = fixed_frame_id_;
+    pcl::fromROSMsg(cloud_msg_fixed, *cloud_fixed);
+
     if (cloud_clear_)
     {
       cloud_clear_ = false;
-      cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+      cloud_accum_.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
-    *cloud_ += *pc;
+    *cloud_accum_ += *cloud_fixed;
+    cloud_accum_->header.frame_id = fixed_frame_id_;
     last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
   }

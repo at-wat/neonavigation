@@ -74,6 +74,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
         const float vel = 0.1;
         const float ang_vel = 0.2;
         publishTwist(vel, ang_vel);
+        broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
         ros::spinOnce();
@@ -162,6 +163,7 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
 
     publishWatchdogReset();
     publishTwist(2.0, 0);
+    broadcastTF("odom", "base_link", 0.0, 0.0);
 
     wait.sleep();
     ros::spinOnce();
@@ -201,6 +203,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
       publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist(vel, ((i % 5) - 2.0) * 0.01);
+      broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
       ros::spinOnce();
@@ -251,6 +254,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
       publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist(vel, ((i % 5) - 2.0) * 0.01);
+      broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
       ros::spinOnce();
@@ -302,6 +306,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
       publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
+      broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
       ros::spinOnce();
@@ -369,6 +374,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
       publishSinglePointPointcloud2(-1, -1.1, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist((i % 3) * 0.01, vel);
+      broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
       ros::spinOnce();
@@ -420,6 +426,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
       publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist(0.0, vel);
+      broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
       ros::spinOnce();
@@ -478,6 +485,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
         publishSinglePointPointcloud2(1000, 1000, 0, "base_link", ros::Time::now());
         publishWatchdogReset();
         publishTwist(vel, ang_vel);
+        broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
         ros::spinOnce();
@@ -526,6 +534,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
 
       publishWatchdogReset();
       publishTwist(vel, 0.0);
+      broadcastTF("odom", "base_link", x, 0.0);
 
       wait.sleep();
       ros::spinOnce();
