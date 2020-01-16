@@ -40,6 +40,8 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Empty.h>
 #include <safety_limiter_msgs/SafetyLimiterStatus.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <gtest/gtest.h>
 
@@ -87,6 +89,8 @@ protected:
   ros::Subscriber sub_status_;
   ros::Subscriber sub_cmd_vel_;
 
+  tf2_ros::TransformBroadcaster tfb_;
+
   inline void cbDiag(const diagnostic_msgs::DiagnosticArray::ConstPtr& msg)
   {
     diag_ = msg;
@@ -123,6 +127,7 @@ public:
     {
       publishEmptyPointPointcloud2("base_link", ros::Time::now());
       publishWatchdogReset();
+      broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
       ros::spinOnce();
@@ -167,6 +172,20 @@ public:
     cmd_vel_out.linear.x = lin;
     cmd_vel_out.angular.z = ang;
     pub_cmd_vel_.publish(cmd_vel_out);
+  }
+  inline void broadcastTF(
+      const std::string parent_frame_id,
+      const std::string child_frame_id,
+      const float lin,
+      const float ang)
+  {
+    geometry_msgs::TransformStamped trans;
+    trans.header.stamp = ros::Time::now();
+    trans.transform = tf2::toMsg(
+        tf2::Transform(tf2::Quaternion(tf2::Vector3(0, 0, 1), ang), tf2::Vector3(lin, 0, 0)));
+    trans.header.frame_id = parent_frame_id;
+    trans.child_frame_id = child_frame_id;
+    tfb_.sendTransform(trans);
   }
   inline bool hasDiag() const
   {
