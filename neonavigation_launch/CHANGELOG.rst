@@ -2,6 +2,9 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.5.1 (2020-01-06)
 ------------------
 

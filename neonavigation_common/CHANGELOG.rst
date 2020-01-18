@@ -2,6 +2,9 @@
 Changelog for package neonavigation_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.5.1 (2020-01-06)
 ------------------
 

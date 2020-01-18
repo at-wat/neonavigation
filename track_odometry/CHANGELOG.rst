@@ -2,6 +2,9 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.5.1 (2020-01-06)
 ------------------
 * track_odometry: fix test stability (`#412 <https://github.com/at-wat/neonavigation/issues/412>`_)
