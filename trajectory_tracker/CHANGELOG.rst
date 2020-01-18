@@ -2,8 +2,8 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.0 (2020-01-18)
+------------------
 * trajectory_tracker: add a service to clear recorded path (`#422 <https://github.com/at-wat/neonavigation/issues/422>`_)
 * Contributors: Naotaka Hatao
 
