@@ -2,6 +2,11 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2020-01-18)
+------------------
+* safety_limiter: use fixed frame for accumulating input cloud (`#421 <https://github.com/at-wat/neonavigation/issues/421>`_)
+* Contributors: Yuta Koga
+
 0.5.1 (2020-01-06)
 ------------------
 * safety_limiter: fix test stability (`#411 <https://github.com/at-wat/neonavigation/issues/411>`_)
