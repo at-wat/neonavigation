@@ -2,6 +2,11 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2020-01-18)
+------------------
+* trajectory_tracker: add a service to clear recorded path (`#422 <https://github.com/at-wat/neonavigation/issues/422>`_)
+* Contributors: Naotaka Hatao
+
 0.5.1 (2020-01-06)
 ------------------
 * Migrate from C math functions to C++ (`#407 <https://github.com/at-wat/neonavigation/issues/407>`_)

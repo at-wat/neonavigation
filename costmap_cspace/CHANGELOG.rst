@@ -2,6 +2,9 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2020-01-18)
+------------------
+
 0.5.1 (2020-01-06)
 ------------------
 * Fix header namespaces (`#408 <https://github.com/at-wat/neonavigation/issues/408>`_)

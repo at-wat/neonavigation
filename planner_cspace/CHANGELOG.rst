@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2020-01-18)
+------------------
+
 0.5.1 (2020-01-06)
 ------------------
 * planner_cspace: disable blockmem_gridmap_performance test (`#413 <https://github.com/at-wat/neonavigation/issues/413>`_)
