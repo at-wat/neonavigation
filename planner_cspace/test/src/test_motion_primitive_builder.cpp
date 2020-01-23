@@ -268,7 +268,7 @@ TEST(MotionPrimitiveBuilder, Generate)
   const std::vector<std::vector<MotionPrimitiveBuilder::Vec>> motion_primitives =
       MotionPrimitiveBuilder::build(map_info, cc, range);
 
-  EXPECT_EQ(map_info.angle, static_cast<int>(motion_primitives.size()));
+  EXPECT_EQ(map_info.angle, static_cast<unsigned int>(motion_primitives.size()));
   for (size_t i = 0; i < motion_primitives.size(); ++i)
   {
     std::vector<Vec> current_primitives = motion_primitives[i];
