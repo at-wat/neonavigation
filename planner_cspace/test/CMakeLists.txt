@@ -14,6 +14,7 @@ catkin_add_gtest(test_planner_3d_cost
   src/test_planner_3d_cost.cpp
   ../src/grid_astar_model_3dof.cpp
   ../src/motion_cache.cpp
+  ../src/motion_primitive_builder.cpp
   ../src/rotation_cache.cpp
 )
 target_link_libraries(test_planner_3d_cost ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -29,6 +30,13 @@ catkin_add_gtest(test_motion_cache
   ../src/motion_cache.cpp
 )
 target_link_libraries(test_motion_cache ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+catkin_add_gtest(test_motion_primitive_builder
+  src/test_motion_primitive_builder.cpp
+  ../src/motion_primitive_builder.cpp
+  ../src/rotation_cache.cpp
+)
+target_link_libraries(test_motion_primitive_builder ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_rostest_gtest(test_debug_outputs
   test/debug_outputs_rostest.test

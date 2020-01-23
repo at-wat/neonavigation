@@ -972,6 +972,7 @@ protected:
       tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
       goal_tolerance_lin_ = std::lround(goal_tolerance_lin_f_ / map_info_.linear_resolution);
       goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
+      cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
       model_.reset(
           new GridAstarModel3D(
@@ -1522,7 +1523,6 @@ protected:
     pub_start_.publish(p);
 
     const float range_limit = cost_estim_cache_[s_rough] - (local_range_ + range_) * ec_[0];
-    cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const auto ts = boost::chrono::high_resolution_clock::now();
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
