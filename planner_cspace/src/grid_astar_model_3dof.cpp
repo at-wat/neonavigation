@@ -303,7 +303,6 @@ const std::vector<GridAstarModel3D::Vec>& GridAstarModel3D::searchGrids(
 
     if (ds.sqlen() < local_range_sq)
     {
-      //      return search_list_;
       return motion_primitives_[p[2]];
     }
   }

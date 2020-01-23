@@ -69,7 +69,7 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
   }
 
   motion_primitives.resize(map_info.angle);
-  for (size_t i = 0; i < motion_primitives.size(); ++i)
+  for (int i = 0; i < static_cast<int>(motion_primitives.size()); ++i)
   {
     auto& current_primitives = motion_primitives[i];
     for (const auto& prim : search_list)
@@ -85,7 +85,7 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
         continue;
       }
       int next_angle = i + prim[2];
-      if (next_angle >= map_info.angle)
+      if (next_angle >= static_cast<int>(map_info.angle))
       {
         next_angle -= map_info.angle;
       }
