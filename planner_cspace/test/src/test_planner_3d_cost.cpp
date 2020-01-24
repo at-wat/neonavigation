@@ -87,12 +87,10 @@ TEST(GridAstarModel3D, Cost)
   const float c_curve = model.cost(start, goal_curve, starts, goal_curve);
   const float c_drift = model.cost(start, goal_drift, starts, goal_drift);
   const float c_drift_curve = model.cost(start, goal_curve_drift, starts, goal_curve_drift);
-  const float c_curve_sign_err = model.cost(start, goal_curve_sign_err, starts, goal_curve_sign_err);
 
   EXPECT_LT(c_straight, c_curve);
   EXPECT_LT(c_straight, c_drift);
   EXPECT_LT(c_straight, c_drift_curve);
-  EXPECT_EQ(-1, c_curve_sign_err);
 }
 }  // namespace planner_3d
 }  // namespace planner_cspace

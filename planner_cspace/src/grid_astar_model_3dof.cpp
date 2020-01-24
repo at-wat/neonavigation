@@ -39,6 +39,7 @@
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
+#include <planner_cspace/planner_3d/motion_primitive_builder.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
@@ -98,21 +99,9 @@ GridAstarModel3D::GridAstarModel3D(
 
   createEuclidCostCache();
 
-  Vec d;
-  search_list_.clear();
-  for (d[0] = -range_; d[0] <= range_; d[0]++)
-  {
-    for (d[1] = -range_; d[1] <= range_; d[1]++)
-    {
-      if (d.sqlen() > range_ * range_)
-        continue;
-      for (d[2] = 0; d[2] < static_cast<int>(map_info_.angle); d[2]++)
-      {
-        search_list_.push_back(d);
-      }
-    }
-  }
+  motion_primitives_ = MotionPrimitiveBuilder::build(map_info_, cc_, range_);
   search_list_rough_.clear();
+  Vec d;
   for (d[0] = -range_; d[0] <= range_; d[0]++)
   {
     for (d[1] = -range_; d[1] <= range_; d[1]++)
@@ -197,21 +186,6 @@ float GridAstarModel3D::cost(
 
   const Vec d2(d[0] + range_, d[1] + range_, next[2]);
   const Vecf motion = rot_cache_.getMotion(cur[2], d2);
-  const Vecf motion_grid = motion * resolution_;
-
-  if (std::lround(motion_grid[0]) == 0 && std::lround(motion_grid[1]) != 0)
-  {
-    // Not non-holonomic
-    return -1;
-  }
-
-  if (std::abs(motion[2]) >= 2.0 * M_PI / 4.0)
-  {
-    // Over 90 degree turn
-    // must be separated into two curves
-    return -1;
-  }
-
   const float dist = motion.len();
 
   if (motion[0] < 0)
@@ -222,12 +196,7 @@ float GridAstarModel3D::cost(
 
   if (d[2] == 0)
   {
-    if (std::lround(motion_grid[0]) == 0)
-      return -1;  // side slip
     const float aspect = motion[0] / motion[1];
-    if (std::abs(aspect) < cc_.angle_resolution_aspect_)
-      return -1;  // large y offset
-
     cost += euclid_cost_coef_[2] * std::abs(1.0 / aspect) * map_info_.angular_resolution / (M_PI * 2.0);
 
     // Go-straight
@@ -257,27 +226,10 @@ float GridAstarModel3D::cost(
   }
   else
   {
-    // Curve
-    if (motion[0] * motion[1] * motion[2] < 0)
-      return -1;
-
-    if (d.sqlen() < 3 * 3)
-      return -1;
-
     const std::pair<float, float>& radiuses = rot_cache_.getRadiuses(cur[2], d2);
     const float r1 = radiuses.first;
     const float r2 = radiuses.second;
-
-    // curveture at the start_ pose and the end pose must be same
-    if (std::abs(r1 - r2) >= map_info_.linear_resolution * 1.5)
-    {
-      // Drifted
-      return -1;
-    }
-
     const float curv_radius = (r1 + r2) / 2;
-    if (std::abs(curv_radius) < cc_.min_curve_raduis_)
-      return -1;
 
     // Ignore boundary
     if (cur[0] < min_boundary_[0] || cur[1] < min_boundary_[1] ||
@@ -287,7 +239,6 @@ float GridAstarModel3D::cost(
     if (std::abs(cc_.max_vel_ / r1) > cc_.max_ang_vel_)
     {
       const float vel = std::abs(curv_radius) * cc_.max_ang_vel_;
-
       // Curve deceleration penalty
       cost += dist * std::abs(vel / cc_.max_vel_) * cc_.weight_decel_;
     }
@@ -352,7 +303,7 @@ const std::vector<GridAstarModel3D::Vec>& GridAstarModel3D::searchGrids(
 
     if (ds.sqlen() < local_range_sq)
     {
-      return search_list_;
+      return motion_primitives_[p[2]];
     }
   }
   return search_list_rough_;
