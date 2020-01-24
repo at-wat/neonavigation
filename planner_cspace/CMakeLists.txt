@@ -40,6 +40,7 @@ add_executable(planner_3d
   src/costmap_bbf.cpp
   src/grid_astar_model_3dof.cpp
   src/motion_cache.cpp
+  src/motion_primitive_builder.cpp
   src/path_interpolator.cpp
   src/planner_3d.cpp
   src/rotation_cache.cpp
