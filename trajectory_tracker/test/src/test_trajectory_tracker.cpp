@@ -115,7 +115,7 @@ public:
       if (status_ &&
           status_->status != trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
+      ASSERT_LT(ros::Time::now(), start + ros::Duration(20.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
