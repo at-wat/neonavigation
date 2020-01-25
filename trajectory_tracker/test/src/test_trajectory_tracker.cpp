@@ -98,7 +98,7 @@ public:
   {
     // Wait trajectory_tracker node
     ros::Rate rate(10);
-    const auto start = ros::Time::now();
+    const auto start = ros::WallTime::now();
     while (ros::ok())
     {
       nav_msgs::Path path;
@@ -115,7 +115,7 @@ public:
       if (status_ &&
           status_->status != trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
+      ASSERT_LT(ros::WallTime::now(), start + ros::WallDuration(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
@@ -123,7 +123,7 @@ public:
   void waitUntilStart(const std::function<void()> func = nullptr)
   {
     ros::Rate rate(50);
-    const auto start = ros::Time::now();
+    const auto start = ros::WallTime::now();
     while (ros::ok())
     {
       if (func)
@@ -135,7 +135,7 @@ public:
       if (status_ &&
           status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
+      ASSERT_LT(ros::WallTime::now(), start + ros::WallDuration(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
