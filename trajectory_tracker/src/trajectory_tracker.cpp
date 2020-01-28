@@ -390,8 +390,8 @@ void TrackerNode::control()
 
   // Curvature
   const float curv = calc_curvature_with_2_poses_ ?
-                         lpath.getCurvatureWith3Points(it_nearest, it_local_goal, pos_on_line, curv_forward_) :
-                         lpath.getCurvatureWith2Poses(it_nearest, it_local_goal, pos_on_line, curv_forward_);
+                         lpath.getCurvatureWith2Poses(it_nearest, it_local_goal, pos_on_line, curv_forward_) :
+                         lpath.getCurvatureWith3Points(it_nearest, it_local_goal, pos_on_line, curv_forward_);
 
   status.distance_remains = remain;
   status.angle_remains = angle;
