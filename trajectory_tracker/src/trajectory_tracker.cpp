@@ -107,7 +107,6 @@ private:
   bool limit_vel_by_avel_;
   bool check_old_path_;
   double epsilon_;
-  bool calc_curvature_with_2_poses_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
@@ -170,7 +169,6 @@ TrackerNode::TrackerNode()
   pnh_.param("limit_vel_by_avel", limit_vel_by_avel_, false);
   pnh_.param("check_old_path", check_old_path_, false);
   pnh_.param("epsilon", epsilon_, 0.001);
-  pnh_.param("calc_curvature_with_2_poses", calc_curvature_with_2_poses_, false);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
       nh_, "path",
@@ -389,9 +387,7 @@ void TrackerNode::control()
   angle = trajectory_tracker::angleNormalized(angle);
 
   // Curvature
-  const float curv = calc_curvature_with_2_poses_ ?
-                         lpath.getCurvatureWith2Poses(it_nearest, it_local_goal, pos_on_line, curv_forward_) :
-                         lpath.getCurvatureWith3Points(it_nearest, it_local_goal, pos_on_line, curv_forward_);
+  const float curv = lpath.getCurvature(it_nearest, it_local_goal, pos_on_line, curv_forward_);
 
   status.distance_remains = remain;
   status.angle_remains = angle;

@@ -189,12 +189,36 @@ public:
     }
     return remain;
   }
-  inline float getCurvatureWith3Points(
+  inline float getCurvature(
       const ConstIterator& begin,
       const ConstIterator& end,
       const Eigen::Vector2d& target_on_line,
       const float max_search_range) const
   {
+    if (end - begin <= 1)
+    {
+      return 0;
+    }
+    else if (end - begin == 2)
+    {
+      // When only two poses are remained, the logic same as planner_cspace::planner_3d::RotationCache is used.
+      ConstIterator it_prev = begin;
+      ConstIterator it = begin + 1;
+      Pose2D rel(it->pos_ - it_prev->pos_, it->yaw_, 0.0f);
+      rel.rotate(-it_prev->yaw_);
+      const float sin_v = std::sin(rel.yaw_);
+      const static float EPS = 1.0e-6;
+      if (std::abs(sin_v) < EPS)
+      {
+        return 0;
+      }
+      const float cos_v = std::cos(rel.yaw_);
+      const float r1 = rel.pos_.y() + rel.pos_.x() * cos_v / sin_v;
+      const float r2 = std::copysign(
+          std::sqrt(std::pow(rel.pos_.x(), 2) + std::pow(rel.pos_.x() * cos_v / sin_v, 2)),
+          rel.pos_.x() * sin_v);
+      return 1.0f / ((r1 + r2) / 2);
+    }
     const float max_search_range_sq = max_search_range * max_search_range;
     trajectory_tracker::Average<float> curv;
     ConstIterator it_prev2 = begin;
@@ -206,33 +230,6 @@ public:
         break;
       it_prev2 = it_prev1;
       it_prev1 = it;
-    }
-    return curv;
-  }
-  inline float getCurvatureWith2Poses(
-      const ConstIterator& begin,
-      const ConstIterator& end,
-      const Eigen::Vector2d& target_on_line,
-      const float max_search_range) const
-  {
-    const float max_search_range_sq = max_search_range * max_search_range;
-    trajectory_tracker::Average<float> curv;
-    ConstIterator it_prev = begin;
-    for (ConstIterator it = begin + 1; it < end; ++it)
-    {
-      Pose2D rel(it->pos_ - it_prev->pos_, it->yaw_, 0.0f);
-      rel.rotate(-it_prev->yaw_);
-
-      const float sin_v = std::sin(rel.yaw_);
-      const float cos_v = std::cos(rel.yaw_);
-      const float r1 = rel.pos_.y() + rel.pos_.x() * cos_v / sin_v;
-      const float r2 = std::copysign(
-          std::sqrt(std::pow(rel.pos_.x(), 2) + std::pow(rel.pos_.x() * cos_v / sin_v, 2)),
-          rel.pos_.x() * sin_v);
-      curv += 1.0f / ((r1 + r2) / 2);
-      if ((it->pos_ - target_on_line).squaredNorm() > max_search_range_sq)
-        break;
-      it_prev = it;
     }
     return curv;
   }
