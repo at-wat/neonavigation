@@ -207,7 +207,7 @@ public:
       Pose2D rel(it->pos_ - it_prev->pos_, it->yaw_, 0.0f);
       rel.rotate(-it_prev->yaw_);
       const float sin_v = std::sin(rel.yaw_);
-      const static float EPS = 1.0e-6;
+      static const float EPS = 1.0e-6f;
       if (std::abs(sin_v) < EPS)
       {
         return 0;
