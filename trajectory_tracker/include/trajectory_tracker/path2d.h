@@ -69,6 +69,21 @@ public:
     , velocity_(velocity)
   {
   }
+  inline void rotate(const float ang)
+  {
+    const float org_x = pos_.x();
+    const float org_y = pos_.y();
+    const float cos_v = std::cos(ang);
+    const float sin_v = std::sin(ang);
+
+    pos_.x() = cos_v * org_x - sin_v * org_y;
+    pos_.y() = sin_v * org_x + cos_v * org_y;
+    yaw_ += ang;
+    while (yaw_ < 0)
+      yaw_ += 2 * M_PI;
+    while (yaw_ > 2 * M_PI)
+      yaw_ -= 2 * M_PI;
+  }
 };
 class Path2D : public std::vector<Pose2D>
 {
@@ -180,6 +195,30 @@ public:
       const Eigen::Vector2d& target_on_line,
       const float max_search_range) const
   {
+    if (end - begin <= 1)
+    {
+      return 0;
+    }
+    else if (end - begin == 2)
+    {
+      // When only two poses are remained, the logic same as planner_cspace::planner_3d::RotationCache is used.
+      ConstIterator it_prev = begin;
+      ConstIterator it = begin + 1;
+      Pose2D rel(it->pos_ - it_prev->pos_, it->yaw_, 0.0f);
+      rel.rotate(-it_prev->yaw_);
+      const float sin_v = std::sin(rel.yaw_);
+      static const float EPS = 1.0e-6f;
+      if (std::abs(sin_v) < EPS)
+      {
+        return 0;
+      }
+      const float cos_v = std::cos(rel.yaw_);
+      const float r1 = rel.pos_.y() + rel.pos_.x() * cos_v / sin_v;
+      const float r2 = std::copysign(
+          std::sqrt(std::pow(rel.pos_.x(), 2) + std::pow(rel.pos_.x() * cos_v / sin_v, 2)),
+          rel.pos_.x() * sin_v);
+      return 1.0f / ((r1 + r2) / 2);
+    }
     const float max_search_range_sq = max_search_range * max_search_range;
     trajectory_tracker::Average<float> curv;
     ConstIterator it_prev2 = begin;
