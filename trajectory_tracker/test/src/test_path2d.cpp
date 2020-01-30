@@ -81,8 +81,15 @@ TEST(Path2D, Curvature)
   {
     trajectory_tracker::Path2D path;
     for (double a = 0; a < 1.57; a += 0.1)
-      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(std::cos(a), std::sin(a)) * c, 0, 1));
+      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(std::cos(a), std::sin(a)) * c, a + M_PI / 2, 1));
+    ASSERT_NEAR(path.getCurvature(path.begin(), path.end(), path[0].pos_, 10.0), 1.0 / c, 1e-2);
+  }
 
+  for (float c = 1.0; c < 4.0; c += 0.4)
+  {
+    trajectory_tracker::Path2D path;
+    for (double a = 0; a < 0.2; a += 0.1)
+      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(std::cos(a), std::sin(a)) * c, a + M_PI / 2, 1));
     ASSERT_NEAR(path.getCurvature(path.begin(), path.end(), path[0].pos_, 10.0), 1.0 / c, 1e-2);
   }
 }
