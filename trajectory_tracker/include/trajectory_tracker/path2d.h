@@ -73,8 +73,8 @@ public:
   {
     const float org_x = pos_.x();
     const float org_y = pos_.y();
-    const float cos_v = cosf(ang);
-    const float sin_v = sinf(ang);
+    const float cos_v = std::cos(ang);
+    const float sin_v = std::sin(ang);
 
     pos_.x() = cos_v * org_x - sin_v * org_y;
     pos_.y() = sin_v * org_x + cos_v * org_y;
