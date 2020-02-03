@@ -148,7 +148,7 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
           continue;
         }
         const float curv_radius = (r1 + r2) / 2;
-        if (std::abs(curv_radius) < cc.min_curve_raduis_)
+        if (std::abs(curv_radius) < cc.min_curve_radius_)
         {
           continue;
         }
