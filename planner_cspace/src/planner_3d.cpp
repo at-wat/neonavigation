@@ -1133,7 +1133,7 @@ public:
 
     pnh_.param("max_vel", cc_.max_vel_, 0.3f);
     pnh_.param("max_ang_vel", cc_.max_ang_vel_, 0.6f);
-    pnh_.param("min_curve_raduis", cc_.min_curve_raduis_, 0.1f);
+    pnh_.param("min_curve_radius", cc_.min_curve_radius_, 0.1f);
 
     pnh_.param("weight_decel", cc_.weight_decel_, 50.0f);
     pnh_.param("weight_backward", cc_.weight_backward_, 0.9f);

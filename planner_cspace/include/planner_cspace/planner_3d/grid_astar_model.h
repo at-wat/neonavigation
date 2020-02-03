@@ -59,7 +59,7 @@ public:
   float in_place_turn_;
   float hysteresis_max_dist_;
   float hysteresis_expand_;
-  float min_curve_raduis_;
+  float min_curve_radius_;
   float max_vel_;
   float max_ang_vel_;
   float angle_resolution_aspect_;
