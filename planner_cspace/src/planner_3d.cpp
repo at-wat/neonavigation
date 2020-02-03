@@ -59,7 +59,7 @@
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace_msgs/MoveFlexAction.h>
+#include <planner_cspace_msgs/MoveWithToleranceAction.h>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -84,7 +84,7 @@ public:
 
 protected:
   using Planner3DActionServer = actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction>;
-  using Planner3DFlexActionServer = actionlib::SimpleActionServer<planner_cspace_msgs::MoveFlexAction>;
+  using Planner3DTolerantActionServer = actionlib::SimpleActionServer<planner_cspace_msgs::MoveWithToleranceAction>;
 
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
@@ -104,8 +104,8 @@ protected:
   ros::ServiceServer srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
-  std::shared_ptr<Planner3DFlexActionServer> act_flex_;
-  planner_cspace_msgs::MoveFlexGoalConstPtr goal_flex_;
+  std::shared_ptr<Planner3DTolerantActionServer> act_tolerant_;
+  planner_cspace_msgs::MoveWithToleranceGoalConstPtr goal_tolerant_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
 
@@ -295,7 +295,7 @@ protected:
 
   void cbGoal(const geometry_msgs::PoseStamped::ConstPtr& msg)
   {
-    if (act_->isActive() || act_flex_->isActive())
+    if (act_->isActive() || act_tolerant_->isActive())
     {
       ROS_ERROR("Setting new goal is ignored since planner_3d is proceeding the action.");
       return;
@@ -308,8 +308,8 @@ protected:
     if (act_->isActive())
       act_->setPreempted(move_base_msgs::MoveBaseResult(), "Preempted.");
 
-    if (act_flex_->isActive())
-      act_flex_->setPreempted(planner_cspace_msgs::MoveFlexResult(), "Preempted.");
+    if (act_tolerant_->isActive())
+      act_tolerant_->setPreempted(planner_cspace_msgs::MoveWithToleranceResult(), "Preempted.");
 
     has_goal_ = false;
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -350,8 +350,8 @@ protected:
       has_goal_ = false;
       if (act_->isActive())
         act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal cleared.");
-      if (act_flex_->isActive())
-        act_flex_->setSucceeded(planner_cspace_msgs::MoveFlexResult(), "Goal cleared.");
+      if (act_tolerant_->isActive())
+        act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(), "Goal cleared.");
     }
     return true;
   }
@@ -1058,11 +1058,11 @@ protected:
       act_->setAborted(move_base_msgs::MoveBaseResult(), "Given goal is invalid.");
   }
 
-  void cbFlexAction()
+  void cbTolerantAction()
   {
-    goal_flex_ = act_flex_->acceptNewGoal();
-    if (!setGoal(goal_flex_->target_pose))
-      act_flex_->setAborted(planner_cspace_msgs::MoveFlexResult(), "Given goal is invalid.");
+    goal_tolerant_ = act_tolerant_->acceptNewGoal();
+    if (!setGoal(goal_tolerant_->target_pose))
+      act_tolerant_->setAborted(planner_cspace_msgs::MoveWithToleranceResult(), "Given goal is invalid.");
   }
 
   void updateStart()
@@ -1126,10 +1126,10 @@ public:
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
     act_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
 
-    act_flex_.reset(new Planner3DFlexActionServer(ros::NodeHandle(), "move_flex", false));
-    act_flex_->registerGoalCallback(boost::bind(&Planner3dNode::cbFlexAction, this));
-    act_flex_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
-    goal_flex_ = nullptr;
+    act_tolerant_.reset(new Planner3DTolerantActionServer(ros::NodeHandle(), "tolerant_move", false));
+    act_tolerant_->registerGoalCallback(boost::bind(&Planner3dNode::cbTolerantAction, this));
+    act_tolerant_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
+    goal_tolerant_ = nullptr;
 
     pnh_.param("use_path_with_velocity", use_path_with_velocity_, false);
     if (use_path_with_velocity_)
@@ -1261,7 +1261,7 @@ public:
     diag_updater_.add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
 
     act_->start();
-    act_flex_->start();
+    act_tolerant_->start();
   }
   void spin()
   {
@@ -1316,11 +1316,11 @@ public:
           act_->publishFeedback(feedback);
         }
 
-        if (act_flex_->isActive())
+        if (act_tolerant_->isActive())
         {
-          planner_cspace_msgs::MoveFlexFeedback feedback;
+          planner_cspace_msgs::MoveWithToleranceFeedback feedback;
           feedback.base_position = start_;
-          act_flex_->publishFeedback(feedback);
+          act_tolerant_->publishFeedback(feedback);
         }
 
         if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
@@ -1336,8 +1336,8 @@ public:
           else if (yaw_diff < -M_PI)
             yaw_diff += M_PI * 2.0;
           if (std::abs(yaw_diff) <
-                      act_flex_->isActive() ?
-                  goal_flex_->goal_tolerance_ang_finish :
+                      act_tolerant_->isActive() ?
+                  goal_tolerant_->goal_tolerance_ang_finish :
                   goal_tolerance_ang_finish_)
           {
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -1348,8 +1348,8 @@ public:
 
             if (act_->isActive())
               act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
-            if (act_flex_->isActive())
-              act_flex_->setSucceeded(planner_cspace_msgs::MoveFlexResult(), "Goal reached.");
+            if (act_tolerant_->isActive())
+              act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(), "Goal reached.");
           }
         }
         else
@@ -1370,9 +1370,9 @@ public:
             if (act_->isActive())
               act_->setAborted(
                   move_base_msgs::MoveBaseResult(), "Goal is in Rock");
-            if (act_flex_->isActive())
-              act_flex_->setAborted(
-                  planner_cspace_msgs::MoveFlexResult(), "Goal is in Rock");
+            if (act_tolerant_->isActive())
+              act_tolerant_->setAborted(
+                  planner_cspace_msgs::MoveWithToleranceResult(), "Goal is in Rock");
 
             continue;
           }
@@ -1486,10 +1486,10 @@ protected:
       remain.cycle(map_info_.angle);
 
       int g_tolerance_lin, g_tolerance_ang;
-      if (act_flex_->isActive())
+      if (act_tolerant_->isActive())
       {
-        g_tolerance_lin = std::lround(goal_flex_->goal_tolerance_lin / map_info_.linear_resolution);
-        g_tolerance_ang = std::lround(goal_flex_->goal_tolerance_ang / map_info_.angular_resolution);
+        g_tolerance_lin = std::lround(goal_tolerant_->goal_tolerance_lin / map_info_.linear_resolution);
+        g_tolerance_ang = std::lround(goal_tolerant_->goal_tolerance_ang / map_info_.angular_resolution);
       }
       else
       {
