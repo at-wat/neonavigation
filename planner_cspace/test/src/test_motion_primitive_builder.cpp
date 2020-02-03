@@ -261,7 +261,7 @@ TEST(MotionPrimitiveBuilder, Generate)
   map_info.angle = 16;
 
   CostCoeff cc;
-  cc.min_curve_raduis_ = 0.1f;
+  cc.min_curve_radius_ = 0.1f;
   cc.angle_resolution_aspect_ = 2.0f / tanf(map_info.angular_resolution);
 
   const int range = 4;
