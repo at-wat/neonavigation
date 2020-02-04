@@ -62,7 +62,7 @@ TEST(GridAstarModel3D, Cost)
   cc.in_place_turn_ = 0.0;
   cc.hysteresis_max_dist_ = 0.0;
   cc.hysteresis_expand_ = 0.0;
-  cc.min_curve_raduis_ = 0.0;
+  cc.min_curve_radius_ = 0.0;
   cc.max_vel_ = 1.0;
   cc.max_ang_vel_ = 1.0;
   cc.angle_resolution_aspect_ = 1.0;
