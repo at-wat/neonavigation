@@ -2,6 +2,9 @@
 Changelog for package obj_to_pointcloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.6.0 (2020-01-18)
 ------------------
 
