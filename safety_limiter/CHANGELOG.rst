@@ -2,6 +2,9 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2020-02-04)
+------------------
+
 0.6.0 (2020-01-18)
 ------------------
 * safety_limiter: use fixed frame for accumulating input cloud (`#421 <https://github.com/at-wat/neonavigation/issues/421>`_)

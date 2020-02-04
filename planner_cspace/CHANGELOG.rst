@@ -2,6 +2,13 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2020-02-04)
+------------------
+* planner_cspace: add MoveWithToleranceAction server (`#433 <https://github.com/at-wat/neonavigation/issues/433>`_)
+* planner_cspace: fix typo (`#436 <https://github.com/at-wat/neonavigation/issues/436>`_)
+* planner_cspace: implement motion primitive algorithm for speed-up (`#431 <https://github.com/at-wat/neonavigation/issues/431>`_)
+* Contributors: Daiki Maekawa, Naotaka Hatao
+
 0.6.0 (2020-01-18)
 ------------------
 
