@@ -1053,6 +1053,12 @@ protected:
   }
   void cbAction()
   {
+    if (act_tolerant_->isActive())
+    {
+      ROS_ERROR("Setting new goal is ignored since planner_3d is proceeding by tolerant_move action.");
+      return;
+    }
+
     move_base_msgs::MoveBaseGoalConstPtr goal = act_->acceptNewGoal();
     if (!setGoal(goal->target_pose))
       act_->setAborted(move_base_msgs::MoveBaseResult(), "Given goal is invalid.");
@@ -1060,6 +1066,12 @@ protected:
 
   void cbTolerantAction()
   {
+    if (act_->isActive())
+    {
+      ROS_ERROR("Setting new goal is ignored since planner_3d is proceeding by move_base action.");
+      return;
+    }
+
     goal_tolerant_ = act_tolerant_->acceptNewGoal();
     if (!setGoal(goal_tolerant_->target_pose))
       act_tolerant_->setAborted(planner_cspace_msgs::MoveWithToleranceResult(), "Given goal is invalid.");
