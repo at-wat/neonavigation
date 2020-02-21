@@ -58,9 +58,12 @@ private:
   ros::Publisher pub_path_;
   ros::Publisher pub_path_vel_;
   tf2_ros::TransformBroadcaster tfb_;
-
   ros::Time cmd_vel_time_;
 
+protected:
+  std_msgs::Header last_path_header_;
+
+private:
   void cbStatus(const trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr& msg)
   {
     status_ = msg;
@@ -162,6 +165,7 @@ public:
       path.poses.push_back(pose);
     }
     pub_path_.publish(path);
+    last_path_header_ = path.header;
   }
   void publishPathVelocity(const std::vector<Eigen::Vector4d>& poses)
   {
@@ -188,6 +192,7 @@ public:
     // needs sleep to prevent that the empty path from initState arrives later.
     ros::Duration(0.5).sleep();
     pub_path_vel_.publish(path);
+    last_path_header_ = path.header;
   }
   void publishTransform()
   {
@@ -238,6 +243,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   ASSERT_NEAR(yaw_, 0.0, 1e-2);
   ASSERT_NEAR(pos_[0], 0.5, 1e-2);
   ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
@@ -281,6 +287,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     EXPECT_NEAR(yaw_, 0.0, 1e-2) << info_message;
     EXPECT_NEAR(pos_[0], path_length, 1e-2) << info_message;
     EXPECT_NEAR(pos_[1], 0.0, 1e-2) << info_message;
+    ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
   }
 }
 
@@ -328,6 +335,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   ASSERT_NEAR(yaw_, 0.0, 1e-2);
   ASSERT_NEAR(pos_[0], 1.5, 1e-2);
   ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 TEST_F(TrajectoryTrackerTest, CurveFollow)
@@ -370,6 +378,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   ASSERT_NEAR(yaw_, p[2], 1e-2);
   ASSERT_NEAR(pos_[0], p[0], 1e-1);
   ASSERT_NEAR(pos_[1], p[1], 1e-1);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 TEST_F(TrajectoryTrackerTest, InPlaceTurn)
@@ -442,6 +451,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         }
 
         ASSERT_NEAR(yaw_, init_yaw + angles.back(), 1e-2) << condition_name.str();
+        ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
       }
     }
   }
@@ -487,6 +497,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   ASSERT_NEAR(yaw_, p[2], 1e-2);
   ASSERT_NEAR(pos_[0], p[0], 1e-1);
   ASSERT_NEAR(pos_[1], p[1], 1e-1);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
@@ -541,6 +552,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   ASSERT_NEAR(yaw_, p[2], 1e-2);
   ASSERT_NEAR(pos_[0], p[0], 1e-1);
   ASSERT_NEAR(pos_[1], p[1], 1e-1);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 void timeSource()
