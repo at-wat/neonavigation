@@ -1304,11 +1304,6 @@ public:
           return;
         }
 
-        if (!goal_updated_ && has_goal_ && updateGoal())
-        {
-          // Goal was updated.
-          return;
-        }
         if (costmap_udpated && previous_path.poses.size() > 1)
         {
           const GridAstarModel3D::VecWithCost start_grid(pathPose2Grid(previous_path.poses.front()));
@@ -1347,6 +1342,10 @@ public:
 
       const ros::Time now = ros::Time::now();
 
+      if (has_map_ && !goal_updated_ && has_goal_)
+      {
+        updateGoal();
+      }
       bool has_costmap(false);
       if (costmap_watchdog_ > ros::Duration(0))
       {

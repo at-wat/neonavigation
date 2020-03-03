@@ -100,8 +100,9 @@ protected:
 
 TEST_F(AbortTest, AbortByGoalInRock)
 {
+  // Assure that goal is received after map in planner_3d.
+  ros::Duration(0.5).sleep();
   // Send a goal which is in Rock
-  ros::Duration(1.0).sleep();
   move_base_->sendGoal(CreateGoalInRock());
   while (move_base_->getState().state_ !=
          actionlib::SimpleClientGoalState::ACTIVE)
