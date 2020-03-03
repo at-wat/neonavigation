@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add message package version constraints (`#443 <https://github.com/at-wat/neonavigation/issues/443>`_)
+* Contributors: Atsushi Watanabe
+
 0.7.0 (2020-02-04)
 ------------------
 * planner_cspace: add MoveWithToleranceAction server (`#433 <https://github.com/at-wat/neonavigation/issues/433>`_)
