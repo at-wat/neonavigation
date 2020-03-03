@@ -25,5 +25,5 @@
   <depend>eigen</depend>
 
   <depend>neonavigation_common</depend>
-  <depend>trajectory_tracker_msgs</depend>
+  <depend version_gte="0.8.0">trajectory_tracker_msgs</depend>
 </package>
