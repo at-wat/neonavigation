@@ -101,6 +101,7 @@ protected:
 TEST_F(AbortTest, AbortByGoalInRock)
 {
   // Send a goal which is in Rock
+  ros::Duration(1.0).sleep();
   move_base_->sendGoal(CreateGoalInRock());
   while (move_base_->getState().state_ !=
          actionlib::SimpleClientGoalState::ACTIVE)

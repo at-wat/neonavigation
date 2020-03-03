@@ -101,8 +101,6 @@ TEST_F(NavigateBoundary, StartPositionScan)
     for (double y = -10; y < 13; y += 2.0)
     {
       publishTransform(x, y);
-      ros::Duration(0.05).sleep();
-      ros::spinOnce();
 
       path_ = nullptr;
       for (int i = 0; i < 100; ++i)
