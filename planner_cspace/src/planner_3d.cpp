@@ -1306,18 +1306,13 @@ public:
 
         if (costmap_udpated && previous_path.poses.size() > 1)
         {
-          const GridAstarModel3D::VecWithCost start_grid(pathPose2Grid(previous_path.poses.front()));
-          const GridAstarModel3D::Vec last_grid = pathPose2Grid(previous_path.poses.back());
-          GridAstarModel3D::Vec prev_grid = start_grid.v_;
-          for (size_t i = 1; i < previous_path.poses.size(); ++i)
+          for (const auto& path_pose : previous_path.poses)
           {
-            const GridAstarModel3D::Vec cur_grid = pathPose2Grid(previous_path.poses[i]);
-            if (model_->cost(prev_grid, cur_grid, {start_grid}, last_grid) < 0)  // NOLINT(whitespace/braces)
+            if (cm_[pathPose2Grid(path_pose)] == 100)
             {
               // Obstacle on the path.
               return;
             }
-            prev_grid = cur_grid;
           }
         }
       }
