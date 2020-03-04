@@ -2,6 +2,13 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.0 (2020-03-04)
+------------------
+* Add message package version constraints (`#443 <https://github.com/at-wat/neonavigation/issues/443>`_)
+* trajectory_tracker: check path timestamps in tests (`#441 <https://github.com/at-wat/neonavigation/issues/441>`_)
+* trajectory_tracker: add path header to TrajectoryTrackerStatus (`#439 <https://github.com/at-wat/neonavigation/issues/439>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.7.0 (2020-02-04)
 ------------------
 * trajectory_tracker: calculate correct curvature at the end of path (`#435 <https://github.com/at-wat/neonavigation/issues/435>`_)
