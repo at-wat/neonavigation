@@ -76,6 +76,8 @@ TEST(Planner3D, CostmapWatchdog)
   goal.pose.position.x = 1.9;
   goal.pose.position.y = 2.8;
   goal.pose.orientation.w = 1.0;
+  // Assure that goal is received after map in planner_3d.
+  ros::Duration(0.5).sleep();
   pub_goal.publish(goal);
 
   ros::Rate rate(10);
