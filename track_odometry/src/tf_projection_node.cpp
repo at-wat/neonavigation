@@ -111,8 +111,10 @@ public:
 
     if (project_posture_)
     {
-      const float yaw = tf2::getYaw(trans.getRotation());
-      trans.setRotation(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      const tf2::Quaternion rot(trans.getRotation());
+      const tf2::Quaternion rot_yaw(tf2::Vector3(0.0, 0.0, 1.0), tf2::getYaw(rot));
+      const tf2::Transform rot_inv(rot_yaw * rot.inverse());
+      trans.setData(rot_inv * trans);
     }
 
     const tf2::Stamped<tf2::Transform> result(
