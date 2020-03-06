@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>trajectory_tracker</name>
-  <version>0.7.0</version>
+  <version>0.8.0</version>
   <description>Path following control package for wheeled mobile robot</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
@@ -25,5 +25,5 @@
   <depend>eigen</depend>
 
   <depend>neonavigation_common</depend>
-  <depend>trajectory_tracker_msgs</depend>
+  <depend version_gte="0.8.0">trajectory_tracker_msgs</depend>
 </package>

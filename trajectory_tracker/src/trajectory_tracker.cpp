@@ -273,6 +273,7 @@ void TrackerNode::control()
   status.header.stamp = ros::Time::now();
   status.distance_remains = 0.0;
   status.angle_remains = 0.0;
+  status.path_header = path_header_;
 
   if (path_header_.frame_id.size() == 0 || path_.size() == 0)
   {

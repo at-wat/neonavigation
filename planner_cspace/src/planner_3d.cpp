@@ -44,8 +44,8 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/GetPlan.h>
-#include <nav_msgs/Path.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
@@ -1275,29 +1275,72 @@ public:
     act_->start();
     act_tolerant_->start();
   }
-  void spin()
-  {
-    ros::Rate wait(freq_);
-    ROS_DEBUG("Initialized");
 
+  GridAstarModel3D::Vec pathPose2Grid(const geometry_msgs::PoseStamped& pose) const
+  {
+    GridAstarModel3D::Vec grid_vec;
+    grid_metric_converter::metric2Grid(map_info_, grid_vec[0], grid_vec[1], grid_vec[2],
+                                       pose.pose.position.x, pose.pose.position.y, tf2::getYaw(pose.pose.orientation));
+    grid_vec.cycleUnsigned(map_info_.angle);
+    return grid_vec;
+  }
+
+  void waitUntil(const ros::Time& next_replan_time, const nav_msgs::Path& previous_path)
+  {
     while (ros::ok())
     {
-      wait.sleep();
+      const ros::Time prev_map_update_stamp = last_costmap_;
       ros::spinOnce();
-
-      const ros::Time now = ros::Time::now();
+      const bool costmap_udpated = last_costmap_ != prev_map_update_stamp;
 
       if (has_map_)
       {
         updateStart();
 
         if (jump_.detectJump())
+        {
           bbf_costmap_.clear();
+          // Robot pose jumped.
+          return;
+        }
 
-        if (!goal_updated_ && has_goal_)
-          updateGoal();
+        if (costmap_udpated && previous_path.poses.size() > 1)
+        {
+          for (const auto& path_pose : previous_path.poses)
+          {
+            if (cm_[pathPose2Grid(path_pose)] == 100)
+            {
+              // Obstacle on the path.
+              return;
+            }
+          }
+        }
       }
+      if (ros::Time::now() > next_replan_time)
+      {
+        return;
+      }
+      ros::Duration(0.01).sleep();
+    }
+  }
 
+  void spin()
+  {
+    ROS_DEBUG("Initialized");
+
+    ros::Time next_replan_time = ros::Time::now();
+    nav_msgs::Path previous_path;
+
+    while (ros::ok())
+    {
+      waitUntil(next_replan_time, previous_path);
+
+      const ros::Time now = ros::Time::now();
+
+      if (has_map_ && !goal_updated_ && has_goal_)
+      {
+        updateGoal();
+      }
       bool has_costmap(false);
       if (costmap_watchdog_ > ros::Duration(0))
       {
@@ -1308,6 +1351,7 @@ public:
               last_costmap_.toSec());
           status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
           publishEmptyPath();
+          previous_path.poses.clear();
         }
         else
         {
@@ -1319,6 +1363,7 @@ public:
         has_costmap = true;
       }
 
+      bool is_path_switchback = false;
       if (has_map_ && has_goal_ && has_start_ && has_costmap)
       {
         if (act_->isActive())
@@ -1377,6 +1422,8 @@ public:
             has_goal_ = false;
 
             publishEmptyPath();
+            previous_path.poses.clear();
+            next_replan_time += ros::Duration(1.0 / freq_);
             ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
 
             if (act_->isActive())
@@ -1406,14 +1453,11 @@ public:
           {
             pub_path_.publish(path);
           }
+          previous_path = path;
 
           if (sw_wait_ > 0.0)
           {
-            if (switchDetect(path))
-            {
-              ROS_INFO("Planned path has switchback");
-              ros::Duration(sw_wait_).sleep();
-            }
+            is_path_switchback = switchDetect(path);
           }
         }
       }
@@ -1422,9 +1466,20 @@ public:
         if (!retain_last_error_status_)
           status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
         publishEmptyPath();
+        previous_path.poses.clear();
       }
       pub_status_.publish(status_);
       diag_updater_.force_update();
+
+      if (is_path_switchback)
+      {
+        next_replan_time += ros::Duration(sw_wait_);
+        ROS_INFO("Planned path has switchback. Planner will stop until: %f", next_replan_time.toSec());
+      }
+      else
+      {
+        next_replan_time += ros::Duration(1.0 / freq_);
+      }
     }
   }
 

@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.0 (2020-03-04)
+------------------
+* planner_cspace: replan immediately when path is blocked by new obstacles (`#446 <https://github.com/at-wat/neonavigation/issues/446>`_)
+* Add message package version constraints (`#443 <https://github.com/at-wat/neonavigation/issues/443>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.7.0 (2020-02-04)
 ------------------
 * planner_cspace: add MoveWithToleranceAction server (`#433 <https://github.com/at-wat/neonavigation/issues/433>`_)
