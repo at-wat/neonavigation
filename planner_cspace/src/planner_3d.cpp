@@ -185,7 +185,8 @@ protected:
   planner_cspace_msgs::PlannerStatus status_;
 
   bool find_best_;
-  float sw_wait_;
+  geometry_msgs::PoseStamped sw_pos_;
+  bool is_path_switchback_;
 
   float rough_cost_max_;
   bool rough_;
@@ -1204,7 +1205,6 @@ public:
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
-    pnh_.param("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
 
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
@@ -1316,7 +1316,43 @@ public:
           }
         }
       }
-      if (ros::Time::now() > next_replan_time)
+      if (is_path_switchback_)
+      {
+        static ros::Time last_time = start_.header.stamp;
+        const ros::Time time = start_.header.stamp;
+        const float dt = time.toSec() - last_time.toSec();
+        if (dt > 0.0) {
+          static float last_len = std::numeric_limits<float>::quiet_NaN();
+          static float last_yaw = std::numeric_limits<float>::quiet_NaN();
+          const float len = std::hypot(
+              start_.pose.position.y - sw_pos_.pose.position.y,
+              start_.pose.position.x - sw_pos_.pose.position.x);
+          const float yaw = tf2::getYaw(start_.pose.orientation);
+          const float sw_yaw = tf2::getYaw(sw_pos_.pose.orientation);
+          float yaw_diff = yaw - sw_yaw;
+          yaw_diff = std::atan2(std::sin(yaw_diff), std::cos(yaw_diff));
+          if (len < goal_tolerance_lin_f_ && std::fabs(yaw_diff) < goal_tolerance_ang_f_)
+          {
+            // robot has arrived at the switchback point
+            is_path_switchback_ = false;
+          }
+          else if (!std::isnan(last_len) && !std::isnan(last_yaw))
+          {
+            float d_len = last_len - len;
+            float d_yaw = yaw - last_yaw;
+            d_yaw = std::atan2(std::sin(d_yaw), std::cos(d_yaw));
+            if (std::fabs(d_len) < 1e-6 && std::fabs(d_yaw) < 1e-6)
+            {
+              // robot stops
+              is_path_switchback_ = false;
+            }
+          }
+          last_len = len;
+          last_yaw = yaw;
+          last_time = time;
+        }
+      }
+      else if (ros::Time::now() > next_replan_time)
       {
         return;
       }
@@ -1455,10 +1491,10 @@ public:
           }
           previous_path = path;
 
-          if (sw_wait_ > 0.0)
-          {
-            is_path_switchback = switchDetect(path);
-          }
+          const int sw_index = switchDetect(path);
+          is_path_switchback = (sw_index >= 0);
+          if (is_path_switchback)
+            sw_pos_ = path.poses[sw_index];
         }
       }
       else if (!has_goal_)
@@ -1471,15 +1507,8 @@ public:
       pub_status_.publish(status_);
       diag_updater_.force_update();
 
-      if (is_path_switchback)
-      {
-        next_replan_time += ros::Duration(sw_wait_);
-        ROS_INFO("Planned path has switchback. Planner will stop until: %f", next_replan_time.toSec());
-      }
-      else
-      {
-        next_replan_time += ros::Duration(1.0 / freq_);
-      }
+      is_path_switchback_ = is_path_switchback;
+      next_replan_time += ros::Duration(1.0 / freq_);
     }
   }
 
@@ -1756,14 +1785,15 @@ protected:
     ROS_WARN("Search timed out");
     return true;
   }
-  bool switchDetect(const nav_msgs::Path& path)
+  int switchDetect(const nav_msgs::Path& path)
   {
     geometry_msgs::Pose p_prev;
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
-    for (const auto& p : path.poses)
+    for (auto it=path.poses.begin();it!=path.poses.end();++it)
     {
+      const auto& p = *it;
       if (!first)
       {
         const float len = std::hypot(
@@ -1779,7 +1809,7 @@ protected:
 
           if (dir_set && (dir_prev ^ dir))
           {
-            return true;
+            return std::distance(path.poses.begin(), it);
           }
           dir_prev = dir;
           dir_set = true;
@@ -1788,7 +1818,8 @@ protected:
       first = false;
       p_prev = p.pose;
     }
-    return false;
+    // -1 means no switchback in the path
+    return -1;
   }
   void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
