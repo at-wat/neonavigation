@@ -1321,7 +1321,8 @@ public:
         static ros::Time last_time = start_.header.stamp;
         const ros::Time time = start_.header.stamp;
         const float dt = time.toSec() - last_time.toSec();
-        if (dt > 0.0) {
+        if (dt > 0.0)
+        {
           static float last_len = std::numeric_limits<float>::quiet_NaN();
           static float last_yaw = std::numeric_limits<float>::quiet_NaN();
           const float len = std::hypot(
@@ -1791,7 +1792,7 @@ protected:
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
-    for (auto it=path.poses.begin();it!=path.poses.end();++it)
+    for (auto it = path.poses.begin(); it != path.poses.end(); ++it)
     {
       const auto& p = *it;
       if (!first)
