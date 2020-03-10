@@ -1268,6 +1268,7 @@ public:
 
     escaping_ = false;
     cnt_stuck_ = 0;
+    is_path_switchback_ = false;
 
     diag_updater_.setHardwareID("none");
     diag_updater_.add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
