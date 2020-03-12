@@ -2,8 +2,8 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.1 (2020-03-12)
+------------------
 * track_odometry: increase queue sizes of message_filters::Subscriber (`#450 <https://github.com/at-wat/neonavigation/issues/450>`_)
 * Contributors: Naotaka Hatao
 
