@@ -54,6 +54,17 @@ public:
       if (cnt_planner_ready_ > 5 && cnt_path_ > 5)
         break;
     }
+    map_hysteresis_ = nullptr;
+    map_remembered_ = nullptr;
+
+    // Wait updated maps
+    while (ros::ok())
+    {
+      ros::Duration(0.1).sleep();
+      ros::spinOnce();
+      if (map_hysteresis_ && map_remembered_)
+        break;
+    }
   }
   void showMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
