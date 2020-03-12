@@ -42,8 +42,8 @@
 #include <std_msgs/Float32.h>
 
 #include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/synchronizer.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -310,16 +310,16 @@ public:
     else
     {
       sub_odom_.reset(
-          new message_filters::Subscriber<nav_msgs::Odometry>(nh_, "odom_raw", 1));
+          new message_filters::Subscriber<nav_msgs::Odometry>(nh_, "odom_raw", 50));
       if (neonavigation_common::compat::getCompat() == neonavigation_common::compat::current_level)
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu/data", 1));
+            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu/data", 50));
       }
       else
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu", 1));
+            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu", 50));
       }
 
       int sync_window;
