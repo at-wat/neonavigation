@@ -2,6 +2,9 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.1 (2020-03-12)
+------------------
+
 0.8.0 (2020-03-04)
 ------------------
 * Add message package version constraints (`#443 <https://github.com/at-wat/neonavigation/issues/443>`_)

@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.1 (2020-03-12)
+------------------
+* planner_cspace: fix flaky debug_output test (`#452 <https://github.com/at-wat/neonavigation/issues/452>`_)
+* planner_cspace: fix condition of planning finish (`#451 <https://github.com/at-wat/neonavigation/issues/451>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.8.0 (2020-03-04)
 ------------------
 * planner_cspace: replan immediately when path is blocked by new obstacles (`#446 <https://github.com/at-wat/neonavigation/issues/446>`_)
