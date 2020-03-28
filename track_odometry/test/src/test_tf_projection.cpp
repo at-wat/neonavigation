@@ -45,9 +45,9 @@ void testTransform(
 {
   tf2::Transform result = track_odometry::projectTranslation(proj2base, targ2proj);
 
-  const float error_x = std::abs(result.getOrigin().x() - truth.getOrigin().x());
-  const float error_y = std::abs(result.getOrigin().y() - truth.getOrigin().y());
-  const float error_z = std::abs(result.getOrigin().z() - truth.getOrigin().z());
+  const double error_x = std::abs(result.getOrigin().x() - truth.getOrigin().x());
+  const double error_y = std::abs(result.getOrigin().y() - truth.getOrigin().y());
+  const double error_z = std::abs(result.getOrigin().z() - truth.getOrigin().z());
   const tf2::Quaternion error_q = result.getRotation() * truth.getRotation().inverse();
   ASSERT_LT(error_x, 0.001);
   ASSERT_LT(error_y, 0.001);
