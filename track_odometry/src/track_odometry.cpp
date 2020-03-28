@@ -53,19 +53,19 @@
 
 #include <neonavigation_common/compatibility.h>
 
-Eigen::Vector3f toEigen(const geometry_msgs::Vector3& a)
+Eigen::Vector3d toEigen(const geometry_msgs::Vector3& a)
 {
-  return Eigen::Vector3f(a.x, a.y, a.z);
+  return Eigen::Vector3d(a.x, a.y, a.z);
 }
-Eigen::Vector3f toEigen(const geometry_msgs::Point& a)
+Eigen::Vector3d toEigen(const geometry_msgs::Point& a)
 {
-  return Eigen::Vector3f(a.x, a.y, a.z);
+  return Eigen::Vector3d(a.x, a.y, a.z);
 }
-Eigen::Quaternionf toEigen(const geometry_msgs::Quaternion& a)
+Eigen::Quaterniond toEigen(const geometry_msgs::Quaternion& a)
 {
-  return Eigen::Quaternionf(a.w, a.x, a.y, a.z);
+  return Eigen::Quaterniond(a.w, a.x, a.y, a.z);
 }
-geometry_msgs::Point toPoint(const Eigen::Vector3f& a)
+geometry_msgs::Point toPoint(const Eigen::Vector3d& a)
 {
   geometry_msgs::Point b;
   b.x = a.x();
@@ -73,7 +73,7 @@ geometry_msgs::Point toPoint(const Eigen::Vector3f& a)
   b.z = a.z();
   return b;
 }
-geometry_msgs::Vector3 toVector3(const Eigen::Vector3f& a)
+geometry_msgs::Vector3 toVector3(const Eigen::Vector3d& a)
 {
   geometry_msgs::Vector3 b;
   b.x = a.x();
@@ -119,7 +119,7 @@ private:
   double sigma_predict_;
   double sigma_odom_;
   double predict_filter_tc_;
-  float dist_;
+  double dist_;
   bool without_odom_;
 
   track_odometry::KalmanFilter1 slip_;
@@ -220,13 +220,13 @@ private:
         return;
       }
 
-      float slip_ratio = 1.0;
+      double slip_ratio = 1.0;
       odom.header.stamp += ros::Duration(tf_tolerance_);
       odom.twist.twist.angular = imu_.angular_velocity;
       odom.pose.pose.orientation = imu_.orientation;
 
-      float w_imu = imu_.angular_velocity.z;
-      const float w_odom = msg->twist.twist.angular.z;
+      double w_imu = imu_.angular_velocity.z;
+      const double w_odom = msg->twist.twist.angular.z;
 
       if (w_imu * w_odom < 0 && !negative_slip_)
         w_imu = w_odom;
@@ -238,12 +238,12 @@ private:
         slip_ratio = w_imu / w_odom;
       }
 
-      const float slip_ratio_per_angvel =
+      const double slip_ratio_per_angvel =
           (w_odom - w_imu) / (w_odom * std::abs(w_odom));
-      float slip_ratio_per_angvel_sigma =
+      double slip_ratio_per_angvel_sigma =
           sigma_odom_ * std::abs(2.0 * w_odom * sigma_odom_ / std::pow(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2));
       if (std::abs(w_odom) < sigma_odom_)
-        slip_ratio_per_angvel_sigma = std::numeric_limits<float>::infinity();
+        slip_ratio_per_angvel_sigma = std::numeric_limits<double>::infinity();
 
       slip_.measure(slip_ratio_per_angvel, slip_ratio_per_angvel_sigma);
       // printf("%0.5f %0.5f %0.5f   %0.5f %0.5f  %0.5f\n",
@@ -261,8 +261,8 @@ private:
       }
       dist_ += odom.twist.twist.linear.x * dt;
 
-      const Eigen::Vector3f diff = toEigen(msg->pose.pose.position) - toEigen(odomraw_prev_.pose.pose.position);
-      Eigen::Vector3f v =
+      const Eigen::Vector3d diff = toEigen(msg->pose.pose.position) - toEigen(odomraw_prev_.pose.pose.position);
+      Eigen::Vector3d v =
           toEigen(odom.pose.pose.orientation) * toEigen(msg->pose.pose.orientation).inverse() * diff;
       if (use_kf_)
         v *= 1.0 - slip_.x_;
