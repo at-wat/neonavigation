@@ -298,6 +298,11 @@ public:
   {
     neonavigation_common::compat::checkCompatMode();
 
+    bool enable_tcp_no_delay;
+    pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, true);
+    const ros::TransportHints transport_hints =
+        enable_tcp_no_delay ? ros::TransportHints().reliable().tcpNoDelay(true) : ros::TransportHints();
+
     pnh_.param("without_odom", without_odom_, false);
     if (without_odom_)
     {
@@ -310,16 +315,16 @@ public:
     else
     {
       sub_odom_.reset(
-          new message_filters::Subscriber<nav_msgs::Odometry>(nh_, "odom_raw", 50));
+          new message_filters::Subscriber<nav_msgs::Odometry>(nh_, "odom_raw", 50, transport_hints));
       if (neonavigation_common::compat::getCompat() == neonavigation_common::compat::current_level)
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu/data", 50));
+            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu/data", 50, transport_hints));
       }
       else
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu", 50));
+            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu", 50, transport_hints));
       }
 
       int sync_window;
