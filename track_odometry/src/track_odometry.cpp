@@ -299,7 +299,7 @@ public:
     neonavigation_common::compat::checkCompatMode();
 
     bool enable_tcp_no_delay;
-    pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, false);
+    pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, true);
     const ros::TransportHints transport_hints =
         enable_tcp_no_delay ? ros::TransportHints().reliable().tcpNoDelay(true) : ros::TransportHints();
 
