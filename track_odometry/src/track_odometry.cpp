@@ -298,10 +298,10 @@ public:
   {
     neonavigation_common::compat::checkCompatMode();
 
-    bool use_tcp_no_delay;
-    pnh_.param("use_tcp_no_delay", use_tcp_no_delay, false);
+    bool enable_tcp_no_delay;
+    pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, false);
     const ros::TransportHints transport_hints =
-        use_tcp_no_delay ? ros::TransportHints().reliable().tcpNoDelay(true) : ros::TransportHints();
+        enable_tcp_no_delay ? ros::TransportHints().reliable().tcpNoDelay(true) : ros::TransportHints();
 
     pnh_.param("without_odom", without_odom_, false);
     if (without_odom_)
