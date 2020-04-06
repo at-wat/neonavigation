@@ -70,7 +70,7 @@ TEST_P(TfProjectionTest, ProjectionTransform)
     FAIL() << e.what();
   }
 
-  if (projected_frame_ == "base_link_tilt_projected")
+  if (projected_frame_ == "base_link_tilt_projected_surface_frame_movable")
   {
     const tf2::Transform trans(
         tf2::Quaternion(tf2::Vector3(0.0, 1.0, 0.0), -M_PI / 6));
@@ -96,7 +96,8 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Values(
         "base_link_projected",
         "base_link_projected2",
-        "base_link_tilt_projected"));
+        "base_link_tilt_projected",
+        "base_link_tilt_projected2"));
 
 int main(int argc, char** argv)
 {

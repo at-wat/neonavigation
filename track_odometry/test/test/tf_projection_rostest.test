@@ -26,6 +26,16 @@
     <param name="parent_frame" value="map" />
     <param name="projected_frame" value="base_link_tilt_projected" />
     <param name="project_posture" value="true" />
+    <param name="projection_surface_frame_is_fixed" value="true" />
+  </node>
+
+  <node pkg="track_odometry" type="tf_projection" name="tf_projection_project_posture_surface_frame_is_movable">
+    <param name="source_frame" value="base_link_tilt" />
+    <param name="projection_surface_frame" value="map" />
+    <param name="parent_frame" value="map" />
+    <param name="projected_frame" value="base_link_tilt_projected2" />
+    <param name="project_posture" value="true" />
+    <param name="projection_surface_frame_is_fixed" value="false" />
   </node>
 
   <node pkg="tf2_ros" type="static_transform_publisher" name="test_static_pub" args="1 2 3 0 0 0.7071 0.7071 map base_link" />
