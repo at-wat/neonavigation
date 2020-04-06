@@ -75,7 +75,7 @@ public:
   bool run(
       nav_msgs::Odometry& odom_raw,
       sensor_msgs::Imu& imu,
-      const float dt, const int steps)
+      const double dt, const int steps)
   {
     ros::Rate rate(1.0 / dt);
     int cnt(0);
@@ -112,7 +112,7 @@ public:
   void stepAndPublish(
       nav_msgs::Odometry& odom_raw,
       sensor_msgs::Imu& imu,
-      const float dt)
+      const double dt)
   {
     odom_raw.header.stamp += ros::Duration(dt);
     imu.header.stamp += ros::Duration(dt);
@@ -169,7 +169,7 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
 {
   initializeNode("");
 
-  const float dt = 0.01;
+  const double dt = 0.01;
   const int steps = 200;
 
   nav_msgs::Odometry odom_raw;
@@ -234,7 +234,7 @@ TEST_P(TrackOdometryTest, ZFilterOff)
   const std::string ns_postfix(GetParam());
   initializeNode("no_z_filter" + ns_postfix);
 
-  const float dt = 0.01;
+  const double dt = 0.01;
   const int steps = 200;
 
   nav_msgs::Odometry odom_raw;
@@ -268,7 +268,7 @@ TEST_P(TrackOdometryTest, ZFilterOn)
   const std::string ns_postfix(GetParam());
   initializeNode("z_filter" + ns_postfix);
 
-  const float dt = 0.01;
+  const double dt = 0.01;
   const int steps = 200;
 
   nav_msgs::Odometry odom_raw;

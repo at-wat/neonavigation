@@ -142,7 +142,7 @@ public:
     geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
     if (flat_)
     {
-      const float yaw = tf2::getYaw(trans_out.transform.rotation);
+      const double yaw = tf2::getYaw(trans_out.transform.rotation);
       trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     }
     trans_out.child_frame_id = projected_frame_;

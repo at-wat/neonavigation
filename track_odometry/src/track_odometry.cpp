@@ -42,8 +42,8 @@
 #include <std_msgs/Float32.h>
 
 #include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/synchronizer.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -53,19 +53,19 @@
 
 #include <neonavigation_common/compatibility.h>
 
-Eigen::Vector3f toEigen(const geometry_msgs::Vector3& a)
+Eigen::Vector3d toEigen(const geometry_msgs::Vector3& a)
 {
-  return Eigen::Vector3f(a.x, a.y, a.z);
+  return Eigen::Vector3d(a.x, a.y, a.z);
 }
-Eigen::Vector3f toEigen(const geometry_msgs::Point& a)
+Eigen::Vector3d toEigen(const geometry_msgs::Point& a)
 {
-  return Eigen::Vector3f(a.x, a.y, a.z);
+  return Eigen::Vector3d(a.x, a.y, a.z);
 }
-Eigen::Quaternionf toEigen(const geometry_msgs::Quaternion& a)
+Eigen::Quaterniond toEigen(const geometry_msgs::Quaternion& a)
 {
-  return Eigen::Quaternionf(a.w, a.x, a.y, a.z);
+  return Eigen::Quaterniond(a.w, a.x, a.y, a.z);
 }
-geometry_msgs::Point toPoint(const Eigen::Vector3f& a)
+geometry_msgs::Point toPoint(const Eigen::Vector3d& a)
 {
   geometry_msgs::Point b;
   b.x = a.x();
@@ -73,7 +73,7 @@ geometry_msgs::Point toPoint(const Eigen::Vector3f& a)
   b.z = a.z();
   return b;
 }
-geometry_msgs::Vector3 toVector3(const Eigen::Vector3f& a)
+geometry_msgs::Vector3 toVector3(const Eigen::Vector3d& a)
 {
   geometry_msgs::Vector3 b;
   b.x = a.x();
@@ -119,7 +119,7 @@ private:
   double sigma_predict_;
   double sigma_odom_;
   double predict_filter_tc_;
-  float dist_;
+  double dist_;
   bool without_odom_;
 
   track_odometry::KalmanFilter1 slip_;
@@ -220,13 +220,13 @@ private:
         return;
       }
 
-      float slip_ratio = 1.0;
+      double slip_ratio = 1.0;
       odom.header.stamp += ros::Duration(tf_tolerance_);
       odom.twist.twist.angular = imu_.angular_velocity;
       odom.pose.pose.orientation = imu_.orientation;
 
-      float w_imu = imu_.angular_velocity.z;
-      const float w_odom = msg->twist.twist.angular.z;
+      double w_imu = imu_.angular_velocity.z;
+      const double w_odom = msg->twist.twist.angular.z;
 
       if (w_imu * w_odom < 0 && !negative_slip_)
         w_imu = w_odom;
@@ -238,12 +238,12 @@ private:
         slip_ratio = w_imu / w_odom;
       }
 
-      const float slip_ratio_per_angvel =
+      const double slip_ratio_per_angvel =
           (w_odom - w_imu) / (w_odom * std::abs(w_odom));
-      float slip_ratio_per_angvel_sigma =
+      double slip_ratio_per_angvel_sigma =
           sigma_odom_ * std::abs(2.0 * w_odom * sigma_odom_ / std::pow(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2));
       if (std::abs(w_odom) < sigma_odom_)
-        slip_ratio_per_angvel_sigma = std::numeric_limits<float>::infinity();
+        slip_ratio_per_angvel_sigma = std::numeric_limits<double>::infinity();
 
       slip_.measure(slip_ratio_per_angvel, slip_ratio_per_angvel_sigma);
       // printf("%0.5f %0.5f %0.5f   %0.5f %0.5f  %0.5f\n",
@@ -261,8 +261,8 @@ private:
       }
       dist_ += odom.twist.twist.linear.x * dt;
 
-      const Eigen::Vector3f diff = toEigen(msg->pose.pose.position) - toEigen(odomraw_prev_.pose.pose.position);
-      Eigen::Vector3f v =
+      const Eigen::Vector3d diff = toEigen(msg->pose.pose.position) - toEigen(odomraw_prev_.pose.pose.position);
+      Eigen::Vector3d v =
           toEigen(odom.pose.pose.orientation) * toEigen(msg->pose.pose.orientation).inverse() * diff;
       if (use_kf_)
         v *= 1.0 - slip_.x_;
@@ -298,6 +298,11 @@ public:
   {
     neonavigation_common::compat::checkCompatMode();
 
+    bool enable_tcp_no_delay;
+    pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, true);
+    const ros::TransportHints transport_hints =
+        enable_tcp_no_delay ? ros::TransportHints().reliable().tcpNoDelay(true) : ros::TransportHints();
+
     pnh_.param("without_odom", without_odom_, false);
     if (without_odom_)
     {
@@ -310,16 +315,16 @@ public:
     else
     {
       sub_odom_.reset(
-          new message_filters::Subscriber<nav_msgs::Odometry>(nh_, "odom_raw", 1));
+          new message_filters::Subscriber<nav_msgs::Odometry>(nh_, "odom_raw", 50, transport_hints));
       if (neonavigation_common::compat::getCompat() == neonavigation_common::compat::current_level)
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu/data", 1));
+            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu/data", 50, transport_hints));
       }
       else
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu", 1));
+            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu", 50, transport_hints));
       }
 
       int sync_window;
