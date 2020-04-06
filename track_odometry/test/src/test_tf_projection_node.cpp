@@ -97,7 +97,7 @@ INSTANTIATE_TEST_CASE_P(
         "base_link_projected",
         "base_link_projected2",
         "base_link_tilt_projected",
-        "base_link_tilt_projected2"));
+        "base_link_tilt_projected_surface_frame_movable"));
 
 int main(int argc, char** argv)
 {
