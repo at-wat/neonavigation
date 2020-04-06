@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <string>
 
 #include <ros/ros.h>
