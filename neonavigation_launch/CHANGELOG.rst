@@ -2,8 +2,8 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.2 (2020-04-06)
+------------------
 * Support Noetic (`#461 <https://github.com/at-wat/neonavigation/issues/461>`_)
 * Contributors: Atsushi Watanabe
 
