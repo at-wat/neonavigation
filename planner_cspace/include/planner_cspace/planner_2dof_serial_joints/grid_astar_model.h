@@ -30,6 +30,7 @@
 #ifndef PLANNER_CSPACE_PLANNER_2DOF_SERIAL_JOINTS_GRID_ASTAR_MODEL_H
 #define PLANNER_CSPACE_PLANNER_2DOF_SERIAL_JOINTS_GRID_ASTAR_MODEL_H
 
+#include <memory>
 #include <utility>
 #include <vector>
 

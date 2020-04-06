@@ -28,6 +28,7 @@
  */
 
 #include <cstddef>
+#include <memory>
 
 #include <gtest/gtest.h>
 

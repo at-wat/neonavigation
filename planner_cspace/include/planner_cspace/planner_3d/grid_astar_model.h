@@ -30,6 +30,7 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H
 #define PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H
 
+#include <memory>
 #include <utility>
 #include <vector>
 

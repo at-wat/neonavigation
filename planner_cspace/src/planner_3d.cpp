@@ -31,7 +31,9 @@
 #include <cmath>
 #include <limits>
 #include <list>
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 

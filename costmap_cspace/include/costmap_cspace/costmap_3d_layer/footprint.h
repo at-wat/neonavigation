@@ -31,6 +31,7 @@
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
 #include <cmath>
+#include <memory>
 #include <vector>
 
 #include <ros/ros.h>
