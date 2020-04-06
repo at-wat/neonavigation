@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Support Noetic (`#461 <https://github.com/at-wat/neonavigation/issues/461>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.1 (2020-03-12)
 ------------------
 
