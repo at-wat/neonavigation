@@ -2,6 +2,14 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.2 (2020-04-07)
+------------------
+* track_odometry: add option to align all postures to source frame (`#447 <https://github.com/at-wat/neonavigation/issues/447>`_)
+* Support Noetic (`#461 <https://github.com/at-wat/neonavigation/issues/461>`_)
+* track_odometry: add enable_tcp_no_delay option to reduce latency (`#456 <https://github.com/at-wat/neonavigation/issues/456>`_)
+* track_odometry: use double instead of float (`#455 <https://github.com/at-wat/neonavigation/issues/455>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao, Yuta Koga
+
 0.8.1 (2020-03-12)
 ------------------
 * track_odometry: increase queue sizes of message_filters::Subscriber (`#450 <https://github.com/at-wat/neonavigation/issues/450>`_)
