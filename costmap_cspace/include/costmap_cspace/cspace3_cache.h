@@ -30,6 +30,8 @@
 #ifndef COSTMAP_CSPACE_CSPACE3_CACHE_H
 #define COSTMAP_CSPACE_CSPACE3_CACHE_H
 
+#include <memory>
+
 #include <ros/ros.h>
 
 namespace costmap_cspace

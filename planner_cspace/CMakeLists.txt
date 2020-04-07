@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.1.3)
 project(planner_cspace)
 
 set(CATKIN_DEPENDS
@@ -32,7 +32,10 @@ catkin_package(
 )
 
 
-add_compile_options(-std=c++11 -funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 

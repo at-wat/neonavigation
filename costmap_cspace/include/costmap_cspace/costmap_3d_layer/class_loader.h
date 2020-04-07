@@ -30,6 +30,10 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H
 
+#include <map>
+#include <memory>
+#include <string>
+
 #include <ros/ros.h>
 
 #include <geometry_msgs/PolygonStamped.h>
@@ -39,9 +43,6 @@
 
 #include <costmap_cspace/cspace3_cache.h>
 #include <costmap_cspace/polygon.h>
-
-#include <string>
-#include <map>
 
 namespace costmap_cspace
 {

@@ -28,6 +28,7 @@
  */
 
 #include <list>
+#include <unordered_map>
 #include <vector>
 
 #include <boost/thread.hpp>

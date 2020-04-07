@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.1.3)
 project(costmap_cspace)
 
 set(CATKIN_DEPENDS
@@ -24,7 +24,9 @@ catkin_package(
 )
 
 
-add_compile_options(-std=c++11)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 

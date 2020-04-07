@@ -30,6 +30,8 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H
 
+#include <memory>
+
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace_msgs/CSpace3D.h>

@@ -30,6 +30,7 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
 #define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
 
+#include <memory>
 #include <unordered_map>
 #include <vector>
 

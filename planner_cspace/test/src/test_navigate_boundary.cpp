@@ -27,14 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cstddef>
+#include <memory>
+
 #include <ros/ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <nav_msgs/Path.h>
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
-
-#include <cstddef>
 
 #include <gtest/gtest.h>
 
