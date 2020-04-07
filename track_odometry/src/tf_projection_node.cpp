@@ -51,7 +51,7 @@ private:
   double tf_tolerance_;
   bool flat_;
   bool project_posture_;
-  bool projection_surface_frame_is_fixed_;
+  bool align_all_posture_to_source_;
 
   std::string source_frame_;
   std::string projection_surface_frame_;
@@ -91,13 +91,7 @@ public:
     pnh_.param("flat", flat_, false);
 
     pnh_.param("project_posture", project_posture_, false);
-    if (project_posture_)
-    {
-      // Set true if the the projection_surface_frame is fixed frame viewed from source_frame, otherwise false
-      // e.g. true:  projection_surface_frame: odom, source_frame: base_link
-      //      false: projection_surface_frame: base_link, source_frame: odom
-      pnh_.param("projection_surface_frame_is_fixed", projection_surface_frame_is_fixed_, true);
-    }
+    pnh_.param("align_all_posture_to_source", align_all_posture_to_source_, false);
   }
   void process()
   {
@@ -120,17 +114,17 @@ public:
 
     if (project_posture_)
     {
-      if (projection_surface_frame_is_fixed_)
-      {
-        const float yaw = tf2::getYaw(trans.getRotation());
-        trans.setRotation(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-      }
-      else
+      if (align_all_posture_to_source_)
       {
         const tf2::Quaternion rot(trans.getRotation());
         const tf2::Quaternion rot_yaw(tf2::Vector3(0.0, 0.0, 1.0), tf2::getYaw(rot));
         const tf2::Transform rot_inv(rot_yaw * rot.inverse());
         trans.setData(rot_inv * trans);
+      }
+      else
+      {
+        const float yaw = tf2::getYaw(trans.getRotation());
+        trans.setRotation(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
       }
     }
 
