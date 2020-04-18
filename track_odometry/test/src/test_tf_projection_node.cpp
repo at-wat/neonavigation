@@ -27,10 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <string>
 
 #include <ros/ros.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <tf2/utils.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -67,9 +69,20 @@ TEST_P(TfProjectionTest, ProjectionTransform)
   {
     FAIL() << e.what();
   }
-  ASSERT_EQ(out.transform.translation.x, 1);
-  ASSERT_EQ(out.transform.translation.y, 2);
-  ASSERT_EQ(out.transform.translation.z, 0);
+
+  if (projected_frame_ == "base_link_tilt_projected_with_aligned")
+  {
+    const tf2::Transform trans(
+        tf2::Quaternion(tf2::Vector3(0.0, 1.0, 0.0), -M_PI / 6));
+    const tf2::Vector3 result = trans * tf2::Vector3(1, 2, 3);
+    ASSERT_NEAR(out.transform.translation.x, result[0], 1e-4);
+  }
+  else
+  {
+    ASSERT_NEAR(out.transform.translation.x, 1, 1e-4);
+  }
+  ASSERT_NEAR(out.transform.translation.y, 2, 1e-4);
+  ASSERT_NEAR(out.transform.translation.z, 0, 1e-4);
   ASSERT_NEAR(out.transform.rotation.x, 0, 1e-4);
   ASSERT_NEAR(out.transform.rotation.y, 0, 1e-4);
   ASSERT_NEAR(out.transform.rotation.z, 0.7071, 1e-4);
@@ -83,7 +96,8 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Values(
         "base_link_projected",
         "base_link_projected2",
-        "base_link_tilt_projected"));
+        "base_link_tilt_projected",
+        "base_link_tilt_projected_with_aligned"));
 
 int main(int argc, char** argv)
 {

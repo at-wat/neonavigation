@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.2 (2020-04-07)
+------------------
+* Support Noetic (`#461 <https://github.com/at-wat/neonavigation/issues/461>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.1 (2020-03-12)
 ------------------
 * planner_cspace: fix flaky debug_output test (`#452 <https://github.com/at-wat/neonavigation/issues/452>`_)
