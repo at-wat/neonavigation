@@ -68,10 +68,10 @@ jobs:
       env:
         - ROS_DISTRO_TARGET=melodic COVERAGE_TEST=false
       before_install: pip install --user gh-pr-comment
-    - stage: prerelease-test
-      if: head_branch =~ ^(release-.*|ci-for-noetic)$
-      env:
-        - ROS_DISTRO_TARGET=noetic
-      before_install: pip install --user gh-pr-comment
       script: .travis/prerelease_test.sh
+    - stage: prerelease-test
+      if: head_branch =~ ^release-.*$
+      env:
+        - ROS_DISTRO_TARGET=noetic COVERAGE_TEST=false
+      before_install: pip install --user gh-pr-comment
       script: .travis/prerelease_test.sh
