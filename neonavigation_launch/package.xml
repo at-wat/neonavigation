@@ -19,5 +19,7 @@
   <exec_depend>safety_limiter</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>trajectory_tracker</exec_depend>
+
+  <!-- Temporary disabled due to lack of rviz on noetic -->
   <exec_depend condition="$ROS_DISTRO != noetic">trajectory_tracker_rviz_plugins</exec_depend>
 </package>
