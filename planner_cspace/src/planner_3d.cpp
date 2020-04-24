@@ -187,6 +187,7 @@ protected:
   planner_cspace_msgs::PlannerStatus status_;
 
   bool find_best_;
+  float sw_wait_;
   geometry_msgs::PoseStamped sw_pos_;
   bool is_path_switchback_;
 
@@ -1207,6 +1208,7 @@ public:
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
 
+    pnh_.param("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
 
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
@@ -1319,7 +1321,11 @@ public:
           }
         }
       }
-      if (is_path_switchback_)
+      if (ros::Time::now() > next_replan_time)
+      {
+        return;
+      }
+      else if (is_path_switchback_)
       {
         static ros::Time last_time = start_.header.stamp;
         const ros::Time time = start_.header.stamp;
@@ -1355,10 +1361,6 @@ public:
           last_yaw = yaw;
           last_time = time;
         }
-      }
-      else if (ros::Time::now() > next_replan_time)
-      {
-        return;
       }
       ros::Duration(0.01).sleep();
     }
@@ -1493,10 +1495,13 @@ public:
           }
           previous_path = path;
 
-          const int sw_index = switchDetect(path);
-          is_path_switchback = (sw_index >= 0);
-          if (is_path_switchback)
-            sw_pos_ = path.poses[sw_index];
+          if (sw_wait_ > 0.0)
+          {
+            const int sw_index = switchDetect(path);
+            is_path_switchback = (sw_index >= 0);
+            if (is_path_switchback)
+              sw_pos_ = path.poses[sw_index];
+          }
         }
       }
       else if (!has_goal_)
@@ -1509,8 +1514,16 @@ public:
       pub_status_.publish(status_);
       diag_updater_.force_update();
 
+      if (is_path_switchback)
+      {
+        next_replan_time += ros::Duration(sw_wait_);
+        ROS_INFO("Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.toSec());
+      }
+      else
+      {
+        next_replan_time += ros::Duration(1.0 / freq_);
+      }
       is_path_switchback_ = is_path_switchback;
-      next_replan_time += ros::Duration(1.0 / freq_);
     }
   }
 
