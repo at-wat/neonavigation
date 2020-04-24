@@ -37,26 +37,26 @@ namespace track_odometry
 class KalmanFilter1
 {
 public:
-  float x_;
-  float sigma_;
+  double x_;
+  double sigma_;
 
-  void set(const float x0 = 0.0,
-           const float sigma0 = std::numeric_limits<float>::infinity())
+  void set(const double x0 = 0.0,
+           const double sigma0 = std::numeric_limits<double>::infinity())
   {
     x_ = x0;
     sigma_ = sigma0;
   }
-  KalmanFilter1(const float x0 = 0.0,
-                const float sigma0 = std::numeric_limits<float>::infinity())
+  KalmanFilter1(const double x0 = 0.0,
+                const double sigma0 = std::numeric_limits<double>::infinity())
   {
     set(x0, sigma0);
   }
-  void predict(const float x_plus, const float sigma_plus)
+  void predict(const double x_plus, const double sigma_plus)
   {
     x_ += x_plus;
     sigma_ += sigma_plus;
   }
-  void measure(const float x_in, const float sigma_in)
+  void measure(const double x_in, const double sigma_in)
   {
     if (std::isinf(sigma_in))
       return;
@@ -69,7 +69,7 @@ public:
       sigma_ = sigma_in;
       return;
     }
-    float kt = sigma_ * sigma_ / (sigma_ * sigma_ + sigma_in * sigma_in);
+    double kt = sigma_ * sigma_ / (sigma_ * sigma_ + sigma_in * sigma_in);
     x_ = x_ + kt * (x_in - x_);
     sigma_ = (1.0 - kt) * sigma_;
   }

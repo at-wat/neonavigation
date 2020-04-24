@@ -31,7 +31,9 @@
 #include <cmath>
 #include <limits>
 #include <list>
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -1431,9 +1433,7 @@ public:
           else if (yaw_diff < -M_PI)
             yaw_diff += M_PI * 2.0;
           if (std::abs(yaw_diff) <
-                      act_tolerant_->isActive() ?
-                  goal_tolerant_->goal_tolerance_ang_finish :
-                  goal_tolerance_ang_finish_)
+              (act_tolerant_->isActive() ? goal_tolerant_->goal_tolerance_ang_finish : goal_tolerance_ang_finish_))
           {
             status_.status = planner_cspace_msgs::PlannerStatus::DONE;
             has_goal_ = false;

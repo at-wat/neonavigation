@@ -32,6 +32,7 @@
 
 #include <bitset>
 #include <limits>
+#include <memory>
 
 #include <planner_cspace/cyclic_vec.h>
 

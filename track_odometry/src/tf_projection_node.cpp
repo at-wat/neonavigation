@@ -51,6 +51,7 @@ private:
   double tf_tolerance_;
   bool flat_;
   bool project_posture_;
+  bool align_all_posture_to_source_;
 
   std::string source_frame_;
   std::string projection_surface_frame_;
@@ -88,7 +89,9 @@ public:
     pnh_.param("hz", rate_, 10.0);
     pnh_.param("tf_tolerance", tf_tolerance_, 0.1);
     pnh_.param("flat", flat_, false);
+
     pnh_.param("project_posture", project_posture_, false);
+    pnh_.param("align_all_posture_to_source", align_all_posture_to_source_, false);
   }
   void process()
   {
@@ -111,8 +114,18 @@ public:
 
     if (project_posture_)
     {
-      const float yaw = tf2::getYaw(trans.getRotation());
-      trans.setRotation(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      if (align_all_posture_to_source_)
+      {
+        const tf2::Quaternion rot(trans.getRotation());
+        const tf2::Quaternion rot_yaw(tf2::Vector3(0.0, 0.0, 1.0), tf2::getYaw(rot));
+        const tf2::Transform rot_inv(rot_yaw * rot.inverse());
+        trans.setData(rot_inv * trans);
+      }
+      else
+      {
+        const float yaw = tf2::getYaw(trans.getRotation());
+        trans.setRotation(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      }
     }
 
     const tf2::Stamped<tf2::Transform> result(
@@ -123,7 +136,7 @@ public:
     geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
     if (flat_)
     {
-      const float yaw = tf2::getYaw(trans_out.transform.rotation);
+      const double yaw = tf2::getYaw(trans_out.transform.rotation);
       trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     }
     trans_out.child_frame_id = projected_frame_;
