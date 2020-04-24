@@ -1348,7 +1348,7 @@ public:
           }
           else if (!std::isnan(last_len) && !std::isnan(last_yaw))
           {
-            float d_len = last_len - len;
+            const float d_len = last_len - len;
             float d_yaw = yaw - last_yaw;
             d_yaw = std::atan2(std::sin(d_yaw), std::cos(d_yaw));
             if (std::fabs(d_len) < 1e-6 && std::fabs(d_yaw) < 1e-6)
