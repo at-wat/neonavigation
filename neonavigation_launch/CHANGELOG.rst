@@ -2,8 +2,8 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.3 (2020-04-24)
+------------------
 * Add CI jobs for Noetic (`#462 <https://github.com/at-wat/neonavigation/issues/462>`_)
 * Contributors: Atsushi Watanabe
 
