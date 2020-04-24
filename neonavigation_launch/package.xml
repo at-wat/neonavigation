@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<package format="2">
+<?xml-model
+  href="http://download.ros.org/schema/package_format3.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>neonavigation_launch</name>
   <version>0.8.2</version>
   <description>Demonstration and sample launch files for neonavigation meta-package</description>
@@ -16,5 +19,7 @@
   <exec_depend>safety_limiter</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>trajectory_tracker</exec_depend>
-  <exec_depend>trajectory_tracker_rviz_plugins</exec_depend>
+
+  <!-- Temporary disabled due to lack of rviz on noetic -->
+  <exec_depend condition="$ROS_DISTRO != noetic">trajectory_tracker_rviz_plugins</exec_depend>
 </package>

@@ -1,0 +1,8 @@
+- git:
+    local-name: neonavigation_msgs
+    uri: https://github.com/at-wat/neonavigation_msgs.git
+    version: master
+- git:                                                             # [skip on noetic]
+    local-name: neonavigation_rviz_plugins                         # [skip on noetic]
+    uri: https://github.com/at-wat/neonavigation_rviz_plugins.git  # [skip on noetic]
+    version: master                                                # [skip on noetic]
