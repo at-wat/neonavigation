@@ -1497,7 +1497,7 @@ public:
 
           if (sw_wait_ > 0.0)
           {
-            const int sw_index = switchDetect(path);
+            const int sw_index = getSwitchIndex(path);
             is_path_switchback = (sw_index >= 0);
             if (is_path_switchback)
               sw_pos_ = path.poses[sw_index];
@@ -1800,7 +1800,7 @@ protected:
     ROS_WARN("Search timed out");
     return true;
   }
-  int switchDetect(const nav_msgs::Path& path)
+  int getSwitchIndex(const nav_msgs::Path& path) const
   {
     geometry_msgs::Pose p_prev;
     bool first(true);
