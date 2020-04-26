@@ -2,6 +2,9 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.3 (2020-04-26)
+------------------
+
 0.8.2 (2020-04-07)
 ------------------
 * track_odometry: add option to align all postures to source frame (`#447 <https://github.com/at-wat/neonavigation/issues/447>`_)
