@@ -3,7 +3,6 @@ project(track_odometry)
 
 set(CATKIN_DEPENDS
   roscpp
-  cmake_modules
 
   geometry_msgs
   message_filters
@@ -42,7 +41,6 @@ add_dependencies(tf_projection ${catkin_EXPORTED_TARGETS})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
-  find_package(rosunit REQUIRED)
   add_subdirectory(test)
 
   find_package(roslint REQUIRED)

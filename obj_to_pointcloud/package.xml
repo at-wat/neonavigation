@@ -14,7 +14,6 @@
   <test_depend>rostest</test_depend>
   <test_depend>roslint</test_depend>
 
-  <depend>eigen_conversions</depend>
   <depend>geometry_msgs</depend>
   <depend>pcl_conversions</depend>
   <depend>sensor_msgs</depend>

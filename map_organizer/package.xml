@@ -14,7 +14,6 @@
   <test_depend>rostest</test_depend>
   <test_depend>roslint</test_depend>
 
-  <depend>eigen_conversions</depend>
   <depend>geometry_msgs</depend>
   <depend>map_server</depend>
   <depend>nav_msgs</depend>
@@ -27,7 +26,6 @@
   <depend>map_organizer_msgs</depend>
   <depend>neonavigation_common</depend>
 
-  <depend>cmake_modules</depend>
   <depend>eigen</depend>
 
   <build_depend>libpcl-all-dev</build_depend>
