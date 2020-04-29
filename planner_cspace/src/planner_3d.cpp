@@ -1302,65 +1302,66 @@ public:
       {
         updateStart();
 
-        if (jump_.detectJump())
-        {
-          bbf_costmap_.clear();
-          // Robot pose jumped.
-          return;
-        }
-
-        if (costmap_udpated && previous_path.poses.size() > 1)
-        {
-          for (const auto& path_pose : previous_path.poses)
-          {
-            if (cm_[pathPose2Grid(path_pose)] == 100)
-            {
-              // Obstacle on the path.
-              return;
-            }
-          }
-        }
-      }
-      if (ros::Time::now() > next_replan_time)
-      {
-        return;
-      }
-      else if (is_path_switchback_)
-      {
         static ros::Time last_time = start_.header.stamp;
         const ros::Time time = start_.header.stamp;
-        const float dt = time.toSec() - last_time.toSec();
-        if (dt > 0.0)
+        if (time > last_time)
         {
-          static float last_len = std::numeric_limits<float>::quiet_NaN();
-          static float last_yaw = std::numeric_limits<float>::quiet_NaN();
-          const float len = std::hypot(
-              start_.pose.position.y - sw_pos_.pose.position.y,
-              start_.pose.position.x - sw_pos_.pose.position.x);
-          const float yaw = tf2::getYaw(start_.pose.orientation);
-          const float sw_yaw = tf2::getYaw(sw_pos_.pose.orientation);
-          float yaw_diff = yaw - sw_yaw;
-          yaw_diff = std::atan2(std::sin(yaw_diff), std::cos(yaw_diff));
-          if (len < goal_tolerance_lin_f_ && std::fabs(yaw_diff) < goal_tolerance_ang_f_)
+          if (ros::Time::now() > next_replan_time)
           {
-            // robot has arrived at the switchback point
-            is_path_switchback_ = false;
+            return;
           }
-          else if (!std::isnan(last_len) && !std::isnan(last_yaw))
+
+          if (jump_.detectJump())
           {
-            const float d_len = last_len - len;
-            float d_yaw = yaw - last_yaw;
-            d_yaw = std::atan2(std::sin(d_yaw), std::cos(d_yaw));
-            if (std::fabs(d_len) < 1e-6 && std::fabs(d_yaw) < 1e-6)
+            bbf_costmap_.clear();
+            // Robot pose jumped.
+            return;
+          }
+
+          if (costmap_udpated && previous_path.poses.size() > 1)
+          {
+            for (const auto& path_pose : previous_path.poses)
             {
-              // robot stops
-              is_path_switchback_ = false;
+              if (cm_[pathPose2Grid(path_pose)] == 100)
+              {
+                // Obstacle on the path.
+                return;
+              }
             }
           }
-          last_len = len;
-          last_yaw = yaw;
-          last_time = time;
+
+          if (is_path_switchback_)
+          {
+            static float last_len = std::numeric_limits<float>::quiet_NaN();
+            static float last_yaw = std::numeric_limits<float>::quiet_NaN();
+            const float len = std::hypot(
+                start_.pose.position.y - sw_pos_.pose.position.y,
+                start_.pose.position.x - sw_pos_.pose.position.x);
+            const float yaw = tf2::getYaw(start_.pose.orientation);
+            const float sw_yaw = tf2::getYaw(sw_pos_.pose.orientation);
+            float yaw_diff = yaw - sw_yaw;
+            yaw_diff = std::atan2(std::sin(yaw_diff), std::cos(yaw_diff));
+            if (len < goal_tolerance_lin_f_ && std::fabs(yaw_diff) < goal_tolerance_ang_f_)
+            {
+              // robot has arrived at the switchback point
+              is_path_switchback_ = false;
+            }
+            else if (!std::isnan(last_len) && !std::isnan(last_yaw))
+            {
+              const float d_len = last_len - len;
+              float d_yaw = yaw - last_yaw;
+              d_yaw = std::atan2(std::sin(d_yaw), std::cos(d_yaw));
+              if (std::fabs(d_len) < 1e-6 && std::fabs(d_yaw) < 1e-6)
+              {
+                // robot stops
+                is_path_switchback_ = false;
+              }
+            }
+            last_len = len;
+            last_yaw = yaw;
+          }
         }
+        last_time = time;
       }
       ros::Duration(0.01).sleep();
     }
