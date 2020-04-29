@@ -4,9 +4,7 @@ project(obj_to_pointcloud)
 set(CATKIN_DEPENDS
   roscpp
 
-  eigen_conversions
   geometry_msgs
-  pcl_conversions
   sensor_msgs
 
   neonavigation_common

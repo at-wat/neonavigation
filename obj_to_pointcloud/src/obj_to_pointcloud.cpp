@@ -40,7 +40,6 @@
 
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/filters/voxel_grid.h>
 
