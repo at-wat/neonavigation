@@ -26,7 +26,6 @@
   <depend>map_organizer_msgs</depend>
   <depend>neonavigation_common</depend>
 
-  <depend>cmake_modules</depend>
   <depend>eigen</depend>
 
   <build_depend>libpcl-all-dev</build_depend>

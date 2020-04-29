@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.1.3)
 project(map_organizer)
 
 set(CATKIN_DEPENDS
-  cmake_modules
   roscpp
 
   geometry_msgs

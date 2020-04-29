@@ -3,7 +3,6 @@ project(track_odometry)
 
 set(CATKIN_DEPENDS
   roscpp
-  cmake_modules
 
   geometry_msgs
   message_filters

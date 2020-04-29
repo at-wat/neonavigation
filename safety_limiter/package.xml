@@ -28,7 +28,6 @@
   <depend>neonavigation_common</depend>
   <depend>safety_limiter_msgs</depend>
 
-  <depend>cmake_modules</depend>
   <depend>eigen</depend>
   <depend>xmlrpcpp</depend>
 
