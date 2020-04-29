@@ -5,7 +5,6 @@ set(CATKIN_DEPENDS
   cmake_modules
   roscpp
 
-  eigen_conversions
   geometry_msgs
   map_server
   nav_msgs
