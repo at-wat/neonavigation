@@ -2,6 +2,9 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.3 (2020-04-26)
+------------------
+
 0.8.2 (2020-04-07)
 ------------------
 * Support Noetic (`#461 <https://github.com/at-wat/neonavigation/issues/461>`_)
