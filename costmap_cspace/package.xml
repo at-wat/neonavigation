@@ -13,7 +13,6 @@
   <depend>roscpp</depend>
   <test_depend>roslint</test_depend>
   <test_depend>rostest</test_depend>
-  <test_depend>rosunit</test_depend>
 
   <depend>geometry_msgs</depend>
   <depend>laser_geometry</depend>
