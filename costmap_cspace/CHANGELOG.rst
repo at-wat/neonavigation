@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.4 (2020-04-30)
+------------------
 * Clean unused dependencies (`#472 <https://github.com/at-wat/neonavigation/issues/472>`_)
 * Contributors: Atsushi Watanabe
 
