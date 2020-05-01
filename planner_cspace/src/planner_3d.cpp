@@ -1332,8 +1332,6 @@ public:
 
           if (is_path_switchback_)
           {
-            static float last_len = std::numeric_limits<float>::quiet_NaN();
-            static float last_yaw = std::numeric_limits<float>::quiet_NaN();
             const float len = std::hypot(
                 start_.pose.position.y - sw_pos_.pose.position.y,
                 start_.pose.position.x - sw_pos_.pose.position.x);
@@ -1346,19 +1344,6 @@ public:
               // robot has arrived at the switchback point
               is_path_switchback_ = false;
             }
-            else if (!std::isnan(last_len) && !std::isnan(last_yaw))
-            {
-              const float d_len = last_len - len;
-              float d_yaw = yaw - last_yaw;
-              d_yaw = std::atan2(std::sin(d_yaw), std::cos(d_yaw));
-              if (std::fabs(d_len) < 1e-6 && std::fabs(d_yaw) < 1e-6)
-              {
-                // robot stops
-                is_path_switchback_ = false;
-              }
-            }
-            last_len = len;
-            last_yaw = yaw;
           }
         }
         last_time = time;
