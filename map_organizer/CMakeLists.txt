@@ -38,6 +38,16 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_
 add_definitions(${PCL_DEFINITIONS})
 
 
+# Workaround for debian stretch build (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=894656)
+list(REMOVE_ITEM PCL_LIBRARIES
+  "vtkGUISupportQt"
+  "vtkGUISupportQtOpenGL"
+  "vtkGUISupportQtSQL"
+  "vtkGUISupportQtWebkit"
+  "vtkViewsQt"
+  "vtkRenderingQt"
+)
+
 # Workaround for the bug in PCL(<1.8.1) https://github.com/PointCloudLibrary/pcl/issues/1406
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 
