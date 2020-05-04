@@ -2,6 +2,9 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.5 (2020-05-04)
+------------------
+
 0.8.4 (2020-04-30)
 ------------------
 * Clean unused dependencies (`#472 <https://github.com/at-wat/neonavigation/issues/472>`_)

@@ -2,6 +2,11 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.5 (2020-05-04)
+------------------
+* Revert "Remove old workaround for debian stretch build (`#473 <https://github.com/at-wat/neonavigation/issues/473>`_)" (`#478 <https://github.com/at-wat/neonavigation/issues/478>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.4 (2020-04-30)
 ------------------
 * Remove old workaround for debian stretch build (`#473 <https://github.com/at-wat/neonavigation/issues/473>`_)
