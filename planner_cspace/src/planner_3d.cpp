@@ -1302,51 +1302,45 @@ public:
       {
         updateStart();
 
-        static ros::Time last_time = start_.header.stamp;
-        const ros::Time time = start_.header.stamp;
-        if (time > last_time)
+        if (ros::Time::now() > next_replan_time)
         {
-          if (ros::Time::now() > next_replan_time)
-          {
-            return;
-          }
+          return;
+        }
 
-          if (jump_.detectJump())
-          {
-            bbf_costmap_.clear();
-            // Robot pose jumped.
-            return;
-          }
+        if (jump_.detectJump())
+        {
+          bbf_costmap_.clear();
+          // Robot pose jumped.
+          return;
+        }
 
-          if (costmap_udpated && previous_path.poses.size() > 1)
+        if (costmap_udpated && previous_path.poses.size() > 1)
+        {
+          for (const auto& path_pose : previous_path.poses)
           {
-            for (const auto& path_pose : previous_path.poses)
+            if (cm_[pathPose2Grid(path_pose)] == 100)
             {
-              if (cm_[pathPose2Grid(path_pose)] == 100)
-              {
-                // Obstacle on the path.
-                return;
-              }
-            }
-          }
-
-          if (is_path_switchback_)
-          {
-            const float len = std::hypot(
-                start_.pose.position.y - sw_pos_.pose.position.y,
-                start_.pose.position.x - sw_pos_.pose.position.x);
-            const float yaw = tf2::getYaw(start_.pose.orientation);
-            const float sw_yaw = tf2::getYaw(sw_pos_.pose.orientation);
-            float yaw_diff = yaw - sw_yaw;
-            yaw_diff = std::atan2(std::sin(yaw_diff), std::cos(yaw_diff));
-            if (len < goal_tolerance_lin_f_ && std::fabs(yaw_diff) < goal_tolerance_ang_f_)
-            {
-              // robot has arrived at the switchback point
-              is_path_switchback_ = false;
+              // Obstacle on the path.
+              return;
             }
           }
         }
-        last_time = time;
+
+        if (is_path_switchback_)
+        {
+          const float len = std::hypot(
+              start_.pose.position.y - sw_pos_.pose.position.y,
+              start_.pose.position.x - sw_pos_.pose.position.x);
+          const float yaw = tf2::getYaw(start_.pose.orientation);
+          const float sw_yaw = tf2::getYaw(sw_pos_.pose.orientation);
+          float yaw_diff = yaw - sw_yaw;
+          yaw_diff = std::atan2(std::sin(yaw_diff), std::cos(yaw_diff));
+          if (len < goal_tolerance_lin_f_ && std::fabs(yaw_diff) < goal_tolerance_ang_f_)
+          {
+            // robot has arrived at the switchback point
+            is_path_switchback_ = false;
+          }
+        }
       }
       ros::Duration(0.01).sleep();
     }
