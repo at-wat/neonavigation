@@ -30,8 +30,6 @@
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/transform_broadcaster.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 
 #include <gtest/gtest.h>
@@ -51,7 +49,6 @@ public:
     // Wait planner
     while (ros::ok())
     {
-      publishTransform(2.5, 0.5, 3.14);
       ros::Duration(0.1).sleep();
       ros::spinOnce();
       if (cnt_planner_ready_ > 5 && cnt_path_ > 5)
@@ -63,7 +60,6 @@ public:
     // Wait updated maps
     while (ros::ok())
     {
-      publishTransform(2.5, 0.5, 3.14);
       ros::Duration(0.1).sleep();
       ros::spinOnce();
       if (map_hysteresis_ && map_remembered_)
@@ -115,22 +111,8 @@ protected:
       path_ = msg;
     }
   }
-  void publishTransform(const double x, const double y, const double yaw)
-  {
-    geometry_msgs::TransformStamped trans;
-    trans.header.stamp = ros::Time::now();
-    trans.header.frame_id = "odom";
-    trans.child_frame_id = "base_link";
-    trans.transform.translation.x = x;
-    trans.transform.translation.y = y;
-    tf2::Quaternion q;
-    q.setRPY(0, 0, yaw);
-    trans.transform.rotation = tf2::toMsg(q);
-    tfb_.sendTransform(trans);
-  }
 
   ros::NodeHandle nh_;
-  tf2_ros::TransformBroadcaster tfb_;
   nav_msgs::OccupancyGrid::ConstPtr map_hysteresis_;
   nav_msgs::OccupancyGrid::ConstPtr map_remembered_;
   nav_msgs::Path::ConstPtr path_;

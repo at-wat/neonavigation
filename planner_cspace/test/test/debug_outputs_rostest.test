@@ -41,6 +41,8 @@
 
   <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="stf2"
+      args="2.5 0.5 0 3.14 0 0 odom base_link" />
 
   <test test-name="test_debug_outputs" pkg="planner_cspace" type="test_debug_outputs" time-limit="15.0" />
 </launch>
