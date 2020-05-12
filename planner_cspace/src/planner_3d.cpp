@@ -188,6 +188,8 @@ protected:
 
   bool find_best_;
   float sw_wait_;
+  geometry_msgs::PoseStamped sw_pos_;
+  bool is_path_switchback_;
 
   float rough_cost_max_;
   bool rough_;
@@ -1270,6 +1272,7 @@ public:
 
     escaping_ = false;
     cnt_stuck_ = 0;
+    is_path_switchback_ = false;
 
     diag_updater_.setHardwareID("none");
     diag_updater_.add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
@@ -1299,6 +1302,11 @@ public:
       {
         updateStart();
 
+        if (ros::Time::now() > next_replan_time)
+        {
+          return;
+        }
+
         if (jump_.detectJump())
         {
           bbf_costmap_.clear();
@@ -1317,10 +1325,22 @@ public:
             }
           }
         }
-      }
-      if (ros::Time::now() > next_replan_time)
-      {
-        return;
+
+        if (is_path_switchback_)
+        {
+          const float len = std::hypot(
+              start_.pose.position.y - sw_pos_.pose.position.y,
+              start_.pose.position.x - sw_pos_.pose.position.x);
+          const float yaw = tf2::getYaw(start_.pose.orientation);
+          const float sw_yaw = tf2::getYaw(sw_pos_.pose.orientation);
+          float yaw_diff = yaw - sw_yaw;
+          yaw_diff = std::atan2(std::sin(yaw_diff), std::cos(yaw_diff));
+          if (len < goal_tolerance_lin_f_ && std::fabs(yaw_diff) < goal_tolerance_ang_f_)
+          {
+            // robot has arrived at the switchback point
+            is_path_switchback_ = false;
+          }
+        }
       }
       ros::Duration(0.01).sleep();
     }
@@ -1457,7 +1477,10 @@ public:
 
           if (sw_wait_ > 0.0)
           {
-            is_path_switchback = switchDetect(path);
+            const int sw_index = getSwitchIndex(path);
+            is_path_switchback = (sw_index >= 0);
+            if (is_path_switchback)
+              sw_pos_ = path.poses[sw_index];
           }
         }
       }
@@ -1474,12 +1497,13 @@ public:
       if (is_path_switchback)
       {
         next_replan_time += ros::Duration(sw_wait_);
-        ROS_INFO("Planned path has switchback. Planner will stop until: %f", next_replan_time.toSec());
+        ROS_INFO("Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.toSec());
       }
       else
       {
         next_replan_time += ros::Duration(1.0 / freq_);
       }
+      is_path_switchback_ = is_path_switchback;
     }
   }
 
@@ -1756,14 +1780,15 @@ protected:
     ROS_WARN("Search timed out");
     return true;
   }
-  bool switchDetect(const nav_msgs::Path& path)
+  int getSwitchIndex(const nav_msgs::Path& path) const
   {
     geometry_msgs::Pose p_prev;
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
-    for (const auto& p : path.poses)
+    for (auto it = path.poses.begin(); it != path.poses.end(); ++it)
     {
+      const auto& p = *it;
       if (!first)
       {
         const float len = std::hypot(
@@ -1779,7 +1804,7 @@ protected:
 
           if (dir_set && (dir_prev ^ dir))
           {
-            return true;
+            return std::distance(path.poses.begin(), it);
           }
           dir_prev = dir;
           dir_set = true;
@@ -1788,7 +1813,8 @@ protected:
       first = false;
       p_prev = p.pose;
     }
-    return false;
+    // -1 means no switchback in the path
+    return -1;
   }
   void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {
