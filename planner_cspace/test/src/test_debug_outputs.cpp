@@ -58,6 +58,8 @@ public:
     }
     map_hysteresis_ = nullptr;
     map_remembered_ = nullptr;
+    cnt_hysteresis_ = 0;
+    cnt_remembered_ = 0;
 
     // Wait receiving the messages
     while (ros::ok())
