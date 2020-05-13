@@ -40,6 +40,8 @@ public:
   DebugOutputsTest()
     : cnt_planner_ready_(0)
     , cnt_path_(0)
+    , cnt_hysteresis_(0)
+    , cnt_remembered_(0)
   {
     sub_status_ = nh_.subscribe("/planner_3d/status", 1, &DebugOutputsTest::cbStatus, this);
     sub_path_ = nh_.subscribe("path", 1, &DebugOutputsTest::cbPath, this);
@@ -56,13 +58,16 @@ public:
     }
     map_hysteresis_ = nullptr;
     map_remembered_ = nullptr;
+    cnt_hysteresis_ = 0;
+    cnt_remembered_ = 0;
 
-    // Wait updated maps
+    // Wait receiving the messages
     while (ros::ok())
     {
       ros::Duration(0.1).sleep();
       ros::spinOnce();
-      if (map_hysteresis_ && map_remembered_)
+      // First hysteresis map doesn't have previous path information.
+      if (cnt_hysteresis_ > 2 && cnt_remembered_ > 2)
         break;
     }
   }
@@ -91,10 +96,12 @@ public:
 protected:
   void cbHysteresis(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
+    cnt_hysteresis_++;
     map_hysteresis_ = msg;
   }
   void cbRemembered(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
+    cnt_remembered_++;
     map_remembered_ = msg;
   }
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
@@ -122,6 +129,8 @@ protected:
   ros::Subscriber sub_remembered_;
   int cnt_planner_ready_;
   int cnt_path_;
+  int cnt_hysteresis_;
+  int cnt_remembered_;
 };
 
 struct PositionAndValue
