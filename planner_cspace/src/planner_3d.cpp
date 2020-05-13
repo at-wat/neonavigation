@@ -1302,11 +1302,6 @@ public:
       {
         updateStart();
 
-        if (ros::Time::now() > next_replan_time)
-        {
-          return;
-        }
-
         if (jump_.detectJump())
         {
           bbf_costmap_.clear();
@@ -1341,6 +1336,10 @@ public:
             is_path_switchback_ = false;
           }
         }
+      }
+      if (ros::Time::now() > next_replan_time)
+      {
+        return;
       }
       ros::Duration(0.01).sleep();
     }
