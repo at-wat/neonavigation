@@ -104,6 +104,8 @@ protected:
     std_srvs::EmptyRequest req;
     std_srvs::EmptyResponse res;
     srv_forget_.call(req, res);
+
+    ros::Duration(3.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
