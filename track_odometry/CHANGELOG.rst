@@ -2,6 +2,11 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* track_odometry: increase transform timeout in tests (`#490 <https://github.com/at-wat/neonavigation/issues/490>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.5 (2020-05-04)
 ------------------
 
