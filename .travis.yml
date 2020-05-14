@@ -47,8 +47,6 @@ jobs:
     - stage: test
       env:
         - ROS_DISTRO_TARGET=noetic
-      before_script:
-        - sed '/\[skip on noetic\]/d' -i .rosinstall
       script:
         - BUILD_LINK="[[#${TRAVIS_BUILD_NUMBER}](${TRAVIS_BUILD_WEB_URL})]"
         - |
