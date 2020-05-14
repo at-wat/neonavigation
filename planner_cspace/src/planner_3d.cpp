@@ -1790,16 +1790,13 @@ protected:
       const auto& p = *it;
       if (!first)
       {
-        const float len = std::hypot(
-            p.pose.position.y - p_prev.position.y,
-            p.pose.position.x - p_prev.position.x);
+        const float x_diff = p.pose.position.x - p_prev.position.x;
+        const float y_diff = p.pose.position.y - p_prev.position.y;
+        const float len = std::hypot(y_diff, x_diff);
         if (len > 0.001)
         {
           const float yaw = tf2::getYaw(p.pose.orientation);
-          const float vel_yaw = atan2f(
-              p.pose.position.y - p_prev.position.y,
-              p.pose.position.x - p_prev.position.x);
-          const bool dir = (std::cos(yaw - vel_yaw) < 0);
+          const bool dir = (std::cos(yaw) * x_diff + std::sin(yaw) * y_diff < 0);
 
           if (dir_set && (dir_prev ^ dir))
           {
