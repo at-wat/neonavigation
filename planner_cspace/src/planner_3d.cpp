@@ -1799,7 +1799,7 @@ protected:
           const float vel_yaw = atan2f(
               p.pose.position.y - p_prev.position.y,
               p.pose.position.x - p_prev.position.x);
-          const bool dir = (cosf(yaw) * cosf(vel_yaw) + sinf(yaw) * sinf(vel_yaw) < 0);
+          const bool dir = (std::cos(yaw - vel_yaw) < 0);
 
           if (dir_set && (dir_prev ^ dir))
           {
