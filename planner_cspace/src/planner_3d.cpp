@@ -1792,8 +1792,8 @@ protected:
       {
         const float x_diff = p.pose.position.x - p_prev.position.x;
         const float y_diff = p.pose.position.y - p_prev.position.y;
-        const float len = std::hypot(y_diff, x_diff);
-        if (len > 0.001)
+        const float len_sq = std::pow(y_diff, 2) + std::pow(x_diff, 2);
+        if (len_sq > std::pow(0.001f, 2))
         {
           const float yaw = tf2::getYaw(p.pose.orientation);
           const bool dir = (std::cos(yaw) * x_diff + std::sin(yaw) * y_diff < 0);
