@@ -157,6 +157,8 @@ public:
   }
   CyclicVecBase() noexcept
   {
+    for (int i = 0; i < DIM; i++)
+      e_[i] = 0;
   }
   template <typename T2>
   bool operator==(const CyclicVecBase<DIM, NONCYCLIC, T2>& v) const
