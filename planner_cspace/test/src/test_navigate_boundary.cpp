@@ -64,7 +64,7 @@ protected:
   void publishTransform(const double x, const double y)
   {
     geometry_msgs::TransformStamped trans;
-    trans.header.stamp = ros::Time();
+    trans.header.stamp = ros::Time::now();
     trans.header.frame_id = "odom";
     trans.child_frame_id = "base_link";
     trans.transform.translation.x = x;
@@ -120,7 +120,7 @@ TEST_F(NavigateBoundary, StartPositionScan)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_navigate");
+  ros::init(argc, argv, "test_navigate_boundary");
 
   return RUN_ALL_TESTS();
 }
