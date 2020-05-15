@@ -2,6 +2,16 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.6 (2020-05-15)
+------------------
+* Fix duplicated tf timestamp (`#494 <https://github.com/at-wat/neonavigation/issues/494>`_)
+* planner_cspace: add wait to navigation tests (`#492 <https://github.com/at-wat/neonavigation/issues/492>`_)
+* planner_cspace: simplify path switch detection condition (`#488 <https://github.com/at-wat/neonavigation/issues/488>`_)
+* planner_cspace: fix uninitialized variable (`#486 <https://github.com/at-wat/neonavigation/issues/486>`_)
+* planner_cspace: enable replan when robot reaches the switchback point (`#449 <https://github.com/at-wat/neonavigation/issues/449>`_)
+* planner_cspace: fix test_debug_outputs initial wait (`#485 <https://github.com/at-wat/neonavigation/issues/485>`_)
+* Contributors: Atsushi Watanabe, Kazuki Takahashi
+
 0.8.5 (2020-05-04)
 ------------------
 

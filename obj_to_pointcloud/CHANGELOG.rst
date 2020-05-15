@@ -2,6 +2,9 @@
 Changelog for package obj_to_pointcloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.6 (2020-05-15)
+------------------
+
 0.8.5 (2020-05-04)
 ------------------
 * Revert "Remove old workaround for debian stretch build (`#473 <https://github.com/at-wat/neonavigation/issues/473>`_)" (`#478 <https://github.com/at-wat/neonavigation/issues/478>`_)

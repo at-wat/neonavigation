@@ -2,6 +2,11 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.6 (2020-05-15)
+------------------
+* neonavigation_launch: revert exec_depend to trajectory_tracker_rviz_plugins (`#491 <https://github.com/at-wat/neonavigation/issues/491>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.5 (2020-05-04)
 ------------------
 
