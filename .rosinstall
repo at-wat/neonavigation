@@ -2,7 +2,3 @@
     local-name: neonavigation_msgs
     uri: https://github.com/at-wat/neonavigation_msgs.git
     version: master
-- git:
-    local-name: neonavigation_rviz_plugins
-    uri: https://github.com/at-wat/neonavigation_rviz_plugins.git
-    version: master
