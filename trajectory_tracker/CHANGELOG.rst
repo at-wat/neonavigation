@@ -2,8 +2,10 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.8.6 (2020-05-14)
-------------------
+Forthcoming
+-----------
+* Fix duplicated tf timestamp (`#494 <https://github.com/at-wat/neonavigation/issues/494>`_)
+* Contributors: Atsushi Watanabe
 
 0.8.5 (2020-05-04)
 ------------------

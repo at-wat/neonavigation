@@ -2,8 +2,9 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.8.6 (2020-05-14)
-------------------
+Forthcoming
+-----------
+* Fix duplicated tf timestamp (`#494 <https://github.com/at-wat/neonavigation/issues/494>`_)
 * track_odometry: increase transform timeout in tests (`#490 <https://github.com/at-wat/neonavigation/issues/490>`_)
 * Contributors: Atsushi Watanabe
 
