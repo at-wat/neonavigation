@@ -59,6 +59,7 @@ private:
   ros::Publisher pub_path_vel_;
   tf2_ros::TransformBroadcaster tfb_;
   ros::Time cmd_vel_time_;
+  ros::Time trans_stamp_last_;
 
 protected:
   std_msgs::Header last_path_header_;
@@ -207,7 +208,12 @@ public:
     trans.transform.rotation.y = q.y();
     trans.transform.rotation.z = q.z();
     trans.transform.rotation.w = q.w();
-    tfb_.sendTransform(trans);
+
+    if (trans.header.stamp != trans_stamp_last_)
+    {
+      tfb_.sendTransform(trans);
+    }
+    trans_stamp_last_ = trans.header.stamp;
   }
 };
 
