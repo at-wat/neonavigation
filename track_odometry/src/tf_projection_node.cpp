@@ -31,6 +31,7 @@
 
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -45,6 +46,7 @@ private:
   ros::NodeHandle pnh_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
+  tf2_ros::StaticTransformBroadcaster tf_static_broadcaster_;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
 
   double rate_;
@@ -108,9 +110,12 @@ public:
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN_ONCE("%s", e.what());
+      ROS_WARN_THROTTLE(1.0, "%s", e.what());
       return;
     }
+
+    if (!trans.stamp_.isZero())
+      trans.stamp_ += ros::Duration(tf_tolerance_);
 
     if (project_posture_)
     {
@@ -130,7 +135,7 @@ public:
 
     const tf2::Stamped<tf2::Transform> result(
         track_odometry::projectTranslation(trans, trans_target),
-        trans.stamp_ + ros::Duration(tf_tolerance_),
+        trans.stamp_,
         parent_frame_);
 
     geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
@@ -141,7 +146,14 @@ public:
     }
     trans_out.child_frame_id = projected_frame_;
 
-    tf_broadcaster_.sendTransform(trans_out);
+    if (trans.stamp_.isZero())
+    {
+      tf_static_broadcaster_.sendTransform(trans_out);
+    }
+    else
+    {
+      tf_broadcaster_.sendTransform(trans_out);
+    }
   }
   void cbTimer(const ros::TimerEvent& event)
   {
