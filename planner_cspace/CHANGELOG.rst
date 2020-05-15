@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.6 (2020-05-15)
+------------------
 * Fix duplicated tf timestamp (`#494 <https://github.com/at-wat/neonavigation/issues/494>`_)
 * planner_cspace: add wait to navigation tests (`#492 <https://github.com/at-wat/neonavigation/issues/492>`_)
 * planner_cspace: simplify path switch detection condition (`#488 <https://github.com/at-wat/neonavigation/issues/488>`_)
