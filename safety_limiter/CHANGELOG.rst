@@ -2,8 +2,8 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.7 (2020-05-22)
+------------------
 * [Noetic] Add missing includes and libraries (`#497 <https://github.com/at-wat/neonavigation/issues/497>`_)
 * Contributors: Shane Loretz
 
