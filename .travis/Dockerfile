@@ -25,6 +25,7 @@ RUN sed -e \
 RUN apt-get -qq update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
+    build-essential \
     curl \
     libxml2-utils \
     python-pip \
