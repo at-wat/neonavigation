@@ -35,7 +35,8 @@ RUN apt-get -qq update \
   && rm -rf /var/lib/apt/lists/*
 RUN pip install gh-pr-comment catkin_lint
 
-RUN rosdep update \
+RUN rosdep init \
+  && rosdep update \
   && mkdir -p /catkin_ws/src \
   && cd /catkin_ws/src \
   && . /opt/ros/${ROS_DISTRO}/setup.sh \
