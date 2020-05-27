@@ -46,7 +46,7 @@ then
   cp -r /catkin_ws/build ./
   rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
   bash <(curl -s https://codecov.io/bash) -y codecov.yml -Z \
-    | grep -i -e error -e fail
+    -X gcovout
 fi
 
 if [ catkin_test_results ];
