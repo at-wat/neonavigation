@@ -1367,9 +1367,9 @@ public:
       {
         if (last_costmap_ + costmap_watchdog_ < now)
         {
-          ROS_WARN(
-              "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
-              last_costmap_.toSec());
+          ROS_WARN_THROTTLE(1.0,
+                            "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
+                            last_costmap_.toSec());
           status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
           publishEmptyPath();
           previous_path.poses.clear();
