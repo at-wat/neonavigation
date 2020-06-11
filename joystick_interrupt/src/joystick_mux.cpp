@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, the neonavigation authors
+ * Copyright (c) 2015-2020, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,14 @@ private:
 
   void cbJoy(const sensor_msgs::Joy::Ptr msg)
   {
+    if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
+    {
+      ROS_ERROR(
+          "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
+          msg->buttons.size(), interrupt_button_);
+      return;
+    }
+
     last_joy_msg_ = ros::Time::now();
     if (msg->buttons[interrupt_button_])
     {
