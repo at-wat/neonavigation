@@ -16,4 +16,7 @@
     <param name="linear_high_speed_ratio" value="2.0" type="double" />
     <param name="angular_high_speed_ratio" value="2.0" type="double" />
   </node>
+  <node pkg="joystick_interrupt" type="joystick_mux" name="joystick_mux">
+    <param name="interrupt_button" value="0" type="int" />
+  </node>
 </launch>

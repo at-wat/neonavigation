@@ -28,8 +28,9 @@
  */
 
 #include <ros/ros.h>
-#include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Twist.h>
+#include <sensor_msgs/Joy.h>
+#include <std_msgs/Int32.h>
 
 #include <gtest/gtest.h>
 
@@ -55,6 +56,15 @@ public:
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_input", 1);
     pub_joy_ = nh_.advertise<sensor_msgs::Joy>("joy", 1);
     sub_cmd_vel_ = nh_.subscribe("cmd_vel", 1, &JoystickInterruptTest::cbCmdVel, this);
+
+    ros::Rate wait(10);
+    for (size_t i = 0; i < 20; ++i)
+    {
+      wait.sleep();
+      ros::spinOnce();
+      if (pub_joy_.getNumSubscribers() > 0)
+        break;
+    }
   }
   void publishCmdVel(
       const float lin,
@@ -194,6 +204,156 @@ TEST_F(JoystickInterruptTest, InterruptHighSpeed)
       ASSERT_NEAR(cmd_vel_->linear.x, 0.0, 1e-3);
       ASSERT_NEAR(cmd_vel_->angular.z, 2.0, 1e-3);
     }
+  }
+}
+
+class JoystickMuxTest : public ::testing::Test
+{
+protected:
+  ros::NodeHandle nh_;
+  ros::Publisher pub1_;
+  ros::Publisher pub2_;
+  ros::Publisher pub_joy_;
+  ros::Subscriber sub_;
+
+  std_msgs::Int32::ConstPtr msg_;
+
+  void cbMsg(const std_msgs::Int32::ConstPtr& msg)
+  {
+    msg_ = msg;
+  }
+
+public:
+  JoystickMuxTest()
+    : nh_()
+  {
+    pub1_ = nh_.advertise<std_msgs::Int32>("mux_input0", 1);
+    pub2_ = nh_.advertise<std_msgs::Int32>("mux_input1", 1);
+    pub_joy_ = nh_.advertise<sensor_msgs::Joy>("joy", 1);
+    sub_ = nh_.subscribe("mux_output", 1, &JoystickMuxTest::cbMsg, this);
+
+    ros::Rate wait(10);
+    for (size_t i = 0; i < 20; ++i)
+    {
+      wait.sleep();
+      ros::spinOnce();
+      if (pub_joy_.getNumSubscribers() > 0)
+        break;
+    }
+  }
+  void publish1(const int32_t v)
+  {
+    std_msgs::Int32 msg_out;
+    msg_out.data = v;
+    pub1_.publish(msg_out);
+  }
+  void publish2(const int32_t v)
+  {
+    std_msgs::Int32 msg_out;
+    msg_out.data = v;
+    pub2_.publish(msg_out);
+  }
+  void publishJoy(const int button)
+  {
+    sensor_msgs::Joy joy;
+    joy.header.stamp = ros::Time::now();
+    joy.buttons.resize(1);
+    joy.buttons[0] = button;
+    pub_joy_.publish(joy);
+  }
+  void publishEmptyJoy()
+  {
+    sensor_msgs::Joy joy;
+    joy.header.stamp = ros::Time::now();
+    pub_joy_.publish(joy);
+  }
+};
+
+TEST_F(JoystickMuxTest, Interrupt)
+{
+  publish1(0);
+  publish2(0);
+  for (int btn = 0; btn < 2; ++btn)
+  {
+    publishJoy(btn);
+    ros::Duration(1.0).sleep();
+    ros::Rate rate(20);
+    for (int i = 0; i < 15; ++i)
+    {
+      publishJoy(btn);
+      publish1(i);
+      publish2(-i);
+
+      rate.sleep();
+      ros::spinOnce();
+
+      if (i < 3)
+        continue;
+
+      ASSERT_TRUE(static_cast<bool>(msg_)) << "button: " << btn;
+      if (btn)
+      {
+        ASSERT_NEAR(-i, msg_->data, 2) << "button: " << btn;
+      }
+      else
+      {
+        ASSERT_NEAR(i, msg_->data, 2) << "button:" << btn;
+      }
+    }
+  }
+}
+
+TEST_F(JoystickMuxTest, Timeout)
+{
+  publish1(0);
+  publish2(0);
+  ros::Duration(1.0).sleep();
+  ros::Rate rate(20);
+  publishJoy(1);
+  for (int i = 0; i < 20; ++i)
+  {
+    publish1(i);
+    publish2(-i);
+
+    rate.sleep();
+    ros::spinOnce();
+
+    if (i < 3)
+      continue;
+
+    ASSERT_TRUE(static_cast<bool>(msg_));
+    if (i < 10)
+    {
+      ASSERT_NEAR(-i, msg_->data, 2);
+    }
+    else if (i > 13)
+    {
+      // after timeout
+      ASSERT_NEAR(i, msg_->data, 2);
+    }
+  }
+}
+
+TEST_F(JoystickMuxTest, ButtonNumberInsufficient)
+{
+  publish1(0);
+  publish2(0);
+  ros::Duration(1.0).sleep();
+  ros::Rate rate(20);
+  for (int i = 0; i < 20; ++i)
+  {
+    publishEmptyJoy();
+    publish1(i);
+    publish2(-i);
+
+    rate.sleep();
+    ros::spinOnce();
+
+    if (i < 3)
+      continue;
+
+    ASSERT_TRUE(static_cast<bool>(msg_));
+    ASSERT_NEAR(i, msg_->data, 2);
   }
 }
 
