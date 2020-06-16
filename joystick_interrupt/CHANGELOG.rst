@@ -2,6 +2,12 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.8 (2020-06-15)
+------------------
+* joystick_interrupt: fix joystick_mux event handling and add tests (`#504 <https://github.com/at-wat/neonavigation/issues/504>`_)
+* joystick_interrupt: validate joystick button array size in joystick_mux (`#503 <https://github.com/at-wat/neonavigation/issues/503>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.7 (2020-05-22)
 ------------------
 
