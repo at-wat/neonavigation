@@ -31,6 +31,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <random>
 #include <sstream>
 #include <string>
@@ -393,8 +394,7 @@ protected:
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
     ds.filter(*pc);
 
-    auto filter_z = [this](pcl::PointXYZ& p)
-    {
+    auto filter_z = [this](pcl::PointXYZ& p) {
       if (p.z < this->z_range_[0] || this->z_range_[1] < p.z)
         return true;
       p.z = 0.0;
@@ -521,8 +521,8 @@ protected:
     const float delay = 1.0 * (1.0 / hz_) + dt_;
     const float acc_dtsq[2] =
         {
-          static_cast<float>(acc_[0] * std::pow(delay, 2)),
-          static_cast<float>(acc_[1] * std::pow(delay, 2)),
+            static_cast<float>(acc_[0] * std::pow(delay, 2)),
+            static_cast<float>(acc_[1] * std::pow(delay, 2)),
         };
 
     d_col = std::max<float>(
