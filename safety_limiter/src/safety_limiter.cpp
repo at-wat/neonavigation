@@ -394,7 +394,8 @@ protected:
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
     ds.filter(*pc);
 
-    auto filter_z = [this](pcl::PointXYZ& p) {
+    auto filter_z = [this](pcl::PointXYZ& p)
+    {
       if (p.z < this->z_range_[0] || this->z_range_[1] < p.z)
         return true;
       p.z = 0.0;
