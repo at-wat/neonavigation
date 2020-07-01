@@ -113,7 +113,7 @@ protected:
   ros::Timer watchdog_timer_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-  mutable boost::recursive_mutex parameter_server_mutex_;
+  boost::recursive_mutex parameter_server_mutex_;
   std::unique_ptr<dynamic_reconfigure::Server<SafetyLimiterConfig>> parameter_server_;
 
   geometry_msgs::Twist twist_;
