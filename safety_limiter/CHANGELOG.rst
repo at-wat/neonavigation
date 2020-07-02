@@ -2,8 +2,8 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.0 (2020-07-02)
+------------------
 * safety_limiter: make safety_limiter dynamic-reconfigurable (`#509 <https://github.com/at-wat/neonavigation/issues/509>`_)
 * Contributors: Naotaka Hatao
 
