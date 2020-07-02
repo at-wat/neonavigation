@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.0 (2020-07-02)
+------------------
+
 0.8.8 (2020-06-15)
 ------------------
 * planner_cspace: avoid showing too many warning messages (`#501 <https://github.com/at-wat/neonavigation/issues/501>`_)

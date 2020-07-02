@@ -2,6 +2,9 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.0 (2020-07-02)
+------------------
+
 0.8.8 (2020-06-15)
 ------------------
 * joystick_interrupt: fix joystick_mux event handling and add tests (`#504 <https://github.com/at-wat/neonavigation/issues/504>`_)
