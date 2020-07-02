@@ -2,6 +2,9 @@
 Changelog for package neonavigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.8.8 (2020-06-15)
 ------------------
 

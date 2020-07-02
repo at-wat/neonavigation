@@ -2,6 +2,9 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.8.8 (2020-06-15)
 ------------------
 
