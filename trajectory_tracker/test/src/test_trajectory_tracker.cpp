@@ -252,6 +252,85 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
+TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
+{
+  const double s = 0;
+  const double c = 1;
+  const double ang = atan2(s, c);
+
+  initState(Eigen::Vector2d(c, s), ang);
+
+  std::vector<Eigen::Vector3d> poses;
+  for (double x = 0.0; x < 0.5; x += 0.1)
+    poses.push_back(Eigen::Vector3d(x * c, x * s, ang));
+  poses.push_back(Eigen::Vector3d(0.5 * c, 0.5 * s, ang));
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
+
+  ros::Rate rate(50);
+  const ros::Time start = ros::Time::now();
+  while (ros::ok())
+  {
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      break;
+  }
+  for (int i = 0; i < 25; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_NEAR(yaw_, ang, 1e-2);
+  ASSERT_NEAR(pos_[0], 0.5 * c, 1e-2);
+  ASSERT_NEAR(pos_[1], 0.5 * s, 1e-2);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
+}
+
+TEST_F(TrajectoryTrackerTest, StraightStopOvershootHighResolutionPath)
+{
+  const double s = 0;
+  const double c = 1;
+  const double ang = atan2(s, c);
+
+  initState(Eigen::Vector2d(c, s), ang);
+
+  std::vector<Eigen::Vector3d> poses;
+  for (double x = 0.0; x < 0.499; x += 0.1)
+    poses.push_back(Eigen::Vector3d(x * c, x * s, ang));
+  poses.push_back(Eigen::Vector3d(0.499 * c, 0.499 * s, ang));
+  poses.push_back(Eigen::Vector3d(0.5 * c, 0.5 * s, ang));
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
+
+  ros::Rate rate(50);
+  const ros::Time start = ros::Time::now();
+  while (ros::ok())
+  {
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      break;
+  }
+  for (int i = 0; i < 25; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_NEAR(yaw_, ang, 1e-2);
+  ASSERT_NEAR(pos_[0], 0.5 * c, 1e-2);
+  ASSERT_NEAR(pos_[1], 0.5 * s, 1e-2);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
+}
+
 TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 {
   const double vels[] =
