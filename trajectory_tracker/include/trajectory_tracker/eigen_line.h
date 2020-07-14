@@ -63,16 +63,27 @@ inline float lineDistance(
   return cross2((b - a), (c - a)) / (b - a).norm();
 }
 
-inline float lineStripDistance(
+// lineStripDistanceSigned returns signed distance from the line strip.
+// If c is behind a, negative value will be returned. [ (c)  (a)---(b) ]
+// Otherwise, positive value will be returned. [ (a)---(b)  (c) ] [ (a)--(c)--(b) ]
+inline float lineStripDistanceSigned(
     const Eigen::Vector2d& a,
     const Eigen::Vector2d& b,
     const Eigen::Vector2d& c)
 {
   if ((b - a).dot(c - a) <= 0)
-    return (c - a).norm();
+    return -(c - a).norm();
   if ((a - b).dot(c - b) <= 0)
     return (c - b).norm();
   return std::abs(lineDistance(a, b, c));
+}
+
+inline float lineStripDistance(
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c)
+{
+  return std::abs(lineStripDistanceSigned(a, b, c));
 }
 
 inline Eigen::Vector2d projection2d(
