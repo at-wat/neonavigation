@@ -71,7 +71,7 @@ inline float lineStripDistance(
   if ((b - a).dot(c - a) <= 0)
     return (c - a).norm();
   if ((a - b).dot(c - b) <= 0)
-    return (c - b).norm() + 0.005;
+    return (c - b).norm();
   return std::abs(lineDistance(a, b, c));
 }
 
