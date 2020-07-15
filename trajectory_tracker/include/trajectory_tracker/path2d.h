@@ -131,7 +131,7 @@ public:
       const ConstIterator& end,
       const Eigen::Vector2d& target,
       const float max_search_range = 0,
-      const double epsilon = 1e-6) const
+      const float epsilon = 1e-6) const
   {
     if (begin == end)
       return end;
