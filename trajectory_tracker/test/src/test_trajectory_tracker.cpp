@@ -254,81 +254,49 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
 TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 {
-  const double s = 0;
-  const double c = 1;
-  const double ang = atan2(s, c);
-
-  initState(Eigen::Vector2d(c, s), ang);
-
-  std::vector<Eigen::Vector3d> poses;
-  for (double x = 0.0; x < 0.5; x += 0.1)
-    poses.push_back(Eigen::Vector3d(x * c, x * s, ang));
-  poses.push_back(Eigen::Vector3d(0.5 * c, 0.5 * s, ang));
-  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
-
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  const double resolutions[] =
+      {
+        0.1,
+        0.001,  // default epsilon
+        0.0001,
+      };
+  for (const double resolution : resolutions)
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    const std::string info_message = "resolution: " + std::to_string(resolution);
 
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
-      break;
+    initState(Eigen::Vector2d(1, 0), 0);
+
+    std::vector<Eigen::Vector3d> poses;
+    for (double x = 0.0; x < 0.5 - resolution; x += 0.1)
+      poses.push_back(Eigen::Vector3d(x, 0, 0));
+    poses.push_back(Eigen::Vector3d(0.5 - resolution, 0, 0));
+    poses.push_back(Eigen::Vector3d(0.5, 0, 0));
+    waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
+
+    ros::Rate rate(50);
+    const ros::Time start = ros::Time::now();
+    while (ros::ok())
+    {
+      ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0)) << info_message;
+
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+      if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+        break;
+    }
+    for (int i = 0; i < 25; ++i)
+    {
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+    }
+
+    ASSERT_NEAR(yaw_, 0.0, 1e-2) << info_message;
+    ASSERT_NEAR(pos_[0], 0.5, 1e-2) << info_message;
+    ASSERT_NEAR(pos_[1], 0.0, 1e-2) << info_message;
+    ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp) << info_message;
   }
-  for (int i = 0; i < 25; ++i)
-  {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
-
-  ASSERT_NEAR(yaw_, ang, 1e-2);
-  ASSERT_NEAR(pos_[0], 0.5 * c, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.5 * s, 1e-2);
-  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
-}
-
-TEST_F(TrajectoryTrackerTest, StraightStopOvershootHighResolutionPath)
-{
-  const double s = 0;
-  const double c = 1;
-  const double ang = atan2(s, c);
-
-  initState(Eigen::Vector2d(c, s), ang);
-
-  std::vector<Eigen::Vector3d> poses;
-  for (double x = 0.0; x < 0.499; x += 0.1)
-    poses.push_back(Eigen::Vector3d(x * c, x * s, ang));
-  poses.push_back(Eigen::Vector3d(0.499 * c, 0.499 * s, ang));
-  poses.push_back(Eigen::Vector3d(0.5 * c, 0.5 * s, ang));
-  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
-
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
-  {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
-
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
-      break;
-  }
-  for (int i = 0; i < 25; ++i)
-  {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
-
-  ASSERT_NEAR(yaw_, ang, 1e-2);
-  ASSERT_NEAR(pos_[0], 0.5 * c, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.5 * s, 1e-2);
-  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
