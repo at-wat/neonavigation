@@ -338,7 +338,8 @@ void TrackerNode::control()
 
   const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
   const trajectory_tracker::Path2D::ConstIterator it_nearest =
-      lpath.findNearest(lpath.cbegin() + path_step_done_, it_local_goal, origin, max_search_range);
+      lpath.findNearest(lpath.cbegin() + path_step_done_, it_local_goal, origin,
+                        max_search_range, epsilon_);
 
   if (it_nearest == lpath.end())
   {

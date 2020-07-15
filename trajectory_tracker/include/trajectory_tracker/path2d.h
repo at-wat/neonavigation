@@ -130,11 +130,15 @@ public:
       const ConstIterator& begin,
       const ConstIterator& end,
       const Eigen::Vector2d& target,
-      const float max_search_range = 0) const
+      const float max_search_range = 0,
+      const float epsilon = 1e-6) const
   {
+    if (begin == end)
+      return end;
+
     float distance_path_search = 0;
     ConstIterator it_nearest = begin;
-    float min_dist = (begin->pos_ - target).norm();
+    float min_dist = (begin->pos_ - target).norm() + epsilon;
 
     ConstIterator it_prev = begin;
     for (ConstIterator it = begin + 1; it < end; ++it)
@@ -145,10 +149,18 @@ public:
         break;
 
       const float d =
-          trajectory_tracker::lineStripDistance(it_prev->pos_, it->pos_, target);
-      if (d <= min_dist)
+          trajectory_tracker::lineStripDistanceSigned(it_prev->pos_, it->pos_, target);
+
+      // Use earlier point if the robot is same distance from two line strip
+      // to avoid chattering.
+      const float d_compare = (d > 0) ? d : (-d - epsilon);
+      const float d_abs = std::abs(d);
+
+      // If it is the last point, select it as priority
+      // to calculate correct remained distance.
+      if (d_compare <= min_dist || (it + 1 == end && d_abs <= min_dist + epsilon))
       {
-        min_dist = d;
+        min_dist = d_abs;
         it_nearest = it;
       }
       it_prev = it;
