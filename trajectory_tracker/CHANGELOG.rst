@@ -2,8 +2,8 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.1 (2020-07-16)
+------------------
 * trajectory_tracker: fix remained distance calculation on overshoot (`#514 <https://github.com/at-wat/neonavigation/issues/514>`_)
 * Contributors: Atsushi Watanabe
 
