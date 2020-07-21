@@ -169,6 +169,9 @@ TEST_F(JoystickInterruptTest, Interrupt)
 TEST_F(JoystickInterruptTest, InterruptNoTwistInput)
 {
   ros::Duration(1.0).sleep();
+  // make sure the internal state of the joystick interrupt node
+  // (i.e. last_input_twist_) is set back to a zero twist.
+  publishCmdVel(0, 0);
   ros::Rate rate(20);
   for (size_t i = 0; i < 20; ++i)
   {
