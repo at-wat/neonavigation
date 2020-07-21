@@ -58,6 +58,7 @@ private:
   int interrupt_button_;
   int high_speed_button_;
   ros::Time last_joy_msg_;
+  geometry_msgs::Twist last_input_twist_;
 
   void cbJoy(const sensor_msgs::Joy::Ptr msg)
   {
@@ -70,6 +71,10 @@ private:
     }
     if (!msg->buttons[interrupt_button_])
     {
+      if (last_joy_msg_ != ros::Time(0))
+      {
+        pub_twist_.publish(last_input_twist_);
+      }
       last_joy_msg_ = ros::Time(0);
       return;
     }
@@ -136,11 +141,12 @@ private:
   };
   void cbTwist(const geometry_msgs::Twist::Ptr msg)
   {
+    last_input_twist_ = *msg;
     std_msgs::Bool status;
     if (ros::Time::now() - last_joy_msg_ > ros::Duration(timeout_) ||
         (ros::Time::isSimTime() && last_joy_msg_ == ros::Time(0)))
     {
-      pub_twist_.publish(*msg);
+      pub_twist_.publish(last_input_twist_);
       status.data = true;
     }
     else
