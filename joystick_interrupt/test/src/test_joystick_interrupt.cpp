@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -162,6 +162,44 @@ TEST_F(JoystickInterruptTest, Interrupt)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.0, 1e-3);
       ASSERT_NEAR(cmd_vel_->angular.z, 1.0, 1e-3);
+    }
+  }
+}
+
+TEST_F(JoystickInterruptTest, InterruptNoTwistInput)
+{
+  ros::Duration(1.0).sleep();
+  ros::Rate rate(20);
+  for (size_t i = 0; i < 20; ++i)
+  {
+    if (i < 5)
+      publishJoy(0, 0, 0, 0, 0, 0);
+    else if (i < 10)
+      publishJoy(1, 0, 1, 0.5, 0, 0);
+    else if (i < 15)
+      publishJoy(0, 0, 1, 0, 0, 0);
+    else
+      publishJoy(0, 0, 0, 0.5, 0, 0);
+
+    rate.sleep();
+    ros::spinOnce();
+    if (i < 3)
+      continue;
+    ASSERT_TRUE(static_cast<bool>(cmd_vel_));
+    if (i < 5)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0, 1e-3);
+    }
+    else if (i < 10)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 1.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0.5, 1e-3);
+    }
+    else
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0, 1e-3);
     }
   }
 }

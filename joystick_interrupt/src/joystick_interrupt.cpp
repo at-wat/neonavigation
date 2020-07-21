@@ -59,6 +59,15 @@ private:
   int high_speed_button_;
   ros::Time last_joy_msg_;
 
+  void publishTwist(const float lin, const float ang)
+  {
+    geometry_msgs::Twist cmd_vel;
+    cmd_vel.linear.x = lin * linear_vel_;
+    cmd_vel.linear.y = cmd_vel.linear.z = 0.0;
+    cmd_vel.angular.z = ang * angular_vel_;
+    cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
+    pub_twist_.publish(cmd_vel);
+  }
   void cbJoy(const sensor_msgs::Joy::Ptr msg)
   {
     if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
@@ -70,6 +79,10 @@ private:
     }
     if (!msg->buttons[interrupt_button_])
     {
+      if (last_joy_msg_ != ros::Time(0))
+      {
+        publishTwist(0, 0);
+      }
       last_joy_msg_ = ros::Time(0);
       return;
     }
@@ -126,13 +139,7 @@ private:
         ROS_ERROR("Out of range: number of buttons (%lu) must be greater than high_speed_button (%d).",
                   msg->buttons.size(), high_speed_button_);
     }
-
-    geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = lin * linear_vel_;
-    cmd_vel.linear.y = cmd_vel.linear.z = 0.0;
-    cmd_vel.angular.z = ang * angular_vel_;
-    cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
-    pub_twist_.publish(cmd_vel);
+    publishTwist(lin , ang);
   };
   void cbTwist(const geometry_msgs::Twist::Ptr msg)
   {
