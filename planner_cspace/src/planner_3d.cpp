@@ -204,6 +204,11 @@ protected:
   ros::Duration costmap_watchdog_;
   ros::Time last_costmap_;
 
+  int prev_map_update_x_min_;
+  int prev_map_update_x_max_;
+  int prev_map_update_y_min_;
+  int prev_map_update_y_max_;
+
   bool cbForget(std_srvs::EmptyRequest& req,
                 std_srvs::EmptyResponse& res)
   {
@@ -586,6 +591,11 @@ protected:
       return true;
     }
 
+    prev_map_update_x_min_ = std::numeric_limits<int>::max();
+    prev_map_update_x_max_ = std::numeric_limits<int>::lowest();
+    prev_map_update_y_min_ = std::numeric_limits<int>::max();
+    prev_map_update_y_max_ = std::numeric_limits<int>::lowest();
+
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
@@ -867,12 +877,22 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
 
+    const int map_update_x_min = static_cast<int>(msg->x);
+    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
+    const int map_update_y_min = static_cast<int>(msg->y);
+    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+    const int search_range_x_min = std::max(0, std::min(prev_map_update_x_min_, map_update_x_min) - 1);
+    const int search_range_x_max = std::min(static_cast<int>(map_info_.width),
+                                            std::max(prev_map_update_x_max_, map_update_x_max) + 1);
+    const int search_range_y_min = std::max(0, std::min(prev_map_update_y_min_, map_update_y_min) - 1);
+    const int search_range_y_max = std::min(static_cast<int>(map_info_.height),
+                                            std::max(prev_map_update_y_max_, map_update_y_max) + 1);
     Astar::Vec p, p_cost_min;
     p[2] = 0;
     float cost_min = std::numeric_limits<float>::max();
-    for (p[1] = static_cast<int>(msg->y); p[1] < static_cast<int>(msg->y + msg->height); p[1]++)
+    for (p[1] = search_range_y_min; p[1] < search_range_y_max; p[1]++)
     {
-      for (p[0] = static_cast<int>(msg->x); p[0] < static_cast<int>(msg->x + msg->width); p[0]++)
+      for (p[0] = search_range_x_min; p[0] < search_range_x_max; p[0]++)
       {
         if (cost_min > cost_estim_cache_[p])
         {
@@ -881,6 +901,10 @@ protected:
         }
       }
     }
+    prev_map_update_x_min_ = map_update_x_min;
+    prev_map_update_x_max_ = map_update_x_max;
+    prev_map_update_y_min_ = map_update_y_min;
+    prev_map_update_y_max_ = map_update_y_max;
 
     reservable_priority_queue<Astar::PriorityVec> open;
     reservable_priority_queue<Astar::PriorityVec> erase;
