@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="antialias_start" default="false" />
+  <arg name="fast_map_update" default="false" />
   <param name="neonavigation_compatible" value="1" />
 
   <test test-name="test_navigate" pkg="planner_cspace" type="test_navigate" time-limit="200.0" />
@@ -28,6 +29,7 @@
     <param name="goal_tolerance_lin" value="0.025" />
     <param name="sw_wait" value="0.2" />
     <param name="antialias_start" value="$(arg antialias_start)" />
+    <param name="fast_map_update" value="$(arg fast_map_update)" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
     <param name="max_vel" value="0.1" />
