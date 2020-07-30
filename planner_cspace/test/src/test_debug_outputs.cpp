@@ -32,6 +32,8 @@
 #include <nav_msgs/Path.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 
+#include <neonavigation_common/kill_nodes.h>
+
 #include <gtest/gtest.h>
 
 class DebugOutputsTest : public ::testing::Test
@@ -203,5 +205,10 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_debug_outputs");
 
-  return RUN_ALL_TESTS();
+  const int ret = RUN_ALL_TESTS();
+
+  neonavigation_common::kill_nodes::killAll();
+  ros::Duration(0.5).sleep();
+
+  return ret;
 }

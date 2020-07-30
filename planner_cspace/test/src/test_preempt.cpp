@@ -34,6 +34,8 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 
+#include <neonavigation_common/kill_nodes.h>
+
 #include <gtest/gtest.h>
 
 class PreemptTest : public ::testing::Test
@@ -118,6 +120,10 @@ int main(int argc, char** argv)
   spinner.start();
   int ret = RUN_ALL_TESTS();
   spinner.stop();
+
+  neonavigation_common::kill_nodes::killAll();
+  ros::Duration(0.5).sleep();
+
   ros::shutdown();
   return ret;
 }

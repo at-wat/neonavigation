@@ -31,6 +31,8 @@
 #include <trajectory_msgs/JointTrajectory.h>
 #include <sensor_msgs/JointState.h>
 
+#include <neonavigation_common/kill_nodes.h>
+
 #include <gtest/gtest.h>
 
 TEST(Planner2DOFSerialJoints, Plan)
@@ -124,5 +126,10 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_planner_2dof_serial_joints");
 
-  return RUN_ALL_TESTS();
+  const int ret = RUN_ALL_TESTS();
+
+  neonavigation_common::kill_nodes::killAll();
+  ros::Duration(0.5).sleep();
+
+  return ret;
 }

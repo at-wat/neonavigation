@@ -41,6 +41,8 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace_msgs/CSpace3D.h>
 
+#include <neonavigation_common/kill_nodes.h>
+
 #include <gtest/gtest.h>
 
 class Navigate : public ::testing::Test
@@ -334,5 +336,10 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_navigate");
 
-  return RUN_ALL_TESTS();
+  const int ret = RUN_ALL_TESTS();
+
+  neonavigation_common::kill_nodes::killAll();
+  ros::Duration(0.5).sleep();
+
+  return ret;
 }
