@@ -66,7 +66,7 @@ then
   cp -r /catkin_ws/build src/neonavigation/
   cd src/neonavigation/
 
-  gcov $(find . -name "*.gcda") -p > /dev/null
+  gcov $(find . -name "*.gcda") -p -c > /dev/null
 
   rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
   bash <(curl -s https://codecov.io/bash) \
