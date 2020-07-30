@@ -66,7 +66,6 @@ then
   gcov $(find . -name "*.gcda") -p
   ls -l
 
-  cd src/neonavigation/
   rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
   bash <(curl -s https://codecov.io/bash) -y codecov.yml -Z \
     -X gcov
