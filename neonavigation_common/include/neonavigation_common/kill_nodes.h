@@ -47,20 +47,17 @@ inline void killAll()
   ros::master::getNodes(nodes);
   for (const auto& node : nodes)
   {
-    std::cerr << node << std::endl;
     XmlRpc::XmlRpcValue args, result, payload;
     args[0] = "test_navigate";
     args[1] = node;
     ros::master::execute("lookupNode", args, result, payload, true);
     if (result.size() > 2)
     {
-      std::cerr << result[0] << " " << result[1] << " " << result[2] << std::endl;
       const std::string uri = result[2];
       const size_t pos_colon = uri.find(":", 7);
       const size_t pos_slash = uri.find("/", pos_colon);
       const std::string host(uri, 7, pos_colon - 7);
       const std::string port(uri, pos_colon + 1, pos_slash - pos_colon - 1);
-      std::cerr << host << " " << port << std::endl;
 
       XmlRpc::XmlRpcClient* c =
           ros::XMLRPCManager::instance()->getXMLRPCClient(host, std::stoi(port), uri);
