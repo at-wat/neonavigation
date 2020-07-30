@@ -59,9 +59,11 @@ protected:
   ros::Publisher pub_map_;
   ros::Publisher pub_map_local_;
   ros::Publisher pub_initial_pose_;
+  size_t local_map_apply_cnt_;
 
   Navigate()
     : tfl_(tfbuf_)
+    , local_map_apply_cnt_(0)
   {
     sub_map_ = nh_.subscribe("map_global", 1, &Navigate::cbMap, this);
     sub_map_local_ = nh_.subscribe("map_local", 1, &Navigate::cbMapLocal, this);
@@ -127,7 +129,8 @@ protected:
     if (map_local_)
     {
       pub_map_local_.publish(map_local_);
-      std::cerr << "Local map applied." << std::endl;
+      if ((local_map_apply_cnt_++) % 30 == 0)
+        std::cerr << "Local map applied." << std::endl;
     }
   }
 };
@@ -230,6 +233,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
   ros::Rate wait(10);
   while (ros::ok())
   {
+    pubMapLocal();
     ros::spinOnce();
     wait.sleep();
 
