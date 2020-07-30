@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_debug_outputs" />
   <param name="neonavigation_compatible" value="1" />
 
   <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
