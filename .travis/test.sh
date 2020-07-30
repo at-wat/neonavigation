@@ -49,6 +49,7 @@ then
   set -o pipefail
 
   # Find and copy renamed gcda files
+  echo "Renamed gcda files"
   find /tmp/gcov/ -name "*.gcda" | sed 's|^/tmp/gcov||' | while read file
   do
     id=$(echo ${file} | cut -d'/' -f2) # /id/path/to/gcda
@@ -58,13 +59,13 @@ then
     new_gcno=$(echo ${gcda} | sed "s|\.gcda|.${id}.gcno|")
     cp /tmp/gcov/${id}/${gcda} ${new_gcda}
     cp ${gcno} ${new_gcno}
+    echo "  - ${new_gcda}"
   done
 
   cd src/neonavigation/
   cp -r /catkin_ws/build ./
 
-  gcov $(find . -name "*.gcda") -p
-  ls -l
+  gcov $(find . -name "*.gcda") -p > /dev/null
 
   rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
   bash <(curl -s https://codecov.io/bash) \
