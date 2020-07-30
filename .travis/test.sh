@@ -19,10 +19,6 @@ $(catkin_lint $pkgs 2>&1)
 ${md_codeblock}
 </details>"; false)
 
-function gh-pr-comment() {
-  true
-}
-
 COVERAGE_OPTION=
 if [ x${COVERAGE_TEST} == "xtrue" ]
 then
