@@ -48,11 +48,12 @@ if [ x${COVERAGE_TEST} == "xtrue" ]
 then
   set -o pipefail
 
-  cp -r /catkin_ws/build src/neonavigation/
+  echo
   echo "Generated gcda files"
-  find /catkin_ws/src/neonavigation/ -name "*.gcda" | xargs -n1 echo "  -"
+  find /catkin_ws/build -name "*.gcda" | xargs -n1 echo "  -"
 
   # Find and copy renamed gcda files
+  echo
   echo "Renamed gcda files"
   find /tmp/gcov/ -name "*.gcda" | sed 's|^/tmp/gcov||' | while read file
   do
@@ -66,6 +67,7 @@ then
     echo "  - ${new_gcda}"
   done
 
+  cp -r /catkin_ws/build src/neonavigation/
   cd src/neonavigation/
 
   gcov $(find . -name "*.gcda") -p > /dev/null
