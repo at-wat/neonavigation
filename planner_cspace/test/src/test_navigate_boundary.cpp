@@ -37,8 +37,6 @@
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 
-#include <neonavigation_common/kill_nodes.h>
-
 #include <gtest/gtest.h>
 
 class NavigateBoundary : public ::testing::Test
@@ -124,10 +122,5 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_navigate_boundary");
 
-  const int ret = RUN_ALL_TESTS();
-
-  neonavigation_common::kill_nodes::killAll();
-  ros::Duration(0.5).sleep();
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

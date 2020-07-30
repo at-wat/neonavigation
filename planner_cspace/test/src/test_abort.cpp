@@ -27,16 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <memory>
-
 #include <actionlib/client/simple_action_client.h>
+#include <gtest/gtest.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <ros/ros.h>
-
-#include <neonavigation_common/kill_nodes.h>
-
-#include <gtest/gtest.h>
+#include <memory>
 
 class AbortTest : public ::testing::Test
 {
@@ -156,12 +152,8 @@ int main(int argc, char** argv)
 
   ros::AsyncSpinner spinner(1);
   spinner.start();
-  const int ret = RUN_ALL_TESTS();
+  int ret = RUN_ALL_TESTS();
   spinner.stop();
-
-  neonavigation_common::kill_nodes::killAll();
-  ros::Duration(0.5).sleep();
-
   ros::shutdown();
   return ret;
 }
