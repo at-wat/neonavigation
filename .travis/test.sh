@@ -67,7 +67,8 @@ then
   ls -l
 
   rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
-  bash <(curl -s https://codecov.io/bash) -y codecov.yml -Z \
+  bash <(curl -s https://codecov.io/bash) \
+    -Z \
     -X gcov
 fi
 
