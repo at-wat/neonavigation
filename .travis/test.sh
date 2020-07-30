@@ -63,7 +63,7 @@ then
   cd src/neonavigation/
   cp -r /catkin_ws/build ./
 
-  gcov $(find . -name "*.gcda")
+  gcov $(find . -name "*.gcda") -p
   ls -l
 
   cd src/neonavigation/
