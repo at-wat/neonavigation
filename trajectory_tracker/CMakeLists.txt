@@ -4,6 +4,7 @@ project(trajectory_tracker)
 set(CATKIN_DEPENDS
   roscpp
 
+  dynamic_reconfigure
   geometry_msgs
   interactive_markers
   nav_msgs
@@ -19,6 +20,11 @@ set(CATKIN_DEPENDS
 find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
 find_package(Boost REQUIRED COMPONENTS thread)
 find_package(Eigen3 REQUIRED)
+
+generate_dynamic_reconfigure_options(
+  cfg/TrajectoryTracker.cfg
+)
+
 catkin_package(
   CATKIN_DEPENDS ${CATKIN_DEPENDS}
 )
@@ -32,7 +38,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 add_executable(trajectory_tracker src/trajectory_tracker.cpp)
 target_link_libraries(trajectory_tracker ${catkin_LIBRARIES})
-add_dependencies(trajectory_tracker ${catkin_EXPORTED_TARGETS})
+add_dependencies(trajectory_tracker ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 
 add_executable(trajectory_recorder src/trajectory_recorder.cpp)
 target_link_libraries(trajectory_recorder ${catkin_LIBRARIES})

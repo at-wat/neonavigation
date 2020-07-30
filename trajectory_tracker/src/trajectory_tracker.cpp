@@ -51,8 +51,9 @@
 
 #include <ros/ros.h>
 
-#include <geometry_msgs/Twist.h>
+#include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Float32.h>
@@ -63,13 +64,16 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <neonavigation_common/compatibility.h>
-#include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 #include <trajectory_tracker_msgs/PathWithVelocity.h>
+#include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 
+#include <trajectory_tracker/TrajectoryTrackerConfig.h>
 #include <trajectory_tracker/basic_control.h>
 #include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/path2d.h>
 
+namespace trajectory_tracker
+{
 class TrackerNode
 {
 public:
@@ -122,11 +126,15 @@ private:
   trajectory_tracker::Path2D path_;
   std_msgs::Header path_header_;
 
+  mutable boost::recursive_mutex parameter_server_mutex_;
+  dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
+
   template <typename MSG_TYPE>
   void cbPath(const typename MSG_TYPE::ConstPtr&);
   void cbSpeed(const std_msgs::Float32::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
   void control();
+  void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
 TrackerNode::TrackerNode()
@@ -140,35 +148,6 @@ TrackerNode::TrackerNode()
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
   neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
   pnh_.param("hz", hz_, 50.0);
-  pnh_.param("look_forward", look_forward_, 0.5);
-  pnh_.param("curv_forward", curv_forward_, 0.5);
-  pnh_.param("k_dist", k_[0], 1.0);
-  pnh_.param("k_ang", k_[1], 1.0);
-  pnh_.param("k_avel", k_[2], 1.0);
-  pnh_.param("gain_at_vel", gain_at_vel_, 0.0);
-  pnh_.param("dist_lim", d_lim_, 0.5);
-  pnh_.param("dist_stop", d_stop_, 2.0);
-  pnh_.param("rotate_ang", rotate_ang_, M_PI / 4);
-  pnh_.param("max_vel", vel_[0], 0.5);
-  pnh_.param("max_angvel", vel_[1], 1.0);
-  pnh_.param("max_acc", acc_[0], 1.0);
-  pnh_.param("max_angacc", acc_[1], 2.0);
-  double acc_toc_factor[2];
-  pnh_.param("acc_toc_factor", acc_toc_factor[0], 0.9);
-  pnh_.param("angacc_toc_factor", acc_toc_factor[1], 0.9);
-  acc_toc_[0] = acc_[0] * acc_toc_factor[0];
-  acc_toc_[1] = acc_[1] * acc_toc_factor[1];
-  pnh_.param("path_step", path_step_, 1);
-  pnh_.param("goal_tolerance_dist", goal_tolerance_dist_, 0.2);
-  pnh_.param("goal_tolerance_ang", goal_tolerance_ang_, 0.1);
-  pnh_.param("stop_tolerance_dist", stop_tolerance_dist_, 0.1);
-  pnh_.param("stop_tolerance_ang", stop_tolerance_ang_, 0.05);
-  pnh_.param("no_position_control_dist", no_pos_cntl_dist_, 0.0);
-  pnh_.param("min_tracking_path", min_track_path_, no_pos_cntl_dist_);
-  pnh_.param("allow_backward", allow_backward_, true);
-  pnh_.param("limit_vel_by_avel", limit_vel_by_avel_, false);
-  pnh_.param("check_old_path", check_old_path_, false);
-  pnh_.param("epsilon", epsilon_, 0.001);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
       nh_, "path",
@@ -185,7 +164,42 @@ TrackerNode::TrackerNode()
       pnh_, topic_cmd_vel_, 10);
   pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10, true);
   pub_tracking_ = pnh_.advertise<geometry_msgs::PoseStamped>("tracking", 10, true);
+
+  boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
+  parameter_server_.setCallback(boost::bind(&TrackerNode::cbParameter, this, _1, _2));
 }
+
+void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */)
+{
+  boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
+  look_forward_ = config.look_forward;
+  curv_forward_ = config.curv_forward;
+  k_[0] = config.k_dist;
+  k_[1] = config.k_ang;
+  k_[2] = config.k_avel;
+  gain_at_vel_ = config.gain_at_vel;
+  d_lim_ = config.dist_lim;
+  d_stop_ = config.dist_stop;
+  rotate_ang_ = config.rotate_ang;
+  vel_[0] = config.max_vel;
+  vel_[1] = config.max_angvel;
+  acc_[0] = config.max_acc;
+  acc_[1] = config.max_angacc;
+  acc_toc_[0] = acc_[0] * config.acc_toc_factor;
+  acc_toc_[1] = acc_[1] * config.angacc_toc_factor;
+  path_step_ = config.path_step;
+  goal_tolerance_dist_ = config.goal_tolerance_dist;
+  goal_tolerance_ang_ = config.goal_tolerance_ang;
+  stop_tolerance_dist_ = config.stop_tolerance_dist;
+  stop_tolerance_ang_ = config.stop_tolerance_ang;
+  no_pos_cntl_dist_ = config.no_position_control_dist;
+  min_track_path_ = config.min_tracking_path;
+  allow_backward_ = config.allow_backward;
+  limit_vel_by_avel_ = config.limit_vel_by_avel;
+  check_old_path_ = config.check_old_path;
+  epsilon_ = config.epsilon;
+}
+
 TrackerNode::~TrackerNode()
 {
   geometry_msgs::Twist cmd_vel;
@@ -517,12 +531,12 @@ void TrackerNode::control()
   else
     path_step_done_ = std::max(path_step_done_, i_nearest - 1);
 }
+}  // namespace trajectory_tracker
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "trajectory_tracker");
-
-  TrackerNode track;
+  trajectory_tracker::TrackerNode track;
   track.spin();
 
   return 0;
