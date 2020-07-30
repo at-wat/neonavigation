@@ -63,8 +63,8 @@ then
     echo "  - ${new_gcda}"
   done
 
-  cp -r /catkin_ws/build src/neonavigation/
   cd src/neonavigation/
+  cp -r /catkin_ws/build ./
 
   gcov $(find . -name "*.gcda") -p -c > /dev/null
 
