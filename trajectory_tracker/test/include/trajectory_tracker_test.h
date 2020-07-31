@@ -42,6 +42,7 @@
 #include <ros/ros.h>
 
 #include <geometry_msgs/Twist.h>
+#include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <rosgraph_msgs/Clock.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -60,6 +61,7 @@ private:
   ros::Subscriber sub_status_;
   ros::Publisher pub_path_;
   ros::Publisher pub_path_vel_;
+  ros::Publisher pub_odom_;
   tf2_ros::TransformBroadcaster tfb_;
   ros::Time cmd_vel_time_;
   ros::Time trans_stamp_last_;
@@ -104,6 +106,7 @@ public:
         "trajectory_tracker/status", 1, &TrajectoryTrackerTest::cbStatus, this);
     pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
     pub_path_vel_ = nh_.advertise<trajectory_tracker_msgs::PathWithVelocity>("path_velocity", 1, true);
+    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 10, true);
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
@@ -135,8 +138,6 @@ public:
   {
     ros::Rate rate(50);
     const auto start = ros::WallTime::now();
-    initial_cmd_vel_time_ = ros::Time::now();
-    cmd_vel_count_ = 0;
     while (ros::ok())
     {
       if (func)
@@ -152,6 +153,8 @@ public:
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
+    initial_cmd_vel_time_ = ros::Time::now();
+    cmd_vel_count_ = 0;
   }
   void publishPath(const std::vector<Eigen::Vector3d>& poses)
   {
@@ -218,9 +221,21 @@ public:
     trans.transform.rotation.z = q.z();
     trans.transform.rotation.w = q.w();
 
+    nav_msgs::Odometry odom;
+    odom.header = trans.header;
+    odom.child_frame_id = trans.child_frame_id;
+    odom.pose.pose.position.x = pos_[0];
+    odom.pose.pose.position.y = pos_[1];
+    odom.pose.pose.position.z = 0.0;
+    odom.pose.pose.orientation.x = q.x();
+    odom.pose.pose.orientation.y = q.y();
+    odom.pose.pose.orientation.z = q.z();
+    odom.pose.pose.orientation.w = q.w();
+
     if (trans.header.stamp != trans_stamp_last_)
     {
       tfb_.sendTransform(trans);
+      pub_odom_.publish(odom);
     }
     trans_stamp_last_ = trans.header.stamp;
   }

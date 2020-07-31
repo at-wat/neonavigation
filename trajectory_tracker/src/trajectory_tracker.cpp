@@ -115,6 +115,7 @@ private:
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
   ros::Subscriber sub_vel_;
+  ros::Subscriber sub_odom_;
   ros::Publisher pub_vel_;
   ros::Publisher pub_status_;
   ros::Publisher pub_tracking_;
@@ -130,13 +131,14 @@ private:
   dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
 
   bool sync_with_odom_;
-  tf2::Stamped<tf2::Transform> prev_transform_;
+  ros::Time prev_odom_stamp_;
 
   template <typename MSG_TYPE>
   void cbPath(const typename MSG_TYPE::ConstPtr&);
   void cbSpeed(const std_msgs::Float32::ConstPtr&);
+  void cbOdometry(const nav_msgs::Odometry::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
-  void control();
+  void control(const tf2::Stamped<tf2::Transform>&, const double);
   void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
@@ -168,6 +170,11 @@ TrackerNode::TrackerNode()
       pnh_, topic_cmd_vel_, 10);
   pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10, true);
   pub_tracking_ = pnh_.advertise<geometry_msgs::PoseStamped>("tracking", 10, true);
+  if (sync_with_odom_)
+  {
+    sub_odom_ = nh_.subscribe<nav_msgs::Odometry>("odom", 10, &TrackerNode::cbOdometry, this,
+                                                  ros::TransportHints().reliable().tcpNoDelay(true));
+  }
 
   boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
   parameter_server_.setCallback(boost::bind(&TrackerNode::cbParameter, this, _1, _2));
@@ -273,30 +280,66 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   if (in_place_turning)
     path_.push_back(in_place_turn_end);
 }
+
+void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
+{
+  if (odom->header.frame_id != frame_odom_)
+  {
+    ROS_WARN("frame_odom is invalid. Update from \"%s\" to \"%s\"", odom->header.frame_id.c_str(), frame_odom_.c_str());
+    frame_odom_ = odom->header.frame_id;
+  }
+  if (odom->child_frame_id != frame_robot_)
+  {
+    ROS_WARN("frame_robot is invalid. Update from \"%s\" to \"%s\"",
+             odom->child_frame_id.c_str(), frame_robot_.c_str());
+    frame_robot_ = odom->child_frame_id;
+  }
+
+  if (prev_odom_stamp_ != ros::Time())
+  {
+    tf2::Transform odom_to_robot;
+    tf2::fromMsg(odom->pose.pose, odom_to_robot);
+    const tf2::Stamped<tf2::Transform> robot_to_odom(
+        odom_to_robot.inverse(), odom->header.stamp, odom->header.frame_id);
+    control(robot_to_odom, (odom->header.stamp - prev_odom_stamp_).toSec());
+  }
+  prev_odom_stamp_ = odom->header.stamp;
+}
+
 void TrackerNode::cbTimer(const ros::TimerEvent& event)
 {
-  control();
+  try
+  {
+    tf2::Stamped<tf2::Transform> transform;
+    tf2::fromMsg(
+        tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
+    control(transform, 1.0 / hz_);
+  }
+  catch (tf2::TransformException& e)
+  {
+    ROS_WARN("TF exception: %s", e.what());
+    trajectory_tracker_msgs::TrajectoryTrackerStatus status;
+    status.header.stamp = ros::Time::now();
+    status.distance_remains = 0.0;
+    status.angle_remains = 0.0;
+    status.path_header = path_header_;
+    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
+    pub_status_.publish(status);
+    return;
+  }
 }
 
 void TrackerNode::spin()
 {
+  ros::Timer timer;
   if (!sync_with_odom_)
   {
-    ros::Timer timer = nh_.createTimer(ros::Duration(1.0 / hz_), &TrackerNode::cbTimer, this);
-    ros::spin();
+    timer = nh_.createTimer(ros::Duration(1.0 / hz_), &TrackerNode::cbTimer, this);
   }
-  else
-  {
-    prev_transform_.stamp_ = ros::Time(0);
-    while (ros::ok())
-    {
-      control();
-      ros::spinOnce();
-    }
-  }
+  ros::spin();
 }
 
-void TrackerNode::control()
+void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, const double dt)
 {
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
   status.header.stamp = ros::Time::now();
@@ -314,42 +357,18 @@ void TrackerNode::control()
     pub_vel_.publish(cmd_vel);
     status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
     pub_status_.publish(status);
-    if (sync_with_odom_)
-    {
-      prev_transform_.stamp_ = ros::Time(0);
-      ros::Duration(1.0 / hz_).sleep();
-    }
     return;
   }
   // Transform
   trajectory_tracker::Path2D lpath;
-  tf2::Stamped<tf2::Transform> transform;
   double transform_delay = 0;
-  float dt = 1.0 / hz_;
+  tf2::Stamped<tf2::Transform> transform = robot_to_odom;
   try
   {
-    tf2::Stamped<tf2::Transform> transform;
-    tf2::Stamped<tf2::Transform> trans_odom;
-    if (sync_with_odom_)
-    {
-      tf2::fromMsg(
-          tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time::now(), ros::Duration(0.1)), transform);
-      const ros::Time prev_stamp = prev_transform_.stamp_;
-      dt = (transform.stamp_ - prev_stamp).toSec();
-      prev_transform_ = transform;
-      if (prev_stamp == ros::Time(0) || dt == 0.0)
-      {
-        return;
-      }
-    }
-    else
-    {
-      tf2::fromMsg(
-          tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
-    }
+    tf2::Stamped<tf2::Transform> odom_to_path;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, ros::Time(0)), trans_odom);
-    transform *= trans_odom;
+        tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, ros::Time(0)), odom_to_path);
+    transform *= odom_to_path;
     transform_delay = (ros::Time::now() - transform.stamp_).toSec();
     if (std::abs(transform_delay) > 0.1 && check_old_path_)
     {
