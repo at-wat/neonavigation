@@ -285,13 +285,13 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
 {
   if (odom->header.frame_id != frame_odom_)
   {
-    ROS_WARN("frame_odom is invalid. Update from \"%s\" to \"%s\"", odom->header.frame_id.c_str(), frame_odom_.c_str());
+    ROS_WARN("frame_odom is invalid. Update from \"%s\" to \"%s\"", frame_odom_.c_str(), odom->header.frame_id.c_str());
     frame_odom_ = odom->header.frame_id;
   }
   if (odom->child_frame_id != frame_robot_)
   {
     ROS_WARN("frame_robot is invalid. Update from \"%s\" to \"%s\"",
-             odom->child_frame_id.c_str(), frame_robot_.c_str());
+             frame_robot_.c_str(), odom->child_frame_id.c_str());
     frame_robot_ = odom->child_frame_id;
   }
 
