@@ -111,6 +111,7 @@ private:
   bool limit_vel_by_avel_;
   bool check_old_path_;
   double epsilon_;
+  double max_dt_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
@@ -154,6 +155,7 @@ TrackerNode::TrackerNode()
   neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
   pnh_.param("hz", hz_, 50.0);
   pnh_.param("sync_with_odom", sync_with_odom_, false);
+  pnh_.param("max_dt", max_dt_, 0.2);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
       nh_, "path",
@@ -301,7 +303,8 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
     tf2::fromMsg(odom->pose.pose, odom_to_robot);
     const tf2::Stamped<tf2::Transform> robot_to_odom(
         odom_to_robot.inverse(), odom->header.stamp, odom->header.frame_id);
-    control(robot_to_odom, (odom->header.stamp - prev_odom_stamp_).toSec());
+    const double dt = std::min(max_dt_, (odom->header.stamp - prev_odom_stamp_).toSec());
+    control(robot_to_odom, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
 }
