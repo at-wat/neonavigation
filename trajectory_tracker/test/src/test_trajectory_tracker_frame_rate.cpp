@@ -64,7 +64,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   ASSERT_NEAR(pos_[0], 0.5, 1e-2);
   ASSERT_NEAR(pos_[1], 0.0, 1e-2);
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
-  // Parameter "hz" is set to 30.0, but the actual frame rate is around 50.0 as it is syncronized with tf.
+  // Parameter "hz" is set to 30.0, but the actual frame rate is around 50.0 as it is syncronized with the odometry.
   ASSERT_NEAR(50.0, frame_rate, 10.0);
 }
 

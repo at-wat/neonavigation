@@ -131,7 +131,7 @@ private:
   mutable boost::recursive_mutex parameter_server_mutex_;
   dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
 
-  bool sync_with_odom_;
+  bool use_odom_;
   ros::Time prev_odom_stamp_;
 
   template <typename MSG_TYPE>
@@ -154,7 +154,7 @@ TrackerNode::TrackerNode()
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
   neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
   pnh_.param("hz", hz_, 50.0);
-  pnh_.param("sync_with_odom", sync_with_odom_, false);
+  pnh_.param("use_odom", use_odom_, false);
   pnh_.param("max_dt", max_dt_, 0.2);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
@@ -172,7 +172,7 @@ TrackerNode::TrackerNode()
       pnh_, topic_cmd_vel_, 10);
   pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10, true);
   pub_tracking_ = pnh_.advertise<geometry_msgs::PoseStamped>("tracking", 10, true);
-  if (sync_with_odom_)
+  if (use_odom_)
   {
     sub_odom_ = nh_.subscribe<nav_msgs::Odometry>("odom", 10, &TrackerNode::cbOdometry, this,
                                                   ros::TransportHints().reliable().tcpNoDelay(true));
@@ -335,7 +335,7 @@ void TrackerNode::cbTimer(const ros::TimerEvent& event)
 void TrackerNode::spin()
 {
   ros::Timer timer;
-  if (!sync_with_odom_)
+  if (!use_odom_)
   {
     timer = nh_.createTimer(ros::Duration(1.0 / hz_), &TrackerNode::cbTimer, this);
   }

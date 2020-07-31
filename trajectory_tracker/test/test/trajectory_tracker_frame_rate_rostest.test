@@ -20,7 +20,7 @@
     <param name="k_avel" value="4.0" />
     <param name="gain_at_vel" value="1.0" />
     <param name="dist_lim" value="0.5" />
-    <param name="sync_with_odom" value="true" />
+    <param name="use_odom" value="true" />
     <param name="hz" value="30.0"/>
   </node>
 </launch>
