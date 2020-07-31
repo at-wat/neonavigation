@@ -20,6 +20,8 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
+  find_package(std_msgs REQUIRED)
+  find_package(std_srvs REQUIRED)
   add_subdirectory(test)
 
   find_package(roslint REQUIRED)
