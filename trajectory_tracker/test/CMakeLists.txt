@@ -1,3 +1,5 @@
+include_directories(include)
+
 catkin_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
 target_link_libraries(test_${PROJECT_NAME}_filter ${catkin_LIBRARIES})
 
@@ -13,3 +15,8 @@ add_rostest_gtest(test_trajectory_tracker test/trajectory_tracker_rostest.test
     src/test_trajectory_tracker.cpp)
 target_link_libraries(test_trajectory_tracker ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(test_trajectory_tracker trajectory_tracker)
+
+add_rostest_gtest(test_trajectory_tracker_frame_rate test/trajectory_tracker_frame_rate_rostest.test
+    src/test_trajectory_tracker_frame_rate.cpp)
+target_link_libraries(test_trajectory_tracker_frame_rate ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(test_trajectory_tracker_frame_rate trajectory_tracker)
