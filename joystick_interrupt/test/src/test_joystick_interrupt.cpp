@@ -328,7 +328,7 @@ TEST_F(JoystickMuxTest, Interrupt)
       rate.sleep();
       ros::spinOnce();
 
-      if (i < 3)
+      if (i < 5)
         continue;
 
       ASSERT_TRUE(static_cast<bool>(msg_)) << "button: " << btn;
@@ -359,7 +359,7 @@ TEST_F(JoystickMuxTest, Timeout)
     rate.sleep();
     ros::spinOnce();
 
-    if (i < 3)
+    if (i < 5)
       continue;
 
     ASSERT_TRUE(static_cast<bool>(msg_));
