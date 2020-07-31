@@ -12,6 +12,8 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * ~/path (new: path) [nav_msgs::Path]
 * ~/speed (new: speed) [std_msgs::Float32]
 * /tf
+* /odom [nav_msgs::Odometry] (Optional: this topic is subscribed only when "use_odom" option is true)
+
 
 ### Published topics
 
@@ -59,6 +61,8 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "allow_backward" (bool, default: true)
 * "limit_vel_by_avel" (bool, default: false)
 * "check_old_path" (bool, default: false)
+* "use_odom" (bool, default: false)
+  > When `use_odom` is false, trajectory_tracker publishes command velocities at a constant rate specified in "hz" option. When `use_odom` is true, it publishes command velocities just after odometry is updated. "hz" option is ignored in this mode.
 
 ----
 

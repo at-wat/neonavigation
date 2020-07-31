@@ -111,10 +111,12 @@ private:
   bool limit_vel_by_avel_;
   bool check_old_path_;
   double epsilon_;
+  double max_dt_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
   ros::Subscriber sub_vel_;
+  ros::Subscriber sub_odom_;
   ros::Publisher pub_vel_;
   ros::Publisher pub_status_;
   ros::Publisher pub_tracking_;
@@ -129,11 +131,15 @@ private:
   mutable boost::recursive_mutex parameter_server_mutex_;
   dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
 
+  bool use_odom_;
+  ros::Time prev_odom_stamp_;
+
   template <typename MSG_TYPE>
   void cbPath(const typename MSG_TYPE::ConstPtr&);
   void cbSpeed(const std_msgs::Float32::ConstPtr&);
+  void cbOdometry(const nav_msgs::Odometry::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
-  void control();
+  void control(const tf2::Stamped<tf2::Transform>&, const double);
   void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
@@ -148,6 +154,8 @@ TrackerNode::TrackerNode()
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
   neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
   pnh_.param("hz", hz_, 50.0);
+  pnh_.param("use_odom", use_odom_, false);
+  pnh_.param("max_dt", max_dt_, 0.2);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
       nh_, "path",
@@ -164,6 +172,11 @@ TrackerNode::TrackerNode()
       pnh_, topic_cmd_vel_, 10);
   pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryTrackerStatus>("status", 10, true);
   pub_tracking_ = pnh_.advertise<geometry_msgs::PoseStamped>("tracking", 10, true);
+  if (use_odom_)
+  {
+    sub_odom_ = nh_.subscribe<nav_msgs::Odometry>("odom", 10, &TrackerNode::cbOdometry, this,
+                                                  ros::TransportHints().reliable().tcpNoDelay(true));
+  }
 
   boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
   parameter_server_.setCallback(boost::bind(&TrackerNode::cbParameter, this, _1, _2));
@@ -269,19 +282,67 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   if (in_place_turning)
     path_.push_back(in_place_turn_end);
 }
+
+void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
+{
+  if (odom->header.frame_id != frame_odom_)
+  {
+    ROS_WARN("frame_odom is invalid. Update from \"%s\" to \"%s\"", frame_odom_.c_str(), odom->header.frame_id.c_str());
+    frame_odom_ = odom->header.frame_id;
+  }
+  if (odom->child_frame_id != frame_robot_)
+  {
+    ROS_WARN("frame_robot is invalid. Update from \"%s\" to \"%s\"",
+             frame_robot_.c_str(), odom->child_frame_id.c_str());
+    frame_robot_ = odom->child_frame_id;
+  }
+
+  if (prev_odom_stamp_ != ros::Time())
+  {
+    tf2::Transform odom_to_robot;
+    tf2::fromMsg(odom->pose.pose, odom_to_robot);
+    const tf2::Stamped<tf2::Transform> robot_to_odom(
+        odom_to_robot.inverse(), odom->header.stamp, odom->header.frame_id);
+    const double dt = std::min(max_dt_, (odom->header.stamp - prev_odom_stamp_).toSec());
+    control(robot_to_odom, dt);
+  }
+  prev_odom_stamp_ = odom->header.stamp;
+}
+
 void TrackerNode::cbTimer(const ros::TimerEvent& event)
 {
-  control();
+  try
+  {
+    tf2::Stamped<tf2::Transform> transform;
+    tf2::fromMsg(
+        tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
+    control(transform, 1.0 / hz_);
+  }
+  catch (tf2::TransformException& e)
+  {
+    ROS_WARN("TF exception: %s", e.what());
+    trajectory_tracker_msgs::TrajectoryTrackerStatus status;
+    status.header.stamp = ros::Time::now();
+    status.distance_remains = 0.0;
+    status.angle_remains = 0.0;
+    status.path_header = path_header_;
+    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
+    pub_status_.publish(status);
+    return;
+  }
 }
 
 void TrackerNode::spin()
 {
-  ros::Timer timer = nh_.createTimer(ros::Duration(1.0 / hz_), &TrackerNode::cbTimer, this);
-
+  ros::Timer timer;
+  if (!use_odom_)
+  {
+    timer = nh_.createTimer(ros::Duration(1.0 / hz_), &TrackerNode::cbTimer, this);
+  }
   ros::spin();
 }
 
-void TrackerNode::control()
+void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, const double dt)
 {
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
   status.header.stamp = ros::Time::now();
@@ -303,16 +364,14 @@ void TrackerNode::control()
   }
   // Transform
   trajectory_tracker::Path2D lpath;
-  tf2::Stamped<tf2::Transform> transform;
   double transform_delay = 0;
+  tf2::Stamped<tf2::Transform> transform = robot_to_odom;
   try
   {
-    tf2::Stamped<tf2::Transform> trans_odom;
+    tf2::Stamped<tf2::Transform> odom_to_path;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
-    tf2::fromMsg(
-        tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, ros::Time(0)), trans_odom);
-    transform *= trans_odom;
+        tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, ros::Time(0)), odom_to_path);
+    transform *= odom_to_path;
     transform_delay = (ros::Time::now() - transform.stamp_).toSec();
     if (std::abs(transform_delay) > 0.1 && check_old_path_)
     {
@@ -415,7 +474,6 @@ void TrackerNode::control()
   bool arrive_local_goal(false);
   bool in_place_turning = (vec[1] == 0.0 && vec[0] == 0.0);
 
-  const float dt = 1.0 / hz_;
   // Stop and rotate
   const bool large_angle_error = std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle);
   if (large_angle_error ||
