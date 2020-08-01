@@ -291,7 +291,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
         ros::Rate rate(50);
         const ros::Time start = ros::Time::now();
-        while (ros::ok())
+        for (int i = 0; ros::ok(); ++i)
         {
           ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0)) << condition_name.str();
 
@@ -299,13 +299,17 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
           rate.sleep();
           ros::spinOnce();
 
-          if (cmd_vel_)
+          if (cmd_vel_ && i > 5)
           {
-            ASSERT_GT(cmd_vel_->angular.z * angles.back(), -1e-2) << condition_name.str();
+            ASSERT_GT(cmd_vel_->angular.z * std::copysign(1.0, angles.back()), -1e-2)
+                << "[overshoot detected] "
+                << condition_name.str();
           }
-          if (status_)
+          if (status_ && i > 5)
           {
-            ASSERT_LT(status_->angle_remains * angles.back(), 1e-2) << condition_name.str();
+            ASSERT_LT(status_->angle_remains * std::copysign(1.0, angles.back()), 1e-2)
+                << "[overshoot detected] "
+                << condition_name.str();
           }
 
           if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
@@ -322,7 +326,9 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
           }
 
           // Check multiple times to assert overshoot.
-          ASSERT_NEAR(yaw_, init_yaw + angles.back(), 1e-2) << condition_name.str();
+          ASSERT_NEAR(yaw_, init_yaw + angles.back(), 1e-2)
+              << "[large yaw after goal] "
+              << condition_name.str();
           ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
         }
       }
