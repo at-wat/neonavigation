@@ -71,7 +71,7 @@ private:
   ros::Time initial_cmd_vel_time_;
   int cmd_vel_count_;
 
-  std::list<geometry_msgs::TransformStamped> odom_buffer_;
+  std::list<nav_msgs::Odometry> odom_buffer_;
 
 protected:
   std_msgs::Header last_path_header_;
@@ -222,42 +222,49 @@ public:
     const ros::Time now = ros::Time::now();
 
     const Eigen::Quaterniond q(Eigen::AngleAxisd(yaw_, Eigen::Vector3d(0, 0, 1)));
-    geometry_msgs::TransformStamped trans;
-    trans.header.frame_id = "odom";
-    trans.header.stamp = now;
-    trans.child_frame_id = "base_link";
-    trans.transform.translation.x = pos_[0];
-    trans.transform.translation.y = pos_[1];
-    trans.transform.rotation.x = q.x();
-    trans.transform.rotation.y = q.y();
-    trans.transform.rotation.z = q.z();
-    trans.transform.rotation.w = q.w();
-    odom_buffer_.push_back(trans);
+
+    nav_msgs::Odometry odom;
+    odom.header.frame_id = "odom";
+    odom.header.stamp = now;
+    odom.child_frame_id = "base_link";
+    odom.pose.pose.position.x = pos_[0];
+    odom.pose.pose.position.y = pos_[1];
+    odom.pose.pose.position.z = 0.0;
+    odom.pose.pose.orientation.x = q.x();
+    odom.pose.pose.orientation.y = q.y();
+    odom.pose.pose.orientation.z = q.z();
+    odom.pose.pose.orientation.w = q.w();
+    if (cmd_vel_)
+    {
+      odom.twist.twist.linear = cmd_vel_->linear;
+      odom.twist.twist.angular = cmd_vel_->angular;
+    }
+
+    odom_buffer_.push_back(odom);
 
     const ros::Time pub_time = now - delay_;
 
     while (odom_buffer_.size() > 0)
     {
-      geometry_msgs::TransformStamped trans = odom_buffer_.front();
-      if (trans.header.stamp > pub_time)
+      nav_msgs::Odometry odom = odom_buffer_.front();
+      if (odom.header.stamp > pub_time)
         break;
 
       odom_buffer_.pop_front();
 
-      nav_msgs::Odometry odom;
-      odom.header = trans.header;
-      odom.child_frame_id = trans.child_frame_id;
-      odom.pose.pose.position.x = pos_[0];
-      odom.pose.pose.position.y = pos_[1];
-      odom.pose.pose.position.z = 0.0;
-      odom.pose.pose.orientation.x = q.x();
-      odom.pose.pose.orientation.y = q.y();
-      odom.pose.pose.orientation.z = q.z();
-      odom.pose.pose.orientation.w = q.w();
-
-      if (trans.header.stamp != trans_stamp_last_)
+      if (odom.header.stamp != trans_stamp_last_)
       {
+        geometry_msgs::TransformStamped trans;
+        trans.header = odom.header;
         trans.header.stamp += ros::Duration(0.1);
+        trans.child_frame_id = odom.child_frame_id;
+        trans.transform.translation.x = odom.pose.pose.position.x;
+        trans.transform.translation.y = odom.pose.pose.position.y;
+        trans.transform.rotation.x = odom.pose.pose.orientation.x;
+        trans.transform.rotation.y = odom.pose.pose.orientation.y;
+        trans.transform.rotation.z = odom.pose.pose.orientation.z;
+        trans.transform.rotation.w = odom.pose.pose.orientation.w;
+
         tfb_.sendTransform(trans);
         pub_odom_.publish(odom);
       }
