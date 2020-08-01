@@ -62,6 +62,11 @@ add_rostest(test/navigation_rostest.test
   DEPENDENCIES test_navigate
 )
 
+add_rostest(test/navigation_rostest.test
+  ARGS with_tolerance:=true
+  DEPENDENCIES test_navigate
+)
+
 add_rostest(test/navigation_compat_rostest.test
   DEPENDENCIES test_navigate
 )
