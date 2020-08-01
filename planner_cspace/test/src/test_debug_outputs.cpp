@@ -28,9 +28,11 @@
  */
 
 #include <ros/ros.h>
+
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
+#include <sensor_msgs/PointCloud.h>
 
 #include <gtest/gtest.h>
 
@@ -47,6 +49,7 @@ public:
     sub_path_ = nh_.subscribe("path", 1, &DebugOutputsTest::cbPath, this);
     sub_hysteresis_ = nh_.subscribe("/planner_3d/hysteresis_map", 1, &DebugOutputsTest::cbHysteresis, this);
     sub_remembered_ = nh_.subscribe("/planner_3d/remembered_map", 1, &DebugOutputsTest::cbRemembered, this);
+    sub_distance_ = nh_.subscribe("/planner_3d/distance_map", 1, &DebugOutputsTest::cbDistance, this);
 
     // Wait planner
     while (ros::ok())
@@ -58,8 +61,10 @@ public:
     }
     map_hysteresis_ = nullptr;
     map_remembered_ = nullptr;
+    map_distance_ = nullptr;
     cnt_hysteresis_ = 0;
     cnt_remembered_ = 0;
+    cnt_distance_ = 0;
 
     // Wait receiving the messages
     while (ros::ok())
@@ -104,6 +109,11 @@ protected:
     cnt_remembered_++;
     map_remembered_ = msg;
   }
+  void cbDistance(const sensor_msgs::PointCloud::ConstPtr& msg)
+  {
+    cnt_distance_++;
+    map_distance_ = msg;
+  }
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
     if (msg->error == planner_cspace_msgs::PlannerStatus::GOING_WELL &&
@@ -122,15 +132,18 @@ protected:
   ros::NodeHandle nh_;
   nav_msgs::OccupancyGrid::ConstPtr map_hysteresis_;
   nav_msgs::OccupancyGrid::ConstPtr map_remembered_;
+  sensor_msgs::PointCloud::ConstPtr map_distance_;
   nav_msgs::Path::ConstPtr path_;
   ros::Subscriber sub_status_;
   ros::Subscriber sub_path_;
   ros::Subscriber sub_hysteresis_;
   ros::Subscriber sub_remembered_;
+  ros::Subscriber sub_distance_;
   int cnt_planner_ready_;
   int cnt_path_;
   int cnt_hysteresis_;
   int cnt_remembered_;
+  int cnt_distance_;
 };
 
 struct PositionAndValue
@@ -195,6 +208,24 @@ TEST_F(DebugOutputsTest, Remembered)
   if (::testing::Test::HasFailure())
   {
     showMap(map_remembered_);
+  }
+}
+
+TEST_F(DebugOutputsTest, Distance)
+{
+  ASSERT_TRUE(static_cast<bool>(map_distance_));
+
+  // Robot is at (2.5, 0.5) and goal is at (1.0, 0.5)
+  for (size_t i = 0; i < map_distance_->points.size(); ++i)
+  {
+    const float x = map_distance_->points[i].x;
+    const float y = map_distance_->points[i].y;
+    const float d = map_distance_->channels[0].values[i];
+    if (std::abs(y - 0.5) < 0.05)
+    {
+      const float dist_from_goal = std::abs(x - 1.0);
+      ASSERT_NEAR(dist_from_goal, d, 0.15);
+    }
   }
 }
 

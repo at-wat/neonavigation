@@ -683,6 +683,11 @@ protected:
       sensor_msgs::PointCloud distance_map;
       distance_map.header = map_header_;
       distance_map.header.stamp = ros::Time::now();
+      distance_map.channels.resize(1);
+      distance_map.channels[0].name = "distance";
+      distance_map.points.reserve(1024);
+      distance_map.channels[0].values.reserve(1024);
+      const float k_dist = map_info_.linear_resolution * cc_.max_vel_;
       for (Astar::Vec p(0, 0, 0); p[1] < cost_estim_cache_.size()[1]; p[1]++)
       {
         for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
@@ -697,6 +702,7 @@ protected:
             continue;
           point.z = cost_estim_cache_[p] / 500;
           distance_map.points.push_back(point);
+          distance_map.channels[0].values.push_back(cost_estim_cache_[p] * k_dist);
         }
       }
       pub_distance_map_.publish(distance_map);
