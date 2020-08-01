@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <launch>
+  <env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_frame_rate" />
+
   <param name="neonavigation_compatible" value="1" />
   <param name="use_sim_time" value="false" />
 

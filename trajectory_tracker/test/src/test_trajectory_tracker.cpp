@@ -312,15 +312,19 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
             break;
         }
         ASSERT_TRUE(static_cast<bool>(cmd_vel_)) << condition_name.str();
-        for (int i = 0; i < 25; ++i)
+        for (int j = 0; j < 5; ++j)
         {
-          publishTransform();
-          rate.sleep();
-          ros::spinOnce();
-        }
+          for (int i = 0; i < 5; ++i)
+          {
+            publishTransform();
+            rate.sleep();
+            ros::spinOnce();
+          }
 
-        ASSERT_NEAR(yaw_, init_yaw + angles.back(), 1e-2) << condition_name.str();
-        ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
+          // Check multiple times to assert overshoot.
+          ASSERT_NEAR(yaw_, init_yaw + angles.back(), 1e-2) << condition_name.str();
+          ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
+        }
       }
     }
   }

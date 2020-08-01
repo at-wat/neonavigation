@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <list>
 
 #include <boost/thread.hpp>
 
@@ -57,6 +58,7 @@ class TrajectoryTrackerTest : public ::testing::Test
 {
 private:
   ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   ros::Subscriber sub_cmd_vel_;
   ros::Subscriber sub_status_;
   ros::Publisher pub_path_;
@@ -68,6 +70,8 @@ private:
 
   ros::Time initial_cmd_vel_time_;
   int cmd_vel_count_;
+
+  std::list<geometry_msgs::TransformStamped> odom_buffer_;
 
 protected:
   std_msgs::Header last_path_header_;
@@ -96,9 +100,11 @@ public:
   double yaw_;
   trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr status_;
   geometry_msgs::Twist::ConstPtr cmd_vel_;
+  ros::Duration delay_;
 
   TrajectoryTrackerTest()
     : nh_("")
+    , pnh_("~")
   {
     sub_cmd_vel_ = nh_.subscribe(
         "cmd_vel", 1, &TrajectoryTrackerTest::cbCmdVel, this);
@@ -107,6 +113,10 @@ public:
     pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
     pub_path_vel_ = nh_.advertise<trajectory_tracker_msgs::PathWithVelocity>("path_velocity", 1, true);
     pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 10, true);
+
+    double delay;
+    pnh_.param("odom_delay", delay, 0.0);
+    delay_ = ros::Duration(delay);
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
@@ -209,10 +219,12 @@ public:
   }
   void publishTransform()
   {
+    const ros::Time now = ros::Time::now();
+
     const Eigen::Quaterniond q(Eigen::AngleAxisd(yaw_, Eigen::Vector3d(0, 0, 1)));
     geometry_msgs::TransformStamped trans;
     trans.header.frame_id = "odom";
-    trans.header.stamp = ros::Time::now() + ros::Duration(0.1);
+    trans.header.stamp = now;
     trans.child_frame_id = "base_link";
     trans.transform.translation.x = pos_[0];
     trans.transform.translation.y = pos_[1];
@@ -220,24 +232,37 @@ public:
     trans.transform.rotation.y = q.y();
     trans.transform.rotation.z = q.z();
     trans.transform.rotation.w = q.w();
+    odom_buffer_.push_back(trans);
 
-    nav_msgs::Odometry odom;
-    odom.header = trans.header;
-    odom.child_frame_id = trans.child_frame_id;
-    odom.pose.pose.position.x = pos_[0];
-    odom.pose.pose.position.y = pos_[1];
-    odom.pose.pose.position.z = 0.0;
-    odom.pose.pose.orientation.x = q.x();
-    odom.pose.pose.orientation.y = q.y();
-    odom.pose.pose.orientation.z = q.z();
-    odom.pose.pose.orientation.w = q.w();
+    const ros::Time pub_time = now - delay_;
 
-    if (trans.header.stamp != trans_stamp_last_)
+    while (odom_buffer_.size() > 0)
     {
-      tfb_.sendTransform(trans);
-      pub_odom_.publish(odom);
+      geometry_msgs::TransformStamped trans = odom_buffer_.front();
+      if (trans.header.stamp > pub_time)
+        break;
+
+      odom_buffer_.pop_front();
+
+      nav_msgs::Odometry odom;
+      odom.header = trans.header;
+      odom.child_frame_id = trans.child_frame_id;
+      odom.pose.pose.position.x = pos_[0];
+      odom.pose.pose.position.y = pos_[1];
+      odom.pose.pose.position.z = 0.0;
+      odom.pose.pose.orientation.x = q.x();
+      odom.pose.pose.orientation.y = q.y();
+      odom.pose.pose.orientation.z = q.z();
+      odom.pose.pose.orientation.w = q.w();
+
+      if (trans.header.stamp != trans_stamp_last_)
+      {
+        trans.header.stamp += ros::Duration(0.1);
+        tfb_.sendTransform(trans);
+        pub_odom_.publish(odom);
+      }
+      trans_stamp_last_ = odom.header.stamp;
     }
-    trans_stamp_last_ = trans.header.stamp;
   }
   double getCmdVelFrameRate() const
   {

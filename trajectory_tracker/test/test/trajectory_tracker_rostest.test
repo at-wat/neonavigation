@@ -1,9 +1,15 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="odom_delay" default="0.0" />
+
+  <env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_d$(arg odom_delay)" />
+
   <param name="neonavigation_compatible" value="1" />
   <param name="use_sim_time" value="true" /><!-- clock is provided by the test node -->
 
-  <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="120.0" />
+  <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="120.0">
+    <param name="odom_delay" value="$(arg odom_delay)" />
+  </test>
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="trajectory_tracker" output="screen">
     <param name="max_vel" value="1.0" />
