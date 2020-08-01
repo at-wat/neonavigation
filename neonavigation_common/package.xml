@@ -13,4 +13,6 @@
   <depend>roscpp</depend>
   <test_depend>roslint</test_depend>
   <test_depend>rostest</test_depend>
+  <test_depend>std_srvs</test_depend>
+  <test_depend>std_msgs</test_depend>
 </package>
