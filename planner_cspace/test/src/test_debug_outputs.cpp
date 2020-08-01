@@ -216,7 +216,7 @@ TEST_F(DebugOutputsTest, Distance)
   ASSERT_TRUE(static_cast<bool>(map_distance_));
 
   // Robot is at (2.5, 0.5) and goal is at (1.0, 0.5)
-  for (int i = 0; i < map_distance_->points.size(); ++i)
+  for (size_t i = 0; i < map_distance_->points.size(); ++i)
   {
     const float x = map_distance_->points[i].x;
     const float y = map_distance_->points[i].y;
