@@ -132,6 +132,7 @@ private:
   dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
 
   bool use_odom_;
+  bool predict_odom_;
   ros::Time prev_odom_stamp_;
 
   template <typename MSG_TYPE>
@@ -155,6 +156,7 @@ TrackerNode::TrackerNode()
   neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
   pnh_.param("hz", hz_, 50.0);
   pnh_.param("use_odom", use_odom_, false);
+  pnh_.param("predict_odom", predict_odom_, true);
   pnh_.param("max_dt", max_dt_, 0.2);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
@@ -299,11 +301,28 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
 
   if (prev_odom_stamp_ != ros::Time())
   {
-    tf2::Transform odom_to_robot;
-    tf2::fromMsg(odom->pose.pose, odom_to_robot);
-    const tf2::Stamped<tf2::Transform> robot_to_odom(
-        odom_to_robot.inverse(), odom->header.stamp, odom->header.frame_id);
     const double dt = std::min(max_dt_, (odom->header.stamp - prev_odom_stamp_).toSec());
+    nav_msgs::Odometry odom_compensated = *odom;
+    if (predict_odom_)
+    {
+      const double predict_dt = (ros::Time::now() - odom->header.stamp).toSec();
+      tf2::Transform trans;
+      tf2::fromMsg(odom->pose.pose, trans);
+      trans.setOrigin(
+          trans.getOrigin() +
+          tf2::Transform(trans.getRotation()) * tf2::Vector3(odom->twist.twist.linear.x * predict_dt, 0, 0));
+      trans.setRotation(
+          trans.getRotation() *
+          tf2::Quaternion(tf2::Vector3(0, 0, 1), odom->twist.twist.angular.z * predict_dt));
+      tf2::toMsg(trans, odom_compensated.pose.pose);
+    }
+
+    tf2::Transform odom_to_robot;
+    tf2::fromMsg(odom_compensated.pose.pose, odom_to_robot);
+    const tf2::Stamped<tf2::Transform> robot_to_odom(
+        odom_to_robot.inverse(),
+        odom->header.stamp, odom->header.frame_id);
+
     control(robot_to_odom, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
