@@ -69,7 +69,9 @@ then
   gcov $(find . -name "*.gcda") -p -c -l > /dev/null
 
   rm -rf build/neonavigation_rviz_plugins build/neonavigation_msgs
-  bash <(curl -s https://codecov.io/bash) \
+  download_codecov='wget --timeout=10 -O /tmp/codecov https://codecov.io/bash'
+  ${download_codecov} || ${download_codecov} || ${download_codecov}
+  bash /tmp/codecov \
     -Z \
     -X gcov
 fi
