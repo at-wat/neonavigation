@@ -5,9 +5,9 @@ addons:
   apt:
     packages:
       - python-pip
- cache:
-    directories:
-      - ${HOME}/.cache/docker
+cache:
+  directories:
+    - ${HOME}/.cache/docker
 branches:
   only:
     - master
