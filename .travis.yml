@@ -54,11 +54,14 @@ jobs:
         - |
           docker run -it --rm \
             -v $(pwd):/src:ro \
+            -t ${PACKAGE_NAME}:${ROS_DISTRO_TARGET} \
             alpineros/ros-abuild:3.11-noetic \
             && gh-pr-comment "${BUILD_LINK} PASSED on ${ROS_DISTRO_TARGET}" \
               "Tested on Alpine ROS" \
             || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO_TARGET}" \
               "Tested on Alpine ROS"; false) \
+      before_cache:
+        - .travis/save_cache.sh ${PACKAGE_NAME}:${ROS_DISTRO_TARGET}
     - stage: prerelease-test
       if: head_branch =~ ^release-.*$
       env:
