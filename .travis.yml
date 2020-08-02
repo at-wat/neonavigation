@@ -24,7 +24,6 @@ before_install:
   - pip install --user gh-pr-comment
 script:
   - docker build
-    --cache-from ${DOCKER_CACHE_REGISTRY}:${ROS_DISTRO_TARGET}
     -t ${PACKAGE_NAME}:${ROS_DISTRO_TARGET}
     -f .travis/Dockerfile
     --build-arg ROS_DISTRO=${ROS_DISTRO_TARGET}
