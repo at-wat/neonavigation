@@ -75,6 +75,9 @@ private:
 
 protected:
   std_msgs::Header last_path_header_;
+  double error_lin_;
+  double error_large_lin_;
+  double error_ang_;
 
 private:
   void cbStatus(const trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr& msg)
@@ -117,6 +120,9 @@ public:
     double delay;
     pnh_.param("odom_delay", delay, 0.0);
     delay_ = ros::Duration(delay);
+    pnh_.param("error_lin", error_lin_, 0.01);
+    pnh_.param("error_large_lin", error_large_lin_, 0.1);
+    pnh_.param("error_ang", error_ang_, 0.01);
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
