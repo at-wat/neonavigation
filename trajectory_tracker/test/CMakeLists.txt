@@ -17,7 +17,7 @@ target_link_libraries(test_trajectory_tracker ${catkin_LIBRARIES} ${Boost_LIBRAR
 add_dependencies(test_trajectory_tracker trajectory_tracker)
 
 add_rostest(test/trajectory_tracker_rostest.test
-  ARGS odom_delay:=0.05 use_odom:=true
+  ARGS odom_delay:=0.04 use_odom:=true
   DEPENDENCIES test_trajectory_tracker
 )
 
