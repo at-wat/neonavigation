@@ -40,7 +40,6 @@ script:
     -e TRAVIS_BUILD_WEB_URL
     $(bash /tmp/codecovenv)
     ${PACKAGE_NAME}:${ROS_DISTRO_TARGET} /catkin_ws/src/${PACKAGE_NAME}/.travis/test.sh
-  - bash -c "[ x${COVERAGE_TEST} != xtrue ] && .travis/save_cache.sh || true"
 before_cache:
   - .travis/save_cache.sh ${PACKAGE_NAME}:${ROS_DISTRO_TARGET}
 
