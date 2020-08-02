@@ -55,16 +55,23 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
     if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
       break;
   }
-  for (int i = 0; i < 25; ++i)
+  for (int j = 0; j < 5; ++j)
   {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
+    for (int i = 0; i < 5; ++i)
+    {
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+    }
 
-  ASSERT_NEAR(yaw_, 0.0, 1e-2);
-  ASSERT_NEAR(pos_[0], 0.5, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+    // Check multiple times to assert overshoot.
+    ASSERT_NEAR(yaw_, 0.0, 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[0], 0.5, 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[1], 0.0, 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+  }
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
@@ -101,16 +108,26 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
       if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
         break;
     }
-    for (int i = 0; i < 25; ++i)
+    for (int j = 0; j < 5; ++j)
     {
-      publishTransform();
-      rate.sleep();
-      ros::spinOnce();
-    }
+      for (int i = 0; i < 5; ++i)
+      {
+        publishTransform();
+        rate.sleep();
+        ros::spinOnce();
+      }
 
-    ASSERT_NEAR(yaw_, 0.0, 1e-2) << info_message;
-    ASSERT_NEAR(pos_[0], 0.5, 1e-2) << info_message;
-    ASSERT_NEAR(pos_[1], 0.0, 1e-2) << info_message;
+      // Check multiple times to assert overshoot.
+      ASSERT_NEAR(yaw_, 0.0, 1e-2)
+          << "[overshoot after goal (" << j << ")] "
+          << info_message;
+      ASSERT_NEAR(pos_[0], 0.5, 1e-2)
+          << "[overshoot after goal (" << j << ")] "
+          << info_message;
+      ASSERT_NEAR(pos_[1], 0.0, 1e-2)
+          << "[overshoot after goal (" << j << ")] "
+          << info_message;
+    }
     ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp) << info_message;
   }
 }
@@ -146,16 +163,26 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
       if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
         break;
     }
-    for (int i = 0; i < 25; ++i)
+    for (int j = 0; j < 5; ++j)
     {
-      publishTransform();
-      rate.sleep();
-      ros::spinOnce();
-    }
+      for (int i = 0; i < 5; ++i)
+      {
+        publishTransform();
+        rate.sleep();
+        ros::spinOnce();
+      }
 
-    EXPECT_NEAR(yaw_, 0.0, 1e-2) << info_message;
-    EXPECT_NEAR(pos_[0], path_length, 1e-2) << info_message;
-    EXPECT_NEAR(pos_[1], 0.0, 1e-2) << info_message;
+      // Check multiple times to assert overshoot.
+      EXPECT_NEAR(yaw_, 0.0, 1e-2)
+          << "[overshoot after goal (" << j << ")] "
+          << info_message;
+      EXPECT_NEAR(pos_[0], path_length, 1e-2)
+          << "[overshoot after goal (" << j << ")] "
+          << info_message;
+      EXPECT_NEAR(pos_[1], 0.0, 1e-2)
+          << "[overshoot after goal (" << j << ")] "
+          << info_message;
+    }
     ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
   }
 }
@@ -194,16 +221,23 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
     if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
       break;
   }
-  for (int i = 0; i < 25; ++i)
+  for (int j = 0; j < 5; ++j)
   {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
+    for (int i = 0; i < 5; ++i)
+    {
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+    }
 
-  ASSERT_NEAR(yaw_, 0.0, 1e-2);
-  ASSERT_NEAR(pos_[0], 1.5, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+    // Check multiple times to assert overshoot.
+    ASSERT_NEAR(yaw_, 0.0, 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[0], 1.5, 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[1], 0.0, 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+  }
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
@@ -237,16 +271,23 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
     if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
       break;
   }
-  for (int i = 0; i < 25; ++i)
+  for (int j = 0; j < 5; ++j)
   {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
+    for (int i = 0; i < 5; ++i)
+    {
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+    }
 
-  ASSERT_NEAR(yaw_, p[2], 1e-2);
-  ASSERT_NEAR(pos_[0], p[0], 1e-1);
-  ASSERT_NEAR(pos_[1], p[1], 1e-1);
+    // Check multiple times to assert overshoot.
+    ASSERT_NEAR(yaw_, p[2], 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[0], p[0], 1e-1)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[1], p[1], 1e-1)
+        << "[overshoot after goal (" << j << ")] ";
+  }
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
@@ -327,10 +368,10 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
           // Check multiple times to assert overshoot.
           ASSERT_NEAR(yaw_, init_yaw + angles.back(), 1e-2)
-              << "[large yaw after goal] "
+              << "[overshoot after goal (" << j << ")] "
               << condition_name.str();
-          ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
         }
+        ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
       }
     }
   }
@@ -366,16 +407,23 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
     if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
       break;
   }
-  for (int i = 0; i < 25; ++i)
+  for (int j = 0; j < 5; ++j)
   {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
+    for (int i = 0; i < 5; ++i)
+    {
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+    }
 
-  ASSERT_NEAR(yaw_, p[2], 1e-2);
-  ASSERT_NEAR(pos_[0], p[0], 1e-1);
-  ASSERT_NEAR(pos_[1], p[1], 1e-1);
+    // Check multiple times to assert overshoot.
+    ASSERT_NEAR(yaw_, p[2], 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[0], p[0], 1e-1)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[1], p[1], 1e-1)
+        << "[overshoot after goal (" << j << ")] ";
+  }
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
@@ -421,16 +469,23 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     else
       publishPath(poses);
   }
-  for (int i = 0; i < 25; ++i)
+  for (int j = 0; j < 5; ++j)
   {
-    publishTransform();
-    rate.sleep();
-    ros::spinOnce();
-  }
+    for (int i = 0; i < 5; ++i)
+    {
+      publishTransform();
+      rate.sleep();
+      ros::spinOnce();
+    }
 
-  ASSERT_NEAR(yaw_, p[2], 1e-2);
-  ASSERT_NEAR(pos_[0], p[0], 1e-1);
-  ASSERT_NEAR(pos_[1], p[1], 1e-1);
+    // Check multiple times to assert overshoot.
+    ASSERT_NEAR(yaw_, p[2], 1e-2)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[0], p[0], 1e-1)
+        << "[overshoot after goal (" << j << ")] ";
+    ASSERT_NEAR(pos_[1], p[1], 1e-1)
+        << "[overshoot after goal (" << j << ")] ";
+  }
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
