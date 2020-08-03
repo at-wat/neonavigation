@@ -124,6 +124,8 @@ private:
   ros::NodeHandle pnh_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
+  ros::Timer odom_timeout_timer_;
+  double odom_timeout_sec_;
 
   trajectory_tracker::Path2D path_;
   std_msgs::Header path_header_;
@@ -140,6 +142,7 @@ private:
   void cbSpeed(const std_msgs::Float32::ConstPtr&);
   void cbOdometry(const nav_msgs::Odometry::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
+  void cbOdomTimeout(const ros::TimerEvent&);
   void control(const tf2::Stamped<tf2::Transform>&, const double);
   void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
@@ -158,6 +161,7 @@ TrackerNode::TrackerNode()
   pnh_.param("use_odom", use_odom_, false);
   pnh_.param("predict_odom", predict_odom_, true);
   pnh_.param("max_dt", max_dt_, 0.2);
+  pnh_.param("odom_timeout_sec", odom_timeout_sec_, 0.1);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(
       nh_, "path",
@@ -298,6 +302,18 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
              frame_robot_.c_str(), odom->child_frame_id.c_str());
     frame_robot_ = odom->child_frame_id;
   }
+  if (odom_timeout_sec_ != 0.0)
+  {
+    if (odom_timeout_timer_.isValid())
+    {
+      odom_timeout_timer_.setPeriod(ros::Duration(odom_timeout_sec_), true);
+    }
+    else
+    {
+      odom_timeout_timer_ =
+          nh_.createTimer(ros::Duration(odom_timeout_sec_), &TrackerNode::cbOdomTimeout, this, true, true);
+    }
+  }
 
   if (prev_odom_stamp_ != ros::Time())
   {
@@ -350,6 +366,25 @@ void TrackerNode::cbTimer(const ros::TimerEvent& event)
     pub_status_.publish(status);
     return;
   }
+}
+
+void TrackerNode::cbOdomTimeout(const ros::TimerEvent& event)
+{
+  ROS_WARN_STREAM("Odometry timeout. Last odometry stamp: " << prev_odom_stamp_);
+  v_lim_.clear();
+  w_lim_.clear();
+  geometry_msgs::Twist cmd_vel;
+  cmd_vel.linear.x = 0.0;
+  cmd_vel.angular.z = 0.0;
+  pub_vel_.publish(cmd_vel);
+
+  trajectory_tracker_msgs::TrajectoryTrackerStatus status;
+  status.header.stamp = ros::Time::now();
+  status.distance_remains = 0.0;
+  status.angle_remains = 0.0;
+  status.path_header = path_header_;
+  status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
+  pub_status_.publish(status);
 }
 
 void TrackerNode::spin()

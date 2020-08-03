@@ -31,7 +31,7 @@
 
 #include <trajectory_tracker_test.h>
 
-TEST_F(TrajectoryTrackerTest, StraightStop)
+TEST_F(TrajectoryTrackerTest, FrameRate)
 {
   initState(Eigen::Vector2d(0, 0), 0);
 
@@ -66,6 +66,32 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
   // Parameter "hz" is set to 30.0, but the actual frame rate is around 50.0 as it is syncronized with the odometry.
   ASSERT_NEAR(50.0, frame_rate, 10.0);
+}
+
+TEST_F(TrajectoryTrackerTest, Timeout)
+{
+  initState(Eigen::Vector2d(0, 0), 0);
+
+  std::vector<Eigen::Vector3d> poses;
+  for (double x = 0.0; x < 5.0; x += 0.01)
+    poses.push_back(Eigen::Vector3d(x, 0.0, 0.0));
+  poses.push_back(Eigen::Vector3d(5.0, 0.0, 0.0));
+  waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
+
+  ros::Rate rate(50);
+  for (int i = 0; i < 50; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+  // Wait until odometry timeout
+  ros::Duration(0.2).sleep();
+  ros::spinOnce();
+
+  ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);
+  ASSERT_FLOAT_EQ(cmd_vel_->angular.z, 0.0);
+  ASSERT_EQ(status_->status, trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
 }
 
 int main(int argc, char** argv)
