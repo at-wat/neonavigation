@@ -34,7 +34,9 @@ RUN apt-get -qq update \
     wget \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
-RUN pip install gh-pr-comment catkin_lint
+RUN pip install catkin_lint
+RUN curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh \
+  | sh -s latest /usr/local/bin
 
 RUN rosdep init \
   && rosdep update \
