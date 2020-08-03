@@ -1,10 +1,6 @@
 dist: bionic
 services: docker
 language: bash
-addons:
-  apt:
-    packages:
-      - python-pip
 
 env:
   global:
@@ -21,8 +17,9 @@ branches:
 
 before_install:
   - .travis/load_cache.sh
-  - pip install --user gh-pr-comment
+  - curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh | sh -s
 script:
+  - cp ~/.local/bin/gh-pr-comment .travis/
   - docker build
     --cache-from ${DOCKER_CACHE_REGISTRY}:${ROS_DISTRO_TARGET}
     -t ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET}
@@ -32,13 +29,10 @@ script:
     || (gh-pr-comment "[[#${TRAVIS_BUILD_NUMBER}](${TRAVIS_BUILD_WEB_URL})] FAILED on ${ROS_DISTRO_TARGET}" "docker build failed"; false)
   - travis_retry wget --timeout=10 -O /tmp/codecovenv https://codecov.io/env
   - docker run --rm
-    -e TRAVIS_PULL_REQUEST
-    -e TRAVIS_REPO_SLUG
-    -e TRAVIS_BOT_GITHUB_TOKEN
     -e COVERAGE_TEST
-    -e GITHUB_API_URL_BASE
     -e TRAVIS_BUILD_NUMBER
     -e TRAVIS_BUILD_WEB_URL
+    $(sh <(curl -s https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/env.sh))
     $(bash /tmp/codecovenv)
     ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET} /catkin_ws/src/${PACKAGE_NAME}/.travis/test.sh
   - bash -c "[ x${COVERAGE_TEST} != xtrue ] && .travis/save_cache.sh || true"
@@ -62,17 +56,17 @@ jobs:
       if: head_branch =~ ^release-.*$
       env:
         - ROS_DISTRO_TARGET=kinetic COVERAGE_TEST=false
-      before_install: pip install --user gh-pr-comment
+      before_install: curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh | sh -s
       script: .travis/prerelease_test.sh
     - stage: prerelease-test
       if: head_branch =~ ^release-.*$
       env:
         - ROS_DISTRO_TARGET=melodic COVERAGE_TEST=false
-      before_install: pip install --user gh-pr-comment
+      before_install: curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh | sh -s
       script: .travis/prerelease_test.sh
     - stage: prerelease-test
       if: head_branch =~ ^release-.*$
       env:
         - ROS_DISTRO_TARGET=noetic COVERAGE_TEST=false
-      before_install: pip install --user gh-pr-comment
+      before_install: curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh | sh -s
       script: .travis/prerelease_test.sh
