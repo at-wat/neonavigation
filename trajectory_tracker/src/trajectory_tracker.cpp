@@ -160,7 +160,7 @@ TrackerNode::TrackerNode()
   pnh_.param("hz", hz_, 50.0);
   pnh_.param("use_odom", use_odom_, false);
   pnh_.param("predict_odom", predict_odom_, true);
-  pnh_.param("max_dt", max_dt_, 0.2);
+  pnh_.param("max_dt", max_dt_, 0.1);
   pnh_.param("odom_timeout_sec", odom_timeout_sec_, 0.1);
 
   sub_path_ = neonavigation_common::compat::subscribe<nav_msgs::Path>(

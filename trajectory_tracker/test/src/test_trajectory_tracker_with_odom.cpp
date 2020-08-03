@@ -73,9 +73,9 @@ TEST_F(TrajectoryTrackerTest, Timeout)
   initState(Eigen::Vector2d(0, 0), 0);
 
   std::vector<Eigen::Vector3d> poses;
-  for (double x = 0.0; x < 5.0; x += 0.01)
+  for (double x = 0.0; x < 2.0; x += 0.01)
     poses.push_back(Eigen::Vector3d(x, 0.0, 0.0));
-  poses.push_back(Eigen::Vector3d(5.0, 0.0, 0.0));
+  poses.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   ros::Rate rate(50);
@@ -91,7 +91,28 @@ TEST_F(TrajectoryTrackerTest, Timeout)
 
   ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);
   ASSERT_FLOAT_EQ(cmd_vel_->angular.z, 0.0);
+  ASSERT_GT(pos_[0], 0.0);
+  ASSERT_LT(pos_[0], 2.0);
   ASSERT_EQ(status_->status, trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
+
+  while (ros::ok())
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      break;
+  }
+  for (int i = 0; i < 25; ++i)
+  {
+    publishTransform();
+    rate.sleep();
+    ros::spinOnce();
+  }
+  ASSERT_NEAR(yaw_, 0.0, 1e-2);
+  ASSERT_NEAR(pos_[0], 2.0, 1e-2);
+  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+  ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 int main(int argc, char** argv)
