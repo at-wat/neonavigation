@@ -16,6 +16,11 @@ add_rostest_gtest(test_trajectory_tracker test/trajectory_tracker_rostest.test
 target_link_libraries(test_trajectory_tracker ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(test_trajectory_tracker trajectory_tracker)
 
+add_rostest(test/trajectory_tracker_rostest.test
+  ARGS odom_delay:=0.04 use_odom:=true
+  DEPENDENCIES test_trajectory_tracker
+)
+
 add_rostest_gtest(test_trajectory_tracker_frame_rate test/trajectory_tracker_frame_rate_rostest.test
     src/test_trajectory_tracker_frame_rate.cpp)
 target_link_libraries(test_trajectory_tracker_frame_rate ${catkin_LIBRARIES} ${Boost_LIBRARIES})
