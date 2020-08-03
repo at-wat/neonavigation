@@ -35,8 +35,6 @@ RUN apt-get -qq update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 RUN pip install catkin_lint
-RUN curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh \
-  | sh -s latest /usr/local/bin
 
 RUN rosdep init \
   && rosdep update \
@@ -53,3 +51,4 @@ RUN apt-get -qq update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=cloner /repos/src /catkin_ws/src
+COPY .travis/gh-pr-comment /usr/local/bin/

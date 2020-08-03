@@ -19,6 +19,7 @@ before_install:
   - .travis/load_cache.sh
   - curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh | sh -s
 script:
+  - cp ~/.local/bin/gh-pr-comment .travis/
   - docker build
     --cache-from ${DOCKER_CACHE_REGISTRY}:${ROS_DISTRO_TARGET}
     -t ${DOCKER_CACHE_TARGET}:${ROS_DISTRO_TARGET}
