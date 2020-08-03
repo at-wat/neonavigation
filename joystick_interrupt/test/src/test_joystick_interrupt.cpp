@@ -274,7 +274,7 @@ public:
     sub_ = nh_.subscribe("mux_output", 1, &JoystickMuxTest::cbMsg, this);
 
     ros::Rate wait(10);
-    for (size_t i = 0; i < 20; ++i)
+    for (size_t i = 0; i < 100; ++i)
     {
       wait.sleep();
       ros::spinOnce();
