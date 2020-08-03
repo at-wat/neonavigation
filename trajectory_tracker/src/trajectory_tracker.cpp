@@ -305,7 +305,7 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
     nav_msgs::Odometry odom_compensated = *odom;
     if (predict_odom_)
     {
-      const double predict_dt = (ros::Time::now() - odom->header.stamp).toSec();
+      const double predict_dt = std::max(0.0, std::min(max_dt_, (ros::Time::now() - odom->header.stamp).toSec()));
       tf2::Transform trans;
       tf2::fromMsg(odom->pose.pose, trans);
       trans.setOrigin(
