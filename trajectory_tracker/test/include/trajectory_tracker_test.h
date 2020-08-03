@@ -123,6 +123,15 @@ public:
     pnh_.param("error_lin", error_lin_, 0.01);
     pnh_.param("error_large_lin", error_large_lin_, 0.1);
     pnh_.param("error_ang", error_ang_, 0.01);
+
+    ros::Rate wait(10);
+    for (size_t i = 0; i < 100; ++i)
+    {
+      wait.sleep();
+      ros::spinOnce();
+      if (pub_path_.getNumSubscribers() > 0)
+        break;
+    }
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
