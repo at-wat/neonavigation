@@ -30,5 +30,6 @@
     <param name="gain_at_vel" value="1.0" />
     <param name="dist_lim" value="0.5" />
     <param name="use_odom" value="$(arg use_odom)" />
+    <param name="odom_timeout_sec" value="0.0" />
   </node>
 </launch>
