@@ -21,7 +21,7 @@ add_rostest(test/trajectory_tracker_rostest.test
   DEPENDENCIES test_trajectory_tracker
 )
 
-add_rostest_gtest(test_trajectory_tracker_frame_rate test/trajectory_tracker_frame_rate_rostest.test
-    src/test_trajectory_tracker_frame_rate.cpp)
-target_link_libraries(test_trajectory_tracker_frame_rate ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(test_trajectory_tracker_frame_rate trajectory_tracker)
+add_rostest_gtest(test_trajectory_tracker_with_odom test/trajectory_tracker_with_odom_rostest.test
+    src/test_trajectory_tracker_with_odom.cpp)
+target_link_libraries(test_trajectory_tracker_with_odom ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(test_trajectory_tracker_with_odom trajectory_tracker)

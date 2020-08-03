@@ -63,6 +63,10 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "check_old_path" (bool, default: false)
 * "use_odom" (bool, default: false)
   > When `use_odom` is false, trajectory_tracker publishes command velocities at a constant rate specified in "hz" option. When `use_odom` is true, it publishes command velocities just after odometry is updated. "hz" option is ignored in this mode.
+* "predict_odom" (bool, default: true)
+  > If true, predicted coordinates of the robot at the present timestamp are used. This parameter is valid when "use_odom" is true.
+* "odom_timeout_sec" (double, default: 0.1)
+  > Robot will be stopped after the duration specified in this parameter has passed since the last odometry was received. This parameter is valid when "use_odom" is true.
 
 ----
 
