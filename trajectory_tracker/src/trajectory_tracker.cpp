@@ -571,7 +571,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   }
 
   const Eigen::Vector2d origin_raw = prediction_offset.head<2>();
-  const float yaw_raw = prediction_offset[3];
+  const float yaw_raw = prediction_offset[2];
 
   const float yaw_predicted = w_lim_.get() * look_forward_ / 2;
   const Eigen::Vector2d origin =
