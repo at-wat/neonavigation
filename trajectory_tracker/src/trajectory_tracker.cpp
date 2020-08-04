@@ -129,6 +129,7 @@ private:
 
   trajectory_tracker::Path2D path_;
   std_msgs::Header path_header_;
+  bool is_path_updated_;
 
   mutable boost::recursive_mutex parameter_server_mutex_;
   dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
@@ -137,6 +138,36 @@ private:
   bool predict_odom_;
   ros::Time prev_odom_stamp_;
 
+  struct TrackingResult
+  {
+    explicit TrackingResult(const int s)
+      : status(s)
+      , distance_remains(0.0)
+      , angle_remains(0.0)
+      , turning_in_place(false)
+      , signed_local_distance(0.0)
+      , distance_from_target(0.0)
+      , target_linear_vel(0.0)
+      , tracking_point_x(0.0)
+      , tracking_point_y(0.0)
+      , tracking_point_curv(0.0)
+      , path_step_done(0)
+    {
+    }
+
+    int status;  // same as trajectory_tracker_msgs::TrajectoryTrackerStatus::status
+    double distance_remains;
+    double angle_remains;
+    bool turning_in_place;
+    double signed_local_distance;
+    double distance_from_target;
+    double target_linear_vel;
+    double tracking_point_x;
+    double tracking_point_y;
+    double tracking_point_curv;
+    int path_step_done;
+  };
+
   template <typename MSG_TYPE>
   void cbPath(const typename MSG_TYPE::ConstPtr&);
   void cbSpeed(const std_msgs::Float32::ConstPtr&);
@@ -144,6 +175,7 @@ private:
   void cbTimer(const ros::TimerEvent&);
   void cbOdomTimeout(const ros::TimerEvent&);
   void control(const tf2::Stamped<tf2::Transform>&, const double);
+  TrackingResult getTrackingResult(const tf2::Stamped<tf2::Transform>&) const;
   void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
@@ -151,6 +183,7 @@ TrackerNode::TrackerNode()
   : nh_()
   , pnh_("~")
   , tfl_(tfbuf_)
+  , is_path_updated_(false)
 {
   neonavigation_common::compat::checkCompatMode();
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
@@ -249,6 +282,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
 {
   path_header_ = msg->header;
   path_.clear();
+  is_path_updated_ = true;
   path_step_done_ = 0;
   if (msg->poses.size() == 0)
     return;
@@ -401,21 +435,93 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
 {
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
   status.header.stamp = ros::Time::now();
-  status.distance_remains = 0.0;
-  status.angle_remains = 0.0;
   status.path_header = path_header_;
+  if (is_path_updated_)
+  {
+    // Call getTrackingResult to update path_step_done_.
+    const TrackingResult initial_tracking_result = getTrackingResult(robot_to_odom);
+    path_step_done_ = initial_tracking_result.path_step_done;
+    is_path_updated_ = false;
+  }
+  const TrackingResult tracking_result = getTrackingResult(robot_to_odom);
+  switch (tracking_result.status)
+  {
+    case trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH:
+    case trajectory_tracker_msgs::TrajectoryTrackerStatus::FAR_FROM_PATH:
+    {
+      v_lim_.clear();
+      w_lim_.clear();
+      geometry_msgs::Twist cmd_vel;
+      cmd_vel.linear.x = 0;
+      cmd_vel.angular.z = 0;
+      pub_vel_.publish(cmd_vel);
+      break;
+    }
+    default:
+    {
+      if (tracking_result.turning_in_place)
+      {
+        v_lim_.set(0.0, tracking_result.target_linear_vel, acc_[0], dt);
+        const double target_anglar_vel = tracking_result.angle_remains + w_lim_.get() * dt * 1.5;
+        w_lim_.set(trajectory_tracker::timeOptimalControl(target_anglar_vel, acc_toc_[1]), vel_[1], acc_[1], dt);
 
+        ROS_DEBUG(
+            "trajectory_tracker: angular residual %0.3f, angular vel %0.3f",
+            tracking_result.angle_remains, w_lim_.get());
+      }
+      else
+      {
+        v_lim_.set(
+            trajectory_tracker::timeOptimalControl(tracking_result.signed_local_distance, acc_toc_[0]),
+            tracking_result.target_linear_vel, acc_[0], dt);
+
+        float wref = std::abs(v_lim_.get()) * tracking_result.tracking_point_curv;
+
+        if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
+        {
+          v_lim_.set(
+              std::copysign(1.0, v_lim_.get()) * std::abs(vel_[1] / tracking_result.tracking_point_curv),
+              tracking_result.target_linear_vel, acc_[0], dt);
+          wref = std::copysign(1.0, wref) * vel_[1];
+        }
+
+        const double k_ang =
+            (gain_at_vel_ == 0.0) ? (k_[1]) : (k_[1] * tracking_result.target_linear_vel / gain_at_vel_);
+        const double dist_diff = tracking_result.distance_from_target;
+        const double angle_diff = tracking_result.angle_remains;
+        const double wvel_diff = w_lim_.get() - wref;
+        w_lim_.increment(dt * (-dist_diff * k_[0] - angle_diff * k_ang - wvel_diff * k_[2]), vel_[1], acc_[1], dt);
+
+        ROS_DEBUG(
+            "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
+            ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f",
+            dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang);
+      }
+      if (std::abs(tracking_result.distance_remains) < stop_tolerance_dist_ &&
+          std::abs(tracking_result.angle_remains) < stop_tolerance_ang_)
+      {
+        v_lim_.clear();
+        w_lim_.clear();
+      }
+      geometry_msgs::Twist cmd_vel;
+      cmd_vel.linear.x = v_lim_.get();
+      cmd_vel.angular.z = w_lim_.get();
+      pub_vel_.publish(cmd_vel);
+      path_step_done_ = tracking_result.path_step_done;
+      break;
+    }
+  }
+  status.status = tracking_result.status;
+  status.distance_remains = tracking_result.distance_remains;
+  status.angle_remains = tracking_result.angle_remains;
+  pub_status_.publish(status);
+}
+
+TrackerNode::TrackingResult TrackerNode::getTrackingResult(const tf2::Stamped<tf2::Transform>& robot_to_odom) const
+{
   if (path_header_.frame_id.size() == 0 || path_.size() == 0)
   {
-    v_lim_.clear();
-    w_lim_.clear();
-    geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = 0;
-    cmd_vel.angular.z = 0;
-    pub_vel_.publish(cmd_vel);
-    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
-    pub_status_.publish(status);
-    return;
+    return TrackingResult(trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
   }
   // Transform
   trajectory_tracker::Path2D lpath;
@@ -449,9 +555,7 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
   catch (tf2::TransformException& e)
   {
     ROS_WARN("TF exception: %s", e.what());
-    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
-    pub_status_.publish(status);
-    return;
+    return TrackingResult(trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
   }
 
   const float predicted_yaw = w_lim_.get() * look_forward_ / 2;
@@ -471,16 +575,7 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
 
   if (it_nearest == lpath.end())
   {
-    v_lim_.clear();
-    w_lim_.clear();
-    geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = 0;
-    cmd_vel.angular.z = 0;
-    pub_vel_.publish(cmd_vel);
-    // ROS_WARN("failed to find nearest node");
-    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH;
-    pub_status_.publish(status);
-    return;
+    return TrackingResult(trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
   }
 
   const int i_nearest = std::distance(lpath.cbegin(), it_nearest);
@@ -496,9 +591,9 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
   // Remained distance to the local goal
   float remain_local = lpath.remainedDistance(lpath.cbegin(), it_nearest, it_local_goal, pos_on_line);
   // Remained distance to the final goal
-  float remain = lpath.remainedDistance(lpath.cbegin(), it_nearest, lpath.cend(), pos_on_line);
+  float distance_remains = lpath.remainedDistance(lpath.cbegin(), it_nearest, lpath.cend(), pos_on_line);
   if (path_length < no_pos_cntl_dist_)
-    remain = remain_local = 0;
+    distance_remains = remain_local = 0;
 
   // Signed distance error
   const float dist_err = trajectory_tracker::lineDistance(
@@ -506,31 +601,30 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
 
   // Angular error
   const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[i_nearest_prev].pos_;
-  float angle = -atan2(vec[1], vec[0]);
-  const float angle_pose = allow_backward_ ? lpath[i_nearest].yaw_ : -angle;
+  float angle_remains = -atan2(vec[1], vec[0]);
+  const float angle_pose = allow_backward_ ? lpath[i_nearest].yaw_ : -angle_remains;
   float sign_vel = 1.0;
-  if (std::cos(-angle) * std::cos(angle_pose) + std::sin(-angle) * std::sin(angle_pose) < 0)
+  if (std::cos(-angle_remains) * std::cos(angle_pose) + std::sin(-angle_remains) * std::sin(angle_pose) < 0)
   {
     sign_vel = -1.0;
-    angle = angle + M_PI;
+    angle_remains = angle_remains + M_PI;
   }
-  angle = trajectory_tracker::angleNormalized(angle);
+  angle_remains = trajectory_tracker::angleNormalized(angle_remains);
 
   // Curvature
   const float curv = lpath.getCurvature(it_nearest, it_local_goal, pos_on_line, curv_forward_);
 
-  status.distance_remains = remain;
-  status.angle_remains = angle;
-
   ROS_DEBUG(
       "trajectory_tracker: nearest: %d, local goal: %d, done: %d, goal: %lu, remain: %0.3f, remain_local: %0.3f",
-      i_nearest, i_local_goal, path_step_done_, lpath.size(), remain, remain_local);
+      i_nearest, i_local_goal, path_step_done_, lpath.size(), distance_remains, remain_local);
 
   bool arrive_local_goal(false);
   bool in_place_turning = (vec[1] == 0.0 && vec[0] == 0.0);
 
+  TrackingResult result(trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING);
+
   // Stop and rotate
-  const bool large_angle_error = std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle);
+  const bool large_angle_error = std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle_remains);
   if (large_angle_error ||
       std::abs(remain_local) < stop_tolerance_dist_ ||
       path_length < min_track_path_ ||
@@ -538,31 +632,24 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
   {
     if (large_angle_error)
     {
-      ROS_INFO_THROTTLE(1.0, "Stop and rotate due to large angular error: %0.3f", angle);
+      ROS_INFO_THROTTLE(1.0, "Stop and rotate due to large angular error: %0.3f", angle_remains);
     }
 
     if (path_length < min_track_path_ ||
         std::abs(remain_local) < stop_tolerance_dist_ ||
         in_place_turning)
     {
-      angle = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
-      status.angle_remains = angle;
+      angle_remains = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
       if (it_local_goal != lpath.end())
         arrive_local_goal = true;
     }
-    v_lim_.set(
-        0.0,
-        linear_vel, acc_[0], dt);
-    w_lim_.set(
-        trajectory_tracker::timeOptimalControl(angle + w_lim_.get() * dt * 1.5, acc_toc_[1]),
-        vel_[1], acc_[1], dt);
-
-    ROS_DEBUG(
-        "trajectory_tracker: angular residual %0.3f, angular vel %0.3f, tf delay %0.3f",
-        angle, w_lim_.get(), transform_delay);
-
     if (path_length < stop_tolerance_dist_ || in_place_turning)
-      status.distance_remains = remain = 0.0;
+      distance_remains = 0.0;
+
+    result.turning_in_place = true;
+    result.target_linear_vel = linear_vel;
+    result.distance_remains = distance_remains;
+    result.angle_remains = angle_remains;
   }
   else
   {
@@ -574,75 +661,37 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
       dist_from_path = -(lpath[i_nearest].pos_ - origin).norm();
     if (std::abs(dist_from_path) > d_stop_)
     {
-      geometry_msgs::Twist cmd_vel;
-      cmd_vel.linear.x = 0;
-      cmd_vel.angular.z = 0;
-      pub_vel_.publish(cmd_vel);
-      // ROS_WARN("Far from given path");
-      status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::FAR_FROM_PATH;
-      pub_status_.publish(status);
-      return;
+      result.distance_remains = distance_remains;
+      result.angle_remains = angle_remains;
+      result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::FAR_FROM_PATH;
+      return result;
     }
 
     // Path following control
-    const float dist_err_clip = trajectory_tracker::clip(dist_err, d_lim_);
-
-    v_lim_.set(
-        trajectory_tracker::timeOptimalControl(-remain_local * sign_vel, acc_toc_[0]),
-        linear_vel, acc_[0], dt);
-
-    float wref = std::abs(v_lim_.get()) * curv;
-
-    if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
-    {
-      v_lim_.set(
-          std::copysign(1.0, v_lim_.get()) * std::abs(vel_[1] / curv),
-          linear_vel, acc_[0], dt);
-      wref = std::copysign(1.0, wref) * vel_[1];
-    }
-
-    const double k_ang = (gain_at_vel_ == 0.0) ? (k_[1]) : (k_[1] * linear_vel / gain_at_vel_);
-    w_lim_.increment(
-        dt * (-dist_err_clip * k_[0] - angle * k_ang - (w_lim_.get() - wref) * k_[2]),
-        vel_[1], acc_[1], dt);
-
-    ROS_DEBUG(
-        "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
-        ", v_lim: %0.3f, sign_vel: %0.0f, angle: %0.3f, yaw: %0.3f",
-        dist_err_clip, angle, w_lim_.get() - wref, v_lim_.get(), sign_vel, angle, lpath[i_nearest].yaw_);
+    result.turning_in_place = false;
+    result.target_linear_vel = linear_vel;
+    result.distance_remains = distance_remains;
+    result.angle_remains = angle_remains;
+    result.distance_from_target = trajectory_tracker::clip(dist_err, d_lim_);
+    result.signed_local_distance = -remain_local * sign_vel;
+    result.tracking_point_curv = curv;
+    result.tracking_point_x = pos_on_line[0];
+    result.tracking_point_y = pos_on_line[1];
   }
 
-  geometry_msgs::Twist cmd_vel;
-  if (std::abs(status.distance_remains) < stop_tolerance_dist_ &&
-      std::abs(status.angle_remains) < stop_tolerance_ang_)
-  {
-    v_lim_.clear();
-    w_lim_.clear();
-  }
-
-  cmd_vel.linear.x = v_lim_.get();
-  cmd_vel.angular.z = w_lim_.get();
-  pub_vel_.publish(cmd_vel);
-  status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING;
-  if (std::abs(status.distance_remains) < goal_tolerance_dist_ &&
-      std::abs(status.angle_remains) < goal_tolerance_ang_ &&
+  if (std::abs(result.distance_remains) < goal_tolerance_dist_ &&
+      std::abs(result.angle_remains) < goal_tolerance_ang_ &&
       it_local_goal == lpath.end())
   {
-    status.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
+    result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
   }
-  pub_status_.publish(status);
-  geometry_msgs::PoseStamped tracking;
-  tracking.header = status.header;
-  tracking.header.frame_id = frame_robot_;
-  tracking.pose.position.x = pos_on_line[0];
-  tracking.pose.position.y = pos_on_line[1];
-  tracking.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -angle));
-  pub_tracking_.publish(tracking);
 
   if (arrive_local_goal)
-    path_step_done_ = i_local_goal;
+    result.path_step_done = i_local_goal;
   else
-    path_step_done_ = std::max(path_step_done_, i_nearest - 1);
+    result.path_step_done = std::max(path_step_done_, i_nearest - 1);
+
+  return result;
 }
 }  // namespace trajectory_tracker
 
