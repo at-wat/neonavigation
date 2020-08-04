@@ -505,7 +505,9 @@ void TrackerNode::control(
             dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang);
       }
       if (std::abs(tracking_result.distance_remains) < stop_tolerance_dist_ &&
-          std::abs(tracking_result.angle_remains) < stop_tolerance_ang_)
+          std::abs(tracking_result.angle_remains) < stop_tolerance_ang_ &&
+          std::abs(tracking_result.distance_remains_raw) < stop_tolerance_dist_ &&
+          std::abs(tracking_result.angle_remains_raw) < stop_tolerance_ang_)
       {
         v_lim_.clear();
         w_lim_.clear();
