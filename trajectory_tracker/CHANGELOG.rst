@@ -2,8 +2,8 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.10.0 (2020-08-04)
--------------------
+Forthcoming
+-----------
 * trajectory_tracker: goal if both raw and predicted pose is in tolerance (`#540 <https://github.com/at-wat/neonavigation/issues/540>`_)
 * trajectory_tracker: fix wrong tracking target just after new path is received (`#537 <https://github.com/at-wat/neonavigation/issues/537>`_)
 * Increase initialization timeout in the tests (`#536 <https://github.com/at-wat/neonavigation/issues/536>`_)
