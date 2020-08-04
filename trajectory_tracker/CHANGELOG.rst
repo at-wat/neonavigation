@@ -2,6 +2,17 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* trajectory_tracker: goal if both raw and predicted pose is in tolerance (`#540 <https://github.com/at-wat/neonavigation/issues/540>`_)
+* trajectory_tracker: fix wrong tracking target just after new path is received (`#537 <https://github.com/at-wat/neonavigation/issues/537>`_)
+* Increase initialization timeout in the tests (`#536 <https://github.com/at-wat/neonavigation/issues/536>`_)
+* trajectory_tracker: add odometry timeout checking (`#534 <https://github.com/at-wat/neonavigation/issues/534>`_)
+* trajectory_tracker: predict odometry by extrapolation (`#529 <https://github.com/at-wat/neonavigation/issues/529>`_)
+* trajectory_tracker: add use_odom option (`#523 <https://github.com/at-wat/neonavigation/issues/523>`_)
+* trajectory_tracker: make trajectory_tracker dynamic-reconfigurable (`#521 <https://github.com/at-wat/neonavigation/issues/521>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.9.1 (2020-07-16)
 ------------------
 * trajectory_tracker: fix remained distance calculation on overshoot (`#514 <https://github.com/at-wat/neonavigation/issues/514>`_)

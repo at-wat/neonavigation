@@ -2,6 +2,14 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* joystick_interrupt: improve test stability (`#538 <https://github.com/at-wat/neonavigation/issues/538>`_)
+* Increase initialization timeout in the tests (`#536 <https://github.com/at-wat/neonavigation/issues/536>`_)
+* joystick_interrupt: increase JoystickMuxTest wait (`#524 <https://github.com/at-wat/neonavigation/issues/524>`_)
+* joystick_interrupt: send zero twist when interrupt button is released (`#517 <https://github.com/at-wat/neonavigation/issues/517>`_)
+* Contributors: Atsushi Watanabe, f-fl0
+
 0.9.1 (2020-07-16)
 ------------------
 
