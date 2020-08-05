@@ -182,7 +182,7 @@ private:
   void cbOdometry(const nav_msgs::Odometry::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
   void cbOdomTimeout(const ros::TimerEvent&);
-  void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const geometry_msgs::Twist&, const double);
+  void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double);
   TrackingResult getTrackingResult(
       const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&) const;
   void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
@@ -389,7 +389,7 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
         odom_to_robot.inverse(),
         odom->header.stamp, odom->header.frame_id);
 
-    control(robot_to_odom, prediction_offset, odom->twist.twist, dt);
+    control(robot_to_odom, prediction_offset, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
 }
@@ -401,7 +401,7 @@ void TrackerNode::cbTimer(const ros::TimerEvent& event)
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
         tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
-    control(transform, Eigen::Vector3d(0, 0, 0), geometry_msgs::Twist(), 1.0 / hz_);
+    control(transform, Eigen::Vector3d(0, 0, 0), 1.0 / hz_);
   }
   catch (tf2::TransformException& e)
   {
@@ -449,7 +449,6 @@ void TrackerNode::spin()
 void TrackerNode::control(
     const tf2::Stamped<tf2::Transform>& robot_to_odom,
     const Eigen::Vector3d& prediction_offset,
-    const geometry_msgs::Twist& twist,
     const double dt)
 {
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
@@ -494,7 +493,6 @@ void TrackerNode::control(
               (-tracking_result.angle_remains * k_ang_rotation_ - w_lim_.get() * k_avel_rotation_) * dt;
           w_lim_.increment(wvel_increment, vel_[1], acc_[1], dt);
         }
-
         ROS_DEBUG(
             "trajectory_tracker: angular residual %0.3f, angular vel %0.3f",
             tracking_result.angle_remains, w_lim_.get());
@@ -525,8 +523,7 @@ void TrackerNode::control(
         ROS_DEBUG(
             "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
             ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f",
-            dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(),
-            tracking_result.signed_local_distance, k_ang);
+            dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang);
       }
       if (std::abs(tracking_result.distance_remains) < stop_tolerance_dist_ &&
           std::abs(tracking_result.angle_remains) < stop_tolerance_ang_ &&
