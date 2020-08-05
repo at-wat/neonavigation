@@ -112,11 +112,10 @@ private:
   bool check_old_path_;
   double epsilon_;
   double max_dt_;
+  bool use_time_optimal_control_;
   double time_optimal_control_future_gain_;
-  bool use_rotation_pd_control_;
   double k_ang_rotation_;
   double k_avel_rotation_;
-  bool use_twist_as_wvel_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
@@ -260,11 +259,10 @@ void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint3
   limit_vel_by_avel_ = config.limit_vel_by_avel;
   check_old_path_ = config.check_old_path;
   epsilon_ = config.epsilon;
-  use_rotation_pd_control_ = config.use_rotation_pd_control;
+  use_time_optimal_control_ = config.use_time_optimal_control;
   time_optimal_control_future_gain_ = config.time_optimal_control_future_gain;
   k_ang_rotation_ = config.k_ang_rotation;
   k_avel_rotation_ = config.k_avel_rotation;
-  use_twist_as_wvel_ = config.use_twist_as_wvel;
 }
 
 TrackerNode::~TrackerNode()
@@ -480,27 +478,26 @@ void TrackerNode::control(
     }
     default:
     {
-      const double wvel = (use_odom_ && use_twist_as_wvel_) ? twist.angular.z : w_lim_.get();
       if (tracking_result.turning_in_place)
       {
         v_lim_.set(0.0, tracking_result.target_linear_vel, acc_[0], dt);
 
-        if (use_rotation_pd_control_)
+        if (use_time_optimal_control_)
         {
-          const double wvel_increment =
-              (-tracking_result.angle_remains * k_ang_rotation_ - wvel * k_avel_rotation_) * dt;
-          w_lim_.increment(wvel_increment, vel_[1], acc_[1], dt);
+          const double target_anglar_vel =
+              tracking_result.angle_remains + w_lim_.get() * dt * time_optimal_control_future_gain_;
+          w_lim_.set(trajectory_tracker::timeOptimalControl(target_anglar_vel, acc_toc_[1]), vel_[1], acc_[1], dt);
         }
         else
         {
-          const double target_anglar_vel =
-              tracking_result.angle_remains + wvel * dt * time_optimal_control_future_gain_;
-          w_lim_.set(trajectory_tracker::timeOptimalControl(target_anglar_vel, acc_toc_[1]), vel_[1], acc_[1], dt);
+          const double wvel_increment =
+              (-tracking_result.angle_remains * k_ang_rotation_ - w_lim_.get() * k_avel_rotation_) * dt;
+          w_lim_.increment(wvel_increment, vel_[1], acc_[1], dt);
         }
 
         ROS_DEBUG(
-            "trajectory_tracker: angular residual %0.3f, angular vel %0.3f / %0.3f",
-            tracking_result.angle_remains, w_lim_.get(), twist.angular.z);
+            "trajectory_tracker: angular residual %0.3f, angular vel %0.3f",
+            tracking_result.angle_remains, w_lim_.get());
       }
       else
       {
@@ -522,13 +519,13 @@ void TrackerNode::control(
             (gain_at_vel_ == 0.0) ? (k_[1]) : (k_[1] * tracking_result.target_linear_vel / gain_at_vel_);
         const double dist_diff = tracking_result.distance_from_target;
         const double angle_diff = tracking_result.angle_remains;
-        const double wvel_diff = wvel - wref;
+        const double wvel_diff = w_lim_.get() - wref;
         w_lim_.increment(dt * (-dist_diff * k_[0] - angle_diff * k_ang - wvel_diff * k_[2]), vel_[1], acc_[1], dt);
 
         ROS_DEBUG(
             "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
-            ", v_lim %0.3f, w_lim %0.3f/%0.3f signed_local_distance %0.3f, k_ang %0.3f",
-            dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), twist.angular.z,
+            ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f",
+            dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(),
             tracking_result.signed_local_distance, k_ang);
       }
       if (std::abs(tracking_result.distance_remains) < stop_tolerance_dist_ &&
