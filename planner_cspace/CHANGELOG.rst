@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.10.0 (2020-08-04)
--------------------
+Forthcoming
+-----------
 * planner_cspace: add test to MoveWithToleranceAction (`#528 <https://github.com/at-wat/neonavigation/issues/528>`_)
 * planner_cspace: add test to distance map debug output (`#526 <https://github.com/at-wat/neonavigation/issues/526>`_)
 * planner_cspace: periodically update local map in the test (`#522 <https://github.com/at-wat/neonavigation/issues/522>`_)
