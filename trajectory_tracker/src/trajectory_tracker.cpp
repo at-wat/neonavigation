@@ -483,9 +483,9 @@ void TrackerNode::control(
 
         if (use_time_optimal_control_)
         {
-          const double target_anglar_vel =
+          const double expected_angle_remains =
               tracking_result.angle_remains + w_lim_.get() * dt * time_optimal_control_future_gain_;
-          w_lim_.set(trajectory_tracker::timeOptimalControl(target_anglar_vel, acc_toc_[1]), vel_[1], acc_[1], dt);
+          w_lim_.set(trajectory_tracker::timeOptimalControl(expected_angle_remains, acc_toc_[1]), vel_[1], acc_[1], dt);
         }
         else
         {
