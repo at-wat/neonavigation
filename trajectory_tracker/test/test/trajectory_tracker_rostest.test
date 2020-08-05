@@ -10,7 +10,7 @@
 
   <test test-name="test_trajectory_tracker" pkg="trajectory_tracker" type="test_trajectory_tracker" time-limit="120.0">
     <param name="odom_delay" value="$(arg odom_delay)" />
-    <param name="error_lin" value="0.02" unless="$(arg use_odom)" />
+    <param name="error_lin" value="0.025" unless="$(arg use_odom)" />
     <param name="error_ang" value="0.02" unless="$(arg use_odom)" />
   </test>
 
