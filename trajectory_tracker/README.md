@@ -47,6 +47,10 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "max_angvel" (double, default: 1.0)
 * "max_acc" (double, default: 1.0)
 * "max_angacc" (double, default: 2.0)
+* "acc_toc_factor" (double, default: 0.9)
+  > decrease max_acc by this factor in time optimal control to reduce vibration due to control delay.
+* "angacc_toc_factor" (double, default: 0.9)
+  > decrease max_angacc by this factor in time optimal control to reduce vibration due to control delay. This parameter is valid when "use_time_optimal_control" is true.
 * "path_step" (int, default: 1)
 * "goal_tolerance_dist" (double, default: 0.2)
 * "goal_tolerance_ang" (double, default: 0.1)
@@ -65,10 +69,6 @@ trajectory_tracker node controls vehicle velocity to follow given path.
   > Robot will be stopped after the duration specified in this parameter has passed since the last odometry was received. This parameter is valid when "use_odom" is true.
 * "use_time_optimal_control" (bool, default: True)
   > If true, time optimal control mode is used during turning in place. Otherwise, the same algorithm used for path tracking is used.
-* "acc_toc_factor" (double, default: 0.9)
-  > decrease max_acc by this factor in time optimal control to reduce vibration due to control delay. This parameter is valid when "use_time_optimal_control" is true.
-* "angacc_toc_factor" (double, default: 0.9)
-  > decrease max_angacc by this factor in time optimal control to reduce vibration due to control delay. This parameter is valid when "use_time_optimal_control" is true.
 * "time_optimal_control_future_gain" (double, default: 1.5)
   > A gain to look ahead to robot's angle used in time optimal control. This parameter is valid when "use_time_optimal_control" is true. 
 * "k_ang_rotation" (double, default: 1.0)
