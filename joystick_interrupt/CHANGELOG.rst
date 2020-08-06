@@ -2,8 +2,8 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.10.0 (2020-08-05)
--------------------
+Forthcoming
+-----------
 * joystick_interrupt: improve test stability (`#538 <https://github.com/at-wat/neonavigation/issues/538>`_)
 * Increase initialization timeout in the tests (`#536 <https://github.com/at-wat/neonavigation/issues/536>`_)
 * joystick_interrupt: increase JoystickMuxTest wait (`#524 <https://github.com/at-wat/neonavigation/issues/524>`_)

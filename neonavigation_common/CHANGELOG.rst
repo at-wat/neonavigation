@@ -2,8 +2,8 @@
 Changelog for package neonavigation_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.10.0 (2020-08-05)
--------------------
+Forthcoming
+-----------
 * neonavigation_common: add unit tests (`#525 <https://github.com/at-wat/neonavigation/issues/525>`_)
 * Contributors: Atsushi Watanabe
 
