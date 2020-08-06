@@ -2,8 +2,8 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.0 (2020-08-06)
+-------------------
 * trajectory_tracker: add a mode to apply the same control method during turning in place (`#513 <https://github.com/at-wat/neonavigation/issues/513>`_)
 * trajectory_tracker: relax test tolerance on tf mode (`#545 <https://github.com/at-wat/neonavigation/issues/545>`_)
 * trajectory_tracker: goal if both raw and predicted pose is in tolerance (`#540 <https://github.com/at-wat/neonavigation/issues/540>`_)
