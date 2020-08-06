@@ -4,7 +4,7 @@
   <arg name="use_odom" default="false" />
   <arg name="use_time_optimal_control" default="true" />
 
-  <env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_d$(arg odom_delay)_$(arg use_odom)" />
+  <env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_d$(arg odom_delay)_$(arg use_odom)_$(arg use_time_optimal_control)" />
 
   <param name="neonavigation_compatible" value="1" />
   <param name="use_sim_time" value="true" /><!-- clock is provided by the test node -->

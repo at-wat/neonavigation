@@ -493,7 +493,7 @@ void TrackerNode::control(
               (-tracking_result.angle_remains * k_ang_rotation_ - w_lim_.get() * k_avel_rotation_) * dt;
           w_lim_.increment(wvel_increment, vel_[1], acc_[1], dt);
         }
-        ROS_DEBUG(
+        ROS_INFO(
             "trajectory_tracker: angular residual %0.3f, angular vel %0.3f",
             tracking_result.angle_remains, w_lim_.get());
       }
@@ -520,7 +520,7 @@ void TrackerNode::control(
         const double wvel_diff = w_lim_.get() - wref;
         w_lim_.increment(dt * (-dist_diff * k_[0] - angle_diff * k_ang - wvel_diff * k_[2]), vel_[1], acc_[1], dt);
 
-        ROS_DEBUG(
+        ROS_INFO(
             "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
             ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f",
             dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang);
@@ -651,7 +651,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   // Curvature
   const float curv = lpath.getCurvature(it_nearest, it_local_goal, pos_on_line, curv_forward_);
 
-  ROS_DEBUG(
+  ROS_INFO(
       "trajectory_tracker: nearest: %d, local goal: %d, done: %d, goal: %lu, remain: %0.3f, remain_local: %0.3f",
       i_nearest, i_local_goal, path_step_done_, lpath.size(), distance_remains, remain_local);
 

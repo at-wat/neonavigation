@@ -79,9 +79,9 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 {
   const double resolutions[] =
       {
-        0.1,
-        0.001,  // default epsilon
-        0.0001,
+          0.1,
+          0.001,  // default epsilon
+          0.0001,
       };
   for (const double resolution : resolutions)
   {
@@ -136,8 +136,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 {
   const double vels[] =
       {
-        0.02, 0.05, 0.1, 0.2, 0.5, 1.0
-      };
+          0.02, 0.05, 0.1, 0.2, 0.5, 1.0};
   const double path_length = 2.0;
   for (const double vel : vels)
   {
@@ -155,7 +154,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     const ros::Time start = ros::Time::now();
     while (ros::ok())
     {
-      ASSERT_LT(ros::Time::now() - start, ros::Duration(5.0 + path_length / vel)) << info_message;
+      ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0 + path_length / vel)) << info_message;
 
       publishTransform();
       rate.sleep();
@@ -295,21 +294,20 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 {
   const float init_yaw_array[] =
       {
-        0.0,
-        3.0
-      };
+          0.0,
+          3.0};
   for (const float init_yaw : init_yaw_array)
   {
     const std::vector<float> target_angle_array[] =
         {
-          { 0.5 },
-          { -0.5 },
-          { 0.1, 0.2, 0.3, 0.4, 0.5 },
-          { -0.1, -0.2, -0.3, -0.4, -0.5 },
+            {0.5},
+            {-0.5},
+            {0.1, 0.2, 0.3, 0.4, 0.5},
+            {-0.1, -0.2, -0.3, -0.4, -0.5},
         };
     for (const auto& angles : target_angle_array)
     {
-      for (const bool& has_short_path : { false, true })
+      for (const bool& has_short_path : {false, true})
       {
         std::stringstream condition_name;
         condition_name
