@@ -2,8 +2,9 @@
 <launch>
   <arg name="odom_delay" default="0.0" />
   <arg name="use_odom" default="false" />
+  <arg name="use_time_optimal_control" default="true" />
 
-  <env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_d$(arg odom_delay)_$(arg use_odom)" />
+  <env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_d$(arg odom_delay)_$(arg use_odom)_$(arg use_time_optimal_control)" />
 
   <param name="neonavigation_compatible" value="1" />
   <param name="use_sim_time" value="true" /><!-- clock is provided by the test node -->
@@ -31,5 +32,8 @@
     <param name="dist_lim" value="0.5" />
     <param name="use_odom" value="$(arg use_odom)" />
     <param name="odom_timeout_sec" value="0.0" />
+    <param name="use_time_optimal_control" value="$(arg use_time_optimal_control)" />
+    <param name="k_ang_rotation" value="8.0" />
+    <param name="k_avel_rotation" value="5.0" />
   </node>
 </launch>

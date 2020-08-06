@@ -112,6 +112,10 @@ private:
   bool check_old_path_;
   double epsilon_;
   double max_dt_;
+  bool use_time_optimal_control_;
+  double time_optimal_control_future_gain_;
+  double k_ang_rotation_;
+  double k_avel_rotation_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
@@ -255,6 +259,10 @@ void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint3
   limit_vel_by_avel_ = config.limit_vel_by_avel;
   check_old_path_ = config.check_old_path;
   epsilon_ = config.epsilon;
+  use_time_optimal_control_ = config.use_time_optimal_control;
+  time_optimal_control_future_gain_ = config.time_optimal_control_future_gain;
+  k_ang_rotation_ = config.k_ang_rotation;
+  k_avel_rotation_ = config.k_avel_rotation;
 }
 
 TrackerNode::~TrackerNode()
@@ -440,7 +448,8 @@ void TrackerNode::spin()
 
 void TrackerNode::control(
     const tf2::Stamped<tf2::Transform>& robot_to_odom,
-    const Eigen::Vector3d& prediction_offset, const double dt)
+    const Eigen::Vector3d& prediction_offset,
+    const double dt)
 {
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
   status.header.stamp = ros::Time::now();
@@ -471,9 +480,19 @@ void TrackerNode::control(
       if (tracking_result.turning_in_place)
       {
         v_lim_.set(0.0, tracking_result.target_linear_vel, acc_[0], dt);
-        const double target_anglar_vel = tracking_result.angle_remains + w_lim_.get() * dt * 1.5;
-        w_lim_.set(trajectory_tracker::timeOptimalControl(target_anglar_vel, acc_toc_[1]), vel_[1], acc_[1], dt);
 
+        if (use_time_optimal_control_)
+        {
+          const double expected_angle_remains =
+              tracking_result.angle_remains + w_lim_.get() * dt * time_optimal_control_future_gain_;
+          w_lim_.set(trajectory_tracker::timeOptimalControl(expected_angle_remains, acc_toc_[1]), vel_[1], acc_[1], dt);
+        }
+        else
+        {
+          const double wvel_increment =
+              (-tracking_result.angle_remains * k_ang_rotation_ - w_lim_.get() * k_avel_rotation_) * dt;
+          w_lim_.increment(wvel_increment, vel_[1], acc_[1], dt);
+        }
         ROS_DEBUG(
             "trajectory_tracker: angular residual %0.3f, angular vel %0.3f",
             tracking_result.angle_remains, w_lim_.get());
