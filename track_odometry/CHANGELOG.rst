@@ -2,6 +2,11 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.0 (2020-08-06)
+-------------------
+* Increase initialization timeout in the tests (`#536 <https://github.com/at-wat/neonavigation/issues/536>`_)
+* Contributors: Atsushi Watanabe
+
 0.9.1 (2020-07-16)
 ------------------
 

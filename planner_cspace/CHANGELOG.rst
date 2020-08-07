@@ -2,6 +2,15 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.0 (2020-08-06)
+-------------------
+* planner_cspace: add test to MoveWithToleranceAction (`#528 <https://github.com/at-wat/neonavigation/issues/528>`_)
+* planner_cspace: add test to distance map debug output (`#526 <https://github.com/at-wat/neonavigation/issues/526>`_)
+* planner_cspace: periodically update local map in the test (`#522 <https://github.com/at-wat/neonavigation/issues/522>`_)
+* Merge rostest coverage profiles (`#520 <https://github.com/at-wat/neonavigation/issues/520>`_)
+* planner_cspace: fix search range of minimum cost in fast_map_update mode (`#518 <https://github.com/at-wat/neonavigation/issues/518>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.9.1 (2020-07-16)
 ------------------
 
