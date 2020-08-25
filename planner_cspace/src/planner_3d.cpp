@@ -1620,13 +1620,6 @@ protected:
       if (remain.sqlen() <= g_tolerance_lin * g_tolerance_lin &&
           std::abs(remain[2]) <= g_tolerance_ang)
       {
-        path.poses.resize(1);
-        path.poses[0].header = path.header;
-        if (force_goal_orientation_)
-          path.poses[0].pose = goal_raw_.pose;
-        else
-          path.poses[0].pose = ge;
-
         if (escaping_)
         {
           goal_ = goal_raw_;
@@ -1636,6 +1629,13 @@ protected:
         }
         else
         {
+          path.poses.resize(1);
+          path.poses[0].header = path.header;
+          if (force_goal_orientation_)
+            path.poses[0].pose = goal_raw_.pose;
+          else
+            path.poses[0].pose = ge;
+
           status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
           ROS_INFO("Path plan finishing");
         }
