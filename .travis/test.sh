@@ -24,6 +24,7 @@ if [ x${COVERAGE_TEST} == "xtrue" ]
 then
   gcov -v
   COVERAGE_OPTION=-coverage
+  mkdir -p /tmp/gcov/
 fi
 
 sed -i -e "5a set(CMAKE_C_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
