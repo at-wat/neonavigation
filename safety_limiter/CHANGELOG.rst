@@ -2,6 +2,9 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.10.0 (2020-08-06)
 -------------------
 * Merge rostest coverage profiles (`#520 <https://github.com/at-wat/neonavigation/issues/520>`_)
