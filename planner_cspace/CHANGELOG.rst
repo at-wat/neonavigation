@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.1 (2020-08-26)
+-------------------
+* planner_cspace: avoid publishing invalid path when escaping (`#546 <https://github.com/at-wat/neonavigation/issues/546>`_)
+* Contributors: Naotaka Hatao
+
 0.10.0 (2020-08-06)
 -------------------
 * planner_cspace: add test to MoveWithToleranceAction (`#528 <https://github.com/at-wat/neonavigation/issues/528>`_)

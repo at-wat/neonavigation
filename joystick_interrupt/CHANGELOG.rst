@@ -2,6 +2,9 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.1 (2020-08-26)
+-------------------
+
 0.10.0 (2020-08-06)
 -------------------
 * joystick_interrupt: improve test stability (`#538 <https://github.com/at-wat/neonavigation/issues/538>`_)
