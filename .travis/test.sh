@@ -24,11 +24,12 @@ if [ x${COVERAGE_TEST} == "xtrue" ]
 then
   gcov -v
   COVERAGE_OPTION=-coverage
+  mkdir -p /tmp/gcov/
 fi
 
-sed -i -e "5a set(CMAKE_C_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
+sed -i -e "/set(CATKIN_TOPLEVEL TRUE)/a set(CMAKE_C_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
-sed -i -e "5a set(CMAKE_CXX_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
+sed -i -e "/set(CATKIN_TOPLEVEL TRUE)/a set(CMAKE_CXX_FLAGS \"-Wall -Werror -O2 ${COVERAGE_OPTION}\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
 
 CM_OPTIONS=${CM_OPTIONS:-}
