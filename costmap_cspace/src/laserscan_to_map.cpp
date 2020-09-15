@@ -129,6 +129,7 @@ private:
       return;
     published_ = now;
 
+    float robot_z;
     try
     {
       tf2::Stamped<tf2::Transform> trans;
@@ -143,6 +144,7 @@ private:
       map.info.origin.orientation.w = 1.0;
       origin_x_ = x - width_ * map.info.resolution * 0.5;
       origin_y_ = y - height_ * map.info.resolution * 0.5;
+      robot_z = pos.z();
     }
     catch (tf2::TransformException& e)
     {
@@ -156,8 +158,11 @@ private:
     {
       auto itr_x = sensor_msgs::PointCloud2ConstIterator<float>(pc, "x");
       auto itr_y = sensor_msgs::PointCloud2ConstIterator<float>(pc, "y");
+      auto itr_z = sensor_msgs::PointCloud2ConstIterator<float>(pc, "z");
       for (; itr_x != itr_x.end(); ++itr_x, ++itr_y)
       {
+        if (*itr_z - robot_z < z_min_ || z_max_ < *itr_z - robot_z)
+          continue;
         unsigned int x = int(
             (*itr_x - map.info.origin.position.x) / map.info.resolution);
         unsigned int y = int(
