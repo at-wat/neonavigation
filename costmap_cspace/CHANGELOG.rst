@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* costmap_cspace: enable func to remove objects out of z range (`#551 <https://github.com/at-wat/neonavigation/issues/551>`_)
+* Contributors: Tatsuroh Sakaguchi
+
 0.10.1 (2020-08-26)
 -------------------
 
