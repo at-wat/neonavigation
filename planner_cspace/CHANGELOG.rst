@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.2 (2020-10-07)
+-------------------
+
 0.10.1 (2020-08-26)
 -------------------
 * planner_cspace: avoid publishing invalid path when escaping (`#546 <https://github.com/at-wat/neonavigation/issues/546>`_)
