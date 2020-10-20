@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, the neonavigation authors
+ * Copyright (c) 2015-2020, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,7 @@ private:
   ros::Subscriber sub_topics_[2];
   ros::Subscriber sub_joy_;
   ros::Publisher pub_topic_;
+  ros::Timer timer_;
   double timeout_;
   int interrupt_button_;
   ros::Time last_joy_msg_;
@@ -50,6 +51,14 @@ private:
 
   void cbJoy(const sensor_msgs::Joy::Ptr msg)
   {
+    if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
+    {
+      ROS_ERROR(
+          "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
+          msg->buttons.size(), interrupt_button_);
+      return;
+    }
+
     last_joy_msg_ = ros::Time::now();
     if (msg->buttons[interrupt_button_])
     {
@@ -88,6 +97,13 @@ private:
       pub_topic_.publish(*msg);
     }
   };
+  void cbTimer(const ros::TimerEvent& e)
+  {
+    if (ros::Time::now() - last_joy_msg_ > ros::Duration(timeout_))
+    {
+      selected_ = 0;
+    }
+  }
 
 public:
   JoystickMux()
@@ -107,21 +123,10 @@ public:
     pnh_.param("timeout", timeout_, 0.5);
     last_joy_msg_ = ros::Time::now();
 
+    timer_ = nh_.createTimer(ros::Duration(0.1), &JoystickMux::cbTimer, this);
+
     advertised_ = false;
     selected_ = 0;
-  }
-  void spin()
-  {
-    ros::Rate wait(10);
-    while (ros::ok())
-    {
-      wait.sleep();
-      ros::spinOnce();
-      if (ros::Time::now() - last_joy_msg_ > ros::Duration(timeout_))
-      {
-        selected_ = 0;
-      }
-    }
   }
 };
 
@@ -130,7 +135,7 @@ int main(int argc, char* argv[])
   ros::init(argc, argv, "joystick_mux");
 
   JoystickMux jy;
-  jy.spin();
+  ros::spin();
 
   return 0;
 }

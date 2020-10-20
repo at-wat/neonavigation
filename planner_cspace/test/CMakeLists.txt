@@ -57,6 +57,16 @@ add_rostest(test/navigation_rostest.test
   DEPENDENCIES test_navigate
 )
 
+add_rostest(test/navigation_rostest.test
+  ARGS antialias_start:=true fast_map_update:=true
+  DEPENDENCIES test_navigate
+)
+
+add_rostest(test/navigation_rostest.test
+  ARGS with_tolerance:=true
+  DEPENDENCIES test_navigate
+)
+
 add_rostest(test/navigation_compat_rostest.test
   DEPENDENCIES test_navigate
 )

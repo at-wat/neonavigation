@@ -188,6 +188,8 @@ protected:
 
   bool find_best_;
   float sw_wait_;
+  geometry_msgs::PoseStamped sw_pos_;
+  bool is_path_switchback_;
 
   float rough_cost_max_;
   bool rough_;
@@ -201,6 +203,11 @@ protected:
   diagnostic_updater::Updater diag_updater_;
   ros::Duration costmap_watchdog_;
   ros::Time last_costmap_;
+
+  int prev_map_update_x_min_;
+  int prev_map_update_x_max_;
+  int prev_map_update_y_min_;
+  int prev_map_update_y_max_;
 
   bool cbForget(std_srvs::EmptyRequest& req,
                 std_srvs::EmptyResponse& res)
@@ -584,6 +591,11 @@ protected:
       return true;
     }
 
+    prev_map_update_x_min_ = std::numeric_limits<int>::max();
+    prev_map_update_x_max_ = std::numeric_limits<int>::lowest();
+    prev_map_update_y_min_ = std::numeric_limits<int>::max();
+    prev_map_update_y_max_ = std::numeric_limits<int>::lowest();
+
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
@@ -671,6 +683,11 @@ protected:
       sensor_msgs::PointCloud distance_map;
       distance_map.header = map_header_;
       distance_map.header.stamp = ros::Time::now();
+      distance_map.channels.resize(1);
+      distance_map.channels[0].name = "distance";
+      distance_map.points.reserve(1024);
+      distance_map.channels[0].values.reserve(1024);
+      const float k_dist = map_info_.linear_resolution * cc_.max_vel_;
       for (Astar::Vec p(0, 0, 0); p[1] < cost_estim_cache_.size()[1]; p[1]++)
       {
         for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
@@ -685,6 +702,7 @@ protected:
             continue;
           point.z = cost_estim_cache_[p] / 500;
           distance_map.points.push_back(point);
+          distance_map.channels[0].values.push_back(cost_estim_cache_[p] * k_dist);
         }
       }
       pub_distance_map_.publish(distance_map);
@@ -865,12 +883,22 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
 
+    const int map_update_x_min = static_cast<int>(msg->x);
+    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
+    const int map_update_y_min = static_cast<int>(msg->y);
+    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+    const int search_range_x_min = std::max(0, std::min(prev_map_update_x_min_, map_update_x_min) - 1);
+    const int search_range_x_max = std::min(static_cast<int>(map_info_.width),
+                                            std::max(prev_map_update_x_max_, map_update_x_max) + 1);
+    const int search_range_y_min = std::max(0, std::min(prev_map_update_y_min_, map_update_y_min) - 1);
+    const int search_range_y_max = std::min(static_cast<int>(map_info_.height),
+                                            std::max(prev_map_update_y_max_, map_update_y_max) + 1);
     Astar::Vec p, p_cost_min;
     p[2] = 0;
     float cost_min = std::numeric_limits<float>::max();
-    for (p[1] = static_cast<int>(msg->y); p[1] < static_cast<int>(msg->y + msg->height); p[1]++)
+    for (p[1] = search_range_y_min; p[1] < search_range_y_max; p[1]++)
     {
-      for (p[0] = static_cast<int>(msg->x); p[0] < static_cast<int>(msg->x + msg->width); p[0]++)
+      for (p[0] = search_range_x_min; p[0] < search_range_x_max; p[0]++)
       {
         if (cost_min > cost_estim_cache_[p])
         {
@@ -879,6 +907,10 @@ protected:
         }
       }
     }
+    prev_map_update_x_min_ = map_update_x_min;
+    prev_map_update_x_max_ = map_update_x_max;
+    prev_map_update_y_min_ = map_update_y_min;
+    prev_map_update_y_max_ = map_update_y_max;
 
     reservable_priority_queue<Astar::PriorityVec> open;
     reservable_priority_queue<Astar::PriorityVec> erase;
@@ -1270,6 +1302,7 @@ public:
 
     escaping_ = false;
     cnt_stuck_ = 0;
+    is_path_switchback_ = false;
 
     diag_updater_.setHardwareID("none");
     diag_updater_.add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
@@ -1317,6 +1350,22 @@ public:
             }
           }
         }
+
+        if (is_path_switchback_)
+        {
+          const float len = std::hypot(
+              start_.pose.position.y - sw_pos_.pose.position.y,
+              start_.pose.position.x - sw_pos_.pose.position.x);
+          const float yaw = tf2::getYaw(start_.pose.orientation);
+          const float sw_yaw = tf2::getYaw(sw_pos_.pose.orientation);
+          float yaw_diff = yaw - sw_yaw;
+          yaw_diff = std::atan2(std::sin(yaw_diff), std::cos(yaw_diff));
+          if (len < goal_tolerance_lin_f_ && std::fabs(yaw_diff) < goal_tolerance_ang_f_)
+          {
+            // robot has arrived at the switchback point
+            is_path_switchback_ = false;
+          }
+        }
       }
       if (ros::Time::now() > next_replan_time)
       {
@@ -1348,9 +1397,9 @@ public:
       {
         if (last_costmap_ + costmap_watchdog_ < now)
         {
-          ROS_WARN(
-              "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
-              last_costmap_.toSec());
+          ROS_WARN_THROTTLE(1.0,
+                            "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
+                            last_costmap_.toSec());
           status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
           publishEmptyPath();
           previous_path.poses.clear();
@@ -1457,7 +1506,10 @@ public:
 
           if (sw_wait_ > 0.0)
           {
-            is_path_switchback = switchDetect(path);
+            const int sw_index = getSwitchIndex(path);
+            is_path_switchback = (sw_index >= 0);
+            if (is_path_switchback)
+              sw_pos_ = path.poses[sw_index];
           }
         }
       }
@@ -1474,12 +1526,13 @@ public:
       if (is_path_switchback)
       {
         next_replan_time += ros::Duration(sw_wait_);
-        ROS_INFO("Planned path has switchback. Planner will stop until: %f", next_replan_time.toSec());
+        ROS_INFO("Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.toSec());
       }
       else
       {
         next_replan_time += ros::Duration(1.0 / freq_);
       }
+      is_path_switchback_ = is_path_switchback;
     }
   }
 
@@ -1567,13 +1620,6 @@ protected:
       if (remain.sqlen() <= g_tolerance_lin * g_tolerance_lin &&
           std::abs(remain[2]) <= g_tolerance_ang)
       {
-        path.poses.resize(1);
-        path.poses[0].header = path.header;
-        if (force_goal_orientation_)
-          path.poses[0].pose = goal_raw_.pose;
-        else
-          path.poses[0].pose = ge;
-
         if (escaping_)
         {
           goal_ = goal_raw_;
@@ -1583,6 +1629,13 @@ protected:
         }
         else
         {
+          path.poses.resize(1);
+          path.poses[0].header = path.header;
+          if (force_goal_orientation_)
+            path.poses[0].pose = goal_raw_.pose;
+          else
+            path.poses[0].pose = ge;
+
           status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
           ROS_INFO("Path plan finishing");
         }
@@ -1756,30 +1809,28 @@ protected:
     ROS_WARN("Search timed out");
     return true;
   }
-  bool switchDetect(const nav_msgs::Path& path)
+  int getSwitchIndex(const nav_msgs::Path& path) const
   {
     geometry_msgs::Pose p_prev;
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
-    for (const auto& p : path.poses)
+    for (auto it = path.poses.begin(); it != path.poses.end(); ++it)
     {
+      const auto& p = *it;
       if (!first)
       {
-        const float len = std::hypot(
-            p.pose.position.y - p_prev.position.y,
-            p.pose.position.x - p_prev.position.x);
-        if (len > 0.001)
+        const float x_diff = p.pose.position.x - p_prev.position.x;
+        const float y_diff = p.pose.position.y - p_prev.position.y;
+        const float len_sq = std::pow(y_diff, 2) + std::pow(x_diff, 2);
+        if (len_sq > std::pow(0.001f, 2))
         {
           const float yaw = tf2::getYaw(p.pose.orientation);
-          const float vel_yaw = atan2f(
-              p.pose.position.y - p_prev.position.y,
-              p.pose.position.x - p_prev.position.x);
-          const bool dir = (cosf(yaw) * cosf(vel_yaw) + sinf(yaw) * sinf(vel_yaw) < 0);
+          const bool dir = (std::cos(yaw) * x_diff + std::sin(yaw) * y_diff < 0);
 
           if (dir_set && (dir_prev ^ dir))
           {
-            return true;
+            return std::distance(path.poses.begin(), it);
           }
           dir_prev = dir;
           dir_set = true;
@@ -1788,7 +1839,8 @@ protected:
       first = false;
       p_prev = p.pose;
     }
-    return false;
+    // -1 means no switchback in the path
+    return -1;
   }
   void diagnoseStatus(diagnostic_updater::DiagnosticStatusWrapper& stat)
   {

@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,6 +31,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <random>
 #include <sstream>
 #include <string>
@@ -43,6 +44,7 @@
 #include <ros/ros.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
+#include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/Twist.h>
 #include <safety_limiter_msgs/SafetyLimiterStatus.h>
 #include <sensor_msgs/PointCloud.h>
@@ -62,6 +64,10 @@
 
 #include <neonavigation_common/compatibility.h>
 
+#include <safety_limiter/SafetyLimiterConfig.h>
+
+namespace safety_limiter
+{
 pcl::PointXYZ operator-(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
 {
   auto c = a;
@@ -107,6 +113,8 @@ protected:
   ros::Timer watchdog_timer_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
+  boost::recursive_mutex parameter_server_mutex_;
+  std::unique_ptr<dynamic_reconfigure::Server<SafetyLimiterConfig>> parameter_server_;
 
   geometry_msgs::Twist twist_;
   ros::Time last_cloud_stamp_;
@@ -193,43 +201,17 @@ public:
       }
     }
 
-    pnh_.param("freq", hz_, 6.0);
-    pnh_.param("cloud_timeout", timeout_, 0.8);
-    pnh_.param("disable_timeout", disable_timeout_, 0.1);
-    pnh_.param("lin_vel", vel_[0], 0.5);
-    pnh_.param("lin_acc", acc_[0], 1.0);
-    pnh_.param("ang_vel", vel_[1], 0.8);
-    pnh_.param("ang_acc", acc_[1], 1.6);
-    pnh_.param("z_range_min", z_range_[0], 0.0);
-    pnh_.param("z_range_max", z_range_[1], 0.5);
-    pnh_.param("dt", dt_, 0.1);
     if (pnh_.hasParam("t_margin"))
       ROS_WARN("safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
-    pnh_.param("d_margin", d_margin_, 0.2);
-    pnh_.param("d_escape", d_escape_, 0.05);
-    pnh_.param("yaw_margin", yaw_margin_, 0.2);
-    pnh_.param("yaw_escape", yaw_escape_, 0.05);
-    pnh_.param("downsample_grid", downsample_grid_, 0.05);
     pnh_.param("base_frame", base_frame_id_, std::string("base_link"));
     pnh_.param("fixed_frame", fixed_frame_id_, std::string("odom"));
-    double hold_d;
-    pnh_.param("hold", hold_d, 0.0);
-    hold_ = ros::Duration(std::max(hold_d, 1.0 / hz_));
     double watchdog_interval_d;
     pnh_.param("watchdog_interval", watchdog_interval_d, 0.0);
     watchdog_interval_ = ros::Duration(watchdog_interval_d);
-    pnh_.param("allow_empty_cloud", allow_empty_cloud_, false);
 
-    tmax_ = 0.0;
-    for (int i = 0; i < 2; i++)
-    {
-      auto t = vel_[i] / acc_[i];
-      if (tmax_ < t)
-        tmax_ = t;
-    }
-    tmax_ *= 1.5;
-    tmax_ += std::max(d_margin_ / vel_[0], yaw_margin_ / vel_[1]);
-    r_lim_ = 1.0;
+    parameter_server_.reset(
+        new dynamic_reconfigure::Server<SafetyLimiterConfig>(parameter_server_mutex_, pnh_));
+    parameter_server_->setCallback(boost::bind(&SafetyLimiterNode::cbParameter, this, _1, _2));
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!pnh_.hasParam("footprint"))
@@ -331,6 +313,38 @@ protected:
     cloud_clear_ = true;
 
     diag_updater_.force_update();
+  }
+  void cbParameter(const SafetyLimiterConfig& config, const uint32_t /* level */)
+  {
+    boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
+    hz_ = config.freq;
+    timeout_ = config.cloud_timeout;
+    disable_timeout_ = config.disable_timeout;
+    vel_[0] = config.lin_vel;
+    acc_[0] = config.lin_acc;
+    vel_[1] = config.ang_vel;
+    acc_[1] = config.ang_acc;
+    z_range_[0] = config.z_range_min;
+    z_range_[1] = config.z_range_max;
+    dt_ = config.dt;
+    d_margin_ = config.d_margin;
+    d_escape_ = config.d_escape;
+    yaw_margin_ = config.yaw_margin;
+    yaw_escape_ = config.yaw_escape;
+    downsample_grid_ = config.downsample_grid;
+    hold_ = ros::Duration(std::max(config.hold, 1.0 / hz_));
+    allow_empty_cloud_ = config.allow_empty_cloud;
+
+    tmax_ = 0.0;
+    for (int i = 0; i < 2; i++)
+    {
+      auto t = vel_[i] / acc_[i];
+      if (tmax_ < t)
+        tmax_ = t;
+    }
+    tmax_ *= 1.5;
+    tmax_ += std::max(d_margin_ / vel_[0], yaw_margin_ / vel_[1]);
+    r_lim_ = 1.0;
   }
   double predict(const geometry_msgs::Twist& in)
   {
@@ -508,8 +522,8 @@ protected:
     const float delay = 1.0 * (1.0 / hz_) + dt_;
     const float acc_dtsq[2] =
         {
-          static_cast<float>(acc_[0] * std::pow(delay, 2)),
-          static_cast<float>(acc_[1] * std::pow(delay, 2)),
+            static_cast<float>(acc_[0] * std::pow(delay, 2)),
+            static_cast<float>(acc_[1] * std::pow(delay, 2)),
         };
 
     d_col = std::max<float>(
@@ -764,11 +778,13 @@ protected:
   }
 };
 
+}  // namespace safety_limiter
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "safety_limiter");
 
-  SafetyLimiterNode limiter;
+  safety_limiter::SafetyLimiterNode limiter;
   limiter.spin();
 
   return 0;

@@ -58,7 +58,7 @@ public:
 
 TEST_P(TfProjectionTest, ProjectionTransform)
 {
-  EXPECT_TRUE(tfbuf_.canTransform("map", projected_frame_, ros::Time(0), ros::Duration(1.0)));
+  EXPECT_TRUE(tfbuf_.canTransform("map", projected_frame_, ros::Time(0), ros::Duration(10.0)));
 
   geometry_msgs::TransformStamped out;
   try

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+  <env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_with_odom" />
+
+  <param name="neonavigation_compatible" value="1" />
+  <param name="use_sim_time" value="false" />
+
+  <test test-name="test_trajectory_tracker_with_odom" pkg="trajectory_tracker" type="test_trajectory_tracker_with_odom" time-limit="120.0" />
+
+  <node pkg="trajectory_tracker" type="trajectory_tracker" name="trajectory_tracker" output="screen">
+    <param name="max_vel" value="1.0" />
+    <param name="max_acc" value="2.0" />
+    <param name="max_angvel" value="0.5" />
+    <param name="max_angacc" value="2.0" />
+    <param name="goal_tolerance_dist" value="0.01" />
+    <param name="goal_tolerance_ang" value="0.0075" />
+    <param name="stop_tolerance_dist" value="0.01" />
+    <param name="stop_tolerance_ang" value="0.005" />
+    <param name="look_forward" value="0.0" />
+    <param name="k_dist" value="4.5" />
+    <param name="k_ang" value="3.0" />
+    <param name="k_avel" value="4.0" />
+    <param name="gain_at_vel" value="1.0" />
+    <param name="dist_lim" value="0.5" />
+    <param name="use_odom" value="true" />
+    <param name="odom_timeout_sec" value="0.1" />
+    <param name="hz" value="30.0"/>
+  </node>
+</launch>

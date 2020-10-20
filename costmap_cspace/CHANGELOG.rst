@@ -2,6 +2,40 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.2 (2020-10-07)
+-------------------
+* costmap_cspace: enable func to remove objects out of z range (`#551 <https://github.com/at-wat/neonavigation/issues/551>`_)
+* Contributors: Tatsuroh Sakaguchi
+
+0.10.1 (2020-08-26)
+-------------------
+
+0.10.0 (2020-08-06)
+-------------------
+
+0.9.1 (2020-07-16)
+------------------
+
+0.9.0 (2020-07-02)
+------------------
+
+0.8.8 (2020-06-15)
+------------------
+
+0.8.7 (2020-05-22)
+------------------
+
+0.8.6 (2020-05-15)
+------------------
+
+0.8.5 (2020-05-04)
+------------------
+
+0.8.4 (2020-04-30)
+------------------
+* Clean unused dependencies (`#472 <https://github.com/at-wat/neonavigation/issues/472>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.3 (2020-04-26)
 ------------------
 

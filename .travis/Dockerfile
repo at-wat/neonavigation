@@ -25,16 +25,19 @@ RUN sed -e \
 RUN apt-get -qq update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
+    build-essential \
     curl \
     libxml2-utils \
     python-pip \
+    python-rosdep \
     sudo \
     wget \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
-RUN pip install gh-pr-comment catkin_lint
+RUN pip install catkin_lint
 
-RUN rosdep update \
+RUN rosdep init \
+  && rosdep update \
   && mkdir -p /catkin_ws/src \
   && cd /catkin_ws/src \
   && . /opt/ros/${ROS_DISTRO}/setup.sh \
@@ -48,3 +51,4 @@ RUN apt-get -qq update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=cloner /repos/src /catkin_ws/src
+COPY .travis/gh-pr-comment /usr/local/bin/

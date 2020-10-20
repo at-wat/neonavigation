@@ -2,6 +2,55 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.2 (2020-10-07)
+-------------------
+
+0.10.1 (2020-08-26)
+-------------------
+* planner_cspace: avoid publishing invalid path when escaping (`#546 <https://github.com/at-wat/neonavigation/issues/546>`_)
+* Contributors: Naotaka Hatao
+
+0.10.0 (2020-08-06)
+-------------------
+* planner_cspace: add test to MoveWithToleranceAction (`#528 <https://github.com/at-wat/neonavigation/issues/528>`_)
+* planner_cspace: add test to distance map debug output (`#526 <https://github.com/at-wat/neonavigation/issues/526>`_)
+* planner_cspace: periodically update local map in the test (`#522 <https://github.com/at-wat/neonavigation/issues/522>`_)
+* Merge rostest coverage profiles (`#520 <https://github.com/at-wat/neonavigation/issues/520>`_)
+* planner_cspace: fix search range of minimum cost in fast_map_update mode (`#518 <https://github.com/at-wat/neonavigation/issues/518>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
+0.9.1 (2020-07-16)
+------------------
+
+0.9.0 (2020-07-02)
+------------------
+
+0.8.8 (2020-06-15)
+------------------
+* planner_cspace: avoid showing too many warning messages (`#501 <https://github.com/at-wat/neonavigation/issues/501>`_)
+* Contributors: Naotaka Hatao
+
+0.8.7 (2020-05-22)
+------------------
+
+0.8.6 (2020-05-15)
+------------------
+* Fix duplicated tf timestamp (`#494 <https://github.com/at-wat/neonavigation/issues/494>`_)
+* planner_cspace: add wait to navigation tests (`#492 <https://github.com/at-wat/neonavigation/issues/492>`_)
+* planner_cspace: simplify path switch detection condition (`#488 <https://github.com/at-wat/neonavigation/issues/488>`_)
+* planner_cspace: fix uninitialized variable (`#486 <https://github.com/at-wat/neonavigation/issues/486>`_)
+* planner_cspace: enable replan when robot reaches the switchback point (`#449 <https://github.com/at-wat/neonavigation/issues/449>`_)
+* planner_cspace: fix test_debug_outputs initial wait (`#485 <https://github.com/at-wat/neonavigation/issues/485>`_)
+* Contributors: Atsushi Watanabe, Kazuki Takahashi
+
+0.8.5 (2020-05-04)
+------------------
+
+0.8.4 (2020-04-30)
+------------------
+* Clean unused dependencies (`#472 <https://github.com/at-wat/neonavigation/issues/472>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.3 (2020-04-26)
 ------------------
 

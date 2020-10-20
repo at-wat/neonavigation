@@ -47,7 +47,6 @@ class JumpDetector
 {
 protected:
   tf2_ros::Buffer& tfbuf_;
-  tf2_ros::TransformListener tfl_;
   tf2::Transform base_trans_prev_;
   tf2::Transform map_trans_prev_;
 
@@ -62,7 +61,6 @@ protected:
 public:
   explicit JumpDetector(tf2_ros::Buffer& tfbuf)
     : tfbuf_(tfbuf)
-    , tfl_(tfbuf_)
     , base_trans_prev_(tf2::Quaternion(0, 0, 0, 1))
     , map_trans_prev_(tf2::Quaternion(0, 0, 0, 1))
     , init_(false)

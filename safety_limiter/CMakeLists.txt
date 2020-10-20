@@ -5,6 +5,7 @@ set(CATKIN_DEPENDS
     roscpp
 
     diagnostic_updater
+    dynamic_reconfigure
     geometry_msgs
     pcl_conversions
     pcl_ros
@@ -21,6 +22,11 @@ find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(xmlrpcpp REQUIRED)
+
+generate_dynamic_reconfigure_options(
+  cfg/SafetyLimiter.cfg
+)
+
 catkin_package(
   CATKIN_DEPENDS ${CATKIN_DEPENDS}
 )
@@ -33,6 +39,16 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_D
 add_definitions(${PCL_DEFINITIONS})
 
 
+# Workaround for debian stretch build (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=894656)
+list(REMOVE_ITEM PCL_LIBRARIES
+  "vtkGUISupportQt"
+  "vtkGUISupportQtOpenGL"
+  "vtkGUISupportQtSQL"
+  "vtkGUISupportQtWebkit"
+  "vtkViewsQt"
+  "vtkRenderingQt"
+)
+
 # Workaround for the bug in PCL(<1.8.1) https://github.com/PointCloudLibrary/pcl/issues/1406
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 
@@ -44,7 +60,7 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 add_executable(safety_limiter src/safety_limiter.cpp)
 target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(safety_limiter ${catkin_EXPORTED_TARGETS})
+add_dependencies(safety_limiter ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)

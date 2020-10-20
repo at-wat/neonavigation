@@ -58,7 +58,7 @@ public:
     ros::Duration(0.1).sleep();
     ros::Rate rate(100);
     odom_ = nullptr;
-    for (int i = 0; i < 100 && ros::ok(); ++i)
+    for (int i = 0; i < 1000 && ros::ok(); ++i)
     {
       odom_raw.header.stamp = ros::Time::now();
       imu.header.stamp = odom_raw.header.stamp + ros::Duration(0.0001);

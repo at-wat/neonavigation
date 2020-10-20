@@ -2,6 +2,53 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.2 (2020-10-07)
+-------------------
+
+0.10.1 (2020-08-26)
+-------------------
+
+0.10.0 (2020-08-06)
+-------------------
+* trajectory_tracker: add a mode to apply the same control method during turning in place (`#513 <https://github.com/at-wat/neonavigation/issues/513>`_)
+* trajectory_tracker: relax test tolerance on tf mode (`#545 <https://github.com/at-wat/neonavigation/issues/545>`_)
+* trajectory_tracker: goal if both raw and predicted pose is in tolerance (`#540 <https://github.com/at-wat/neonavigation/issues/540>`_)
+* trajectory_tracker: fix wrong tracking target just after new path is received (`#537 <https://github.com/at-wat/neonavigation/issues/537>`_)
+* Increase initialization timeout in the tests (`#536 <https://github.com/at-wat/neonavigation/issues/536>`_)
+* trajectory_tracker: add odometry timeout checking (`#534 <https://github.com/at-wat/neonavigation/issues/534>`_)
+* trajectory_tracker: predict odometry by extrapolation (`#529 <https://github.com/at-wat/neonavigation/issues/529>`_)
+* trajectory_tracker: add use_odom option (`#523 <https://github.com/at-wat/neonavigation/issues/523>`_)
+* trajectory_tracker: make trajectory_tracker dynamic-reconfigurable (`#521 <https://github.com/at-wat/neonavigation/issues/521>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
+0.9.1 (2020-07-16)
+------------------
+* trajectory_tracker: fix remained distance calculation on overshoot (`#514 <https://github.com/at-wat/neonavigation/issues/514>`_)
+* Contributors: Atsushi Watanabe
+
+0.9.0 (2020-07-02)
+------------------
+
+0.8.8 (2020-06-15)
+------------------
+
+0.8.7 (2020-05-22)
+------------------
+
+0.8.6 (2020-05-15)
+------------------
+* Fix duplicated tf timestamp (`#494 <https://github.com/at-wat/neonavigation/issues/494>`_)
+* Contributors: Atsushi Watanabe
+
+0.8.5 (2020-05-04)
+------------------
+
+0.8.4 (2020-04-30)
+------------------
+* Clean unused dependencies (`#472 <https://github.com/at-wat/neonavigation/issues/472>`_)
+* trajectory_tracker: add missing dep to std_srvs (`#470 <https://github.com/at-wat/neonavigation/issues/470>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.3 (2020-04-26)
 ------------------
 

@@ -2,6 +2,46 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.2 (2020-10-07)
+-------------------
+
+0.10.1 (2020-08-26)
+-------------------
+
+0.10.0 (2020-08-06)
+-------------------
+* joystick_interrupt: improve test stability (`#538 <https://github.com/at-wat/neonavigation/issues/538>`_)
+* Increase initialization timeout in the tests (`#536 <https://github.com/at-wat/neonavigation/issues/536>`_)
+* joystick_interrupt: increase JoystickMuxTest wait (`#524 <https://github.com/at-wat/neonavigation/issues/524>`_)
+* joystick_interrupt: send zero twist when interrupt button is released (`#517 <https://github.com/at-wat/neonavigation/issues/517>`_)
+* Contributors: Atsushi Watanabe, f-fl0
+
+0.9.1 (2020-07-16)
+------------------
+
+0.9.0 (2020-07-02)
+------------------
+
+0.8.8 (2020-06-15)
+------------------
+* joystick_interrupt: fix joystick_mux event handling and add tests (`#504 <https://github.com/at-wat/neonavigation/issues/504>`_)
+* joystick_interrupt: validate joystick button array size in joystick_mux (`#503 <https://github.com/at-wat/neonavigation/issues/503>`_)
+* Contributors: Atsushi Watanabe
+
+0.8.7 (2020-05-22)
+------------------
+
+0.8.6 (2020-05-15)
+------------------
+
+0.8.5 (2020-05-04)
+------------------
+
+0.8.4 (2020-04-30)
+------------------
+* Clean unused dependencies (`#472 <https://github.com/at-wat/neonavigation/issues/472>`_)
+* Contributors: Atsushi Watanabe
+
 0.8.3 (2020-04-26)
 ------------------
 
