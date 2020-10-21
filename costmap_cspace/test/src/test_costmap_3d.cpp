@@ -743,10 +743,10 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   cm_keep_known.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
   cm_keep_known.setKeepUnknown(true);
 
-  const int unknown_x = 3;
-  const int unknown_y = 4;
-  const int width = 6;
-  const int height = 5;
+  const size_t unknown_x = 3;
+  const size_t unknown_y = 4;
+  const size_t width = 6;
+  const size_t height = 5;
   nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
   map->info.width = width;
   map->info.height = height;
@@ -779,11 +779,11 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   ASSERT_EQ(normal_result->info.height, keep_uknown_result->info.height);
   ASSERT_EQ(normal_result->info.width, keep_uknown_result->info.width);
 
-  for (int yaw = 0; yaw < normal_result->info.angle; ++yaw)
+  for (size_t yaw = 0; yaw < normal_result->info.angle; ++yaw)
   {
-    for (int y = 0; y < normal_result->info.height; ++y)
+    for (size_t y = 0; y < normal_result->info.height; ++y)
     {
-      for (int x = 0; x < normal_result->info.width; ++x)
+      for (size_t x = 0; x < normal_result->info.width; ++x)
       {
         if ((x == unknown_x) && (y == unknown_y))
         {
