@@ -2,6 +2,12 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.3 (2020-10-22)
+-------------------
+* costmap_cspace: make Costmap3dLayerFootprint::generateCSpace faster (`#554 <https://github.com/at-wat/neonavigation/issues/554>`_)
+* costmap_cspace: add test for keeping unknown mode (`#555 <https://github.com/at-wat/neonavigation/issues/555>`_)
+* Contributors: Naotaka Hatao
+
 0.10.2 (2020-10-07)
 -------------------
 * costmap_cspace: enable func to remove objects out of z range (`#551 <https://github.com/at-wat/neonavigation/issues/551>`_)
