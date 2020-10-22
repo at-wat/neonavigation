@@ -722,26 +722,11 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
 
 TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
 {
-  costmap_cspace::Costmap3dLayerFootprint cm_normal;
-  costmap_cspace::Costmap3dLayerFootprint cm_keep_known;
-
   // Set example footprint
   int footprint_offset = 0;
   XmlRpc::XmlRpcValue footprint_xml;
   footprint_xml.fromXml(footprint_str, &footprint_offset);
   costmap_cspace::Polygon footprint(footprint_xml);
-
-  cm_normal.setFootprint(footprint);
-  cm_normal.setAngleResolution(4);
-  cm_normal.setExpansion(0.0, 2.0);
-  cm_normal.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
-  cm_normal.setKeepUnknown(false);
-
-  cm_keep_known.setFootprint(footprint);
-  cm_keep_known.setAngleResolution(4);
-  cm_keep_known.setExpansion(0.0, 2.0);
-  cm_keep_known.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
-  cm_keep_known.setKeepUnknown(true);
 
   const size_t unknown_x = 3;
   const size_t unknown_y = 4;
@@ -768,17 +753,32 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   map->data[unknown_x + width * unknown_y] = -1;
   map_overlay->data[unknown_x + width * unknown_y] = -1;
 
-  cm_normal.setBaseMap(map);
-  cm_normal.processMapOverlay(map_overlay);
-  cm_keep_known.setBaseMap(map);
-  cm_keep_known.processMapOverlay(map_overlay);
+  costmap_cspace::Costmap3d cms1(4);
+  auto cm_base1 = cms1.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm_base1->setExpansion(0.0, 2.0);
+  cm_base1->setFootprint(footprint);
+  auto cm_normal = cms1.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_normal->setExpansion(0.0, 2.0);
+  cm_normal->setFootprint(footprint);
+  cm_normal->setKeepUnknown(false);
+  cm_base1->setBaseMap(map);
+  cm_normal->processMapOverlay(map_overlay);
 
-  const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal.getMap();
-  const costmap_cspace::CSpace3DMsg::Ptr keep_uknown_result = cm_keep_known.getMap();
-  ASSERT_EQ(normal_result->info.angle, keep_uknown_result->info.angle);
-  ASSERT_EQ(normal_result->info.height, keep_uknown_result->info.height);
-  ASSERT_EQ(normal_result->info.width, keep_uknown_result->info.width);
+  costmap_cspace::Costmap3d cms2(4);
+  auto cm_base2 = cms1.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm_base2->setExpansion(0.0, 2.0);
+  cm_base2->setFootprint(footprint);
+  auto cm_keep_uknown = cms1.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_keep_uknown->setExpansion(0.0, 2.0);
+  cm_keep_uknown->setFootprint(footprint);
+  cm_keep_uknown->setKeepUnknown(true);
+  cm_base2->setBaseMap(map);
+  cm_keep_uknown->processMapOverlay(map_overlay);
 
+  const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::Ptr keep_unknown_result = cm_keep_uknown->getMapOverlay();
   for (size_t yaw = 0; yaw < normal_result->info.angle; ++yaw)
   {
     for (size_t y = 0; y < normal_result->info.height; ++y)
@@ -788,11 +788,11 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
         if ((x == unknown_x) && (y == unknown_y))
         {
           EXPECT_GT(normal_result->getCost(x, y, yaw), 0);
-          EXPECT_EQ(static_cast<int>(keep_uknown_result->getCost(x, y, yaw)), -1);
+          EXPECT_EQ(static_cast<int>(keep_unknown_result->getCost(x, y, yaw)), -1);
         }
         else
         {
-          EXPECT_EQ(normal_result->getCost(x, y, yaw), keep_uknown_result->getCost(x, y, yaw))
+          EXPECT_EQ(normal_result->getCost(x, y, yaw), keep_unknown_result->getCost(x, y, yaw))
               << " x:" << x << " y:" << y << " yaw:" << yaw;
         }
       }
