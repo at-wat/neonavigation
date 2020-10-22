@@ -766,10 +766,10 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   cm_normal->processMapOverlay(map_overlay);
 
   costmap_cspace::Costmap3d cms2(4);
-  auto cm_base2 = cms1.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  auto cm_base2 = cms2.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
   cm_base2->setExpansion(0.0, 2.0);
   cm_base2->setFootprint(footprint);
-  auto cm_keep_uknown = cms1.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
+  auto cm_keep_uknown = cms2.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
       costmap_cspace::MapOverlayMode::MAX);
   cm_keep_uknown->setExpansion(0.0, 2.0);
   cm_keep_uknown->setFootprint(footprint);
