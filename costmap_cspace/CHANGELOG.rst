@@ -2,8 +2,8 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.3 (2020-10-22)
+-------------------
 * costmap_cspace: make Costmap3dLayerFootprint::generateCSpace faster (`#554 <https://github.com/at-wat/neonavigation/issues/554>`_)
 * costmap_cspace: add test for keeping unknown mode (`#555 <https://github.com/at-wat/neonavigation/issues/555>`_)
 * Contributors: Naotaka Hatao
