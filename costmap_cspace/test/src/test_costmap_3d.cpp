@@ -31,6 +31,7 @@
 #include <cmath>
 #include <cstddef>
 #include <string>
+#include <vector>
 
 #include <ros/ros.h>
 
@@ -715,6 +716,86 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     else
     {
       EXPECT_FALSE(static_cast<bool>(updated)) << test_name;
+    }
+  }
+}
+
+TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
+{
+  // Set example footprint
+  int footprint_offset = 0;
+  XmlRpc::XmlRpcValue footprint_xml;
+  footprint_xml.fromXml(footprint_str, &footprint_offset);
+  costmap_cspace::Polygon footprint(footprint_xml);
+
+  const size_t unknown_x = 3;
+  const size_t unknown_y = 4;
+  const size_t width = 6;
+  const size_t height = 5;
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = width;
+  map->info.height = height;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data = std::vector<int8_t>(width * height, 0);
+  map->data[2 + width * 3] = 100;
+  map->data[3 + width * 3] = -1;
+
+  nav_msgs::OccupancyGrid::Ptr map_overlay(new nav_msgs::OccupancyGrid);
+  map_overlay->info.width = width;
+  map_overlay->info.height = height;
+  map_overlay->info.resolution = 1.0;
+  map_overlay->info.origin.orientation.w = 1.0;
+  map_overlay->data = std::vector<int8_t>(width * height, 0);
+  map_overlay->data[2 + width * 4] = 100;
+  map_overlay->data[4 + width * 4] = -1;
+
+  map->data[unknown_x + width * unknown_y] = -1;
+  map_overlay->data[unknown_x + width * unknown_y] = -1;
+
+  costmap_cspace::Costmap3d cms1(4);
+  auto cm_base1 = cms1.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm_base1->setExpansion(0.0, 2.0);
+  cm_base1->setFootprint(footprint);
+  auto cm_normal = cms1.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_normal->setExpansion(0.0, 2.0);
+  cm_normal->setFootprint(footprint);
+  cm_normal->setKeepUnknown(false);
+  cm_base1->setBaseMap(map);
+  cm_normal->processMapOverlay(map_overlay);
+
+  costmap_cspace::Costmap3d cms2(4);
+  auto cm_base2 = cms2.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm_base2->setExpansion(0.0, 2.0);
+  cm_base2->setFootprint(footprint);
+  auto cm_keep_uknown = cms2.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_keep_uknown->setExpansion(0.0, 2.0);
+  cm_keep_uknown->setFootprint(footprint);
+  cm_keep_uknown->setKeepUnknown(true);
+  cm_base2->setBaseMap(map);
+  cm_keep_uknown->processMapOverlay(map_overlay);
+
+  const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::Ptr keep_unknown_result = cm_keep_uknown->getMapOverlay();
+  for (size_t yaw = 0; yaw < normal_result->info.angle; ++yaw)
+  {
+    for (size_t y = 0; y < normal_result->info.height; ++y)
+    {
+      for (size_t x = 0; x < normal_result->info.width; ++x)
+      {
+        if ((x == unknown_x) && (y == unknown_y))
+        {
+          EXPECT_GT(normal_result->getCost(x, y, yaw), 0);
+          EXPECT_EQ(static_cast<int>(keep_unknown_result->getCost(x, y, yaw)), -1);
+        }
+        else
+        {
+          EXPECT_EQ(normal_result->getCost(x, y, yaw), keep_unknown_result->getCost(x, y, yaw))
+              << " x:" << x << " y:" << y << " yaw:" << yaw;
+        }
+      }
     }
   }
 }

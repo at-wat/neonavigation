@@ -30,6 +30,7 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -183,11 +184,11 @@ protected:
       const UpdatedRegion& region)
   {
     if (root_)
-      gemerateCSpace(map_, map, region);
+      generateCSpace(map_, map, region);
     else
-      gemerateCSpace(map_overlay_, map, region);
+      generateCSpace(map_overlay_, map, region);
   }
-  void gemerateCSpace(
+  void generateCSpace(
       CSpace3DMsg::Ptr map,
       const nav_msgs::OccupancyGrid::ConstPtr& msg,
       const UpdatedRegion& region)
@@ -277,21 +278,20 @@ protected:
           continue;
         }
 
-        for (int y = -range_max_; y <= range_max_; y++)
+        const int map_x_min = std::max(gx - range_max_, 0);
+        const int map_x_max = std::min(gx + range_max_, static_cast<int>(map->info.width) - 1);
+        const int map_y_min = std::max(gy - range_max_, 0);
+        const int map_y_max = std::min(gy + range_max_, static_cast<int>(map->info.height) - 1);
+        for (int map_y = map_y_min; map_y <= map_y_max; ++map_y)
         {
-          const int y2 = gy + y;
-          if (static_cast<size_t>(y2) >= map->info.height)
-            continue;
-          for (int x = -range_max_; x <= range_max_; x++)
+          // Use raw pointers for faster iteration
+          int8_t* cost_addr = &(map->getCost(map_x_min, map_y, yaw));
+          const char* cs_addr = &(cs_template_.e(map_x_min - gx, map_y - gy, yaw));
+          for (int n = 0; n <= map_x_max - map_x_min; ++n, ++cost_addr, ++cs_addr)
           {
-            const int x2 = gx + x;
-            if (static_cast<size_t>(x2) >= map->info.width)
-              continue;
-
-            int8_t& m = map->getCost(x2, y2, yaw);
-            const int8_t c = cs_template_.e(x, y, yaw) * val / 100;
-            if (c > 0 && m < c)
-              m = c;
+            const int8_t c = *cs_addr * val / 100;
+            if (c > 0 && *cost_addr < c)
+              *cost_addr = c;
           }
         }
       }
