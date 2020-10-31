@@ -8,7 +8,7 @@
   <license>BSD</license>
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend version_gte="0.7.22">catkin</buildtool_depend>
   
   <exec_depend>costmap_cspace</exec_depend>
   <exec_depend>joystick_interrupt</exec_depend>
