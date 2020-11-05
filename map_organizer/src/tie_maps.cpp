@@ -104,9 +104,9 @@ public:
       {
         doc["resolution"] >> res;
       }
-      catch (YAML::InvalidScalar)
+      catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain a resolution tag or it is invalid.");
+        ROS_ERROR("The map does not contain a resolution tag or it is invalid: %s", e.what());
         ros::shutdown();
         return;
       }
@@ -114,9 +114,9 @@ public:
       {
         doc["negate"] >> negate;
       }
-      catch (YAML::InvalidScalar)
+      catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain a negate tag or it is invalid.");
+        ROS_ERROR("The map does not contain a negate tag or it is invalid: %s", e.what());
         ros::shutdown();
         return;
       }
@@ -124,9 +124,9 @@ public:
       {
         doc["occupied_thresh"] >> occ_th;
       }
-      catch (YAML::InvalidScalar)
+      catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain an occupied_thresh tag or it is invalid.");
+        ROS_ERROR("The map does not contain an occupied_thresh tag or it is invalid: %s", e.what());
         ros::shutdown();
         return;
       }
@@ -134,9 +134,9 @@ public:
       {
         doc["free_thresh"] >> free_th;
       }
-      catch (YAML::InvalidScalar)
+      catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain a free_thresh tag or it is invalid.");
+        ROS_ERROR("The map does not contain a free_thresh tag or it is invalid: %s", e.what());
         ros::shutdown();
         return;
       }
@@ -157,9 +157,9 @@ public:
           exit(-1);
         }
       }
-      catch (YAML::Exception)
+      catch (YAML::Exception& e)
       {
-        ROS_DEBUG("The map does not contain a mode tag or it is invalid... assuming trinary");
+        ROS_DEBUG("The map does not contain a mode tag or it is invalid... assuming trinary: %s", e.what());
         mode = TRINARY;
       }
       try
@@ -168,9 +168,9 @@ public:
         doc["origin"][1] >> origin[1];
         doc["origin"][2] >> origin[2];
       }
-      catch (YAML::InvalidScalar)
+      catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain an origin tag or it is invalid.");
+        ROS_ERROR("The map does not contain an origin tag or it is invalid: %s", e.what());
         ros::shutdown();
         return;
       }
@@ -178,7 +178,7 @@ public:
       {
         doc["height"] >> height;
       }
-      catch (YAML::Exception)
+      catch (YAML::Exception& e)
       {
         height = 0;
       }
@@ -200,9 +200,9 @@ public:
           free(fname_copy);
         }
       }
-      catch (YAML::InvalidScalar)
+      catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain an image tag or it is invalid.");
+        ROS_ERROR("The map does not contain an image tag or it is invalid: e.what()");
         ros::shutdown();
         return;
       }
