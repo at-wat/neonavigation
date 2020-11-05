@@ -33,30 +33,32 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 COPY --from=cloner /repos-manifests/src /catkin_ws/src
 COPY --from=cloner /repos-isolated-manifests/src /catkin_ws_isolated/src
-RUN apt-get -qq update \
+RUN if [ ${ROS_DISTRO} = "noetic" ]; then PYTHON_VERSION_SUFFIX=3; else PYTHON_VERSION_SUFFIX=; fi \
+  && apt-get -qq update \
   && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     libxml2-utils \
-    python3-catkin-pkg \
-    python3-pip \
-    python3-rosdep \
-    python3-rosdep-modules \
-    python3-rosdistro \
-    python3-rospkg \
-    python3-setuptools \
+    python${PYTHON_VERSION_SUFFIX}-catkin-pkg \
+    python${PYTHON_VERSION_SUFFIX}-pip \
+    python${PYTHON_VERSION_SUFFIX}-rosdep \
+    python${PYTHON_VERSION_SUFFIX}-rosdep-modules \
+    python${PYTHON_VERSION_SUFFIX}-rosdistro \
+    python${PYTHON_VERSION_SUFFIX}-rospkg \
+    python${PYTHON_VERSION_SUFFIX}-setuptools \
     sudo \
     wget \
+  && python${PYTHON_VERSION_SUFFIX} -m pip install catkin_lint \
   && rosdep init \
   && rosdep update \
   && rosdep install --from-paths /catkin_ws/src --ignore-src --rosdistro=${ROS_DISTRO} -y \
   && rosdep install --from-paths /catkin_ws_isolated/src --ignore-src --rosdistro=${ROS_DISTRO} -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
-RUN python3 -m pip install catkin_lint
 
 COPY --from=cloner /repos-isolated/src /catkin_ws_isolated/src
 RUN cd /catkin_ws_isolated \
+  && . /opt/ros/${ROS_DISTRO}/setup.sh \
   && catkin_make_isolated \
     --install --install-space=/opt/ros/${ROS_DISTRO} \
     -DCMAKE_BUILD_TYPE=Release \
