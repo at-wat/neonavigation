@@ -30,7 +30,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${HOME}/layers.tar
-          key: docker-layers-${{ hashFiles('package.xml') }}
+          key: docker-layers-${{ matrix.env }}-${{ hashFiles('package.xml') }}
 
       - name: Get dataset
         run: if [ -x .github/get_dataset.sh ]; then .github/get_dataset.sh; fi
@@ -40,7 +40,8 @@ jobs:
       - name: Install gh-pr-comment
         run: |
           curl -sL https://raw.githubusercontent.com/at-wat/gh-pr-comment/master/install.sh | sh -s
-          cp ~/.local/bin/gh-pr-comment .github/
+          echo "${HOME}/.local/bin" >> ${GITHUB_PATH}
+          cp ${HOME}/.local/bin/gh-pr-comment .github/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download codecov script
