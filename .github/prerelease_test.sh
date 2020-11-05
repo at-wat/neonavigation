@@ -2,12 +2,7 @@
 
 set -eu
 
-if [[ ! "${TRAVIS_PULL_REQUEST_BRANCH}" =~ ^release-.*$ ]]; then
-  echo "Skipping prerelease test"
-  exit 0
-fi
-
-case ${ROS_DISTRO_TARGET} in
+case ${ROS_DISTRO} in
   kinetic )
     UBUNTU_DIST_TARGET=xenial
     ;;
@@ -18,7 +13,7 @@ case ${ROS_DISTRO_TARGET} in
     UBUNTU_DIST_TARGET=focal
     ;;
   * )
-    echo "Unknown ROS_DISTRO_TARGET: ${ROS_DISTRO_TARGET}"
+    echo "Unknown ROS_DISTRO: ${ROS_DISTRO}"
     exit 1
     ;;
 esac
@@ -28,10 +23,15 @@ for i in 1 2 3; do
   sudo apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 \
     && break \
     || true
+  sleep 5
 done
 sudo apt-get update -qq
-sudo apt-get install -y --no-install-recommends python3-ros-buildfarm python3-pip git
-sudo pip3 install git+https://github.com/ros/catkin
+sudo apt-get install -y --no-install-recommends \
+  git \
+  jq \
+  python3-pip \
+  python3-ros-buildfarm
+sudo python3 -m pip install git+https://github.com/ros/catkin
 
 mkdir -p /tmp/prerelease_job
 cd /tmp/prerelease_job
@@ -42,18 +42,18 @@ git clone \
   -b apt-get-us-east-1 \
   https://github.com/at-wat/ros_buildfarm.git ros_buildfarm
 
-sudo pip3 install ./ros_buildfarm
+sudo python3 -m pip install ./ros_buildfarm
 
+
+build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
 
 generate_prerelease_script.py \
   https://raw.githubusercontent.com/ros-infrastructure/ros_buildfarm_config/production/index.yaml \
-  ${ROS_DISTRO_TARGET} default ubuntu ${UBUNTU_DIST_TARGET} amd64 \
-  --custom-repo \
-    neonavigation__custom-2:git:https://github.com/at-wat/neonavigation.git:${TRAVIS_PULL_REQUEST_BRANCH} \
-    neonavigation_msgs__custom-2:git:https://github.com/at-wat/neonavigation_msgs.git:master \
+  ${ROS_DISTRO} default ubuntu ${UBUNTU_DIST_TARGET} amd64 \
+  --custom-repo $@ \
   --level 1 \
   --output-dir ./
 
 yes | ./prerelease.sh \
-  && gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}-prerelease] PASSED on ${ROS_DISTRO_TARGET}" "" \
-  || (gh-pr-comment "[#${TRAVIS_BUILD_NUMBER}-prerelease] FAILED on ${ROS_DISTRO_TARGET}" ""; false)
+  && gh-pr-comment "${build_link} PASSED on ${ROS_DISTRO}" "" \
+  || (gh-pr-comment "${build_link} FAILED on ${ROS_DISTRO}" ""; false)
