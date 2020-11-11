@@ -237,12 +237,13 @@ protected:
         const int res_up = std::ceil(resolution_scale);
         for (int yp = 0; yp < res_up; yp++)
         {
+          const int y2 = y + oy + yp;
+          if (static_cast<size_t>(y2) >= map->info.height)
+            continue;
           for (int xp = 0; xp < res_up; xp++)
           {
             const int x2 = x + ox + xp;
-            const int y2 = y + oy + yp;
-            if (static_cast<size_t>(x2) >= map->info.width ||
-                static_cast<size_t>(y2) >= map->info.height)
+            if (static_cast<size_t>(x2) >= map->info.width)
               continue;
 
             map->getCost(x2, y2, yaw) = -1;
@@ -282,17 +283,17 @@ protected:
     }
     for (size_t i = 0; i < msg->data.size(); i++)
     {
-      const int gx = std::lround((i % msg->info.width) * resolution_scale) + ox;
-      const int gy = std::lround((i / msg->info.width) * resolution_scale) + oy;
-      if (static_cast<size_t>(gx) >= map->info.width ||
-          static_cast<size_t>(gy) >= map->info.height)
-        continue;
       const int8_t val = msg->data[i];
       if (val < 0)
       {
         continue;
       }
-      else if (val == 0)
+      const int gx = std::lround((i % msg->info.width) * resolution_scale) + ox;
+      const int gy = std::lround((i / msg->info.width) * resolution_scale) + oy;
+      if (static_cast<size_t>(gx) >= map->info.width ||
+          static_cast<size_t>(gy) >= map->info.height)
+        continue;
+      if (val == 0)
       {
         int8_t& m = map->getCost(gx, gy, yaw);
         if (m < 0)
