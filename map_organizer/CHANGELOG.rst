@@ -2,8 +2,8 @@
 Changelog for package map_organizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.4 (2020-11-12)
+-------------------
 * Migrate to GitHub Actions (`#559 <https://github.com/at-wat/neonavigation/issues/559>`_)
 * Contributors: Atsushi Watanabe
 
