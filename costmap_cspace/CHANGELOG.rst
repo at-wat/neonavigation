@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* costmap_cspace: make Costmap3dLayerPlain and Costmap3dLayerOutput faster (`#562 <https://github.com/at-wat/neonavigation/issues/562>`_)
+* Contributors: Naotaka Hatao
+
 0.10.3 (2020-10-22)
 -------------------
 * costmap_cspace: make Costmap3dLayerFootprint::generateCSpace faster (`#554 <https://github.com/at-wat/neonavigation/issues/554>`_)
