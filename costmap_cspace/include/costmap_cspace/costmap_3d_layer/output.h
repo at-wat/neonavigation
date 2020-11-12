@@ -110,16 +110,15 @@ protected:
         (update_msg->width == map_->info.width) && (update_msg->height == map_->info.height) &&
         (update_msg->angle == map_->info.angle))
     {
-      std::memcpy(update_msg->data.data(), &(map_->getCost(0, 0, 0)), update_msg->data.size() * sizeof(int8_t));
+      CSpace3DMsg::copyCells(*update_msg, 0, 0, 0, *map_, 0, 0, 0, update_msg->data.size());
       return update_msg;
     }
     for (unsigned int k = 0; k < update_msg->angle; ++k)
     {
       for (unsigned int j = 0; j < update_msg->height; ++j)
       {
-        const int8_t* const map_addr = &(map_->getCost(update_msg->x, update_msg->y + j, update_msg->yaw + k));
-        int8_t* const msg_addr = update_msg->data.data() + (k * update_msg->height + j) * update_msg->width;
-        std::memcpy(msg_addr, map_addr, update_msg->width * sizeof(int8_t));
+        CSpace3DMsg::copyCells(*update_msg, 0, j, k,
+                               *map_, update_msg->x, update_msg->y + j, update_msg->yaw + k, update_msg->width);
       }
     }
     return update_msg;

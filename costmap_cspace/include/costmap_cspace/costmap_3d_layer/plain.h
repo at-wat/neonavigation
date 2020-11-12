@@ -73,11 +73,9 @@ protected:
     ROS_ASSERT(ang_grid_ > 0);
     clearTravelableArea(map, msg);
     generateSpecifiedCSpace(map, msg, 0);
-    const int8_t* const org_addr = &(map->getCost(0, 0, 0));
     for (size_t i = 1; i < map->info.angle; ++i)
     {
-      int8_t* const target_addr = &(map->getCost(0, 0, i));
-      std::memcpy(target_addr, org_addr, map->info.width * map->info.height * sizeof(int8_t));
+      CSpace3DMsg::copyCells(*map, 0, 0, i, *map, 0, 0, 0, map->info.width * map->info.height);
     }
   }
 };
