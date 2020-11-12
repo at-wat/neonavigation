@@ -32,10 +32,10 @@
 
 #include <memory>
 
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 
@@ -106,23 +106,19 @@ protected:
     update_msg->yaw = region_merged.yaw_;
     update_msg->angle = region_merged.angle_;
     update_msg->data.resize(update_msg->width * update_msg->height * update_msg->angle);
-
-    for (int i = 0; i < static_cast<int>(update_msg->width); i++)
+    if ((update_msg->x == 0) && (update_msg->y == 0) && (update_msg->yaw == 0) &&
+        (update_msg->width == map_->info.width) && (update_msg->height == map_->info.height) &&
+        (update_msg->angle == map_->info.angle))
     {
-      for (int j = 0; j < static_cast<int>(update_msg->height); j++)
+      CSpace3DMsg::copyCells(*update_msg, 0, 0, 0, *map_, 0, 0, 0, update_msg->data.size());
+      return update_msg;
+    }
+    for (unsigned int k = 0; k < update_msg->angle; ++k)
+    {
+      for (unsigned int j = 0; j < update_msg->height; ++j)
       {
-        for (int k = 0; k < static_cast<int>(update_msg->angle); k++)
-        {
-          const int x2 = update_msg->x + i;
-          const int y2 = update_msg->y + j;
-          const int yaw2 = update_msg->yaw + k;
-
-          const auto& m = map_->getCost(x2, y2, yaw2);
-          const size_t addr = (k * update_msg->height + j) * update_msg->width + i;
-          ROS_ASSERT(addr < update_msg->data.size());
-          auto& up = update_msg->data[addr];
-          up = m;
-        }
+        CSpace3DMsg::copyCells(*update_msg, 0, j, k,
+                               *map_, update_msg->x, update_msg->y + j, update_msg->yaw + k, update_msg->width);
       }
     }
     return update_msg;

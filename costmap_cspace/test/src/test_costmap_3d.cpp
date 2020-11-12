@@ -800,6 +800,78 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   }
 }
 
+TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
+{
+  costmap_cspace::Polygon footprint;
+  footprint.v.resize(3);
+  for (auto& p : footprint.v)
+  {
+    p[0] = p[1] = 0.0;
+  }
+
+  const size_t unknown_x = 3;
+  const size_t unknown_y = 4;
+  const size_t width = 6;
+  const size_t height = 5;
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = width;
+  map->info.height = height;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data = std::vector<int8_t>(width * height, 0);
+  map->data[2 + width * 3] = 100;
+  map->data[3 + width * 3] = -1;
+
+  nav_msgs::OccupancyGrid::Ptr map_overlay(new nav_msgs::OccupancyGrid);
+  map_overlay->info.width = width;
+  map_overlay->info.height = height;
+  map_overlay->info.resolution = 1.0;
+  map_overlay->info.origin.orientation.w = 1.0;
+  map_overlay->data = std::vector<int8_t>(width * height, 0);
+  map_overlay->data[2 + width * 4] = 100;
+  map_overlay->data[4 + width * 4] = -1;
+
+  map->data[unknown_x + width * unknown_y] = -1;
+  map_overlay->data[unknown_x + width * unknown_y] = -1;
+
+  costmap_cspace::Costmap3d cms1(4);
+  auto cm_base1 = cms1.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm_base1->setExpansion(0.0, 2.0);
+  cm_base1->setFootprint(footprint);
+  auto cm_normal = cms1.addLayer<costmap_cspace::Costmap3dLayerFootprint>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_normal->setExpansion(0.0, 2.0);
+  cm_normal->setFootprint(footprint);
+  cm_normal->setKeepUnknown(false);
+  cm_base1->setBaseMap(map);
+  cm_normal->processMapOverlay(map_overlay);
+
+  costmap_cspace::Costmap3d cms2(4);
+  auto cm_base2 = cms2.addRootLayer<costmap_cspace::Costmap3dLayerPlain>();
+  cm_base2->setExpansion(0.0, 2.0);
+  auto cm_plain = cms2.addLayer<costmap_cspace::Costmap3dLayerPlain>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_plain->setExpansion(0.0, 2.0);
+  cm_plain->setKeepUnknown(false);
+  cm_base2->setBaseMap(map);
+  cm_plain->processMapOverlay(map_overlay);
+
+  const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::Ptr plain_result = cm_plain->getMapOverlay();
+  for (size_t yaw = 0; yaw < normal_result->info.angle; ++yaw)
+  {
+    for (size_t y = 0; y < normal_result->info.height; ++y)
+    {
+      for (size_t x = 0; x < normal_result->info.width; ++x)
+      {
+        EXPECT_EQ(normal_result->getCost(x, y, yaw), plain_result->getCost(x, y, yaw))
+            << " x:" << x << " y:" << y << " yaw:" << yaw;
+        EXPECT_EQ(plain_result->getCost(x, y, yaw), plain_result->getCost(x, y, 0))
+            << " x:" << x << " y:" << y << " yaw:" << yaw;
+      }
+    }
+  }
+}
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
