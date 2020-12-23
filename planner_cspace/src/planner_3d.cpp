@@ -218,6 +218,48 @@ protected:
 
     return true;
   }
+  enum class DiscretePoseStatus
+  {
+    OK,
+    RELOCATED,
+    IN_ROCK,
+    OUT_OF_MAP,
+  };
+  template <class T>
+  DiscretePoseStatus relocateDiscretePoseIfNeededImpl(const T& cm,
+                                                      const int tolerance_range,
+                                                      const int tolerance_angle,
+                                                      Astar::Vec& pose_discrete) const
+  {
+    if (!cm.validate(pose_discrete, range_))
+    {
+      return DiscretePoseStatus::OUT_OF_MAP;
+    }
+    if (cm[pose_discrete] == 100)
+    {
+      if (searchAvailablePos(cm, pose_discrete, tolerance_range, tolerance_angle))
+        return DiscretePoseStatus::RELOCATED;
+      else
+        return DiscretePoseStatus::IN_ROCK;
+    }
+    return DiscretePoseStatus::OK;
+  }
+  DiscretePoseStatus relocateDiscretePoseIfNeeded(Astar::Vec& pose_discrete,
+                                                  const int tolerance_range,
+                                                  const int tolerance_angle,
+                                                  bool use_cm_rough = false) const
+  {
+    if (use_cm_rough)
+    {
+      pose_discrete[2] = 0;
+      return relocateDiscretePoseIfNeededImpl(cm_rough_, tolerance_range, tolerance_angle, pose_discrete);
+    }
+    else
+    {
+      return relocateDiscretePoseIfNeededImpl(cm_, tolerance_range, tolerance_angle, pose_discrete);
+    }
+  }
+
   bool cbMakePlan(nav_msgs::GetPlan::Request& req,
                   nav_msgs::GetPlan::Response& res)
   {
@@ -241,23 +283,41 @@ protected:
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
         req.start.pose.position.x, req.start.pose.position.y, tf2::getYaw(req.start.pose.orientation));
-    s[2] = 0;
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
         req.goal.pose.position.x, req.goal.pose.position.y, tf2::getYaw(req.goal.pose.orientation));
-    e[2] = 0;
+    ROS_INFO("Path plan from (%d, %d) to (%d, %d)", s[0], s[1], e[0], e[1]);
 
-    if (!(cm_rough_.validate(s, range_) && cm_rough_.validate(e, range_)))
+    const int tolerance_range = std::lround(req.tolerance / map_info_.linear_resolution);
+    const DiscretePoseStatus start_status = relocateDiscretePoseIfNeeded(s, tolerance_range, tolerance_angle_, true);
+    const DiscretePoseStatus goal_status = relocateDiscretePoseIfNeeded(e, tolerance_range, tolerance_angle_, true);
+    if (start_status == DiscretePoseStatus::OUT_OF_MAP)
     {
-      ROS_ERROR("Given start or goal is not on the map.");
+      ROS_ERROR("Given start is not on the map.");
       return false;
     }
-    else if (cm_rough_[s] == 100 || cm_rough_[e] == 100)
+    else if (start_status == DiscretePoseStatus::IN_ROCK)
     {
-      ROS_ERROR(
-          "Given start or goal is in Rock. (start: %d, end: %d)",
-          cm_rough_[s], cm_rough_[e]);
+      ROS_ERROR("Given start is in Rock.");
       return false;
+    }
+    else if (start_status == DiscretePoseStatus::RELOCATED)
+    {
+      ROS_INFO("Given start is moved (%d, %d)", s[0], s[1]);
+    }
+    if (goal_status == DiscretePoseStatus::OUT_OF_MAP)
+    {
+      ROS_ERROR("Given goal is not on the map.");
+      return false;
+    }
+    else if (goal_status == DiscretePoseStatus::IN_ROCK)
+    {
+      ROS_ERROR("Given goal is in Rock.");
+      return false;
+    }
+    else if (goal_status == DiscretePoseStatus::RELOCATED)
+    {
+      ROS_INFO("Given goal is moved (%d, %d)", e[0], e[1]);
     }
 
     const auto cb_progress = [](const std::list<Astar::Vec>& path_grid)
@@ -525,8 +585,10 @@ protected:
     }  // omp parallel
     rough_cost_max_ = g[s_rough] + ec_[0] * (range_ + local_range_);
   }
-  bool searchAvailablePos(Astar::Vec& s, const int xy_range, const int angle_range,
-                          const int cost_acceptable = 50, const int min_xy_range = 0)
+
+  template<class T>
+  bool searchAvailablePos(const T& cm, Astar::Vec& s, const int xy_range, const int angle_range,
+                          const int cost_acceptable = 50, const int min_xy_range = 0) const
   {
     ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
 
@@ -570,7 +632,7 @@ protected:
     {
       if (cost_acceptable != 100)
       {
-        return searchAvailablePos(s, xy_range, angle_range, 100);
+        return searchAvailablePos(cm, s, xy_range, angle_range, 100);
       }
       return false;
     }
@@ -613,48 +675,42 @@ protected:
           "New goal received (%d, %d, %d)",
           e[0], e[1], e[2]);
     }
-
-    if (!cm_.validate(e, range_))
-    {
-      ROS_ERROR("Given goal is not on the map.");
-      return false;
-    }
-    if (!cm_.validate(s, range_))
+    const DiscretePoseStatus start_pose_status = relocateDiscretePoseIfNeeded(s, tolerance_range_, tolerance_angle_);
+    const DiscretePoseStatus goal_pose_status = relocateDiscretePoseIfNeeded(e, tolerance_range_, tolerance_angle_);
+    if (start_pose_status == DiscretePoseStatus::OUT_OF_MAP)
     {
       ROS_ERROR("You are on the edge of the world.");
       return false;
     }
-
-    const auto ts = boost::chrono::high_resolution_clock::now();
-    reservable_priority_queue<Astar::PriorityVec> open;
-    open.reserve(map_info_.width * map_info_.height / 2);
-
-    cost_estim_cache_.clear(std::numeric_limits<float>::max());
-    if (cm_[e] == 100)
+    else if (start_pose_status == DiscretePoseStatus::IN_ROCK)
     {
-      if (!searchAvailablePos(e, tolerance_range_, tolerance_angle_))
-      {
-        ROS_WARN("Oops! Goal is in Rock!");
-        ++cnt_stuck_;
-        return true;
-      }
-      ROS_INFO("Goal moved (%d, %d, %d)",
-               e[0], e[1], e[2]);
+      ROS_WARN("Oops! You are in Rock!");
+      return true;
+    }
+    if (goal_pose_status == DiscretePoseStatus::OUT_OF_MAP)
+    {
+      ROS_ERROR("Given goal is not on the map.");
+      return false;
+    }
+    else if (goal_pose_status == DiscretePoseStatus::IN_ROCK)
+    {
+      ROS_WARN("Oops! Goal is in Rock!");
+      ++cnt_stuck_;
+      return true;
+    }
+    else if (goal_pose_status == DiscretePoseStatus::RELOCATED)
+    {
+      ROS_INFO("Goal moved (%d, %d, %d)", e[0], e[1], e[2]);
       float x, y, yaw;
       grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
       goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
       goal_.pose.position.x = x;
       goal_.pose.position.y = y;
     }
-    if (cm_[s] == 100)
-    {
-      if (!searchAvailablePos(s, tolerance_range_, tolerance_angle_))
-      {
-        ROS_WARN("Oops! You are in Rock!");
-        return true;
-      }
-    }
-
+    const auto ts = boost::chrono::high_resolution_clock::now();
+    reservable_priority_queue<Astar::PriorityVec> open;
+    open.reserve(map_info_.width * map_info_.height / 2);
+    cost_estim_cache_.clear(std::numeric_limits<float>::max());
     e[2] = 0;
     cost_estim_cache_[e] = -ec_[0] * 0.5;  // Decrement to reduce calculation error
     open.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
@@ -1654,7 +1710,7 @@ protected:
 
     if (starts.size() == 0)
     {
-      if (!searchAvailablePos(s, tolerance_range_, tolerance_angle_))
+      if (!searchAvailablePos(cm_, s, tolerance_range_, tolerance_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
         status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
@@ -1672,7 +1728,7 @@ protected:
       if (!escaping_ && temporary_escape_)
       {
         e = s;
-        if (searchAvailablePos(e, esc_range_, esc_angle_, 50, esc_range_ / 2))
+        if (searchAvailablePos(cm_, e, esc_range_, esc_angle_, 50, esc_range_ / 2))
         {
           escaping_ = true;
           ROS_INFO("Temporary goal (%d, %d, %d)",
