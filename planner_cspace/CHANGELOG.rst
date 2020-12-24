@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.5 (2020-12-24)
+-------------------
 * planner_cspace: enable tolerance in make_plan (`#570 <https://github.com/at-wat/neonavigation/issues/570>`_)
 * Contributors: Naotaka Hatao
 
