@@ -291,33 +291,33 @@ protected:
     const int tolerance_range = std::lround(req.tolerance / map_info_.linear_resolution);
     const DiscretePoseStatus start_status = relocateDiscretePoseIfNeeded(s, tolerance_range, tolerance_angle_, true);
     const DiscretePoseStatus goal_status = relocateDiscretePoseIfNeeded(e, tolerance_range, tolerance_angle_, true);
-    if (start_status == DiscretePoseStatus::OUT_OF_MAP)
+    switch (start_status)
     {
-      ROS_ERROR("Given start is not on the map.");
-      return false;
+      case DiscretePoseStatus::OUT_OF_MAP:
+        ROS_ERROR("Given start is not on the map.");
+        return false;
+      case DiscretePoseStatus::IN_ROCK:
+        ROS_ERROR("Given start is in Rock.");
+        return false;
+      case DiscretePoseStatus::RELOCATED:
+        ROS_INFO("Given start is moved (%d, %d)", s[0], s[1]);
+        break;
+      default:
+        break;
     }
-    else if (start_status == DiscretePoseStatus::IN_ROCK)
+    switch (goal_status)
     {
-      ROS_ERROR("Given start is in Rock.");
-      return false;
-    }
-    else if (start_status == DiscretePoseStatus::RELOCATED)
-    {
-      ROS_INFO("Given start is moved (%d, %d)", s[0], s[1]);
-    }
-    if (goal_status == DiscretePoseStatus::OUT_OF_MAP)
-    {
-      ROS_ERROR("Given goal is not on the map.");
-      return false;
-    }
-    else if (goal_status == DiscretePoseStatus::IN_ROCK)
-    {
-      ROS_ERROR("Given goal is in Rock.");
-      return false;
-    }
-    else if (goal_status == DiscretePoseStatus::RELOCATED)
-    {
-      ROS_INFO("Given goal is moved (%d, %d)", e[0], e[1]);
+      case DiscretePoseStatus::OUT_OF_MAP:
+        ROS_ERROR("Given goal is not on the map.");
+        return false;
+      case DiscretePoseStatus::IN_ROCK:
+        ROS_ERROR("Given goal is in Rock.");
+        return false;
+      case DiscretePoseStatus::RELOCATED:
+        ROS_INFO("Given goal is moved (%d, %d)", e[0], e[1]);
+        break;
+      default:
+        break;
     }
 
     const auto cb_progress = [](const std::list<Astar::Vec>& path_grid)
@@ -586,7 +586,7 @@ protected:
     rough_cost_max_ = g[s_rough] + ec_[0] * (range_ + local_range_);
   }
 
-  template<class T>
+  template <class T>
   bool searchAvailablePos(const T& cm, Astar::Vec& s, const int xy_range, const int angle_range,
                           const int cost_acceptable = 50, const int min_xy_range = 0) const
   {
@@ -677,35 +677,36 @@ protected:
     }
     const DiscretePoseStatus start_pose_status = relocateDiscretePoseIfNeeded(s, tolerance_range_, tolerance_angle_);
     const DiscretePoseStatus goal_pose_status = relocateDiscretePoseIfNeeded(e, tolerance_range_, tolerance_angle_);
-    if (start_pose_status == DiscretePoseStatus::OUT_OF_MAP)
+    switch (start_pose_status)
     {
-      ROS_ERROR("You are on the edge of the world.");
-      return false;
+      case DiscretePoseStatus::OUT_OF_MAP:
+        ROS_ERROR("You are on the edge of the world.");
+        return false;
+      case DiscretePoseStatus::IN_ROCK:
+        ROS_WARN("Oops! You are in Rock!");
+        return true;
+      default:
+        break;
     }
-    else if (start_pose_status == DiscretePoseStatus::IN_ROCK)
+    switch (goal_pose_status)
     {
-      ROS_WARN("Oops! You are in Rock!");
-      return true;
-    }
-    if (goal_pose_status == DiscretePoseStatus::OUT_OF_MAP)
-    {
-      ROS_ERROR("Given goal is not on the map.");
-      return false;
-    }
-    else if (goal_pose_status == DiscretePoseStatus::IN_ROCK)
-    {
-      ROS_WARN("Oops! Goal is in Rock!");
-      ++cnt_stuck_;
-      return true;
-    }
-    else if (goal_pose_status == DiscretePoseStatus::RELOCATED)
-    {
-      ROS_INFO("Goal moved (%d, %d, %d)", e[0], e[1], e[2]);
-      float x, y, yaw;
-      grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
-      goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-      goal_.pose.position.x = x;
-      goal_.pose.position.y = y;
+      case DiscretePoseStatus::OUT_OF_MAP:
+        ROS_ERROR("Given goal is not on the map.");
+        return false;
+      case DiscretePoseStatus::IN_ROCK:
+        ROS_WARN("Oops! Goal is in Rock!");
+        ++cnt_stuck_;
+        return true;
+      case DiscretePoseStatus::RELOCATED:
+        ROS_INFO("Goal moved (%d, %d, %d)", e[0], e[1], e[2]);
+        float x, y, yaw;
+        grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
+        goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+        goal_.pose.position.x = x;
+        goal_.pose.position.y = y;
+        break;
+      default:
+        break;
     }
     const auto ts = boost::chrono::high_resolution_clock::now();
     reservable_priority_queue<Astar::PriorityVec> open;
