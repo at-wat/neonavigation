@@ -32,12 +32,13 @@
 
 #include <memory>
 
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
+#include <costmap_cspace/costmap_3d_layer/footprint.h>
 
 namespace costmap_cspace
 {
@@ -61,6 +62,21 @@ public:
     setExpansion(
         static_cast<double>(config["linear_expand"]),
         static_cast<double>(config["linear_spread"]));
+  }
+
+protected:
+  void generateCSpace(
+      CSpace3DMsg::Ptr map,
+      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      const UpdatedRegion& region) final
+  {
+    ROS_ASSERT(ang_grid_ > 0);
+    clearTravelableArea(map, msg);
+    generateSpecifiedCSpace(map, msg, 0);
+    for (size_t i = 1; i < map->info.angle; ++i)
+    {
+      CSpace3DMsg::copyCells(*map, 0, 0, i, *map, 0, 0, 0, map->info.width * map->info.height);
+    }
   }
 };
 }  // namespace costmap_cspace

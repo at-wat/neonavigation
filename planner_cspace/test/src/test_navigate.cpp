@@ -294,30 +294,45 @@ TEST_F(Navigate, GlobalPlan)
   nav_msgs::GetPlanRequest req;
   nav_msgs::GetPlanResponse res;
 
+  req.tolerance = 0.0;
   req.start.header.frame_id = "map";
-  req.start.pose.position.x = 2.0;
+  req.start.pose.position.x = 1.95;
   req.start.pose.position.y = 0.45;
   req.start.pose.orientation =
       tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 3.14));
 
   req.goal.header.frame_id = "map";
-  req.goal.pose.position.x = 1.2;
-  req.goal.pose.position.y = 1.9;
+  req.goal.pose.position.x = 1.25;
+  req.goal.pose.position.y = 2.15;
   req.goal.pose.orientation =
       tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
+  // Planning failes as (12, 21, 0) is in rock.
   ASSERT_FALSE(srv_plan.call(req, res));
 
+  // Goal grid is moved to (12, 22, 0).
+  req.tolerance = 0.1;
+  ASSERT_TRUE(srv_plan.call(req, res));
+  EXPECT_NEAR(1.25, res.plan.poses.back().pose.position.x, 1.0e-5);
+  EXPECT_NEAR(2.25, res.plan.poses.back().pose.position.y, 1.0e-5);
+
+  // Goal grid is moved to (12, 23, 0). This is because cost of (12, 22, 0) is larger than 50.
+  req.tolerance = 0.2f;
+  ASSERT_TRUE(srv_plan.call(req, res));
+  EXPECT_NEAR(1.25, res.plan.poses.back().pose.position.x, 1.0e-5);
+  EXPECT_NEAR(2.35, res.plan.poses.back().pose.position.y, 1.0e-5);
+
+  req.tolerance = 0.0;
   req.goal.header.frame_id = "map";
-  req.goal.pose.position.x = 1.9;
-  req.goal.pose.position.y = 2.8;
+  req.goal.pose.position.x = 1.85;
+  req.goal.pose.position.y = 2.75;
   req.goal.pose.orientation =
       tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -1.57));
   ASSERT_TRUE(srv_plan.call(req, res));
 
-  ASSERT_NEAR(req.start.pose.position.x, res.plan.poses.front().pose.position.x, 0.1);
-  ASSERT_NEAR(req.start.pose.position.y, res.plan.poses.front().pose.position.y, 0.1);
-  ASSERT_NEAR(req.goal.pose.position.x, res.plan.poses.back().pose.position.x, 0.1);
-  ASSERT_NEAR(req.goal.pose.position.y, res.plan.poses.back().pose.position.y, 0.1);
+  EXPECT_NEAR(req.start.pose.position.x, res.plan.poses.front().pose.position.x, 1.0e-5);
+  EXPECT_NEAR(req.start.pose.position.y, res.plan.poses.front().pose.position.y, 1.0e-5);
+  EXPECT_NEAR(req.goal.pose.position.x, res.plan.poses.back().pose.position.x, 1.0e-5);
+  EXPECT_NEAR(req.goal.pose.position.y, res.plan.poses.back().pose.position.y, 1.0e-5);
 
   for (const geometry_msgs::PoseStamped& p : res.plan.poses)
   {

@@ -77,6 +77,20 @@ public:
 
     return data[addr];
   }
+  static void copyCells(CSpace3DMsg& to, const int& to_x, const int& to_y, const int& to_yaw,
+                        const CSpace3DMsg& from, const int& from_x, const int& from_y, const int& from_yaw,
+                        const int& copy_cell_num)
+  {
+    std::memcpy(to.data.data() + to.address(to_x, to_y, to_yaw),
+                from.data.data() + from.address(from_x, from_y, from_yaw), copy_cell_num * sizeof(int8_t));
+  }
+  static void copyCells(costmap_cspace_msgs::CSpace3DUpdate& to, const int& to_x, const int& to_y, const int& to_yaw,
+                        const CSpace3DMsg& from, const int& from_x, const int& from_y, const int& from_yaw,
+                        const int& copy_cell_num)
+  {
+    std::memcpy(to.data.data() + (to_yaw * to.height + to_y) * to.width + to_x,
+                from.data.data() + from.address(from_x, from_y, from_yaw), copy_cell_num * sizeof(int8_t));
+  }
 };
 
 enum MapOverlayMode
