@@ -2,6 +2,9 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.5 (2020-12-24)
+-------------------
+
 0.10.4 (2020-11-12)
 -------------------
 * costmap_cspace: make Costmap3dLayerPlain and Costmap3dLayerOutput faster (`#562 <https://github.com/at-wat/neonavigation/issues/562>`_)
