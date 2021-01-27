@@ -587,6 +587,7 @@ protected:
       }
     }  // omp parallel
     rough_cost_max_ = g[s_rough] + ec_[0] * (range_ + local_range_);
+    ROS_DEBUG("Priority queue size: %lu", open.capacity());
   }
 
   template <class T>

@@ -16,8 +16,8 @@
   <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
     <remap from="map" to="map_with_local_objects" />
     <remap from="map_local" to="overlay1" />
-    <param name="width" value="60" />
-    <param name="hz" value="1.5" />
+    <param name="width" value="200" />
+    <param name="hz" value="5.0" />
     <param name="round_local_map" value="true" />
     <param name="simulate_occlusion" value="true" />
   </node>
