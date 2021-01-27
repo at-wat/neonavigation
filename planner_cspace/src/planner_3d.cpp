@@ -1025,7 +1025,7 @@ protected:
         for (p[1] = 0; p[1] < static_cast<int>(map_info_.height); p[1]++)
         {
           const auto gp = cost_estim_cache_[p];
-          if (gp > rough_cost_max_)
+          if ((gp > rough_cost_max_) && (gp != std::numeric_limits<float>::max()))
           {
             pq_open_.emplace(gp, gp, p);
           }
