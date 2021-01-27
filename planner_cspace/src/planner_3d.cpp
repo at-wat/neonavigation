@@ -209,6 +209,9 @@ protected:
   int prev_map_update_y_min_;
   int prev_map_update_y_max_;
 
+  reservable_priority_queue<Astar::PriorityVec> pq_open_;
+  reservable_priority_queue<Astar::PriorityVec> pq_erase_;
+
   bool cbForget(std_srvs::EmptyRequest& req,
                 std_srvs::EmptyResponse& res)
   {
@@ -709,13 +712,12 @@ protected:
         break;
     }
     const auto ts = boost::chrono::high_resolution_clock::now();
-    reservable_priority_queue<Astar::PriorityVec> open;
-    open.reserve(map_info_.width * map_info_.height / 2);
+    pq_open_.clear();
     cost_estim_cache_.clear(std::numeric_limits<float>::max());
     e[2] = 0;
     cost_estim_cache_[e] = -ec_[0] * 0.5;  // Decrement to reduce calculation error
-    open.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
-    fillCostmap(open, cost_estim_cache_, s, e);
+    pq_open_.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
+    fillCostmap(pq_open_, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
@@ -969,20 +971,18 @@ protected:
     prev_map_update_y_min_ = map_update_y_min;
     prev_map_update_y_max_ = map_update_y_max;
 
-    reservable_priority_queue<Astar::PriorityVec> open;
-    reservable_priority_queue<Astar::PriorityVec> erase;
-    open.reserve(map_info_.width * map_info_.height / 2);
-    erase.reserve(map_info_.width * map_info_.height / 2);
+    pq_open_.clear();
+    pq_erase_.clear();
 
     if (cost_min != std::numeric_limits<float>::max())
-      erase.emplace(cost_min, cost_min, p_cost_min);
+      pq_erase_.emplace(cost_min, cost_min, p_cost_min);
     while (true)
     {
-      if (erase.size() < 1)
+      if (pq_erase_.size() < 1)
         break;
-      const Astar::PriorityVec center(erase.top());
+      const Astar::PriorityVec center(pq_erase_.top());
       const Astar::Vec p = center.v_;
-      erase.pop();
+      pq_erase_.pop();
 
       if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
         continue;
@@ -1006,16 +1006,16 @@ protected:
             continue;
           if (gn < cost_min)
           {
-            open.emplace(gn, gn, next);
+            pq_open_.emplace(gn, gn, next);
             continue;
           }
-          erase.emplace(gn, gn, next);
+          pq_erase_.emplace(gn, gn, next);
         }
       }
     }
-    if (open.size() == 0)
+    if (pq_open_.size() == 0)
     {
-      open.emplace(-ec_[0] * 0.5, -ec_[0] * 0.5, e);
+      pq_open_.emplace(-ec_[0] * 0.5, -ec_[0] * 0.5, e);
     }
     {
       Astar::Vec p;
@@ -1027,13 +1027,13 @@ protected:
           const auto gp = cost_estim_cache_[p];
           if (gp > rough_cost_max_)
           {
-            open.emplace(gp, gp, p);
+            pq_open_.emplace(gp, gp, p);
           }
         }
       }
     }
 
-    fillCostmap(open, cost_estim_cache_, s, e);
+    fillCostmap(pq_open_, cost_estim_cache_, s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
@@ -1063,6 +1063,10 @@ protected:
         map_info_.angular_resolution != msg->info.angular_resolution)
     {
       map_info_ = msg->info;
+
+      // Typical open/erase queue size is be approximated by perimeter of the map
+      pq_open_.reserve((map_info_.width + map_info_.height) * 2);
+      pq_erase_.reserve((map_info_.width + map_info_.height) * 2);
 
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
       hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
