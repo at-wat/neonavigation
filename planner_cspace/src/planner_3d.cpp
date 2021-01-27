@@ -432,7 +432,7 @@ protected:
       Astar::Gridmap<float>& g,
       const Astar::Vec& s, const Astar::Vec& e)
   {
-    ROS_DEBUG("Cost estimation cache queue size: %lu, capacity: %lu", open.size(), open.capacity());
+    ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu", open.size(), open.capacity());
 
     const Astar::Vec s_rough(s[0], s[1], 0);
 
@@ -1019,6 +1019,7 @@ protected:
     {
       pq_open_.emplace(-ec_[0] * 0.5, -ec_[0] * 0.5, e);
     }
+    ROS_DEBUG("Cost estimation cache partial update from: %0.3f", rough_cost_max_);
     {
       Astar::Vec p;
       p[2] = 0;
