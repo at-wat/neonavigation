@@ -432,7 +432,7 @@ protected:
       Astar::Gridmap<float>& g,
       const Astar::Vec& s, const Astar::Vec& e)
   {
-    ROS_DEBUG("Search queue size: %lu, capacity: %lu", open.size(), open.capacity());
+    ROS_DEBUG("Cost estimation cache queue size: %lu, capacity: %lu", open.size(), open.capacity());
 
     const Astar::Vec s_rough(s[0], s[1], 0);
 
