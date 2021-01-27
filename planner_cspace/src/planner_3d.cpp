@@ -432,6 +432,8 @@ protected:
       Astar::Gridmap<float>& g,
       const Astar::Vec& s, const Astar::Vec& e)
   {
+    ROS_DEBUG("Search queue size: %lu, capacity: %lu", open.size(), open.capacity());
+
     const Astar::Vec s_rough(s[0], s[1], 0);
 
     struct SearchDiffs
@@ -587,7 +589,6 @@ protected:
       }
     }  // omp parallel
     rough_cost_max_ = g[s_rough] + ec_[0] * (range_ + local_range_);
-    ROS_DEBUG("Priority queue size: %lu", open.capacity());
   }
 
   template <class T>
