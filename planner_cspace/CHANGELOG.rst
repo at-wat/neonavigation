@@ -2,6 +2,13 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.6 (2021-01-28)
+-------------------
+* planner_cspace: fix condition of open queue (`#576 <https://github.com/at-wat/neonavigation/issues/576>`_)
+* planner_cspace: add debug output about cost_estim_cache update (`#577 <https://github.com/at-wat/neonavigation/issues/577>`_)
+* planner_cspace: reuse open/erase queue (`#575 <https://github.com/at-wat/neonavigation/issues/575>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.10.5 (2020-12-24)
 -------------------
 * planner_cspace: enable tolerance in make_plan (`#570 <https://github.com/at-wat/neonavigation/issues/570>`_)
