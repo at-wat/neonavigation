@@ -2,6 +2,9 @@
 Changelog for package neonavigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.10.5 (2020-12-24)
 -------------------
 * neonavigation: bump cmake_minimum_required to 3.1.3 (`#474 <https://github.com/at-wat/neonavigation/issues/474>`_)
