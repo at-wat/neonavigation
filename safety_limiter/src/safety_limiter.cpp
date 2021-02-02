@@ -327,6 +327,8 @@ protected:
     acc_[0] = config.lin_acc;
     vel_[1] = config.ang_vel;
     acc_[1] = config.ang_acc;
+    max_values_[0] = config.max_linear_vel;
+    max_values_[1] = config.max_angular_vel;
     z_range_[0] = config.z_range_min;
     z_range_[1] = config.z_range_max;
     dt_ = config.dt;
