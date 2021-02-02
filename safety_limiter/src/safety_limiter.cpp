@@ -132,6 +132,7 @@ protected:
   double yaw_margin_;
   double yaw_escape_;
   double r_lim_;
+  double max_values_[2];
   double z_range_[2];
   float footprint_radius_;
   double downsample_grid_;
@@ -208,6 +209,8 @@ public:
     double watchdog_interval_d;
     pnh_.param("watchdog_interval", watchdog_interval_d, 0.0);
     watchdog_interval_ = ros::Duration(watchdog_interval_d);
+    pnh_.param("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
+    pnh_.param("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
 
     parameter_server_.reset(
         new dynamic_reconfigure::Server<SafetyLimiterConfig>(parameter_server_mutex_, pnh_));
@@ -567,6 +570,16 @@ protected:
     return out;
   }
 
+  geometry_msgs::Twist
+  limitMaxVelocities(const geometry_msgs::Twist& in)
+  {
+    auto out = in;
+    out.linear.x = std::min(in.linear.x, max_values_[0]);
+    out.angular.z = std::min(in.angular.z, max_values_[1]);
+
+    return out;
+  }
+
   class vec
   {
   public:
@@ -681,7 +694,7 @@ protected:
 
     if (now - last_disable_cmd_ < ros::Duration(disable_timeout_))
     {
-      pub_twist_.publish(twist_);
+      pub_twist_.publish(limitMaxVelocities(twist_));
     }
     else if (!has_cloud_ || watchdog_stop_)
     {
@@ -690,13 +703,14 @@ protected:
     }
     else
     {
-      geometry_msgs::Twist cmd_vel = limit(twist_);
+      geometry_msgs::Twist cmd_vel = limitMaxVelocities(limit(twist_));
       pub_twist_.publish(cmd_vel);
 
       if (now > hold_off_)
         r_lim_ = 1.0;
     }
   }
+
   void cbCloud(const sensor_msgs::PointCloud2::ConstPtr& msg)
   {
     const bool can_transform = tfbuf_.canTransform(
