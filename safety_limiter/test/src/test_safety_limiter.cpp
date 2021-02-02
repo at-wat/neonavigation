@@ -565,11 +565,11 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
 
   const float linear_velocities[] =
   {-1.7, -1.5, 0.0, 1.5, 1.7 };
-  const float angular_velocities[] = 
+  const float angular_velocities[] =
   {-2.7, -2.5, 0.0, 2.5, 2.7 };
   const float expected_linear_velocities[] =
   {-1.5, -1.5, 0.0, 1.5, 1.5 };
-  const float expected_angular_velocities[] = 
+  const float expected_angular_velocities[] =
   {-2.5, -2.5, 0.0, 2.5, 2.5 };
 
   for (int linear_index = 0; linear_index < 5; linear_index++)
