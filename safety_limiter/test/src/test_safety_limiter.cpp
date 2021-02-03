@@ -559,6 +559,59 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
   }
 }
 
+TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
+{
+  ros::Rate wait(20);
+
+  const float linear_velocities[] =
+  {-1.7, -1.5, 0.0, 1.5, 1.7 };
+  const float angular_velocities[] =
+  {-2.7, -2.5, 0.0, 2.5, 2.7 };
+  const float expected_linear_velocities[] =
+  {-1.5, -1.5, 0.0, 1.5, 1.5 };
+  const float expected_angular_velocities[] =
+  {-2.5, -2.5, 0.0, 2.5, 2.5 };
+
+  for (int linear_index = 0; linear_index < 5; linear_index++)
+  {
+    for  (int angular_index = 0; angular_index < 5; angular_index++)
+    {
+      bool received = false;
+      bool en = false;
+
+      for (int i = 0; i < 10 && ros::ok(); ++i)
+      {
+        if (i > 5) en = true;
+        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", ros::Time::now());
+        publishWatchdogReset();
+        publishTwist(linear_velocities[linear_index], angular_velocities[angular_index]);
+        broadcastTF("odom", "base_link", 0.0, 0.0);
+
+        wait.sleep();
+        ros::spinOnce();
+        if (en && cmd_vel_)
+        {
+          received = true;
+          ASSERT_NEAR(expected_linear_velocities[linear_index], cmd_vel_->linear.x, 1e-3);
+          ASSERT_NEAR(expected_angular_velocities[angular_index], cmd_vel_->angular.z, 1e-3);
+        }
+      }
+      ASSERT_TRUE(received);
+
+      ASSERT_TRUE(hasDiag());
+      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+          << "message: " << diag_->status[0].message;
+
+      ASSERT_TRUE(hasStatus());
+      EXPECT_EQ(1.0, status_->limit_ratio);
+      EXPECT_TRUE(status_->is_cloud_available);
+      EXPECT_FALSE(status_->has_watchdog_timed_out);
+      EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+    }
+  }
+}
+
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

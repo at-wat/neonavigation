@@ -3,12 +3,14 @@
   <env name="GCOV_PREFIX" value="/tmp/gcov/safety_limiter_safert_limiter" />
   <param name="neonavigation_compatible" value="1" />
 
-  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="90.0" />
+  <test test-name="test_safety_limiter" pkg="safety_limiter" type="test_safety_limiter" time-limit="100.0" />
 
   <node pkg="safety_limiter" type="safety_limiter" name="safety_limiter" output="screen">
     <rosparam param="footprint">[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]</rosparam>
     <param name="allow_empty_cloud" value="false" />
     <param name="watchdog_interval" value="0.2" />
+    <param name="max_linear_vel" value="1.5"/>
+    <param name="max_angular_vel" value="2.5"/>
     <param name="cloud_timeout" value="0.2" />
     <param name="freq" value="15.0" />
     <param name="dt" value="0.01" />
