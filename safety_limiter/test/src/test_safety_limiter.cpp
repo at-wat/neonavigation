@@ -592,8 +592,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
         if (en && cmd_vel_)
         {
           received = true;
-          ASSERT_NEAR(cmd_vel_->linear.x, expected_linear_velocities[linear_index], 1e-3);
-          ASSERT_NEAR(cmd_vel_->angular.z, expected_angular_velocities[angular_index], 1e-3);
+          ASSERT_NEAR(expected_linear_velocities[linear_index], cmd_vel_->linear.x, 1e-3);
+          ASSERT_NEAR(expected_angular_velocities[angular_index], cmd_vel_->angular.z, 1e-3);
         }
       }
       ASSERT_TRUE(received);
