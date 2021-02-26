@@ -2,6 +2,11 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* safety_limiter: add a max_linear_vel and max_angular_vel (`#581 <https://github.com/at-wat/neonavigation/issues/581>`_)
+* Contributors: Teo Cardoso
+
 0.10.6 (2021-01-28)
 -------------------
 

@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.10.6 (2021-01-28)
 -------------------
 * planner_cspace: fix condition of open queue (`#576 <https://github.com/at-wat/neonavigation/issues/576>`_)
