@@ -148,6 +148,7 @@ protected:
   bool has_goal_;
   bool has_start_;
   bool has_hysteresis_map_;
+  std::vector<Astar::Vec> hyst_updated_cells_;
   bool goal_updated_;
   bool remember_updates_;
   bool fast_map_update_;
@@ -727,7 +728,7 @@ protected:
 
     if (goal_changed)
     {
-      cm_hyst_.clear(100);
+      clearHysteresis();
       has_hysteresis_map_ = false;
     }
 
@@ -736,6 +737,14 @@ protected:
     goal_updated_ = true;
 
     return true;
+  }
+  void clearHysteresis()
+  {
+    for (const Astar::Vec& p : hyst_updated_cells_)
+    {
+      cm_hyst_[p] = 100;
+    }
+    hyst_updated_cells_.clear();
   }
   void publishDebug()
   {
@@ -895,7 +904,7 @@ protected:
     if (clear_hysteresis && has_hysteresis_map_)
     {
       ROS_INFO("The previous path collides to the obstacle. Clearing hysteresis map.");
-      cm_hyst_.clear(100);
+      clearHysteresis();
       has_hysteresis_map_ = false;
     }
 
@@ -1139,6 +1148,7 @@ protected:
     ROS_DEBUG("Map copied");
 
     cm_hyst_.clear(100);
+    hyst_updated_cells_.clear();
     has_hysteresis_map_ = false;
 
     has_map_ = true;
@@ -1827,7 +1837,7 @@ protected:
         }
       }
 
-      cm_hyst_.clear(100);
+      clearHysteresis();
       const auto ts = boost::chrono::high_resolution_clock::now();
       for (auto& ps : path_points)
       {
@@ -1856,6 +1866,7 @@ protected:
         }
         d_min = std::max(expand_dist, std::min(expand_dist + max_dist, d_min));
         cm_hyst_[p] = std::lround((d_min - expand_dist) * 100.0 / max_dist);
+        hyst_updated_cells_.push_back(p);
       }
       has_hysteresis_map_ = true;
       const auto tnow = boost::chrono::high_resolution_clock::now();
