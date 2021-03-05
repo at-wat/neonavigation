@@ -1837,8 +1837,8 @@ protected:
         }
       }
 
-      clearHysteresis();
       const auto ts = boost::chrono::high_resolution_clock::now();
+      clearHysteresis();
       for (auto& ps : path_points)
       {
         const Astar::Vec& p = ps.first;
