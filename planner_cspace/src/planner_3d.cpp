@@ -1816,6 +1816,7 @@ protected:
 
     if (hyst)
     {
+      const auto ts = boost::chrono::high_resolution_clock::now();
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
@@ -1837,7 +1838,6 @@ protected:
         }
       }
 
-      const auto ts = boost::chrono::high_resolution_clock::now();
       clearHysteresis();
       for (auto& ps : path_points)
       {
