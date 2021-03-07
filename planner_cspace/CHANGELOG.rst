@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.7 (2021-03-07)
+-------------------
+* planner_cspace: improve performance of hysteresis clearing (`#586 <https://github.com/at-wat/neonavigation/issues/586>`_)
+* Contributors: Naotaka Hatao
+
 0.10.6 (2021-01-28)
 -------------------
 * planner_cspace: fix condition of open queue (`#576 <https://github.com/at-wat/neonavigation/issues/576>`_)
