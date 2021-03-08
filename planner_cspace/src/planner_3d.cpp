@@ -855,7 +855,7 @@ protected:
       {
         for (p[1] = prev_map_update_y_min_; p[1] < prev_map_update_y_max_; p[1]++)
         {
-          for (p[2] = 0; p[2] < map_info_.angle; p[2]++)
+          for (p[2] = 0; p[2] < static_cast<int>(map_info_.angle); p[2]++)
           {
             cm_[p] = cm_base_[p];
           }
