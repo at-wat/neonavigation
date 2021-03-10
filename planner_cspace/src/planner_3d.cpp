@@ -849,22 +849,13 @@ protected:
     const ros::Time now = ros::Time::now();
     last_costmap_ = now;
 
-    {
-      Astar::Vec p(0, 0, 0);
-      for (p[0] = prev_map_update_x_min_; p[0] < prev_map_update_x_max_; p[0]++)
-      {
-        for (p[1] = prev_map_update_y_min_; p[1] < prev_map_update_y_max_; p[1]++)
-        {
-          for (p[2] = 0; p[2] < static_cast<int>(map_info_.angle); p[2]++)
-          {
-            cm_[p] = cm_base_[p];
-          }
-          p[2] = 0;
-          cm_rough_[p] = cm_rough_base_[p];
-          cm_updates_[p] = -1;
-        }
-      }
-    }
+    cm_.copy_partially(cm_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+                       Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, static_cast<int>(map_info_.angle)));
+    cm_rough_.copy_partially(cm_rough_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+                             Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
+    cm_updates_.clear_partially(-1, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+                                Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
+
     const int map_update_x_min = static_cast<int>(msg->x);
     const int map_update_x_max = static_cast<int>(msg->x + msg->width);
     const int map_update_y_min = static_cast<int>(msg->y);
