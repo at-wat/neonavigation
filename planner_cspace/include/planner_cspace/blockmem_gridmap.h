@@ -45,6 +45,11 @@ public:
   virtual const CyclicVecInt<DIM, NONCYCLIC>& size() const = 0;
   virtual size_t ser_size() const = 0;
   virtual void clear(const T zero) = 0;
+  virtual void clear_partially(
+      const T zero, const CyclicVecInt<DIM, NONCYCLIC>& min, const CyclicVecInt<DIM, NONCYCLIC>& max) = 0;
+  virtual void copy_partially(
+      const BlockMemGridmapBase<T, DIM, NONCYCLIC>& base, const CyclicVecInt<DIM, NONCYCLIC>& min,
+      const CyclicVecInt<DIM, NONCYCLIC>& max) = 0;
   virtual void reset(const CyclicVecInt<DIM, NONCYCLIC>& size) = 0;
   virtual T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) = 0;
   virtual const T operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) const = 0;
@@ -118,6 +123,37 @@ public:
     for (size_t i = 0; i < ser_size_; i++)
     {
       c_[i] = zero;
+    }
+  }
+  void clear_partially(
+      const T zero, const CyclicVecInt<DIM, NONCYCLIC>& min, const CyclicVecInt<DIM, NONCYCLIC>& max)
+  {
+    CyclicVecInt<DIM, NONCYCLIC> p = min;
+    for (p[0] = min[0]; p[0] < max[0]; ++p[0])
+    {
+      for (p[1] = min[1]; p[1] < max[1]; ++p[1])
+      {
+        for (p[2] = min[2]; p[2] < max[2]; ++p[2])
+        {
+          (*this)[p] = zero;
+        }
+      }
+    }
+  }
+  void copy_partially(
+      const BlockMemGridmapBase<T, DIM, NONCYCLIC>& base, const CyclicVecInt<DIM, NONCYCLIC>& min,
+      const CyclicVecInt<DIM, NONCYCLIC>& max)
+  {
+    CyclicVecInt<DIM, NONCYCLIC> p = min;
+    for (p[0] = min[0]; p[0] < max[0]; ++p[0])
+    {
+      for (p[1] = min[1]; p[1] < max[1]; ++p[1])
+      {
+        for (p[2] = min[2]; p[2] < max[2]; ++p[2])
+        {
+          (*this)[p] = base[p];
+        }
+      }
     }
   }
   void clear_positive(const T zero)
@@ -213,7 +249,7 @@ public:
       const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH, ENABLE_VALIDATION>& gm)
   {
     reset(gm.size_);
-    memcpy(c_.get(), gm.c_.get(), ser_size_);
+    memcpy(c_.get(), gm.c_.get(), ser_size_ * sizeof(T));
 
     return *this;
   }

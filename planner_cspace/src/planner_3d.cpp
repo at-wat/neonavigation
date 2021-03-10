@@ -659,11 +659,6 @@ protected:
       return true;
     }
 
-    prev_map_update_x_min_ = std::numeric_limits<int>::max();
-    prev_map_update_x_max_ = std::numeric_limits<int>::lowest();
-    prev_map_update_y_min_ = std::numeric_limits<int>::max();
-    prev_map_update_y_max_ = std::numeric_limits<int>::lowest();
-
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
         map_info_, s[0], s[1], s[2],
@@ -850,12 +845,31 @@ protected:
       return;
     ROS_DEBUG("Map updated");
 
+    const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
     const ros::Time now = ros::Time::now();
     last_costmap_ = now;
 
-    cm_ = cm_base_;
-    cm_rough_ = cm_rough_base_;
-    cm_updates_.clear(-1);
+    cm_.copy_partially(cm_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+                       Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, static_cast<int>(map_info_.angle)));
+    cm_rough_.copy_partially(cm_rough_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+                             Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
+    cm_updates_.clear_partially(-1, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+                                Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
+
+    const int map_update_x_min = static_cast<int>(msg->x);
+    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
+    const int map_update_y_min = static_cast<int>(msg->y);
+    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+    const int search_range_x_min = std::max(0, std::min(prev_map_update_x_min_, map_update_x_min) - 1);
+    const int search_range_x_max = std::min(static_cast<int>(map_info_.width),
+                                            std::max(prev_map_update_x_max_, map_update_x_max) + 1);
+    const int search_range_y_min = std::max(0, std::min(prev_map_update_y_min_, map_update_y_min) - 1);
+    const int search_range_y_max = std::min(static_cast<int>(map_info_.height),
+                                            std::max(prev_map_update_y_max_, map_update_y_max) + 1);
+    prev_map_update_x_min_ = map_update_x_min;
+    prev_map_update_x_max_ = map_update_x_max;
+    prev_map_update_y_min_ = map_update_y_min;
+    prev_map_update_y_max_ = map_update_y_max;
 
     bool clear_hysteresis(false);
 
@@ -900,6 +914,8 @@ protected:
         }
       }
     }
+    const auto ts_cm_init_end = boost::chrono::high_resolution_clock::now();
+    ROS_DEBUG("Costmaps updated (%.4f)", boost::chrono::duration<float>(ts_cm_init_end - ts_cm_init_start).count());
 
     if (clear_hysteresis && has_hysteresis_map_)
     {
@@ -953,16 +969,6 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
 
-    const int map_update_x_min = static_cast<int>(msg->x);
-    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
-    const int map_update_y_min = static_cast<int>(msg->y);
-    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
-    const int search_range_x_min = std::max(0, std::min(prev_map_update_x_min_, map_update_x_min) - 1);
-    const int search_range_x_max = std::min(static_cast<int>(map_info_.width),
-                                            std::max(prev_map_update_x_max_, map_update_x_max) + 1);
-    const int search_range_y_min = std::max(0, std::min(prev_map_update_y_min_, map_update_y_min) - 1);
-    const int search_range_y_max = std::min(static_cast<int>(map_info_.height),
-                                            std::max(prev_map_update_y_max_, map_update_y_max) + 1);
     Astar::Vec p, p_cost_min;
     p[2] = 0;
     float cost_min = std::numeric_limits<float>::max();
@@ -977,10 +983,6 @@ protected:
         }
       }
     }
-    prev_map_update_x_min_ = map_update_x_min;
-    prev_map_update_x_max_ = map_update_x_max;
-    prev_map_update_y_min_ = map_update_y_min;
-    prev_map_update_y_max_ = map_update_y_max;
 
     pq_open_.clear();
     pq_erase_.clear();
@@ -1156,6 +1158,11 @@ protected:
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
     bbf_costmap_.clear();
+
+    prev_map_update_x_min_ = std::numeric_limits<int>::max();
+    prev_map_update_x_max_ = std::numeric_limits<int>::lowest();
+    prev_map_update_y_min_ = std::numeric_limits<int>::max();
+    prev_map_update_y_max_ = std::numeric_limits<int>::lowest();
 
     updateGoal();
   }
