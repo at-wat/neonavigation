@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_cspace: improve performance of costmap reset (`#587 <https://github.com/at-wat/neonavigation/issues/587>`_)
+* Contributors: Naotaka Hatao
+
 0.10.7 (2021-03-07)
 -------------------
 * planner_cspace: improve performance of hysteresis clearing (`#586 <https://github.com/at-wat/neonavigation/issues/586>`_)
