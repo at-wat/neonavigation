@@ -117,7 +117,16 @@ TEST(GridAstar, TimeoutAbort)
 
   class Model : public GridAstarModelBase<1, 1>
   {
+  private:
+    std::vector<std::vector<Vec>> search_;
+
   public:
+    Model()
+      : search_(2)
+    {
+      search_[0].push_back(Vec(1));
+      search_[1].push_back(Vec(0));
+    }
     float cost(const Vec&, const Vec&, const std::vector<VecWithCost>&, const Vec&) const final
     {
       return 1.0;
@@ -128,7 +137,7 @@ TEST(GridAstar, TimeoutAbort)
     }
     const std::vector<Vec>& searchGrids(const Vec& p, const std::vector<VecWithCost>&, const Vec&) const final
     {
-      return std::vector<std::vector<Vec>>(1, Vec(1 - p[0]));
+      return search_[p[0]];
     }
   };
   Model::Ptr model(new Model());
