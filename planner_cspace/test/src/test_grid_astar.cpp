@@ -128,16 +128,16 @@ TEST(GridAstar, TimeoutAbort)
     }
     const std::vector<Vec>& searchGrids(const Vec& p, const std::vector<VecWithCost>&, const Vec&) const final
     {
-      return 1 - p[0];
+      return std::vector<std::vector<Vec>>(1, Vec(1 - p[0]));
     }
   };
   Model::Ptr model(new Model());
 
   const auto cb_progress = [](const std::list<Vec>& /* path_grid */, const SearchStats& stats) -> bool
   {
-    ASSERT_EQ(1u, stats.num_search_queue);
-    ASSERT_EQ(0u, stats.num_prev_updates);
-    ASSERT_EQ(0u, stats.num_total_updates);
+    EXPECT_EQ(1u, stats.num_search_queue);
+    EXPECT_EQ(0u, stats.num_prev_updates);
+    EXPECT_EQ(0u, stats.num_total_updates);
     return false;
   };
 
