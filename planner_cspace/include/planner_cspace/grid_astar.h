@@ -231,9 +231,9 @@ protected:
     size_t num_total_updates(0);
 
     bool found(false);
+    bool abort(false);
 #pragma omp parallel
     {
-      bool abort(false);
       std::vector<GridmapUpdate> updates;
       // Reserve buffer using example search diff list
       updates.reserve(
@@ -248,6 +248,7 @@ protected:
 #pragma omp barrier
 #pragma omp single
         {
+          const size_t num_search_queue = open_.size();
           // Fetch tasks to be paralellized
           centers.clear();
           for (size_t i = 0; i < search_task_num_;)
@@ -273,7 +274,7 @@ protected:
             findPath(ss_normalized, better, path_tmp);
             const SearchStats stats =
                 {
-                  .num_search_queue = open_.size(),
+                  .num_search_queue = num_search_queue,
                   .num_prev_updates = num_updates,
                   .num_total_updates = num_total_updates,
                 };
@@ -284,6 +285,7 @@ protected:
           }
           num_updates = 0;
         }
+
         if (centers.size() < 1 || found || abort)
           break;
         updates.clear();
