@@ -582,7 +582,7 @@ private:
       cancel = replan_interval_.toSec();
     if (!as_.search(
             starts, e, path_grid, model_,
-            std::bind(&Planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1),
+            std::bind(&Planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1, std::placeholders::_2),
             0, cancel, true))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
@@ -654,7 +654,7 @@ private:
 
     return true;
   }
-  bool cbProgress(const std::list<Astar::Vec>& path_grid)
+  bool cbProgress(const std::list<Astar::Vec>& /* path_grid */, const SearchStats& /* stats */)
   {
     return false;
   }

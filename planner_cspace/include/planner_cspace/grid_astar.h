@@ -52,6 +52,14 @@
 
 namespace planner_cspace
 {
+struct SearchStats
+{
+  size_t num_loop;
+  size_t num_search_queue;
+  size_t num_prev_updates;
+  size_t num_total_updates;
+};
+
 template <int DIM = 3, int NONCYCLIC = 2>
 class GridAstar
 {
@@ -59,6 +67,7 @@ public:
   using Vec = CyclicVecInt<DIM, NONCYCLIC>;
   using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
   using VecWithCost = typename GridAstarModelBase<DIM, NONCYCLIC>::VecWithCost;
+  using ProgressCallback = std::function<bool(const std::list<Vec>&, const SearchStats&)>;
 
   template <class T, int block_width = 0x20>
   class Gridmap : public BlockMemGridmap<T, DIM, NONCYCLIC, block_width>
@@ -161,7 +170,7 @@ public:
       const std::vector<VecWithCost>& ss, const Vec& e,
       std::list<Vec>& path,
       const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
-      std::function<bool(const std::list<Vec>&)> cb_progress,
+      ProgressCallback cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
@@ -178,7 +187,7 @@ protected:
       const std::vector<VecWithCost>& sts, const Vec& en,
       std::list<Vec>& path,
       const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
-      std::function<bool(const std::list<Vec>&)> cb_progress,
+      ProgressCallback cb_progress,
       const float cost_leave,
       const float progress_interval,
       const bool return_best = false)
@@ -219,7 +228,12 @@ protected:
     std::vector<PriorityVec> centers;
     centers.reserve(search_task_num_);
 
+    size_t num_updates(0);
+    size_t num_total_updates(0);
+    size_t num_loop(0);
+
     bool found(false);
+    bool abort(false);
 #pragma omp parallel
     {
       std::vector<GridmapUpdate> updates;
@@ -236,6 +250,9 @@ protected:
 #pragma omp barrier
 #pragma omp single
         {
+          const size_t num_search_queue = open_.size();
+          num_loop++;
+
           // Fetch tasks to be paralellized
           centers.clear();
           for (size_t i = 0; i < search_task_num_;)
@@ -259,10 +276,22 @@ protected:
             std::list<Vec> path_tmp;
             ts = tnow;
             findPath(ss_normalized, better, path_tmp);
-            cb_progress(path_tmp);
+            const SearchStats stats =
+                {
+                  .num_loop = num_loop,
+                  .num_search_queue = num_search_queue,
+                  .num_prev_updates = num_updates,
+                  .num_total_updates = num_total_updates,
+                };
+            if (!cb_progress(path_tmp, stats))
+            {
+              abort = true;
+            }
           }
+          num_updates = 0;
         }
-        if (centers.size() < 1 || found)
+
+        if (centers.size() < 1 || found || abort)
           break;
         updates.clear();
         dont.clear();
@@ -335,6 +364,9 @@ protected:
           {
             g[p] = -1;
           }
+          const size_t n = updates.size();
+          num_updates += n;
+          num_total_updates += n;
         }  // omp critical
       }
     }  // omp parallel

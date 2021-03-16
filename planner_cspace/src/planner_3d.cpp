@@ -128,6 +128,7 @@ protected:
   std_msgs::Header map_header_;
   float freq_;
   float freq_min_;
+  float search_timeout_abort_;
   float search_range_;
   bool antialias_start_;
   int range_;
@@ -324,7 +325,7 @@ protected:
         break;
     }
 
-    const auto cb_progress = [](const std::list<Astar::Vec>& path_grid)
+    const auto cb_progress = [](const std::list<Astar::Vec>& /* path_grid */, const SearchStats& /* stats */)
     {
       return true;
     };
@@ -1275,6 +1276,7 @@ public:
 
     pnh_.param("freq", freq_, 4.0f);
     pnh_.param("freq_min", freq_min_, 2.0f);
+    pnh_.param("search_timeout_abort", search_timeout_abort_, 30.0f);
     pnh_.param("search_range", search_range_, 0.4f);
     pnh_.param("antialias_start", antialias_start_, false);
 
@@ -1783,12 +1785,34 @@ protected:
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
 
+    const auto cb_progress = [this, ts, s, e](const std::list<Astar::Vec>& path_grid, const SearchStats& stats) -> bool
+    {
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      const auto tdiff = boost::chrono::duration<float>(tnow - ts).count();
+      publishEmptyPath();
+      if (tdiff > search_timeout_abort_)
+      {
+        ROS_ERROR(
+            "Search aborted due to timeout. "
+            "search_timeout_abort may be too small or planner_3d may have a bug: "
+            "s=(%d, %d, %d), g=(%d, %d, %d), tdiff=%0.4f, "
+            "num_loop=%lu, "
+            "num_search_queue=%lu, "
+            "num_prev_updates=%lu, "
+            "num_total_updates=%lu, ",
+            s[0], s[1], s[2], e[0], e[1], e[2], tdiff,
+            stats.num_loop, stats.num_search_queue, stats.num_prev_updates, stats.num_total_updates);
+        return false;
+      }
+      ROS_WARN("Search timed out (%0.4f sec.)", tdiff);
+      return true;
+    };
+
     model_->enableHysteresis(hyst && has_hysteresis_map_);
     std::list<Astar::Vec> path_grid;
     if (!as_.search(starts, e, path_grid,
                     model_,
-                    std::bind(&Planner3dNode::cbProgress,
-                              this, std::placeholders::_1),
+                    cb_progress,
                     range_limit,
                     1.0f / freq_min_,
                     find_best_))
@@ -1885,12 +1909,6 @@ protected:
     return true;
   }
 
-  bool cbProgress(const std::list<Astar::Vec>& path_grid)
-  {
-    publishEmptyPath();
-    ROS_WARN("Search timed out");
-    return true;
-  }
   int getSwitchIndex(const nav_msgs::Path& path) const
   {
     geometry_msgs::Pose p_prev;

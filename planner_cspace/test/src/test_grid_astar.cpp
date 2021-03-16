@@ -86,7 +86,7 @@ TEST(GridAstar, ParallelSearch)
   };
   Model::Ptr model(new Model());
 
-  const auto cb_progress = [](const std::list<Vec>&)
+  const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {
     return true;
   };
@@ -106,6 +106,68 @@ TEST(GridAstar, ParallelSearch)
     ASSERT_EQ(path.front(), Vec(0));
     ASSERT_EQ(path.back(), Vec(15));
   }
+}
+
+TEST(GridAstar, TimeoutAbort)
+{
+  using Vec = CyclicVecInt<1, 1>;
+  GridAstar<1, 1> as(Vec(2));
+  as.setSearchTaskNum(8);
+  omp_set_num_threads(2);
+
+  class Model : public GridAstarModelBase<1, 1>
+  {
+  private:
+    std::vector<std::vector<Vec>> search_;
+
+  public:
+    Model()
+      : search_(3)
+    {
+      search_[0].push_back(Vec(1));
+      search_[1].push_back(Vec(2));
+    }
+    float cost(const Vec&, const Vec&, const std::vector<VecWithCost>&, const Vec&) const final
+    {
+      return 1.0;
+    }
+    float costEstim(const Vec& s, const Vec& e) const final
+    {
+      return 0.0;
+    }
+    const std::vector<Vec>& searchGrids(const Vec& p, const std::vector<VecWithCost>&, const Vec&) const final
+    {
+      return search_[p[0]];
+    }
+  };
+  Model::Ptr model(new Model());
+
+  int cnt(0);
+  const auto cb_progress = [&cnt](const std::list<Vec>& /* path_grid */, const SearchStats& stats) -> bool
+  {
+    switch (cnt++)
+    {
+      case 0:
+        EXPECT_EQ(1u, stats.num_loop);
+        EXPECT_EQ(1u, stats.num_search_queue);
+        EXPECT_EQ(0u, stats.num_prev_updates);
+        EXPECT_EQ(0u, stats.num_total_updates);
+        return true;
+      case 1:
+        EXPECT_EQ(2u, stats.num_loop);
+        EXPECT_EQ(1u, stats.num_search_queue);
+        EXPECT_EQ(1u, stats.num_prev_updates);
+        EXPECT_EQ(1u, stats.num_total_updates);
+        return false;
+    }
+    EXPECT_TRUE(false) << "Search was not aborted";
+    return false;
+  };
+
+  std::list<Vec> path;
+  std::vector<Model::VecWithCost> starts;
+  starts.emplace_back(Vec(0));
+  ASSERT_FALSE(as.search(starts, Vec(2), path, model, cb_progress, 0, 0.0));
 }
 
 TEST(GridAstar, SearchWithMultipleStarts)
@@ -154,7 +216,7 @@ TEST(GridAstar, SearchWithMultipleStarts)
   };
   Model::Ptr model(new Model());
 
-  const auto cb_progress = [](const std::list<Vec>&)
+  const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {
     return true;
   };
