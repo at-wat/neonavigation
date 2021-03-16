@@ -271,11 +271,12 @@ protected:
             std::list<Vec> path_tmp;
             ts = tnow;
             findPath(ss_normalized, better, path_tmp);
-            const SearchStats stats = {
-              .num_search_queue = open_.size(),
-              .num_prev_updates = num_updates,
-              .num_total_updates = num_total_updates,
-            };
+            const SearchStats stats =
+                {
+                  .num_search_queue = open_.size(),
+                  .num_prev_updates = num_updates,
+                  .num_total_updates = num_total_updates,
+                };
             if (!cb_progress(path_tmp, stats))
             {
               abort = true;
