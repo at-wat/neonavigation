@@ -325,7 +325,7 @@ protected:
         break;
     }
 
-    const auto cb_progress = [](const std::list<Astar::Vec>& path_grid)
+    const auto cb_progress = [](const std::list<Astar::Vec>& /* path_grid */, const SearchStats& /* stats */)
     {
       return true;
     };
@@ -1785,14 +1785,23 @@ protected:
     // ROS_INFO("Planning from (%d, %d, %d) to (%d, %d, %d)",
     //   s[0], s[1], s[2], e[0], e[1], e[2]);
 
-    const auto cb_progress = [this, ts](const std::list<Astar::Vec>& path_grid) -> bool
+    const auto cb_progress = [this, ts, s, e](const std::list<Astar::Vec>& path_grid, const SearchStats& stats) -> bool
     {
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const auto tdiff = boost::chrono::duration<float>(tnow - ts).count();
       publishEmptyPath();
       if (tdiff > search_timeout_abort_)
       {
-        ROS_ERROR("Search aborted due to timeout (%0.4f sec.)", tdiff);
+        ROS_ERROR(
+            "Search aborted due to timeout. "
+            "Please report following information: "
+            "s=(%d, %d, %d), g=(%d, %d, %d), tdiff=%0.4f, "
+            "num_search_queue=%lu, "
+            "num_prev_updates=%lu, "
+            "num_total_updates=%lu, ",
+            s[0], s[1], s[2], e[0], e[1], e[2],
+            tdiff,
+            stats.num_search_queue, stats.num_prev_updates, stats.num_total_updates);
         return false;
       }
       ROS_WARN("Search timed out (%0.4f sec.)", tdiff);
