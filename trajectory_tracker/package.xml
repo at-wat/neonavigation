@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>trajectory_tracker</name>
-  <version>0.10.8</version>
+  <version>0.10.9</version>
   <description>Path following control package for wheeled mobile robot</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>

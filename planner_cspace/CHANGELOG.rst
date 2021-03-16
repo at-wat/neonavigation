@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.9 (2021-03-16)
+-------------------
+* planner_cspace: abort A* search on continuous timeout (`#592 <https://github.com/at-wat/neonavigation/issues/592>`_)
+* Contributors: Atsushi Watanabe
+
 0.10.8 (2021-03-10)
 -------------------
 * planner_cspace: improve performance of costmap reset (`#587 <https://github.com/at-wat/neonavigation/issues/587>`_)
