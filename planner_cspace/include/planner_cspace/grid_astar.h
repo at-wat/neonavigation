@@ -54,6 +54,7 @@ namespace planner_cspace
 {
 struct SearchStats
 {
+  size_t num_loop;
   size_t num_search_queue;
   size_t num_prev_updates;
   size_t num_total_updates;
@@ -229,6 +230,7 @@ protected:
 
     size_t num_updates(0);
     size_t num_total_updates(0);
+    size_t num_loop(0);
 
     bool found(false);
     bool abort(false);
@@ -249,6 +251,8 @@ protected:
 #pragma omp single
         {
           const size_t num_search_queue = open_.size();
+          num_loop++;
+
           // Fetch tasks to be paralellized
           centers.clear();
           for (size_t i = 0; i < search_task_num_;)
@@ -274,6 +278,7 @@ protected:
             findPath(ss_normalized, better, path_tmp);
             const SearchStats stats =
                 {
+                  .num_loop = num_loop,
                   .num_search_queue = num_search_queue,
                   .num_prev_updates = num_updates,
                   .num_total_updates = num_total_updates,

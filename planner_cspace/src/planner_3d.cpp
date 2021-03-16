@@ -1796,12 +1796,12 @@ protected:
             "Search aborted due to timeout. "
             "search_timeout_abort may be too small or planner_3d may have a bug: "
             "s=(%d, %d, %d), g=(%d, %d, %d), tdiff=%0.4f, "
+            "num_loop=%lu, "
             "num_search_queue=%lu, "
             "num_prev_updates=%lu, "
             "num_total_updates=%lu, ",
-            s[0], s[1], s[2], e[0], e[1], e[2],
-            tdiff,
-            stats.num_search_queue, stats.num_prev_updates, stats.num_total_updates);
+            s[0], s[1], s[2], e[0], e[1], e[2], tdiff,
+            stats.num_loop, stats.num_search_queue, stats.num_prev_updates, stats.num_total_updates);
         return false;
       }
       ROS_WARN("Search timed out (%0.4f sec.)", tdiff);
