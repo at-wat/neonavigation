@@ -222,6 +222,7 @@ protected:
     bool found(false);
 #pragma omp parallel
     {
+      bool abort(false);
       std::vector<GridmapUpdate> updates;
       // Reserve buffer using example search diff list
       updates.reserve(
@@ -259,10 +260,13 @@ protected:
             std::list<Vec> path_tmp;
             ts = tnow;
             findPath(ss_normalized, better, path_tmp);
-            cb_progress(path_tmp);
+            if (!cb_progress(path_tmp))
+            {
+              abort = true;
+            }
           }
         }
-        if (centers.size() < 1 || found)
+        if (centers.size() < 1 || found || abort)
           break;
         updates.clear();
         dont.clear();
