@@ -1794,7 +1794,7 @@ protected:
       {
         ROS_ERROR(
             "Search aborted due to timeout. "
-            "Please report following information: "
+            "search_timeout_abort may be too small or planner_3d may have a bug: "
             "s=(%d, %d, %d), g=(%d, %d, %d), tdiff=%0.4f, "
             "num_search_queue=%lu, "
             "num_prev_updates=%lu, "
