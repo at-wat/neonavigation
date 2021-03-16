@@ -122,10 +122,10 @@ TEST(GridAstar, TimeoutAbort)
 
   public:
     Model()
-      : search_(2)
+      : search_(3)
     {
       search_[0].push_back(Vec(1));
-      search_[1].push_back(Vec(0));
+      search_[1].push_back(Vec(2));
     }
     float cost(const Vec&, const Vec&, const std::vector<VecWithCost>&, const Vec&) const final
     {
@@ -142,18 +142,32 @@ TEST(GridAstar, TimeoutAbort)
   };
   Model::Ptr model(new Model());
 
-  const auto cb_progress = [](const std::list<Vec>& /* path_grid */, const SearchStats& stats) -> bool
+  int cnt(0);
+  const auto cb_progress = [&cnt](const std::list<Vec>& /* path_grid */, const SearchStats& stats) -> bool
   {
-    EXPECT_EQ(1u, stats.num_search_queue);
-    EXPECT_EQ(0u, stats.num_prev_updates);
-    EXPECT_EQ(0u, stats.num_total_updates);
+    switch (cnt++)
+    {
+      case 0:
+        EXPECT_EQ(1u, stats.num_loop);
+        EXPECT_EQ(1u, stats.num_search_queue);
+        EXPECT_EQ(0u, stats.num_prev_updates);
+        EXPECT_EQ(0u, stats.num_total_updates);
+        return true;
+      case 1:
+        EXPECT_EQ(2u, stats.num_loop);
+        EXPECT_EQ(1u, stats.num_search_queue);
+        EXPECT_EQ(1u, stats.num_prev_updates);
+        EXPECT_EQ(1u, stats.num_total_updates);
+        return false;
+    }
+    EXPECT_TRUE(false) << "Search was not aborted";
     return false;
   };
 
   std::list<Vec> path;
   std::vector<Model::VecWithCost> starts;
   starts.emplace_back(Vec(0));
-  ASSERT_FALSE(as.search(starts, Vec(1), path, model, cb_progress, 0, 0.0));
+  ASSERT_FALSE(as.search(starts, Vec(2), path, model, cb_progress, 0, 0.0));
 }
 
 TEST(GridAstar, SearchWithMultipleStarts)
