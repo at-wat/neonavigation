@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.10 (2021-03-18)
+--------------------
+* planner_cspace: fix goal unreachable condition (`#595 <https://github.com/at-wat/neonavigation/issues/595>`_)
+* Contributors: Atsushi Watanabe
+
 0.10.9 (2021-03-16)
 -------------------
 * planner_cspace: abort A* search on continuous timeout (`#592 <https://github.com/at-wat/neonavigation/issues/592>`_)
