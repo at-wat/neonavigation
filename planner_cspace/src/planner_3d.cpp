@@ -1748,7 +1748,9 @@ protected:
     }
     const Astar::Vec s_rough(s[0], s[1], 0);
 
-    if (cost_estim_cache_[s_rough] == std::numeric_limits<float>::max())
+    // If goal gets occupied, cost_estim_cache_ is not updated to reduce
+    // computational cost for clearing huge map. In this case, cm_[e] is 100.
+    if (cost_estim_cache_[s_rough] == std::numeric_limits<float>::max() || cm_[e] >= 100)
     {
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable.");
