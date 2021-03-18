@@ -2,6 +2,9 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.10.9 (2021-03-16)
 -------------------
 * neonavigation_launch: add isolated room to demo map (`#591 <https://github.com/at-wat/neonavigation/issues/591>`_)
