@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.10 (2021-03-18)
+--------------------
 * planner_cspace: fix goal unreachable condition (`#595 <https://github.com/at-wat/neonavigation/issues/595>`_)
 * Contributors: Atsushi Watanabe
 

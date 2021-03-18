@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>joystick_interrupt</name>
-  <version>0.10.9</version>
+  <version>0.10.10</version>
   <description>Interrupt cmd_vel by joystick input</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
