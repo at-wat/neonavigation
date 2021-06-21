@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>costmap_cspace</name>
-  <version>0.10.10</version>
+  <version>0.10.11</version>
   <description>3-dof configuration space costmap package</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
