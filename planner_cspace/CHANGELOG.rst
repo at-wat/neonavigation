@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.11 (2021-06-21)
+--------------------
+* planner_cspace: reset next_replan_time after waitUntil() (`#602 <https://github.com/at-wat/neonavigation/issues/602>`_)
+* Contributors: Kazuki Takahashi
+
 0.10.10 (2021-03-18)
 --------------------
 * planner_cspace: fix goal unreachable condition (`#595 <https://github.com/at-wat/neonavigation/issues/595>`_)
