@@ -1470,6 +1470,7 @@ public:
       waitUntil(next_replan_time, previous_path);
 
       const ros::Time now = ros::Time::now();
+      next_replan_time = now;
 
       if (has_map_ && !goal_updated_ && has_goal_)
       {
