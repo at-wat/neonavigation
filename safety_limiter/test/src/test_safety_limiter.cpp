@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -292,7 +292,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     ros::spinOnce();
   }
 
-  const float vel_ref[] = { -0.2, -0.4, 0.2, 0.4 };
+  const float vel_ref[] = {-0.2, -0.4, 0.2, 0.4};
   for (const float vel : vel_ref)
   {
     // 1.0 m/ss, obstacle at -0.05 m (already in collision): escape motion must be allowed
@@ -412,7 +412,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     ros::spinOnce();
   }
 
-  const float vel_ref[] = { -0.2, -0.4, 0.2, 0.4 };
+  const float vel_ref[] = {-0.2, -0.4, 0.2, 0.4};
   for (const float vel : vel_ref)
   {
     // already colliding at rear-right side: only positive rotation must be allowed
@@ -516,10 +516,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
   const float dt = 0.02;
   ros::Rate wait(1.0 / dt);
 
-  const float velocities[] =
-      {
-        -0.8, -0.5, 0.5, 0.8
-      };
+  const float velocities[] = {-0.8, -0.5, 0.5, 0.8};
   for (const float vel : velocities)
   {
     float x = 0;
@@ -564,24 +561,25 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
   ros::Rate wait(20);
 
   const float linear_velocities[] =
-  {-1.7, -1.5, 0.0, 1.5, 1.7 };
+      {-1.7, -1.5, 0.0, 1.5, 1.7};
   const float angular_velocities[] =
-  {-2.7, -2.5, 0.0, 2.5, 2.7 };
+      {-2.7, -2.5, 0.0, 2.5, 2.7};
   const float expected_linear_velocities[] =
-  {-1.5, -1.5, 0.0, 1.5, 1.5 };
+      {-1.5, -1.5, 0.0, 1.5, 1.5};
   const float expected_angular_velocities[] =
-  {-2.5, -2.5, 0.0, 2.5, 2.5 };
+      {-2.5, -2.5, 0.0, 2.5, 2.5};
 
   for (int linear_index = 0; linear_index < 5; linear_index++)
   {
-    for  (int angular_index = 0; angular_index < 5; angular_index++)
+    for (int angular_index = 0; angular_index < 5; angular_index++)
     {
       bool received = false;
       bool en = false;
 
       for (int i = 0; i < 10 && ros::ok(); ++i)
       {
-        if (i > 5) en = true;
+        if (i > 5)
+          en = true;
         publishSinglePointPointcloud2(1000, 1000, 0, "base_link", ros::Time::now());
         publishWatchdogReset();
         publishTwist(linear_velocities[linear_index], angular_velocities[angular_index]);
@@ -610,7 +608,6 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
     }
   }
 }
-
 
 int main(int argc, char** argv)
 {

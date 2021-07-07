@@ -576,13 +576,13 @@ protected:
   limitMaxVelocities(const geometry_msgs::Twist& in)
   {
     auto out = in;
-    out.linear.x =  (out.linear.x > 0) ?
-                    std::min(out.linear.x, max_values_[0]) :
-                    std::max(out.linear.x, -max_values_[0]);
+    out.linear.x = (out.linear.x > 0) ?
+                       std::min(out.linear.x, max_values_[0]) :
+                       std::max(out.linear.x, -max_values_[0]);
 
     out.angular.z = (out.angular.z > 0) ?
-                    std::min(out.angular.z, max_values_[1]) :
-                    std::max(out.angular.z, -max_values_[1]);
+                        std::min(out.angular.z, max_values_[1]) :
+                        std::max(out.angular.z, -max_values_[1]);
 
     return out;
   }

@@ -164,7 +164,7 @@ private:
 
   void cbJoint(const sensor_msgs::JointState::ConstPtr& msg)
   {
-    int id[2] = { -1, -1 };
+    int id[2] = {-1, -1};
     for (size_t i = 0; i < msg->name.size(); i++)
     {
       if (msg->name[i].compare(links_[0].name_) == 0)

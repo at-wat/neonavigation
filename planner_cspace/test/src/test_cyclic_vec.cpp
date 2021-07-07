@@ -38,10 +38,7 @@ namespace planner_cspace
 {
 TEST(CyclicVec, InitFloat)
 {
-  const float val[3] =
-      {
-        1.0, 2.0, 3.0
-      };
+  const float val[3] = {1.0, 2.0, 3.0};
   CyclicVecFloat<3, 2> v(1.0f, 2.0f, 3.0f);
   const CyclicVecFloat<3, 2> vc(1.0f, 2.0f, 3.0f);
 
@@ -54,10 +51,7 @@ TEST(CyclicVec, InitFloat)
 
 TEST(CyclicVec, InitInt)
 {
-  const int val[3] =
-      {
-        1, 2, 3
-      };
+  const int val[3] = {1, 2, 3};
   CyclicVecInt<3, 2> v(1, 2, 3);
   const CyclicVecInt<3, 2> vc(1, 2, 3);
 

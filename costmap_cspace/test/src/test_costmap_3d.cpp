@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -61,12 +61,12 @@ const std::string footprint_str(
 //  0 0 0
 const char temp_dir[4][2] =
     {
-      // x, y which must be occupied in the template
-      -1, 0,
-      0, -1,
-      1, 0,
-      0, 1
-    };
+        // x, y which must be occupied in the template
+        {-1, 0},
+        {0, -1},
+        {1, 0},
+        {0, 1},
+};
 
 TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 {
@@ -411,8 +411,8 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   const int num_points_base_map = 2;
   const int points_base_map[num_points_base_map][2] =
       {
-        2, 3,
-        4, 4
+          {2, 3},
+          {4, 4},
       };
   for (int i = 0; i < num_points_base_map; ++i)
   {
@@ -422,9 +422,9 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   const int num_points_local_map = 3;
   const int points_local_map[num_points_local_map][2] =
       {
-        3, 4,
-        5, 3,
-        4, 4
+          {3, 4},
+          {5, 3},
+          {4, 4},
       };
   for (int i = 0; i < num_points_local_map; ++i)
   {
@@ -437,8 +437,8 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   // Overlay local map
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb = [&updated](
-      const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+                const costmap_cspace::CSpace3DMsg::Ptr map,
+                const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated = update;
     return true;
@@ -481,8 +481,8 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm_over->setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::CSpace3DUpdate);
   auto cb_max = [&updated_max](
-      const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+                    const costmap_cspace::CSpace3DMsg::Ptr map,
+                    const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated_max = update;
     return true;
@@ -613,32 +613,32 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
   };
   const TestData dataset[] =
       {
-        { "inside0", { 0.0, 0.0 }, true, { 0u, 0u, 0u, 2u, 2u, 4u } },
-        { "inside1", { 1.0, 0.0 }, true, { 1u, 0u, 0u, 2u, 2u, 4u } },
-        { "half-outside x0", { -1.0, 0.0 }, true, { 0u, 0u, 0u, 1u, 2u, 4u } },
-        { "half-outside x1", { 3.0, 0.0 }, true, { 3u, 0u, 0u, 1u, 2u, 4u } },
-        { "half-outside y0", { 0.0, -1.0 }, true, { 0u, 0u, 0u, 2u, 1u, 4u } },
-        { "half-outside y1", { 0.0, 3.0 }, true, { 0u, 3u, 0u, 2u, 1u, 4u } },
-        { "half-outside xy0", { -1.0, -1.0 }, true, { 0u, 0u, 0u, 1u, 1u, 4u } },
-        { "half-outside xy1", { 3.0, -1.0 }, true, { 3u, 0u, 0u, 1u, 1u, 4u } },
-        { "half-outside xy2", { 3.0, 3.0 }, true, { 3u, 3u, 0u, 1u, 1u, 4u } },
-        { "half-outside xy3", { -1.0, 3.0 }, true, { 0u, 3u, 0u, 1u, 1u, 4u } },
-        { "boundary x0", { -2.0, 0.0 }, false },
-        { "boundary x1", { 4, 0.0 }, false },
-        { "boundary y0", { 0, -2.0 }, false },
-        { "boundary y1", { 0, 4.0 }, false },
-        { "boundary xy0", { -2.0, -2.0 }, false },
-        { "boundary xy1", { 4.0, -2.0 }, false },
-        { "boundary xy2", { 4.0, 4.0 }, false },
-        { "boundary xy3", { -2.0, 4.0 }, false },
-        { "outside x0", { -3.0, 0.0 }, false },
-        { "outside x1", { 5, 0.0 }, false },
-        { "outside y0", { 0, -3.0 }, false },
-        { "outside y1", { 0, 5.0 }, false },
-        { "outside xy0", { -3.0, -3.0 }, false },
-        { "outside xy1", { 5.0, -3.0 }, false },
-        { "outside xy2", { 5.0, 5.0 }, false },
-        { "outside xy3", { -3.0, 5.0 }, false },
+          {"inside0", {0.0, 0.0}, true, {0u, 0u, 0u, 2u, 2u, 4u}},
+          {"inside1", {1.0, 0.0}, true, {1u, 0u, 0u, 2u, 2u, 4u}},
+          {"half-outside x0", {-1.0, 0.0}, true, {0u, 0u, 0u, 1u, 2u, 4u}},
+          {"half-outside x1", {3.0, 0.0}, true, {3u, 0u, 0u, 1u, 2u, 4u}},
+          {"half-outside y0", {0.0, -1.0}, true, {0u, 0u, 0u, 2u, 1u, 4u}},
+          {"half-outside y1", {0.0, 3.0}, true, {0u, 3u, 0u, 2u, 1u, 4u}},
+          {"half-outside xy0", {-1.0, -1.0}, true, {0u, 0u, 0u, 1u, 1u, 4u}},
+          {"half-outside xy1", {3.0, -1.0}, true, {3u, 0u, 0u, 1u, 1u, 4u}},
+          {"half-outside xy2", {3.0, 3.0}, true, {3u, 3u, 0u, 1u, 1u, 4u}},
+          {"half-outside xy3", {-1.0, 3.0}, true, {0u, 3u, 0u, 1u, 1u, 4u}},
+          {"boundary x0", {-2.0, 0.0}, false},
+          {"boundary x1", {4, 0.0}, false},
+          {"boundary y0", {0, -2.0}, false},
+          {"boundary y1", {0, 4.0}, false},
+          {"boundary xy0", {-2.0, -2.0}, false},
+          {"boundary xy1", {4.0, -2.0}, false},
+          {"boundary xy2", {4.0, 4.0}, false},
+          {"boundary xy3", {-2.0, 4.0}, false},
+          {"outside x0", {-3.0, 0.0}, false},
+          {"outside x1", {5, 0.0}, false},
+          {"outside y0", {0, -3.0}, false},
+          {"outside y1", {0, 5.0}, false},
+          {"outside xy0", {-3.0, -3.0}, false},
+          {"outside xy1", {5.0, -3.0}, false},
+          {"outside xy2", {5.0, 5.0}, false},
+          {"outside xy3", {-3.0, 5.0}, false},
       };
 
   for (auto& d : dataset)
@@ -675,8 +675,8 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     // Overlay local map
     costmap_cspace_msgs::CSpace3DUpdate::Ptr updated;
     auto cb = [&updated](
-        const costmap_cspace::CSpace3DMsg::Ptr& map,
-        const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+                  const costmap_cspace::CSpace3DMsg::Ptr& map,
+                  const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
     {
       updated = update;
       return true;

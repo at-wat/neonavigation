@@ -51,23 +51,23 @@ TEST(GridMetricConverter, SinglePose)
 
   const float metric[][3] =
       {
-        { 100.01, 100.01, M_PI / 8 },
-        { 100.01, 100.01, -M_PI / 8 },
-        { 105.01, 102.09, M_PI / 2 },
-        { 100.21, 102.51, -M_PI / 2 },
-        { 99.99, 100.01, 0 },
-        { 100.01, 100.01, 2.1 * M_PI / 8 },
-        { 100.01, 100.01, 1.9 * M_PI / 8 }
+          {100.01, 100.01, M_PI / 8},
+          {100.01, 100.01, -M_PI / 8},
+          {105.01, 102.09, M_PI / 2},
+          {100.21, 102.51, -M_PI / 2},
+          {99.99, 100.01, 0},
+          {100.01, 100.01, 2.1 * M_PI / 8},
+          {100.01, 100.01, 1.9 * M_PI / 8},
       };
   const int grid[][3] =
       {
-        { 0, 0, 1 },
-        { 0, 0, -1 },
-        { 50, 20, 4 },
-        { 2, 25, -4 },  // angle must not normalized
-        { -1, 0, 0 },   // x, y must be rounded downword
-        { 0, 0, 2 },    // angle must be rounded to nearest integer
-        { 0, 0, 2 }     // angle must be rounded to nearest integer
+          {0, 0, 1},
+          {0, 0, -1},
+          {50, 20, 4},
+          {2, 25, -4},  // angle must not normalized
+          {-1, 0, 0},   // x, y must be rounded downword
+          {0, 0, 2},    // angle must be rounded to nearest integer
+          {0, 0, 2}     // angle must be rounded to nearest integer
       };
   for (size_t i = 0; i < sizeof(grid) / sizeof(grid[0]); ++i)
   {
@@ -102,17 +102,17 @@ TEST(GridMetricConverter, Path)
 
   const float metric_expected[][3] =
       {
-        { 100.15, 100.15, M_PI / 8 },
-        { 100.15, 100.25, M_PI / 8 },
-        { 100.25, 100.35, M_PI / 8 },
-        { 100.35, 100.35, 2 * M_PI / 8 }
+          {100.15, 100.15, M_PI / 8},
+          {100.15, 100.25, M_PI / 8},
+          {100.25, 100.35, M_PI / 8},
+          {100.35, 100.35, 2 * M_PI / 8},
       };
   const int grid[][3] =
       {
-        { 1, 1, 1 },
-        { 1, 2, 1 },
-        { 2, 3, 1 },
-        { 3, 3, 2 }
+          {1, 1, 1},
+          {1, 2, 1},
+          {2, 3, 1},
+          {3, 3, 2},
       };
   std::vector<CyclicVecFloat<3, 2>> path_grid;
   for (const auto& g : grid)

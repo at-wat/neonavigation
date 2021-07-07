@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -55,10 +55,10 @@ TEST(TrajectoryRecorder, TfToPath)
 
   const tf2::Transform points[] =
       {
-        tf2::Transform(tf2::Quaternion(0, 0, 0, 1), tf2::Vector3(0, 0, 0)),
-        tf2::Transform(tf2::Quaternion(0, 0, 1, 0), tf2::Vector3(2, 0, 0)),
-        tf2::Transform(tf2::Quaternion(0, 0, 0, -1), tf2::Vector3(3, 5, 0)),
-        tf2::Transform(tf2::Quaternion(0, 0, -1, 0), tf2::Vector3(-1, 5, 1))
+          tf2::Transform(tf2::Quaternion(0, 0, 0, 1), tf2::Vector3(0, 0, 0)),
+          tf2::Transform(tf2::Quaternion(0, 0, 1, 0), tf2::Vector3(2, 0, 0)),
+          tf2::Transform(tf2::Quaternion(0, 0, 0, -1), tf2::Vector3(3, 5, 0)),
+          tf2::Transform(tf2::Quaternion(0, 0, -1, 0), tf2::Vector3(-1, 5, 1)),
       };
   const size_t len = sizeof(points) / sizeof(tf2::Transform);
 

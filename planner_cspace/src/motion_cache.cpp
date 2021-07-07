@@ -68,9 +68,9 @@ void MotionCache::reset(
           const float yaw_e = d[2] * angular_resolution;
           const float diff_val[3] =
               {
-                d[0] * linear_resolution,
-                d[1] * linear_resolution,
-                d[2] * angular_resolution
+                  d[0] * linear_resolution,
+                  d[1] * linear_resolution,
+                  d[2] * angular_resolution,
               };
           std::unordered_map<CyclicVecInt<3, 2>, bool, CyclicVecInt<3, 2>> registered;
           registered[d] = true;
@@ -133,9 +133,9 @@ void MotionCache::reset(
 
             const float posf_raw[3] =
                 {
-                  (cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
-                  (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
-                  cyaw / angular_resolution
+                    (cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
+                    (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
+                    cyaw / angular_resolution,
                 };
             const CyclicVecFloat<3, 2> posf(posf_raw[0], posf_raw[1], posf_raw[2]);
             CyclicVecInt<3, 2> pos(posf_raw[0], posf_raw[1], posf_raw[2]);

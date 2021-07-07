@@ -1115,9 +1115,9 @@ protected:
 
     const int size[3] =
         {
-          static_cast<int>(map_info_.width),
-          static_cast<int>(map_info_.height),
-          static_cast<int>(map_info_.angle)
+            static_cast<int>(map_info_.width),
+            static_cast<int>(map_info_.height),
+            static_cast<int>(map_info_.angle),
         };
     as_.reset(Astar::Vec(size[0], size[1], size[2]));
     cm_.reset(Astar::Vec(size[0], size[1], size[2]));
@@ -1645,14 +1645,8 @@ protected:
     std::vector<Astar::VecWithCost> starts;
     if (antialias_start_)
     {
-      const int x_cand[] =
-          {
-            0, ((sf[0] - s[0]) < 0.5 ? -1 : 1)
-          };
-      const int y_cand[] =
-          {
-            0, ((sf[1] - s[1]) < 0.5 ? -1 : 1)
-          };
+      const int x_cand[] = {0, ((sf[0] - s[0]) < 0.5 ? -1 : 1)};
+      const int y_cand[] = {0, ((sf[1] - s[1]) < 0.5 ? -1 : 1)};
       for (const int x : x_cand)
       {
         for (const int y : y_cand)
