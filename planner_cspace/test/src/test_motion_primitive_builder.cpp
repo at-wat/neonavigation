@@ -95,165 +95,163 @@ std::vector<Vec> buildExpectedPrimitives(const std::vector<std::vector<Vec>> ori
 
 TEST(MotionPrimitiveBuilder, Generate)
 {
-  // clang-format off
   const std::vector<Vec> expected_0deg_straight_primitives =
-  {
-      Vec(1, 0, 0),
-      Vec(2, 0, 0),
-      Vec(3, 0, 0),
-      Vec(4, 0, 0),
-  };
+      {
+          Vec(1, 0, 0),
+          Vec(2, 0, 0),
+          Vec(3, 0, 0),
+          Vec(4, 0, 0),
+      };
   const std::vector<Vec> expected_0deg_rotation_1_primitives =
-  {
-      Vec(3, -2, 15),
-      Vec(3, -1, 15),
-      Vec(3,  1,  1),
-      Vec(3,  2,  1),
-  };
+      {
+          Vec(3, -2, 15),
+          Vec(3, -1, 15),
+          Vec(3, 1, 1),
+          Vec(3, 2, 1),
+      };
   const std::vector<Vec> expected_0deg_rotation_2_primitives =
-  {
-      Vec(3, -2, 14),
-      Vec(3, -1, 14),
-      Vec(3,  1,  2),
-      Vec(3,  2,  2),
-  };
+      {
+          Vec(3, -2, 14),
+          Vec(3, -1, 14),
+          Vec(3, 1, 2),
+          Vec(3, 2, 2),
+      };
   const std::vector<Vec> expected_0deg_rotation_3_primitives =
-  {
-      Vec(3, -2, 13),
-      Vec(3, -1, 13),
-      Vec(3,  1,  3),
-      Vec(3,  2,  3),
-  };
+      {
+          Vec(3, -2, 13),
+          Vec(3, -1, 13),
+          Vec(3, 1, 3),
+          Vec(3, 2, 3),
+      };
   const std::vector<std::vector<Vec>> expected_0deg_primitives =
-  {
-    expected_0deg_straight_primitives,
-    expected_0deg_rotation_1_primitives,
-    expected_0deg_rotation_2_primitives,
-    expected_0deg_rotation_3_primitives,
-  };
+      {
+          expected_0deg_straight_primitives,
+          expected_0deg_rotation_1_primitives,
+          expected_0deg_rotation_2_primitives,
+          expected_0deg_rotation_3_primitives,
+      };
 
   const std::vector<Vec> expected_23deg_straight_primitives =
-  {
-      Vec(2, 1, 0),
-      Vec(3, 1, 0),
-      Vec(3, 2, 0),
-  };
+      {
+          Vec(2, 1, 0),
+          Vec(3, 1, 0),
+          Vec(3, 2, 0),
+      };
   const std::vector<Vec> expected_23deg_rotation_1_primitives =
-  {
-      Vec(2, 3,  1),
-      Vec(3, 0, 15),
-      Vec(3, 2,  1),
-      Vec(4, 0, 15),
-  };
+      {
+          Vec(2, 3, 1),
+          Vec(3, 0, 15),
+          Vec(3, 2, 1),
+          Vec(4, 0, 15),
+      };
   const std::vector<Vec> expected_23deg_rotation_2_primitives =
-  {
-      Vec(2,  3,  2),
-      Vec(3,  2,  2),
-      Vec(3, -1, 14),
-      Vec(3,  0, 14),
-      Vec(4,  0, 14),
-  };
+      {
+          Vec(2, 3, 2),
+          Vec(3, 2, 2),
+          Vec(3, -1, 14),
+          Vec(3, 0, 14),
+          Vec(4, 0, 14),
+      };
   const std::vector<Vec> expected_23deg_rotation_3_primitives =
-  {
-      Vec(1,  3,  3),
-      Vec(2,  3,  3),
-      Vec(3, -1, 13),
-      Vec(3,  0, 13),
-      Vec(4,  0, 13),
-  };
+      {
+          Vec(1, 3, 3),
+          Vec(2, 3, 3),
+          Vec(3, -1, 13),
+          Vec(3, 0, 13),
+          Vec(4, 0, 13),
+      };
   const std::vector<std::vector<Vec>> expected_23deg_primitives =
-  {
-    expected_23deg_straight_primitives,
-    expected_23deg_rotation_1_primitives,
-    expected_23deg_rotation_2_primitives,
-    expected_23deg_rotation_3_primitives,
-  };
+      {
+          expected_23deg_straight_primitives,
+          expected_23deg_rotation_1_primitives,
+          expected_23deg_rotation_2_primitives,
+          expected_23deg_rotation_3_primitives,
+      };
 
   const std::vector<Vec> expected_45deg_straight_primitives =
-  {
-      Vec(1, 1, 0),
-      Vec(2, 2, 0),
-      Vec(3, 2, 0),
-      Vec(2, 3, 0),
-  };
+      {
+          Vec(1, 1, 0),
+          Vec(2, 2, 0),
+          Vec(3, 2, 0),
+          Vec(2, 3, 0),
+      };
   const std::vector<Vec> expected_45deg_rotation_1_primitives =
-  {
-      Vec(1, 3,  1),
-      Vec(2, 3,  1),
-      Vec(3, 1, 15),
-      Vec(3, 2, 15),
-  };
+      {
+          Vec(1, 3, 1),
+          Vec(2, 3, 1),
+          Vec(3, 1, 15),
+          Vec(3, 2, 15),
+      };
   const std::vector<Vec> expected_45deg_rotation_2_primitives =
-  {
-      Vec(0, 3,  2),
-      Vec(1, 3,  2),
-      Vec(2, 3,  2),
-      Vec(3, 0, 14),
-      Vec(3, 1, 14),
-      Vec(3, 2, 14),
-  };
+      {
+          Vec(0, 3, 2),
+          Vec(1, 3, 2),
+          Vec(2, 3, 2),
+          Vec(3, 0, 14),
+          Vec(3, 1, 14),
+          Vec(3, 2, 14),
+      };
   const std::vector<Vec> expected_45deg_rotation_3_primitives =
-  {
-      Vec(0, 3,  3),
-      Vec(0, 4,  3),
-      Vec(1, 3,  3),
-      Vec(3, 0, 13),
-      Vec(3, 1, 13),
-      Vec(4, 0, 13),
-  };
+      {
+          Vec(0, 3, 3),
+          Vec(0, 4, 3),
+          Vec(1, 3, 3),
+          Vec(3, 0, 13),
+          Vec(3, 1, 13),
+          Vec(4, 0, 13),
+      };
   const std::vector<std::vector<Vec>> expected_45deg_primitives =
-  {
-    expected_45deg_straight_primitives,
-    expected_45deg_rotation_1_primitives,
-    expected_45deg_rotation_2_primitives,
-    expected_45deg_rotation_3_primitives,
-  };
+      {
+          expected_45deg_straight_primitives,
+          expected_45deg_rotation_1_primitives,
+          expected_45deg_rotation_2_primitives,
+          expected_45deg_rotation_3_primitives,
+      };
 
   const std::vector<Vec> expected_67deg_straight_primitives =
-  {
-      Vec(1, 2, 0),
-      Vec(1, 3, 0),
-      Vec(2, 3, 0),
-  };
+      {
+          Vec(1, 2, 0),
+          Vec(1, 3, 0),
+          Vec(2, 3, 0),
+      };
   const std::vector<Vec> expected_67deg_rotation_1_primitives =
-  {
-      Vec(0, 3,  1),
-      Vec(0, 4,  1),
-      Vec(2, 3, 15),
-      Vec(3, 2, 15),
-  };
+      {
+          Vec(0, 3, 1),
+          Vec(0, 4, 1),
+          Vec(2, 3, 15),
+          Vec(3, 2, 15),
+      };
   const std::vector<Vec> expected_67deg_rotation_2_primitives =
-  {
-      Vec(0, 3,  2),
-      Vec(0, 4,  2),
-      Vec(-1, 3,  2),
-      Vec(2, 3, 14),
-      Vec(3, 2, 14),
-  };
+      {
+          Vec(0, 3, 2),
+          Vec(0, 4, 2),
+          Vec(-1, 3, 2),
+          Vec(2, 3, 14),
+          Vec(3, 2, 14),
+      };
   const std::vector<Vec> expected_67deg_rotation_3_primitives =
-  {
-      Vec(0,  3,  3),
-      Vec(0,  4,  3),
-      Vec(1, -3,  3),
-      Vec(3,  1, 13),
-      Vec(3,  2, 13),
-  };
+      {
+          Vec(0, 3, 3),
+          Vec(0, 4, 3),
+          Vec(1, -3, 3),
+          Vec(3, 1, 13),
+          Vec(3, 2, 13),
+      };
   const std::vector<std::vector<Vec>> expected_67deg_primitives =
-  {
-    expected_67deg_straight_primitives,
-    expected_67deg_rotation_1_primitives,
-    expected_67deg_rotation_2_primitives,
-    expected_67deg_rotation_3_primitives,
-  };
+      {
+          expected_67deg_straight_primitives,
+          expected_67deg_rotation_1_primitives,
+          expected_67deg_rotation_2_primitives,
+          expected_67deg_rotation_3_primitives,
+      };
 
   const std::vector<std::vector<std::vector<Vec>>> expected_original_primitives =
-  {
-    expected_0deg_primitives,
-    expected_23deg_primitives,
-    expected_45deg_primitives,
-    expected_67deg_primitives,
-  };
-  // clang-format on
+      {
+          expected_0deg_primitives,
+          expected_23deg_primitives,
+          expected_45deg_primitives,
+          expected_67deg_primitives,
+      };
 
   costmap_cspace_msgs::MapMetaData3D map_info;
   map_info.linear_resolution = 0.1f;
