@@ -278,10 +278,10 @@ protected:
             findPath(ss_normalized, better, path_tmp);
             const SearchStats stats =
                 {
-                  .num_loop = num_loop,
-                  .num_search_queue = num_search_queue,
-                  .num_prev_updates = num_updates,
-                  .num_total_updates = num_total_updates,
+                    .num_loop = num_loop,
+                    .num_search_queue = num_search_queue,
+                    .num_prev_updates = num_updates,
+                    .num_total_updates = num_total_updates,
                 };
             if (!cb_progress(path_tmp, stats))
             {

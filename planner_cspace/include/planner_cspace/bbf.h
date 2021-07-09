@@ -57,7 +57,7 @@ protected:
 public:
   explicit BinaryBayesFilter(
       const float& initial_odds = 1.0) noexcept
-      : odds_(initial_odds)
+    : odds_(initial_odds)
   {
   }
   float update(const float& odds)

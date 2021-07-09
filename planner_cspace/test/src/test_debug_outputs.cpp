@@ -160,18 +160,18 @@ TEST_F(DebugOutputsTest, Hysteresis)
   // Robot is at (25, 4) and goal is at (10, 4)
   const PositionAndValue data_set[] =
       {
-        { 25, 4, 0 },
-        { 20, 4, 0 },
-        { 15, 4, 0 },
-        { 10, 4, 0 },
-        { 25, 1, 100 },
-        { 20, 1, 100 },
-        { 15, 1, 100 },
-        { 10, 1, 100 },
-        { 25, 7, 100 },
-        { 20, 7, 100 },
-        { 15, 7, 100 },
-        { 10, 7, 100 },
+          {25, 4, 0},
+          {20, 4, 0},
+          {15, 4, 0},
+          {10, 4, 0},
+          {25, 1, 100},
+          {20, 1, 100},
+          {15, 1, 100},
+          {10, 1, 100},
+          {25, 7, 100},
+          {20, 7, 100},
+          {15, 7, 100},
+          {10, 7, 100},
       };
   for (auto data : data_set)
   {
@@ -193,12 +193,12 @@ TEST_F(DebugOutputsTest, Remembered)
   // Costmap is expanded by 1 grid.
   const PositionAndValue data_set[] =
       {
-        { 17, 0, 100 },   // occupied
-        { 17, 1, 100 },   // expanded
-        { 17, 2, 0 },     // free
-        { 17, 8, 0 },     // free
-        { 17, 9, 100 },   // expanded
-        { 17, 10, 100 },  // occupied
+          {17, 0, 100},   // occupied
+          {17, 1, 100},   // expanded
+          {17, 2, 0},     // free
+          {17, 8, 0},     // free
+          {17, 9, 100},   // expanded
+          {17, 10, 100},  // occupied
       };
   for (auto data : data_set)
   {

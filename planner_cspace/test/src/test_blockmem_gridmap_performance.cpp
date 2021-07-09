@@ -38,14 +38,8 @@ namespace planner_cspace
 {
 TEST(BlockmemGridmap, SpacialAccessPerformance)
 {
-  constexpr int size[3] =
-      {
-        0x420, 0x420, 0x28
-      };
-  constexpr int pad[3] =
-      {
-        0x204, 0x204, 0x10
-      };
+  constexpr int size[3] = {0x420, 0x420, 0x28};
+  constexpr int pad[3] = {0x204, 0x204, 0x10};
   constexpr int range = 0x10;
   constexpr int repeat = 4;
 

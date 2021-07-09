@@ -74,27 +74,27 @@ TEST(CostmapBBF, Update)
   const float odds_miss = bbf::probabilityToOdds(0.3);
   const char costmap0[3][3] =
       {
-        { 10, 100, 100 },
-        { 100, 100, 100 },
-        { 100, 100, 100 },
+          {10, 100, 100},
+          {100, 100, 100},
+          {100, 100, 100},
       };
   const char costmap1[3][3] =
       {
-        { 0, -1, 0 },
-        { 100, 0, 0 },
-        { 0, 0, 100 },
+          {0, -1, 0},
+          {100, 0, 0},
+          {0, 0, 100},
       };
   const float expected_odds[3][3] =
       {
-        { bbf::MIN_ODDS, bbf::MIN_ODDS * odds_hit, bbf::MIN_ODDS * odds_hit * odds_miss },
-        { bbf::MIN_ODDS * odds_hit * odds_hit, bbf::MIN_ODDS * odds_hit * odds_miss, bbf::MIN_ODDS },
-        { bbf::MIN_ODDS * odds_hit * odds_miss, bbf::MIN_ODDS, bbf::MIN_ODDS },
+          {bbf::MIN_ODDS, bbf::MIN_ODDS * odds_hit, bbf::MIN_ODDS * odds_hit * odds_miss},
+          {bbf::MIN_ODDS * odds_hit * odds_hit, bbf::MIN_ODDS * odds_hit * odds_miss, bbf::MIN_ODDS},
+          {bbf::MIN_ODDS * odds_hit * odds_miss, bbf::MIN_ODDS, bbf::MIN_ODDS},
       };
   const char expected_cost[3][3] =
       {
-        { 0, 26, 8 },
-        { 68, 8, 0 },
-        { 8, 0, 0 },
+          {0, 26, 8},
+          {68, 8, 0},
+          {8, 0, 0},
       };
   BlockMemGridmap<char, 3, 2> cm;
 

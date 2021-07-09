@@ -58,7 +58,8 @@ protected:
   costmap_cspace::Costmap3d::Ptr costmap_;
   std::vector<
       std::pair<nav_msgs::OccupancyGrid::ConstPtr,
-                costmap_cspace::Costmap3dLayerBase::Ptr>> map_buffer_;
+                costmap_cspace::Costmap3dLayerBase::Ptr>>
+      map_buffer_;
 
   void cbMap(
       const nav_msgs::OccupancyGrid::ConstPtr& msg,
