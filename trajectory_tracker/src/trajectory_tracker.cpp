@@ -116,6 +116,8 @@ private:
   double time_optimal_control_future_gain_;
   double k_ang_rotation_;
   double k_avel_rotation_;
+  double goal_tolerance_linear_speed_;
+  double goal_tolerance_rotaion_speed_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
@@ -158,6 +160,8 @@ private:
       , tracking_point_y(0.0)
       , tracking_point_curv(0.0)
       , path_step_done(0)
+      , linear_spped(0.0)
+      , rotation_speed(0.0)
     {
     }
 
@@ -174,6 +178,8 @@ private:
     double tracking_point_y;
     double tracking_point_curv;
     int path_step_done;
+    double linear_spped;
+    double rotation_speed;
   };
 
   template <typename MSG_TYPE>
@@ -263,6 +269,8 @@ void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint3
   time_optimal_control_future_gain_ = config.time_optimal_control_future_gain;
   k_ang_rotation_ = config.k_ang_rotation;
   k_avel_rotation_ = config.k_avel_rotation;
+  goal_tolerance_linear_speed_ = config.goal_tolerance_linear_speed;
+  goal_tolerance_rotaion_speed_ = config.goal_tolerance_rotaion_speed;
 }
 
 TrackerNode::~TrackerNode()
@@ -725,6 +733,8 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       std::abs(result.angle_remains) < goal_tolerance_ang_ &&
       std::abs(result.distance_remains_raw) < goal_tolerance_dist_ &&
       std::abs(result.angle_remains_raw) < goal_tolerance_ang_ &&
+      (goal_tolerance_linear_speed_ != 0.0 && std::abs(result.linear_spped) < goal_tolerance_linear_speed_) &&
+      (goal_tolerance_rotaion_speed_ != 0.0 && std::abs(result.rotation_speed) < goal_tolerance_rotaion_speed_) &&
       it_local_goal == lpath.end())
   {
     result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
