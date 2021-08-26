@@ -117,7 +117,7 @@ private:
   double k_ang_rotation_;
   double k_avel_rotation_;
   double goal_tolerance_linear_speed_;
-  double goal_tolerance_rotaion_speed_;
+  double goal_tolerance_rotation_speed_;
 
   ros::Subscriber sub_path_;
   ros::Subscriber sub_path_velocity_;
@@ -270,7 +270,7 @@ void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint3
   k_ang_rotation_ = config.k_ang_rotation;
   k_avel_rotation_ = config.k_avel_rotation;
   goal_tolerance_linear_speed_ = config.goal_tolerance_linear_speed;
-  goal_tolerance_rotaion_speed_ = config.goal_tolerance_rotaion_speed;
+  goal_tolerance_rotation_speed_ = config.goal_tolerance_rotation_speed;
 }
 
 TrackerNode::~TrackerNode()
@@ -734,7 +734,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       std::abs(result.distance_remains_raw) < goal_tolerance_dist_ &&
       std::abs(result.angle_remains_raw) < goal_tolerance_ang_ &&
       (goal_tolerance_linear_speed_ != 0.0 && std::abs(result.linear_spped) < goal_tolerance_linear_speed_) &&
-      (goal_tolerance_rotaion_speed_ != 0.0 && std::abs(result.rotation_speed) < goal_tolerance_rotaion_speed_) &&
+      (goal_tolerance_rotation_speed_ != 0.0 && std::abs(result.rotation_speed) < goal_tolerance_rotation_speed_) &&
       it_local_goal == lpath.end())
   {
     result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
