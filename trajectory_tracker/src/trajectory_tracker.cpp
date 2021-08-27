@@ -733,8 +733,8 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       std::abs(result.angle_remains) < goal_tolerance_ang_ &&
       std::abs(result.distance_remains_raw) < goal_tolerance_dist_ &&
       std::abs(result.angle_remains_raw) < goal_tolerance_ang_ &&
-      (goal_tolerance_linear_speed_ != 0.0 && std::abs(result.linear_spped) < goal_tolerance_linear_speed_) &&
-      (goal_tolerance_rotation_speed_ != 0.0 && std::abs(result.rotation_speed) < goal_tolerance_rotation_speed_) &&
+      (goal_tolerance_linear_speed_ == 0.0 || std::abs(result.linear_spped) < goal_tolerance_linear_speed_) &&
+      (goal_tolerance_rotation_speed_ == 0.0 || std::abs(result.rotation_speed) < goal_tolerance_rotation_speed_) &&
       it_local_goal == lpath.end())
   {
     result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
