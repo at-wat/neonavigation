@@ -30,3 +30,8 @@ add_rostest_gtest(test_trajectory_tracker_with_odom test/trajectory_tracker_with
     src/test_trajectory_tracker_with_odom.cpp)
 target_link_libraries(test_trajectory_tracker_with_odom ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(test_trajectory_tracker_with_odom trajectory_tracker)
+
+add_rostest_gtest(test_trajectory_tracker_overshoot test/trajectory_tracker_overshoot_rostest.test
+    src/test_trajectory_tracker_overshoot.cpp)
+target_link_libraries(test_trajectory_tracker_overshoot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(test_trajectory_tracker_overshoot trajectory_tracker)
