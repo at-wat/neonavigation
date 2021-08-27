@@ -31,6 +31,7 @@
 #define TRAJECTORY_TRACKER_TEST_H
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 #include <list>
@@ -128,7 +129,7 @@ public:
     pnh_.param("error_large_lin", error_large_lin_, 0.1);
     pnh_.param("error_ang", error_ang_, 0.01);
 
-    dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker", nh_));
+    dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker"));
 
     ros::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
