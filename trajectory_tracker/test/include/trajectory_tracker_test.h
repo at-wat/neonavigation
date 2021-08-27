@@ -128,7 +128,7 @@ public:
     pnh_.param("error_large_lin", error_large_lin_, 0.1);
     pnh_.param("error_ang", error_ang_, 0.01);
 
-    dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker"));
+    dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker", nh_));
 
     ros::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
@@ -264,8 +264,6 @@ public:
 
   void publishTransform(const nav_msgs::Odometry& odom)
   {
-    const ros::Time now = ros::Time::now();
-
     odom_buffer_.push_back(odom);
 
     const ros::Time pub_time = odom.header.stamp - delay_;

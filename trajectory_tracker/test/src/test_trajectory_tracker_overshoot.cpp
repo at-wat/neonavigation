@@ -56,7 +56,6 @@ protected:
 
     nav_msgs::Odometry odom;
     odom.header.frame_id = "odom";
-    //odom.header.stamp = now;
     odom.child_frame_id = "base_link";
     odom.pose.pose.position.x = 0.5;
     odom.pose.pose.position.y = 0.0;
