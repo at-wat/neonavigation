@@ -160,8 +160,6 @@ private:
       , tracking_point_y(0.0)
       , tracking_point_curv(0.0)
       , path_step_done(0)
-      , linear_spped(0.0)
-      , rotation_speed(0.0)
     {
     }
 
@@ -178,8 +176,6 @@ private:
     double tracking_point_y;
     double tracking_point_curv;
     int path_step_done;
-    double linear_spped;
-    double rotation_speed;
   };
 
   template <typename MSG_TYPE>
@@ -188,9 +184,9 @@ private:
   void cbOdometry(const nav_msgs::Odometry::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
   void cbOdomTimeout(const ros::TimerEvent&);
-  void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double);
+  void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
   TrackingResult getTrackingResult(
-      const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&) const;
+      const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double) const;
   void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
@@ -397,7 +393,9 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
         odom_to_robot.inverse(),
         odom->header.stamp, odom->header.frame_id);
 
-    control(robot_to_odom, prediction_offset, dt);
+    const double linear_speed = std::hypot(odom->twist.twist.linear.x, odom->twist.twist.linear.y);
+    const double rotation_speed = odom->twist.twist.angular.z;
+    control(robot_to_odom, prediction_offset, linear_speed, rotation_speed, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
 }
@@ -409,7 +407,7 @@ void TrackerNode::cbTimer(const ros::TimerEvent& event)
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
         tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
-    control(transform, Eigen::Vector3d(0, 0, 0), 1.0 / hz_);
+    control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / hz_);
   }
   catch (tf2::TransformException& e)
   {
@@ -457,6 +455,8 @@ void TrackerNode::spin()
 void TrackerNode::control(
     const tf2::Stamped<tf2::Transform>& robot_to_odom,
     const Eigen::Vector3d& prediction_offset,
+    const double linear_speed,
+    const double angular_speed,
     const double dt)
 {
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
@@ -465,11 +465,13 @@ void TrackerNode::control(
   if (is_path_updated_)
   {
     // Call getTrackingResult to update path_step_done_.
-    const TrackingResult initial_tracking_result = getTrackingResult(robot_to_odom, prediction_offset);
+    const TrackingResult initial_tracking_result =
+        getTrackingResult(robot_to_odom, prediction_offset, linear_speed, angular_speed);
     path_step_done_ = initial_tracking_result.path_step_done;
     is_path_updated_ = false;
   }
-  const TrackingResult tracking_result = getTrackingResult(robot_to_odom, prediction_offset);
+  const TrackingResult tracking_result =
+      getTrackingResult(robot_to_odom, prediction_offset, linear_speed, angular_speed);
   switch (tracking_result.status)
   {
     case trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH:
@@ -556,7 +558,8 @@ void TrackerNode::control(
 }
 
 TrackerNode::TrackingResult TrackerNode::getTrackingResult(
-    const tf2::Stamped<tf2::Transform>& robot_to_odom, const Eigen::Vector3d& prediction_offset) const
+    const tf2::Stamped<tf2::Transform>& robot_to_odom, const Eigen::Vector3d& prediction_offset,
+    const double linear_speed, const double rotation_speed) const
 {
   if (path_header_.frame_id.size() == 0 || path_.size() == 0)
   {
@@ -733,8 +736,8 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       std::abs(result.angle_remains) < goal_tolerance_ang_ &&
       std::abs(result.distance_remains_raw) < goal_tolerance_dist_ &&
       std::abs(result.angle_remains_raw) < goal_tolerance_ang_ &&
-      (goal_tolerance_linear_speed_ == 0.0 || std::abs(result.linear_spped) < goal_tolerance_linear_speed_) &&
-      (goal_tolerance_rotation_speed_ == 0.0 || std::abs(result.rotation_speed) < goal_tolerance_rotation_speed_) &&
+      (goal_tolerance_linear_speed_ == 0.0 || std::abs(linear_speed) < goal_tolerance_linear_speed_) &&
+      (goal_tolerance_rotation_speed_ == 0.0 || std::abs(rotation_speed) < goal_tolerance_rotation_speed_) &&
       it_local_goal == lpath.end())
   {
     result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
