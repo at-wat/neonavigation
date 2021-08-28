@@ -111,8 +111,8 @@ protected:
 
 // to keep backward compatibility with code base using PointcloudAccumurator
 template <typename T>
-using PointcloudAccumurator = PointcloudAccumulator<T>;
-
+using PointcloudAccumurator
+    [[deprecated("Use costmap_cspace::PointcloudAccumulator instead.")]] = PointcloudAccumulator<T>;
 }  // namespace costmap_cspace
 
 #endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
