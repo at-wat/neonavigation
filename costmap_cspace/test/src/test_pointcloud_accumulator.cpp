@@ -116,9 +116,12 @@ TEST(PointcloudAccumulator, PushPointCloud)
 
 TEST(PointcloudAccumulator, BackwardCompatibility)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // check accumulator can be instantiated using the PointcloudAccumurator class
   costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2> accum;
   accum.reset(ros::Duration(1.0));
+#pragma GCC diagnostic pop
 }
 
 int main(int argc, char** argv)
