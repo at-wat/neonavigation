@@ -65,7 +65,7 @@ private:
   float origin_x_;
   float origin_y_;
 
-  std::vector<costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2>> accums_;
+  std::vector<costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2>> accums_;
 
 public:
   Pointcloud2ToMapNode()
@@ -130,7 +130,7 @@ private:
     tf2::doTransform(*cloud, cloud_global, trans);
 
     const int buffer = singleshot ? 1 : 0;
-    accums_[buffer].push(costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
+    accums_[buffer].push(costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
     ros::Time now = cloud->header.stamp;

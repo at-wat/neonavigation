@@ -66,7 +66,7 @@ private:
   float origin_x_;
   float origin_y_;
 
-  costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2> accum_;
+  costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2> accum_;
 
 public:
   LaserscanToMapNode()
