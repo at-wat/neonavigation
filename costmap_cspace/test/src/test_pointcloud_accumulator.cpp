@@ -76,7 +76,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   sensor_msgs::PointCloud2 cloud;
   for (int i = 0; i < 10; i++)
   {
-    fillInPointcloudMsg(cloud, {static_cast<float>(i), 0, 0});
+    fillInPointcloudMsg(cloud, {static_cast<float>(i), 0, 0});  // NOLINT
     cloud.header.stamp = stamp;
     accum.push(costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2>::Points(cloud, stamp));
     // check the number of clouds accumulated so far
@@ -106,7 +106,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   accum.reset(ros::Duration(2.0));
   for (int i = 0; i < 10; i++)
   {
-    fillInPointcloudMsg(cloud, {static_cast<float>(i), 0, 0});
+    fillInPointcloudMsg(cloud, {static_cast<float>(i), 0, 0});  // NOLINT
     cloud.header.stamp = stamp;
     accum.push(costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2>::Points(cloud, stamp));
     stamp += dt;
