@@ -1,7 +1,9 @@
 include_directories(include)
 
-# This flag is needed to compile dynamic_reconfigure::Client on Melodic
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+if(NOT "$ENV{ROS_DISTRO}" STREQUAL "noetic")
+  # This flag is needed to compile dynamic_reconfigure::Client on Melodic
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+endif()
 
 catkin_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
 target_link_libraries(test_${PROJECT_NAME}_filter ${catkin_LIBRARIES})
