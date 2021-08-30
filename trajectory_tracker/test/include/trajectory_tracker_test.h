@@ -31,6 +31,7 @@
 #define TRAJECTORY_TRACKER_TEST_H
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 #include <list>
@@ -42,6 +43,7 @@
 
 #include <ros/ros.h>
 
+#include <dynamic_reconfigure/client.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
@@ -49,6 +51,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 
+#include <trajectory_tracker/TrajectoryTrackerConfig.h>
 #include <trajectory_tracker_msgs/PathWithVelocity.h>
 #include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
 
@@ -78,6 +81,8 @@ protected:
   double error_lin_;
   double error_large_lin_;
   double error_ang_;
+  using ParamType = trajectory_tracker::TrajectoryTrackerConfig;
+  std::unique_ptr<dynamic_reconfigure::Client<ParamType>> dynamic_reconfigure_client_;
 
 private:
   void cbStatus(const trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr& msg)
@@ -123,6 +128,8 @@ public:
     pnh_.param("error_lin", error_lin_, 0.01);
     pnh_.param("error_large_lin", error_large_lin_, 0.1);
     pnh_.param("error_ang", error_ang_, 0.01);
+
+    dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker"));
 
     ros::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
@@ -235,7 +242,6 @@ public:
   void publishTransform()
   {
     const ros::Time now = ros::Time::now();
-
     const Eigen::Quaterniond q(Eigen::AngleAxisd(yaw_, Eigen::Vector3d(0, 0, 1)));
 
     nav_msgs::Odometry odom;
@@ -254,10 +260,14 @@ public:
       odom.twist.twist.linear = cmd_vel_->linear;
       odom.twist.twist.angular = cmd_vel_->angular;
     }
+    publishTransform(odom);
+  }
 
+  void publishTransform(const nav_msgs::Odometry& odom)
+  {
     odom_buffer_.push_back(odom);
 
-    const ros::Time pub_time = now - delay_;
+    const ros::Time pub_time = odom.header.stamp - delay_;
 
     while (odom_buffer_.size() > 0)
     {
@@ -286,9 +296,35 @@ public:
       trans_stamp_last_ = odom.header.stamp;
     }
   }
+
   double getCmdVelFrameRate() const
   {
     return cmd_vel_count_ / (cmd_vel_time_ - initial_cmd_vel_time_).toSec();
+  }
+
+  bool getConfig(ParamType& config) const
+  {
+    const ros::WallTime time_limit = ros::WallTime::now() + ros::WallDuration(10.0);
+    while (time_limit > ros::WallTime::now())
+    {
+      if (dynamic_reconfigure_client_->getCurrentConfiguration(config, ros::Duration(0.1)))
+      {
+        return true;
+      }
+      ros::spinOnce();
+    }
+    return false;
+  }
+
+  bool setConfig(const ParamType& config)
+  {
+    // Wait until parameter server becomes ready
+    ParamType dummy;
+    if (!getConfig(dummy))
+    {
+      return false;
+    }
+    return dynamic_reconfigure_client_->setConfiguration(config);
   }
 };
 

@@ -1,5 +1,10 @@
 include_directories(include)
 
+if(NOT "$ENV{ROS_DISTRO}" STREQUAL "noetic")
+  # This flag is needed to compile dynamic_reconfigure::Client on Melodic
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+endif()
+
 catkin_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
 target_link_libraries(test_${PROJECT_NAME}_filter ${catkin_LIBRARIES})
 
@@ -30,3 +35,8 @@ add_rostest_gtest(test_trajectory_tracker_with_odom test/trajectory_tracker_with
     src/test_trajectory_tracker_with_odom.cpp)
 target_link_libraries(test_trajectory_tracker_with_odom ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(test_trajectory_tracker_with_odom trajectory_tracker)
+
+add_rostest_gtest(test_trajectory_tracker_overshoot test/trajectory_tracker_overshoot_rostest.test
+    src/test_trajectory_tracker_overshoot.cpp)
+target_link_libraries(test_trajectory_tracker_overshoot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(test_trajectory_tracker_overshoot trajectory_tracker)
