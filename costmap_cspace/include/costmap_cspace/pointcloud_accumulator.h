@@ -37,7 +37,7 @@
 namespace costmap_cspace
 {
 template <typename T>
-class PointcloudAccumurator
+class PointcloudAccumulator
 {
 public:
   class Points : public T
@@ -52,11 +52,11 @@ public:
     }
   };
 
-  PointcloudAccumurator()
+  PointcloudAccumulator()
   {
   }
 
-  explicit PointcloudAccumurator(const ros::Duration& duration)
+  explicit PointcloudAccumulator(const ros::Duration& duration)
   {
     reset(duration);
   }
@@ -108,6 +108,11 @@ protected:
   ros::Duration time_to_hold_;
   std::list<Points> points_;
 };
+
+// to keep backward compatibility with code base using PointcloudAccumurator
+template <typename T>
+using PointcloudAccumurator
+    [[deprecated("Use costmap_cspace::PointcloudAccumulator instead.")]] = PointcloudAccumulator<T>;
 }  // namespace costmap_cspace
 
 #endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
