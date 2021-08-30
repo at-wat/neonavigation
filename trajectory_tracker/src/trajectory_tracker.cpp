@@ -393,9 +393,7 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
         odom_to_robot.inverse(),
         odom->header.stamp, odom->header.frame_id);
 
-    const double odom_linear_vel = std::hypot(odom->twist.twist.linear.x, odom->twist.twist.linear.y);
-    const double odom_angular_vel = odom->twist.twist.angular.z;
-    control(robot_to_odom, prediction_offset, odom_linear_vel, odom_angular_vel, dt);
+    control(robot_to_odom, prediction_offset, odom->twist.twist.linear.x, odom->twist.twist.angular.z, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
 }
@@ -559,7 +557,7 @@ void TrackerNode::control(
 
 TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     const tf2::Stamped<tf2::Transform>& robot_to_odom, const Eigen::Vector3d& prediction_offset,
-    const double odom_linear_vel, const double odom_rotation_speed) const
+    const double odom_linear_vel, const double odom_angular_vel) const
 {
   if (path_header_.frame_id.size() == 0 || path_.size() == 0)
   {
@@ -695,7 +693,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       distance_remains = distance_remains_raw = 0.0;
 
     result.turning_in_place = true;
-    result.target_linear_vel = odom_linear_vel;
+    result.target_linear_vel = linear_vel;
     result.distance_remains = distance_remains;
     result.distance_remains_raw = distance_remains_raw;
     result.angle_remains = angle_remains;
@@ -737,7 +735,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       std::abs(result.distance_remains_raw) < goal_tolerance_dist_ &&
       std::abs(result.angle_remains_raw) < goal_tolerance_ang_ &&
       (goal_tolerance_lin_vel_ == 0.0 || std::abs(odom_linear_vel) < goal_tolerance_lin_vel_) &&
-      (goal_tolerance_ang_vel_ == 0.0 || std::abs(odom_rotation_speed) < goal_tolerance_ang_vel_) &&
+      (goal_tolerance_ang_vel_ == 0.0 || std::abs(odom_angular_vel) < goal_tolerance_ang_vel_) &&
       it_local_goal == lpath.end())
   {
     result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
