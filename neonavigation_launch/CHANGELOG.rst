@@ -2,6 +2,9 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.10.11 (2021-06-21)
 --------------------
 
