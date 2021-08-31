@@ -2,6 +2,12 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.0 (2021-08-30)
+-------------------
+* trajectory_tracker: add velocity tolerance parameters (`#607 <https://github.com/at-wat/neonavigation/issues/607>`_)
+* Apply clang-format-11 with new setting (`#605 <https://github.com/at-wat/neonavigation/issues/605>`_)
+* Contributors: Naotaka Hatao
+
 0.10.11 (2021-06-21)
 --------------------
 

@@ -2,6 +2,12 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.0 (2021-08-30)
+-------------------
+* Rename PointcloudAccumurator to PointcloudAccumulator (`#608 <https://github.com/at-wat/neonavigation/issues/608>`_)
+* Apply clang-format-11 with new setting (`#605 <https://github.com/at-wat/neonavigation/issues/605>`_)
+* Contributors: Naotaka Hatao, f-fl0
+
 0.10.11 (2021-06-21)
 --------------------
 

@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.0 (2021-08-30)
+-------------------
+* Apply clang-format-11 with new setting (`#605 <https://github.com/at-wat/neonavigation/issues/605>`_)
+* Contributors: Naotaka Hatao
+
 0.10.11 (2021-06-21)
 --------------------
 * planner_cspace: reset next_replan_time after waitUntil() (`#602 <https://github.com/at-wat/neonavigation/issues/602>`_)
