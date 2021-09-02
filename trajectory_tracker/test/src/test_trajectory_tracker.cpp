@@ -446,7 +446,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(15.0));
 
     publishTransform();
     rate.sleep();
