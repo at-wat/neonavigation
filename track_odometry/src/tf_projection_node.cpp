@@ -60,12 +60,14 @@ private:
   std::string parent_frame_;
   std::string projected_frame_;
   ros::Time prev_stamp_;
+  const tf2::Vector3 z_axis_;
 
 public:
   TfProjectionNode()
     : nh_()
     , pnh_("~")
     , tf_listener_(tf_buffer_)
+    , z_axis_(0, 0, 1)
   {
     if (pnh_.hasParam("base_link_frame") ||
         pnh_.hasParam("projection_frame") ||
@@ -123,14 +125,14 @@ public:
       if (align_all_posture_to_source_)
       {
         const tf2::Quaternion rot(trans.getRotation());
-        const tf2::Quaternion rot_yaw(tf2::Vector3(0.0, 0.0, 1.0), tf2::getYaw(rot));
+        const tf2::Quaternion rot_yaw(z_axis_, tf2::getYaw(rot));
         const tf2::Transform rot_inv(rot_yaw * rot.inverse());
         trans.setData(rot_inv * trans);
       }
       else
       {
         const float yaw = tf2::getYaw(trans.getRotation());
-        trans.setRotation(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+        trans.setRotation(tf2::Quaternion(z_axis_, yaw));
       }
     }
 
@@ -145,7 +147,7 @@ public:
       if (flat_)
       {
         const double yaw = tf2::getYaw(trans_out.transform.rotation);
-        trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+        trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(z_axis_, yaw));
       }
       trans_out.child_frame_id = projected_frame_;
 
