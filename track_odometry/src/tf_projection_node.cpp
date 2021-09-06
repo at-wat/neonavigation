@@ -59,6 +59,7 @@ private:
   std::string projection_surface_frame_;
   std::string parent_frame_;
   std::string projected_frame_;
+  ros::Time prev_stamp_;
 
 public:
   TfProjectionNode()
@@ -139,20 +140,24 @@ public:
         parent_frame_);
 
     geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
-    if (flat_)
+    if (trans_out.header.stamp > prev_stamp_)
     {
-      const double yaw = tf2::getYaw(trans_out.transform.rotation);
-      trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-    }
-    trans_out.child_frame_id = projected_frame_;
+      if (flat_)
+      {
+        const double yaw = tf2::getYaw(trans_out.transform.rotation);
+        trans_out.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      }
+      trans_out.child_frame_id = projected_frame_;
 
-    if (trans.stamp_.isZero())
-    {
-      tf_static_broadcaster_.sendTransform(trans_out);
-    }
-    else
-    {
-      tf_broadcaster_.sendTransform(trans_out);
+      if (trans.stamp_.isZero())
+      {
+        tf_static_broadcaster_.sendTransform(trans_out);
+      }
+      else
+      {
+        tf_broadcaster_.sendTransform(trans_out);
+      }
+      prev_stamp_ = trans_out.header.stamp;
     }
   }
   void cbTimer(const ros::TimerEvent& event)
