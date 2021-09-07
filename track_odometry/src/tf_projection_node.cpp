@@ -59,6 +59,7 @@ private:
   std::string projection_surface_frame_;
   std::string parent_frame_;
   std::string projected_frame_;
+  ros::Duration tf_lookup_timeout_;
   ros::Time prev_stamp_;
   const tf2::Vector3 z_axis_;
 
@@ -67,6 +68,7 @@ public:
     : nh_()
     , pnh_("~")
     , tf_listener_(tf_buffer_)
+    , tf_lookup_timeout_(0.1)
     , z_axis_(0, 0, 1)
   {
     if (pnh_.hasParam("base_link_frame") ||
@@ -104,11 +106,21 @@ public:
     tf2::Stamped<tf2::Transform> trans_target;
     try
     {
+      const ros::Time stamp = ros::Time::now();
+      if (tf_buffer_.canTransform(projection_surface_frame_, source_frame_, stamp, tf_lookup_timeout_))
+      {
+        tf2::fromMsg(
+            tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, stamp, tf_lookup_timeout_),
+            trans);
+      }
+      else
+      {
+        tf2::fromMsg(
+            tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, ros::Time(0), tf_lookup_timeout_),
+            trans);
+      }
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, ros::Time(0), ros::Duration(0.1)),
-          trans);
-      tf2::fromMsg(
-          tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, ros::Duration(0.1)),
+          tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, tf_lookup_timeout_),
           trans_target);
     }
     catch (tf2::TransformException& e)
@@ -142,7 +154,7 @@ public:
         parent_frame_);
 
     geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
-    if (trans_out.header.stamp > prev_stamp_)
+    if (trans_out.header.stamp != prev_stamp_)
     {
       if (flat_)
       {
