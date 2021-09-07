@@ -5,10 +5,10 @@
   <test test-name="test_tf_projection_node" pkg="track_odometry" type="test_tf_projection_node" />
 
   <node pkg="track_odometry" type="tf_projection" name="tf_projection">
-    <param name="base_link_frame" value="base_link" />
-    <param name="projection_frame" value="map" />
-    <param name="target_frame" value="map" />
-    <param name="frame" value="base_link_projected" />
+    <param name="source_frame" value="base_link" />
+    <param name="projection_surface_frame" value="map" />
+    <param name="parent_frame" value="map" />
+    <param name="projected_frame" value="base_link_projected" />
     <param name="project_posture" value="false" />
   </node>
 
