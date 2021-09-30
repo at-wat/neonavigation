@@ -12,7 +12,7 @@
     <param name="max_retry_num" value="5" />
     <param name="tolerance_range" value="0.0" />
     <param name="temporary_escape" value="false" />
-    <param name="goal_tolerance_lin" value="0.025" />
+    <param name="goal_tolerance_lin" value="0.05" />
     <remap from="move_base_simple/goal" to="/goal" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">

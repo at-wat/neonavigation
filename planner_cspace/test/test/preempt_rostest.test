@@ -2,6 +2,6 @@
 <launch>
   <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_preempt" />
 
-  <test test-name="test_preempt" pkg="planner_cspace" type="test_preempt" time-limit="240.0" />
+  <test test-name="test_preempt" pkg="planner_cspace" type="test_preempt" time-limit="90.0" />
   <include file="$(find planner_cspace)/test/test/actionlib_common_rostest.test" />
 </launch>

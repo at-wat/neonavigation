@@ -28,13 +28,14 @@
  */
 
 #include <memory>
+#include <string>
 
-#include <ros/ros.h>
+#include <gtest/gtest.h>
+
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
-
-#include <gtest/gtest.h>
+#include <ros/ros.h>
 
 class PreemptTest : public ::testing::Test
 {
@@ -43,10 +44,8 @@ public:
     : node_()
   {
     move_base_ = std::make_shared<ActionClient>("/move_base");
-    status_sub_ = node_.subscribe("/planner_3d/status",
-                                  10,
-                                  &PreemptTest::StatusCallback,
-                                  this);
+    status_sub_ = node_.subscribe(
+        "/planner_3d/status", 10, &PreemptTest::cbStatus, this);
     if (!move_base_->waitForServer(ros::Duration(30.0)))
     {
       ROS_ERROR("Failed to connect move_base action");
@@ -61,7 +60,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace_msgs::PlannerStatus& msg)
+  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
     status_ = msg;
   }
@@ -79,34 +78,54 @@ protected:
     goal.target_pose.pose.orientation.w = 1.0;
     return goal;
   }
+  std::string statusString() const
+  {
+    if (!status_)
+    {
+      return "(no status)";
+    }
+    return "(status: " + std::to_string(status_->status) +
+           ", error: " + std::to_string(status_->error) + ")";
+  }
 
   ros::NodeHandle node_;
   ros::Subscriber status_sub_;
   ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus::ConstPtr status_;
 };
 
 TEST_F(PreemptTest, Preempt)
 {
+  const ros::Time deadline = ros::Time::now() + ros::Duration(5);
+  const ros::Duration wait(1.0);
+
   move_base_->sendGoal(CreateGoalInFree());
   while (move_base_->getState().state_ !=
          actionlib::SimpleClientGoalState::ACTIVE)
   {
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get active: " << move_base_->getState().toString()
+        << statusString();
   }
   while (move_base_->getState().state_ ==
          actionlib::SimpleClientGoalState::ACTIVE)
   {
     move_base_->cancelAllGoals();
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get inactive: " << move_base_->getState().toString()
+        << statusString();
   }
+
+  ASSERT_TRUE(status_);
 
   ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
-            status_.error);
+            status_->error);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DONE,
-            status_.status);
+            status_->status);
 }
 
 int main(int argc, char** argv)

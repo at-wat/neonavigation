@@ -122,7 +122,6 @@ protected:
   CostmapBBF bbf_costmap_;
 
   GridAstarModel3D::Ptr model_;
-  std::array<float, 1024> euclid_cost_lin_cache_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
   std_msgs::Header map_header_;
