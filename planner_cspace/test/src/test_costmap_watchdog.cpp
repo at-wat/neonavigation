@@ -164,7 +164,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   update.header.frame_id = "map";
   update.width = update.height = update.angle = 0;
 
-  const ros::Time start = ros::Time::now();
+  const ros::Time deadline = ros::Time::now() + ros::Duration(2.0);
   ros::Rate rate(10);
   while (ros::ok())
   {
@@ -176,7 +176,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
     if (status && status->status == planner_cspace_msgs::PlannerStatus::FINISHING)
       break;
 
-    ASSERT_LT(update.header.stamp - start, ros::Duration(2.0))
+    ASSERT_LT(update.header.stamp, deadline)
         << "Planner didn't enter FINISHING state: "
         << (status ? status->status : -1);
   }
@@ -189,7 +189,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
 
     ASSERT_EQ(status->status, planner_cspace_msgs::PlannerStatus::FINISHING)
         << "Wrong test condition";
-    ASSERT_LT(update.header.stamp - start, ros::Duration(2.0))
+    ASSERT_LT(update.header.stamp, deadline)
         << "Planner didn't enter DATA_MISSING state"
         << status->error;
   }
@@ -206,7 +206,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
 
     ASSERT_EQ(status->status, planner_cspace_msgs::PlannerStatus::FINISHING)
         << "Wrong test condition";
-    ASSERT_LT(update.header.stamp - start, ros::Duration(2.0))
+    ASSERT_LT(update.header.stamp, deadline)
         << "No path was published";
   }
   ASSERT_TRUE(ros::ok());
