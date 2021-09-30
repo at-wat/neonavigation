@@ -27,12 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <actionlib/client/simple_action_client.h>
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <ros/ros.h>
-#include <memory>
 
 class AbortTest : public ::testing::Test
 {

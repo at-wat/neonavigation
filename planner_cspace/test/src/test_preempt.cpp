@@ -28,13 +28,14 @@
  */
 
 #include <memory>
+#include <string>
 
-#include <ros/ros.h>
+#include <gtest/gtest.h>
+
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
-
-#include <gtest/gtest.h>
+#include <ros/ros.h>
 
 class PreemptTest : public ::testing::Test
 {
