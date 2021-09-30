@@ -448,6 +448,7 @@ protected:
       updates.reserve(num_cost_estim_task_ * search_diffs.size() / omp_get_num_threads());
 
       const float range_overshoot = ec_[0] * (range_ + local_range_ + longcut_range_);
+      const float weight_linear = map_info_.linear_resolution / 100.0;
 
       while (true)
       {
@@ -455,6 +456,7 @@ protected:
 #pragma omp single
         {
           centers.clear();
+          const float goal_cost = g[s_rough];
           for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_);)
           {
             if (open.size() < 1)
@@ -463,7 +465,7 @@ protected:
             open.pop();
             if (center.p_raw_ > g[center.v_])
               continue;
-            if (center.p_raw_ - range_overshoot > g[s_rough])
+            if (center.p_raw_ - range_overshoot > goal_cost)
               continue;
             centers.emplace_back(std::move(center));
             ++i;
@@ -516,7 +518,7 @@ protected:
               if (collision)
                 continue;
               cost +=
-                  (map_info_.linear_resolution * ds.grid_to_len / 100.0) *
+                  (weight_linear * ds.grid_to_len) *
                   (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
 
               if (cost < 0)
