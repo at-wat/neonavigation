@@ -6,8 +6,8 @@ header:
   frame_id: "map"
 pose:
   position:
-    x: 1.5
-    y: 0.0
+    x: -8.5
+    y: 6.0
     z: 0.0
   orientation:
     x: 0.0

@@ -8,11 +8,14 @@
   </rosparam>
   <rosparam param="planner_3d">
     weight_hysteresis: 0.0
+    fast_map_update: true
+    cost_noise: 0.5
   </rosparam>
   <include file="$(find neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="false" />
     <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
     <arg name="use_path_with_velocity" value="true" />
+    <arg name="sim_robot_x" value="3.0" />
   </include>
   <node pkg="planner_cspace" type="dummy_robot" name="dummy_robot">
     <remap from="cmd_vel" to="cmd_vel_dummy" />
@@ -31,11 +34,11 @@
   </node>
 
   <node pkg="rostopic" type="rostopic" name="goal"
-      launch-prefix="$(find planner_cspace)/test/script/delayed_launch.sh 3"
+      launch-prefix="$(find planner_cspace)/test/script/delayed_launch.sh 5"
       args="pub -l /move_base_simple/goal geometry_msgs/PoseStamped
             -f $(find planner_cspace)/test/data/planner_performance_example.yaml" />
   <node pkg="planner_cspace" type="set_planner_debug_level.sh" name="debug" args="debug" />
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" />
+  <!--node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" /-->
 </launch>
 
