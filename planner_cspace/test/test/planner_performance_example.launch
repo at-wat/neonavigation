@@ -9,7 +9,6 @@
   <rosparam param="planner_3d">
     weight_hysteresis: 0.0
     fast_map_update: true
-    cost_noise: 0.5
   </rosparam>
   <include file="$(find neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="false" />
