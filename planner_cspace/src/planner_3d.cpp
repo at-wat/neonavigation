@@ -1332,7 +1332,7 @@ public:
     int num_task;
     pnh_.param("num_search_task", num_task, num_threads * 16);
     as_.setSearchTaskNum(num_task);
-    pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
+    pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 64);
 
     pnh_.param("retain_last_error_status", retain_last_error_status_, true);
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
