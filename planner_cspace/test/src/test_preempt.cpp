@@ -96,7 +96,7 @@ protected:
 
 TEST_F(PreemptTest, Preempt)
 {
-  const ros::Time deadline = ros::Time::now() + ros::Duration(20);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(5);
   const ros::Duration wait(1.0);
 
   move_base_->sendGoal(CreateGoalInFree());

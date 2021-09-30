@@ -83,13 +83,13 @@ protected:
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.stamp = ros::Time::now();
     goal.target_pose.header.frame_id = "map";
-    goal.target_pose.pose.position.x = 1.24;
-    goal.target_pose.pose.position.y = 0.65;
+    goal.target_pose.pose.position.x = 2.1;
+    goal.target_pose.pose.position.y = 0.45;
     goal.target_pose.pose.position.z = 0.0;
     goal.target_pose.pose.orientation.x = 0.0;
     goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 0.0;
-    goal.target_pose.pose.orientation.w = 1.0;
+    goal.target_pose.pose.orientation.z = 1.0;
+    goal.target_pose.pose.orientation.w = 0.0;
     return goal;
   }
   std::string statusString() const
@@ -110,7 +110,7 @@ protected:
 
 TEST_F(AbortTest, AbortByGoalInRock)
 {
-  const ros::Time deadline = ros::Time::now() + ros::Duration(20);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
   const ros::Duration wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
