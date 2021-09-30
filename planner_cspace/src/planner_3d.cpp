@@ -839,6 +839,29 @@ protected:
       pub_path_.publish(path);
     }
   }
+  void publishFinishPath()
+  {
+    nav_msgs::Path path;
+    path.header.frame_id = robot_frame_;
+    path.header.stamp = ros::Time::now();
+    path.poses.resize(1);
+    path.poses[0].header = path.header;
+    if (force_goal_orientation_)
+      path.poses[0].pose = goal_raw_.pose;
+    else
+      path.poses[0].pose = goal_.pose;
+
+    if (use_path_with_velocity_)
+    {
+      pub_path_velocity_.publish(
+          trajectory_tracker_msgs::toPathWithVelocity(
+              path, std::numeric_limits<double>::quiet_NaN()));
+    }
+    else
+    {
+      pub_path_.publish(path);
+    }
+  }
 
   void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
   {
@@ -1541,6 +1564,10 @@ public:
             if (act_tolerant_->isActive())
               act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(), "Goal reached.");
           }
+          else
+          {
+            publishFinishPath();
+          }
         }
         else
         {
@@ -1707,14 +1734,8 @@ protected:
         }
         else
         {
-          path.poses.resize(1);
-          path.poses[0].header = path.header;
-          if (force_goal_orientation_)
-            path.poses[0].pose = goal_raw_.pose;
-          else
-            path.poses[0].pose = ge;
-
           status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
+          publishFinishPath();
           ROS_INFO("Path plan finishing");
         }
         return true;
