@@ -59,7 +59,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void cbStatus(const planner_cspace_msgs::PlannerStatus& msg)
+  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
     status_ = msg;
   }
@@ -77,11 +77,20 @@ protected:
     goal.target_pose.pose.orientation.w = 1.0;
     return goal;
   }
+  std::string statusString() const
+  {
+    if (!status_)
+    {
+      return "(no status)";
+    }
+    return "(status: " + std::to_string(status_->status) +
+           ", error: " + std::to_string(status_->error) + ")";
+  }
 
   ros::NodeHandle node_;
   ros::Subscriber status_sub_;
   ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus::ConstPtr status_;
 };
 
 TEST_F(PreemptTest, Preempt)
@@ -108,12 +117,14 @@ TEST_F(PreemptTest, Preempt)
         << statusString();
   }
 
+  ASSERT_TRUE(status_);
+
   ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
-            status_.error);
+            status_->error);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DONE,
-            status_.status);
+            status_->status);
 }
 
 int main(int argc, char** argv)
