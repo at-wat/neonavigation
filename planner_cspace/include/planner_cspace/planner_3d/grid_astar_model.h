@@ -38,6 +38,7 @@
 
 #include <planner_cspace/blockmem_gridmap.h>
 #include <planner_cspace/cyclic_vec.h>
+#include <planner_cspace/grid_astar.h>
 #include <planner_cspace/grid_astar_model.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
@@ -66,9 +67,17 @@ public:
   float angle_resolution_aspect_;
 };
 
+struct SearchDiffs
+{
+  GridAstar<3, 2>::Vec d;
+  std::vector<GridAstar<3, 2>::Vec> pos;
+  float grid_to_len;
+};
+
 class GridAstarModel3D : public GridAstarModelBase<3, 2>
 {
 public:
+  using Astar = GridAstar<3, 2>;
   friend class GridAstarModel2D;
   using Ptr = std::shared_ptr<GridAstarModel3D>;
   using ConstPtr = std::shared_ptr<const GridAstarModel3D>;
@@ -97,6 +106,7 @@ protected:
   Vec min_boundary_;
   Vec max_boundary_;
   std::array<float, 1024> euclid_cost_lin_cache_;
+  std::vector<SearchDiffs> rough_search_diffs_;
 
 public:
   explicit GridAstarModel3D(
@@ -122,6 +132,8 @@ public:
       const Vec& p,
       const std::vector<VecWithCost>& ss,
       const Vec& es) const override;
+
+  const std::vector<SearchDiffs>& roughSearchDiffs();
 };
 
 class GridAstarModel2D : public GridAstarModelBase<3, 2>

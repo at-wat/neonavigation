@@ -37,6 +37,7 @@
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 
 #include <planner_cspace/cyclic_vec.h>
+#include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/motion_primitive_builder.h>
@@ -307,6 +308,49 @@ const std::vector<GridAstarModel3D::Vec>& GridAstarModel3D::searchGrids(
     }
   }
   return search_list_rough_;
+}
+const std::vector<SearchDiffs>& GridAstarModel3D::roughSearchDiffs()
+{
+  if (rough_search_diffs_.size() == 0)
+  {
+    const int range_rough = 4;
+    rough_search_diffs_.reserve(std::pow(range_rough * 2 + 1, 2));
+    Astar::Vec d;
+    d[2] = 0;
+    for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+    {
+      for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+      {
+        if (d[0] == 0 && d[1] == 0)
+          continue;
+        if (d.sqlen() > range_rough * range_rough)
+          continue;
+
+        SearchDiffs diffs;
+
+        const float grid_to_len = d.gridToLenFactor();
+        const int dist = d.len();
+        const float dpx = static_cast<float>(d[0]) / dist;
+        const float dpy = static_cast<float>(d[1]) / dist;
+        Astar::Vecf pos(0, 0, 0);
+        diffs.pos.reserve(dist);
+        for (int i = 0; i < dist; i++)
+        {
+          Astar::Vec ipos(pos);
+          if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
+          {
+            diffs.pos.push_back(std::move(ipos));
+          }
+          pos[0] += dpx;
+          pos[1] += dpy;
+        }
+        diffs.grid_to_len = grid_to_len;
+        diffs.d = d;
+        rough_search_diffs_.push_back(std::move(diffs));
+      }
+    }
+  }
+  return rough_search_diffs_;
 }
 
 float GridAstarModel2D::cost(
