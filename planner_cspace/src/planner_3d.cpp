@@ -844,6 +844,7 @@ protected:
     nav_msgs::Path path;
     path.header.frame_id = robot_frame_;
     path.header.stamp = ros::Time::now();
+    // Specify single pose to control only orientation
     path.poses.resize(1);
     path.poses[0].header = path.header;
     if (force_goal_orientation_)
