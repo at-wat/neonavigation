@@ -27,12 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <actionlib/client/simple_action_client.h>
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <ros/ros.h>
-#include <memory>
 
 class AbortTest : public ::testing::Test
 {
@@ -41,10 +44,8 @@ public:
     : node_()
   {
     move_base_ = std::make_shared<ActionClient>("/move_base");
-    status_sub_ = node_.subscribe("/planner_3d/status",
-                                  10,
-                                  &AbortTest::StatusCallback,
-                                  this);
+    status_sub_ = node_.subscribe(
+        "/planner_3d/status", 10, &AbortTest::cbStatus, this);
     if (!move_base_->waitForServer(ros::Duration(30.0)))
     {
       ROS_ERROR("Failed to connect move_base action");
@@ -59,11 +60,11 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace_msgs::PlannerStatus& msg)
+  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
     status_ = msg;
   }
-  move_base_msgs::MoveBaseGoal CreateGoalInRock()
+  move_base_msgs::MoveBaseGoal createGoalInRock()
   {
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.stamp = ros::Time::now();
@@ -77,72 +78,98 @@ protected:
     goal.target_pose.pose.orientation.w = 1.0;
     return goal;
   }
-  move_base_msgs::MoveBaseGoal CreateGoalInFree()
+  move_base_msgs::MoveBaseGoal createGoalInFree()
   {
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.stamp = ros::Time::now();
     goal.target_pose.header.frame_id = "map";
-    goal.target_pose.pose.position.x = 1.24;
-    goal.target_pose.pose.position.y = 0.65;
+    goal.target_pose.pose.position.x = 2.1;
+    goal.target_pose.pose.position.y = 0.45;
     goal.target_pose.pose.position.z = 0.0;
     goal.target_pose.pose.orientation.x = 0.0;
     goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 0.0;
-    goal.target_pose.pose.orientation.w = 1.0;
+    goal.target_pose.pose.orientation.z = 1.0;
+    goal.target_pose.pose.orientation.w = 0.0;
     return goal;
+  }
+  std::string statusString() const
+  {
+    if (!status_)
+    {
+      return "(no status)";
+    }
+    return "(status: " + std::to_string(status_->status) +
+           ", error: " + std::to_string(status_->error) + ")";
   }
 
   ros::NodeHandle node_;
   ros::Subscriber status_sub_;
   ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus status_;
+  planner_cspace_msgs::PlannerStatus::ConstPtr status_;
 };
 
 TEST_F(AbortTest, AbortByGoalInRock)
 {
+  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
+  const ros::Duration wait(1.0);
+
   // Assure that goal is received after map in planner_3d.
   ros::Duration(0.5).sleep();
   // Send a goal which is in Rock
-  move_base_->sendGoal(CreateGoalInRock());
+  move_base_->sendGoal(createGoalInRock());
   while (move_base_->getState().state_ !=
          actionlib::SimpleClientGoalState::ACTIVE)
   {
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get active: " << move_base_->getState().toString()
+        << " " << statusString();
   }
 
   // Try to replan
   while (move_base_->getState().state_ ==
          actionlib::SimpleClientGoalState::ACTIVE)
   {
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get inactive: " << move_base_->getState().toString()
+        << " " << statusString();
   }
-  ros::Duration(1.0).sleep();
+  wait.sleep();
+
+  ASSERT_TRUE(status_);
 
   // Abort after exceeding max_retry_num
   ASSERT_EQ(actionlib::SimpleClientGoalState::ABORTED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND,
-            status_.error);
+            status_->error);
 
   // Send another goal which is not in Rock
-  move_base_->sendGoal(CreateGoalInFree());
+  move_base_->sendGoal(createGoalInFree());
   while (move_base_->getState().state_ !=
          actionlib::SimpleClientGoalState::ACTIVE)
   {
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get active: " << move_base_->getState().toString()
+        << " " << statusString();
   }
   while (move_base_->getState().state_ ==
          actionlib::SimpleClientGoalState::ACTIVE)
   {
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get inactive: " << move_base_->getState().toString()
+        << " " << statusString();
   }
-  ros::Duration(1.0).sleep();
+  wait.sleep();
 
   // Succeed
   ASSERT_EQ(actionlib::SimpleClientGoalState::SUCCEEDED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
-            status_.error);
+            status_->error);
 }
 
 int main(int argc, char** argv)
