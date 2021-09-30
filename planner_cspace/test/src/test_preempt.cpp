@@ -43,10 +43,8 @@ public:
     : node_()
   {
     move_base_ = std::make_shared<ActionClient>("/move_base");
-    status_sub_ = node_.subscribe("/planner_3d/status",
-                                  10,
-                                  &PreemptTest::StatusCallback,
-                                  this);
+    status_sub_ = node_.subscribe(
+        "/planner_3d/status", 10, &PreemptTest::cbStatus, this);
     if (!move_base_->waitForServer(ros::Duration(30.0)))
     {
       ROS_ERROR("Failed to connect move_base action");
@@ -61,7 +59,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void StatusCallback(const planner_cspace_msgs::PlannerStatus& msg)
+  void cbStatus(const planner_cspace_msgs::PlannerStatus& msg)
   {
     status_ = msg;
   }
@@ -88,17 +86,26 @@ protected:
 
 TEST_F(PreemptTest, Preempt)
 {
+  const ros::Time deadline = ros::Time::now() + ros::Duration(20);
+  const ros::Duration wait(1.0);
+
   move_base_->sendGoal(CreateGoalInFree());
   while (move_base_->getState().state_ !=
          actionlib::SimpleClientGoalState::ACTIVE)
   {
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get active: " << move_base_->getState().toString()
+        << statusString();
   }
   while (move_base_->getState().state_ ==
          actionlib::SimpleClientGoalState::ACTIVE)
   {
     move_base_->cancelAllGoals();
-    ros::Duration(1.0).sleep();
+    wait.sleep();
+    ASSERT_LT(ros::Time::now(), deadline)
+        << "Action didn't get inactive: " << move_base_->getState().toString()
+        << statusString();
   }
 
   ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
