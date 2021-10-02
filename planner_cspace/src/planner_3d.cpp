@@ -893,23 +893,27 @@ protected:
             static_cast<int>(map_info_.height),
             static_cast<int>(map_info_.angle),
         };
-    as_.reset(Astar::Vec(size[0], size[1], size[2]));
-    cm_.reset(Astar::Vec(size[0], size[1], size[2]));
-    cm_hyst_.reset(Astar::Vec(size[0], size[1], size[2]));
 
-    const int longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution));
-    cost_estim_cache_.init(
-        model_,
-        ec_,
-        range_,
-        local_range_,
-        longcut_range,
-        map_info_.width,
-        map_info_.height,
-        map_info_.linear_resolution);
-    cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
-    cm_updates_.reset(Astar::Vec(size[0], size[1], 1));
-    bbf_costmap_.reset(Astar::Vec(size[0], size[1], 1));
+    const Astar::Vec size3d(size[0], size[1], size[2]);
+    const Astar::Vec size2d(size[0], size[1], 1);
+
+    as_.reset(size3d);
+    cm_.reset(size3d);
+    cm_hyst_.reset(size3d);
+
+    const DistanceMap::Params dmp =
+        {
+            .euclid_cost = ec_,
+            .range = range_,
+            .local_range = local_range_,
+            .longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
+            .size = size2d,
+            .resolution = map_info_.linear_resolution,
+        };
+    cost_estim_cache_.init(model_, dmp);
+    cm_rough_.reset(size2d);
+    cm_updates_.reset(size2d);
+    bbf_costmap_.reset(size2d);
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)

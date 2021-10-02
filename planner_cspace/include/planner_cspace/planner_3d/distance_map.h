@@ -60,13 +60,18 @@ public:
     bool has_negative_cost;
   };
 
+  struct Params
+  {
+    Astar::Vecf euclid_cost;
+    int range;
+    int local_range;
+    int longcut_range;
+    Astar::Vec size;
+    float resolution;
+  };
+
   Astar::Vecf euclid_cost_;
-  int range_;
-  int local_range_;
-  int longcut_range_;
-  int width_;
-  int height_;
-  float resolution_;
+  Params p_;
 
   DistanceMap(
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
@@ -74,15 +79,7 @@ public:
 
   void setParams(const CostCoeff cc, const int num_cost_estim_task);
 
-  void init(
-      const GridAstarModel3D::Ptr model,
-      const Astar::Vecf euclid_cost,
-      const int range,
-      const int local_range,
-      const int longcut_range,
-      const int width,
-      const int height,
-      const float resolution);
+  void init(const GridAstarModel3D::Ptr model, const Params& p);
 
   void update(
       const Astar::Vec& s, Astar::Vec e,

@@ -108,7 +108,7 @@ void DistanceMap::fillCostmap(
     std::vector<Astar::GridmapUpdate> updates;
     updates.reserve(num_cost_estim_task_ * search_diffs.size() / omp_get_num_threads());
 
-    const float range_overshoot = euclid_cost_[0] * (range_ + local_range_ + longcut_range_);
+    const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
 
     while (true)
     {
@@ -145,8 +145,8 @@ void DistanceMap::fillCostmap(
           const Astar::Vec d = ds.d;
           const Astar::Vec next = p + d;
 
-          if (static_cast<size_t>(next[0]) >= static_cast<size_t>(width_) ||
-              static_cast<size_t>(next[1]) >= static_cast<size_t>(height_))
+          if (static_cast<size_t>(next[0]) >= static_cast<size_t>(p_.size[0]) ||
+              static_cast<size_t>(next[1]) >= static_cast<size_t>(p_.size[1]))
           {
             continue;
           }
@@ -179,7 +179,7 @@ void DistanceMap::fillCostmap(
             if (collision)
               continue;
             cost +=
-                (resolution_ * ds.grid_to_len / 100.0) *
+                (p_.resolution * ds.grid_to_len / 100.0) *
                 (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
 
             if (cost < 0)
@@ -210,7 +210,7 @@ void DistanceMap::fillCostmap(
       }  // omp critical
     }
   }  // omp parallel
-  rough_cost_max_ = g_[s_rough] + euclid_cost_[0] * (range_ + local_range_);
+  rough_cost_max_ = g_[s_rough] + p_.euclid_cost[0] * (p_.range + p_.local_range);
 }
 
 DistanceMap::DistanceMap(
@@ -227,32 +227,18 @@ void DistanceMap::setParams(const CostCoeff cc, const int num_cost_estim_task)
   num_cost_estim_task_ = num_cost_estim_task;
 }
 
-void DistanceMap::init(
-    const GridAstarModel3D::Ptr model,
-    const Astar::Vecf euclid_cost,
-    const int range,
-    const int local_range,
-    const int longcut_range,
-    const int width,
-    const int height,
-    const float resolution)
+void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
 {
-  model_ = model;
-  if (width != width_ || height != height_)
+  if (p.size[0] != p_.size[0] || p.size[1] != p_.size[1])
   {
     // Typical open/erase queue size is be approximated by perimeter of the map
-    pq_open_.reserve((width + height) * 2);
-    pq_erase_.reserve((width + height) * 2);
+    pq_open_.reserve((p.size[0] + p.size[1]) * 2);
+    pq_erase_.reserve((p.size[0] + p.size[1]) * 2);
 
-    g_.reset(Astar::Vec(width, height, 1));
+    g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
   }
-  euclid_cost_ = euclid_cost;
-  range_ = range;
-  local_range_ = local_range;
-  longcut_range_ = longcut_range;
-  width_ = width;
-  height_ = height;
-  resolution_ = resolution;
+  model_ = model;
+  p_ = p;
 }
 
 void DistanceMap::update(
@@ -305,8 +291,8 @@ void DistanceMap::update(
           continue;
         Astar::Vec next = p + d;
         next[2] = 0;
-        if ((unsigned int)next[0] >= (unsigned int)width_ ||
-            (unsigned int)next[1] >= (unsigned int)height_)
+        if ((unsigned int)next[0] >= (unsigned int)p_.size[0] ||
+            (unsigned int)next[1] >= (unsigned int)p_.size[1])
           continue;
         const float gn = g_[next];
         if (gn == std::numeric_limits<float>::max())
@@ -322,15 +308,15 @@ void DistanceMap::update(
   }
   if (pq_open_.size() == 0)
   {
-    pq_open_.emplace(-euclid_cost_[0] * 0.5, -euclid_cost_[0] * 0.5, e);
+    pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e);
   }
 
   {
     Astar::Vec p;
     p[2] = 0;
-    for (p[0] = 0; p[0] < width_; p[0]++)
+    for (p[0] = 0; p[0] < p_.size[0]; p[0]++)
     {
-      for (p[1] = 0; p[1] < height_; p[1]++)
+      for (p[1] = 0; p[1] < p_.size[1]; p[1]++)
       {
         const auto gp = g_[p];
         if ((gp > rough_cost_max_) && (gp != std::numeric_limits<float>::max()))
@@ -350,7 +336,7 @@ void DistanceMap::create(const Astar::Vec& s, Astar::Vec e)
   pq_erase_.clear();
   g_.clear(std::numeric_limits<float>::max());
   e[2] = 0;
-  g_[e] = -euclid_cost_[0] * 0.5;  // Decrement to reduce calculation error
+  g_[e] = -p_.euclid_cost[0] * 0.5;  // Decrement to reduce calculation error
   pq_open_.push(Astar::PriorityVec(g_[e], g_[e], e));
   fillCostmap(pq_open_, s, e);
   g_[e] = 0;
