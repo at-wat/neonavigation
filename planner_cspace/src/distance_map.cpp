@@ -51,50 +51,6 @@ void DistanceMap::fillCostmap(
 
   const Astar::Vec s_rough(s[0], s[1], 0);
 
-  struct SearchDiffs
-  {
-    Astar::Vec d;
-    std::vector<Astar::Vec> pos;
-    float grid_to_len;
-  };
-  std::vector<SearchDiffs> search_diffs;
-  {
-    Astar::Vec d;
-    d[2] = 0;
-    const int range_rough = 4;
-    for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
-    {
-      for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
-      {
-        if (d[0] == 0 && d[1] == 0)
-          continue;
-        if (d.sqlen() > range_rough * range_rough)
-          continue;
-
-        SearchDiffs diffs;
-
-        const float grid_to_len = d.gridToLenFactor();
-        const int dist = d.len();
-        const float dpx = static_cast<float>(d[0]) / dist;
-        const float dpy = static_cast<float>(d[1]) / dist;
-        Astar::Vecf pos(0, 0, 0);
-        for (int i = 0; i < dist; i++)
-        {
-          Astar::Vec ipos(pos);
-          if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
-          {
-            diffs.pos.push_back(std::move(ipos));
-          }
-          pos[0] += dpx;
-          pos[1] += dpy;
-        }
-        diffs.grid_to_len = grid_to_len;
-        diffs.d = d;
-        search_diffs.push_back(std::move(diffs));
-      }
-    }
-  }
-
   std::vector<Astar::PriorityVec> centers;
   centers.reserve(num_cost_estim_task_);
 
@@ -103,7 +59,7 @@ void DistanceMap::fillCostmap(
 #pragma omp parallel
   {
     std::vector<Astar::GridmapUpdate> updates;
-    updates.reserve(num_cost_estim_task_ * search_diffs.size() / omp_get_num_threads());
+    updates.reserve(num_cost_estim_task_ * search_diffs_.size() / omp_get_num_threads());
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
 
@@ -137,7 +93,7 @@ void DistanceMap::fillCostmap(
       {
         const Astar::Vec p = it->v_;
 
-        for (const SearchDiffs& ds : search_diffs)
+        for (const SearchDiffs& ds : search_diffs_)
         {
           const Astar::Vec d = ds.d;
           const Astar::Vec next = p + d;
@@ -216,6 +172,40 @@ DistanceMap::DistanceMap(
   : cm_rough_(cm_rough)
   , bbf_costmap_(bbf_costmap)
 {
+  Astar::Vec d;
+  d[2] = 0;
+  const int range_rough = 4;
+  for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+  {
+    for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+    {
+      if (d[0] == 0 && d[1] == 0)
+        continue;
+      if (d.sqlen() > range_rough * range_rough)
+        continue;
+
+      SearchDiffs diffs;
+
+      const float grid_to_len = d.gridToLenFactor();
+      const int dist = d.len();
+      const float dpx = static_cast<float>(d[0]) / dist;
+      const float dpy = static_cast<float>(d[1]) / dist;
+      Astar::Vecf pos(0, 0, 0);
+      for (int i = 0; i < dist; i++)
+      {
+        Astar::Vec ipos(pos);
+        if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
+        {
+          diffs.pos.push_back(std::move(ipos));
+        }
+        pos[0] += dpx;
+        pos[1] += dpy;
+      }
+      diffs.grid_to_len = grid_to_len;
+      diffs.d = d;
+      search_diffs_.push_back(std::move(diffs));
+    }
+  }
 }
 
 void DistanceMap::setParams(const CostCoeff cc, const int num_cost_estim_task)

@@ -67,8 +67,12 @@ public:
     float resolution;
   };
 
-  Astar::Vecf euclid_cost_;
-  Params p_;
+  struct SearchDiffs
+  {
+    Astar::Vec d;
+    std::vector<Astar::Vec> pos;
+    float grid_to_len;
+  };
 
   DistanceMap(
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
@@ -116,11 +120,15 @@ protected:
   Astar::Gridmap<float> g_;
   GridAstarModel3D::Ptr model_;
 
-  float rough_cost_max_;
+  Astar::Vecf euclid_cost_;
+  Params p_;
+
+  std::vector<SearchDiffs> search_diffs_;
 
   CostCoeff cc_;
   int num_cost_estim_task_;
 
+  float rough_cost_max_;
   DebugData debug_data_;
 
   const BlockMemGridmapBase<char, 3, 2>& cm_rough_;
