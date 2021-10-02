@@ -104,7 +104,7 @@ void DistanceMap::fillCostmap(
             continue;
           }
 
-          float cost = model_->euclidCostRough(d);
+          float cost = ds.euclid_cost;
 
           const float gnext = g_[next];
 
@@ -172,40 +172,6 @@ DistanceMap::DistanceMap(
   : cm_rough_(cm_rough)
   , bbf_costmap_(bbf_costmap)
 {
-  Astar::Vec d;
-  d[2] = 0;
-  const int range_rough = 4;
-  for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
-  {
-    for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
-    {
-      if (d[0] == 0 && d[1] == 0)
-        continue;
-      if (d.sqlen() > range_rough * range_rough)
-        continue;
-
-      SearchDiffs diffs;
-
-      const float grid_to_len = d.gridToLenFactor();
-      const int dist = d.len();
-      const float dpx = static_cast<float>(d[0]) / dist;
-      const float dpy = static_cast<float>(d[1]) / dist;
-      Astar::Vecf pos(0, 0, 0);
-      for (int i = 0; i < dist; i++)
-      {
-        Astar::Vec ipos(pos);
-        if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
-        {
-          diffs.pos.push_back(std::move(ipos));
-        }
-        pos[0] += dpx;
-        pos[1] += dpy;
-      }
-      diffs.grid_to_len = grid_to_len;
-      diffs.d = d;
-      search_diffs_.push_back(std::move(diffs));
-    }
-  }
 }
 
 void DistanceMap::setParams(const CostCoeff cc, const int num_cost_estim_task)
@@ -226,6 +192,44 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
   }
   model_ = model;
   p_ = p;
+
+  {
+    Astar::Vec d;
+    d[2] = 0;
+    const int range_rough = 4;
+    for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+    {
+      for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+      {
+        if (d[0] == 0 && d[1] == 0)
+          continue;
+        if (d.sqlen() > range_rough * range_rough)
+          continue;
+
+        SearchDiffs diffs;
+
+        const float grid_to_len = d.gridToLenFactor();
+        const int dist = d.len();
+        const float dpx = static_cast<float>(d[0]) / dist;
+        const float dpy = static_cast<float>(d[1]) / dist;
+        Astar::Vecf pos(0, 0, 0);
+        for (int i = 0; i < dist; i++)
+        {
+          Astar::Vec ipos(pos);
+          if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
+          {
+            diffs.pos.push_back(std::move(ipos));
+          }
+          pos[0] += dpx;
+          pos[1] += dpy;
+        }
+        diffs.grid_to_len = grid_to_len;
+        diffs.d = d;
+        diffs.euclid_cost = model_->euclidCostRough(d);
+        search_diffs_.push_back(std::move(diffs));
+      }
+    }
+  }
 }
 
 void DistanceMap::update(

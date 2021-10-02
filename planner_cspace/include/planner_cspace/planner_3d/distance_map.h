@@ -72,6 +72,7 @@ public:
     Astar::Vec d;
     std::vector<Astar::Vec> pos;
     float grid_to_len;
+    float euclid_cost;
   };
 
   DistanceMap(
