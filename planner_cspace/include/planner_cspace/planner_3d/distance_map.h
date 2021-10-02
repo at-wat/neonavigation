@@ -30,10 +30,8 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H
 #define PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H
 
-#include <algorithm>
 #include <cmath>
 #include <limits>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -51,7 +49,6 @@ class DistanceMap
 {
 public:
   using Astar = GridAstar<3, 2>;
-  using Ptr = std::shared_ptr<DistanceMap>;
 
   struct DebugData
   {
