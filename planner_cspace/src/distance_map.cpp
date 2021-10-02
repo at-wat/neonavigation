@@ -69,6 +69,7 @@ void DistanceMap::fillCostmap(
 #pragma omp single
       {
         centers.clear();
+        const float start_cost = g_[s_rough];
         for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_);)
         {
           if (open.size() < 1)
@@ -77,7 +78,7 @@ void DistanceMap::fillCostmap(
           open.pop();
           if (center.p_raw_ > g_[center.v_])
             continue;
-          if (center.p_raw_ - range_overshoot > g_[s_rough])
+          if (center.p_raw_ - range_overshoot > start_cost)
             continue;
           centers.emplace_back(std::move(center));
           ++i;
