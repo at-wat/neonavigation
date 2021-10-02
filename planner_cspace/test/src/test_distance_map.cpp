@@ -56,10 +56,8 @@ TEST(DistanceMap, Generate)
   CostmapBBF bbf_costmap;
 
   DistanceMap dm(cm_rough, bbf_costmap);
-  const CostCoeff cc =
-      {
-          .weight_costmap_ = 1.0f,
-      };
+  CostCoeff cc;
+  cc.weight_costmap_ = 1.0f;
   dm.setParams(cc, 2);
 
   const Astar::Vecf ec(0.5f, 0.5f, 0.2f);
