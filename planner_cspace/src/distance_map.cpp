@@ -49,8 +49,6 @@ void DistanceMap::fillCostmap(
   debug_data_.search_queue_size = open.size();
   debug_data_.search_queue_cap = open.capacity();
 
-  const Astar::Vec s_rough(s[0], s[1], 0);
-
   std::vector<Astar::PriorityVec> centers;
   centers.reserve(num_cost_estim_task_);
 
@@ -62,6 +60,8 @@ void DistanceMap::fillCostmap(
     updates.reserve(num_cost_estim_task_ * search_diffs_.size() / omp_get_num_threads());
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
+    const float weight_linear = p_.resolution / 100.0;
+    const Astar::Vec s_rough(s[0], s[1], 0);
 
     while (true)
     {
@@ -132,7 +132,7 @@ void DistanceMap::fillCostmap(
             if (collision)
               continue;
             cost +=
-                (p_.resolution * ds.grid_to_len / 100.0) *
+                (weight_linear * ds.grid_to_len) *
                 (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
 
             if (cost < 0)
@@ -163,7 +163,7 @@ void DistanceMap::fillCostmap(
       }  // omp critical
     }
   }  // omp parallel
-  rough_cost_max_ = g_[s_rough] + p_.euclid_cost[0] * (p_.range + p_.local_range);
+  rough_cost_max_ = g_[Astar::Vec(s[0], s[1], 0)] + p_.euclid_cost[0] * (p_.range + p_.local_range);
 }
 
 DistanceMap::DistanceMap(
