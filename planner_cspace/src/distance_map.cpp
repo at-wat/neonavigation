@@ -256,6 +256,12 @@ void DistanceMap::update(
       }
     }
   }
+  if (cost_min == 0.0)
+  {
+    // Gorl is in the updated area
+    create(s, e);
+    return;
+  }
   pq_open_.clear();
   pq_erase_.clear();
 
