@@ -35,8 +35,6 @@
 #include <utility>
 #include <vector>
 
-#include <omp.h>
-
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/costmap_bbf.h>
