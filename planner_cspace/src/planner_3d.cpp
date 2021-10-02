@@ -1012,8 +1012,8 @@ public:
     : nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
-    , jump_(tfbuf_)
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
+    , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
