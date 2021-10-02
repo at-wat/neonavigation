@@ -59,7 +59,6 @@ TEST(DistanceMap, Generate)
   const CostCoeff cc =
       {
           .weight_costmap_ = 1.0f,
-          .weight_remembered_ = 1.0f,
       };
   dm.setParams(cc, 2);
 
