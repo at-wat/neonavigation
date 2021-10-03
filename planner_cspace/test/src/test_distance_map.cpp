@@ -160,6 +160,7 @@ protected:
       ASSERT_NEAR(2.7, d, tolerance_) << msg;
     }
   }
+
   bool validate(const std::string& msg)
   {
     for (int y = 0; y < h_; y++)
@@ -177,6 +178,7 @@ protected:
     }
     return true;
   }
+
   void debugOutput()
   {
     for (int y = 0; y < h_; y++)
@@ -243,34 +245,43 @@ TEST_P(DistanceMapTestWithParam, Update)
   const std::vector<Vec3> obstacles = GetParam();
 
   // Slide update area to check all combination of updated area
-  for (int update_y0 = 0; update_y0 < h_; update_y0++)
+  for (int from_y = 0; from_y < h_; from_y++)
   {
-    for (int update_x0 = 0; update_x0 < w_; update_x0++)
+    for (int from_x = 0; from_x < w_; from_x++)
     {
       const std::string from =
-          "(" + std::to_string(update_x0) + ", " + std::to_string(update_y0) + ")";
-      for (int update_y1 = update_y0; update_y1 < h_; update_y1++)
+          "(" + std::to_string(from_x) + ", " + std::to_string(from_y) + ")";
+      for (int to_y = from_y; to_y < h_; to_y++)
       {
-        for (int update_x1 = update_x0; update_x1 < w_; update_x1++)
+        for (int to_x = from_x; to_x < w_; to_x++)
         {
           const std::string to =
-              "(" + std::to_string(update_x1) + ", " + std::to_string(update_y1) + ")";
+              "(" + std::to_string(to_x) + ", " + std::to_string(to_y) + ")";
+
+          // Add obstacles to the costmap and create distance map
           setupCostmap();
           for (const Vec3& obstacle : obstacles)
           {
-            if (update_x0 < obstacle[0] && obstacle[0] < update_x1 &&
-                update_y0 < obstacle[1] && obstacle[1] < update_y1)
+            if (from_x < obstacle[0] && obstacle[0] < to_x &&
+                from_y < obstacle[1] && obstacle[1] < to_y)
             {
               cm_rough_[obstacle] = 100;
             }
           }
           dm_.create(s_, e_);
+
+          // Reset costmap
           setupCostmap();
-          dm_.update(s_, e_, update_x0, update_x1, update_y0, update_y1);
-          if (!validate("update " + from + "-" + to))
+
+          // Update multiple times to check idempotence
+          for (int i = 0; i < 5; i++)
           {
-            debugOutput();
-            return;
+            dm_.update(s_, e_, from_x, to_x, from_y, to_y);
+            if (!validate("update " + from + "-" + to))
+            {
+              debugOutput();
+              return;
+            }
           }
         }
       }
