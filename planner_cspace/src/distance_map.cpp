@@ -193,41 +193,37 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
   }
   p_ = p;
 
+  const int range_rough = 4;
+  for (Astar::Vec d(-range_rough, 0, 0); d[0] <= range_rough; d[0]++)
   {
-    Astar::Vec d;
-    d[2] = 0;
-    const int range_rough = 4;
-    for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
+    for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
     {
-      for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
+      if (d[0] == 0 && d[1] == 0)
+        continue;
+      if (d.sqlen() > range_rough * range_rough)
+        continue;
+
+      SearchDiffs diffs;
+
+      const float grid_to_len = d.gridToLenFactor();
+      const int dist = d.len();
+      const float dpx = static_cast<float>(d[0]) / dist;
+      const float dpy = static_cast<float>(d[1]) / dist;
+      Astar::Vecf pos(0, 0, 0);
+      for (int i = 0; i < dist; i++)
       {
-        if (d[0] == 0 && d[1] == 0)
-          continue;
-        if (d.sqlen() > range_rough * range_rough)
-          continue;
-
-        SearchDiffs diffs;
-
-        const float grid_to_len = d.gridToLenFactor();
-        const int dist = d.len();
-        const float dpx = static_cast<float>(d[0]) / dist;
-        const float dpy = static_cast<float>(d[1]) / dist;
-        Astar::Vecf pos(0, 0, 0);
-        for (int i = 0; i < dist; i++)
+        Astar::Vec ipos(pos);
+        if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
         {
-          Astar::Vec ipos(pos);
-          if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
-          {
-            diffs.pos.push_back(std::move(ipos));
-          }
-          pos[0] += dpx;
-          pos[1] += dpy;
+          diffs.pos.push_back(std::move(ipos));
         }
-        diffs.grid_to_len = grid_to_len;
-        diffs.d = d;
-        diffs.euclid_cost = model->euclidCostRough(d);
-        search_diffs_.push_back(std::move(diffs));
+        pos[0] += dpx;
+        pos[1] += dpy;
       }
+      diffs.grid_to_len = grid_to_len;
+      diffs.d = d;
+      diffs.euclid_cost = model->euclidCostRough(d);
+      search_diffs_.push_back(std::move(diffs));
     }
   }
 }
@@ -241,10 +237,9 @@ void DistanceMap::update(
 {
   e[2] = 0;
 
-  Astar::Vec p, p_cost_min;
-  p[2] = 0;
+  Astar::Vec p_cost_min;
   float cost_min = std::numeric_limits<float>::max();
-  for (p[1] = search_range_y_min; p[1] < search_range_y_max; p[1]++)
+  for (Astar::Vec p(0, search_range_y_min, 0); p[1] < search_range_y_max; p[1]++)
   {
     for (p[0] = search_range_x_min; p[0] < search_range_x_max; p[0]++)
     {
@@ -266,6 +261,7 @@ void DistanceMap::update(
 
   if (cost_min != std::numeric_limits<float>::max())
     pq_erase_.emplace(cost_min, cost_min, p_cost_min);
+
   while (true)
   {
     if (pq_erase_.size() < 1)
@@ -278,9 +274,7 @@ void DistanceMap::update(
       continue;
     g_[p] = std::numeric_limits<float>::max();
 
-    Astar::Vec d;
-    d[2] = 0;
-    for (d[0] = -1; d[0] <= 1; d[0]++)
+    for (Astar::Vec d(-1, 0, 0); d[0] <= 1; d[0]++)
     {
       for (d[1] = -1; d[1] <= 1; d[1]++)
       {
@@ -308,18 +302,14 @@ void DistanceMap::update(
     pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e);
   }
 
+  for (Astar::Vec p(0, 0, 0); p[0] < p_.size[0]; p[0]++)
   {
-    Astar::Vec p;
-    p[2] = 0;
-    for (p[0] = 0; p[0] < p_.size[0]; p[0]++)
+    for (p[1] = 0; p[1] < p_.size[1]; p[1]++)
     {
-      for (p[1] = 0; p[1] < p_.size[1]; p[1]++)
+      const auto gp = g_[p];
+      if ((gp > rough_cost_max_) && (gp != std::numeric_limits<float>::max()))
       {
-        const auto gp = g_[p];
-        if ((gp > rough_cost_max_) && (gp != std::numeric_limits<float>::max()))
-        {
-          pq_open_.emplace(gp, gp, p);
-        }
+        pq_open_.emplace(gp, gp, p);
       }
     }
   }
