@@ -46,6 +46,14 @@ namespace planner_3d
 {
 using Vec3 = CyclicVecInt<3, 2>;
 
+namespace
+{
+static std::string xyStr(const float x, const float y)
+{
+  return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
+}
+}  // namespace
+
 class DistanceMapTest : public ::testing::Test
 {
 protected:
@@ -75,7 +83,8 @@ protected:
     const Astar::Vecf ec(0.5f, 0.5f, 0.2f);
     CostCoeff cc;
     cc.weight_costmap_ = 1.0f;
-    dm_.setParams(cc, 2);
+    omp_set_num_threads(2);
+    dm_.setParams(cc, 64 * 2);
 
     costmap_cspace_msgs::MapMetaData3D map_info;
     map_info.width = w_;
@@ -110,7 +119,6 @@ protected:
             .resolution = map_info.linear_resolution,
         };
     dm_.init(model, dmp);
-    omp_set_num_threads(2);
   }
 
   void setupCostmap()
@@ -139,7 +147,7 @@ protected:
   void validateDistance(
       const Astar::Vec p,
       const float d,
-      const std::string& msg)
+      const std::string& msg) const
   {
     if (p[1] < 5)
     {
@@ -161,17 +169,14 @@ protected:
     }
   }
 
-  bool validate(const std::string& msg)
+  bool validate(const std::string& msg) const
   {
     for (int y = 0; y < h_; y++)
     {
       for (int x = 0; x < w_; x++)
       {
         const Astar::Vec pos(x, y, 0);
-        validateDistance(
-            pos, dm_[pos],
-            msg + " failed at " +
-                "(" + std::to_string(x) + ", " + std::to_string(y) + ")");
+        validateDistance(pos, dm_[pos], msg + " failed at " + xyStr(x, y));
         if (::testing::Test::HasFatalFailure())
           return false;
       }
@@ -179,7 +184,7 @@ protected:
     return true;
   }
 
-  void debugOutput()
+  void debugOutput() const
   {
     for (int y = 0; y < h_; y++)
     {
@@ -249,14 +254,12 @@ TEST_P(DistanceMapTestWithParam, Update)
   {
     for (int from_x = 0; from_x < w_; from_x++)
     {
-      const std::string from =
-          "(" + std::to_string(from_x) + ", " + std::to_string(from_y) + ")";
+      const std::string from(xyStr(from_x, from_y));
       for (int to_y = from_y; to_y < h_; to_y++)
       {
         for (int to_x = from_x; to_x < w_; to_x++)
         {
-          const std::string to =
-              "(" + std::to_string(to_x) + ", " + std::to_string(to_y) + ")";
+          const std::string to(xyStr(to_x, to_y));
 
           // Add obstacles to the costmap and create distance map
           setupCostmap();
