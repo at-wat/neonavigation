@@ -306,7 +306,7 @@ void DistanceMap::update(
   {
     for (p[1] = 0; p[1] < p_.size[1]; p[1]++)
     {
-      const auto gp = g_[p];
+      const float gp = g_[p];
       if ((gp > rough_cost_max_) && (gp != std::numeric_limits<float>::max()))
       {
         pq_open_.emplace(gp, gp, p);
