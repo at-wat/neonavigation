@@ -279,7 +279,10 @@ TEST_P(DistanceMapTestWithParam, Update)
           // Update multiple times to check idempotence
           for (int i = 0; i < 5; i++)
           {
-            dm_.update(s_, e_, from_x, to_x, from_y, to_y);
+            dm_.update(
+                s_, e_,
+                DistanceMap::Rect(
+                    Vec3(from_x, from_y, 0), Vec3(to_x, to_y, 0)));
             if (!validate("update " + from + "-" + to))
             {
               debugOutput();

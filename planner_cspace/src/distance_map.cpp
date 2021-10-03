@@ -230,18 +230,15 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
 
 void DistanceMap::update(
     const Astar::Vec& s, Astar::Vec e,
-    const int search_range_x_min,
-    const int search_range_x_max,
-    const int search_range_y_min,
-    const int search_range_y_max)
+    const Rect& rect)
 {
   e[2] = 0;
 
   Astar::Vec p_cost_min;
   float cost_min = std::numeric_limits<float>::max();
-  for (Astar::Vec p(0, search_range_y_min, 0); p[1] < search_range_y_max; p[1]++)
+  for (Astar::Vec p(0, rect.min[1], 0); p[1] < rect.max[1]; p[1]++)
   {
-    for (p[0] = search_range_x_min; p[0] < search_range_x_max; p[0]++)
+    for (p[0] = rect.min[0]; p[0] < rect.max[0]; p[0]++)
     {
       if (cost_min > g_[p])
       {

@@ -818,8 +818,9 @@ protected:
     const auto ts = boost::chrono::high_resolution_clock::now();
     cost_estim_cache_.update(
         s, e,
-        search_range_x_min, search_range_x_max,
-        search_range_y_min, search_range_y_max);
+        DistanceMap::Rect(
+            Astar::Vec(search_range_x_min, search_range_y_min, 0),
+            Astar::Vec(search_range_x_max, search_range_y_max, 0)));
     const auto tnow = boost::chrono::high_resolution_clock::now();
     const DistanceMap::DebugData dm_debug = cost_estim_cache_.getDebugData();
     if (dm_debug.has_negative_cost)

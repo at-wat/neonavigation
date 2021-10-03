@@ -48,6 +48,17 @@ class DistanceMap
 public:
   using Astar = GridAstar<3, 2>;
 
+  struct Rect
+  {
+    Astar::Vec min;
+    Astar::Vec max;
+    Rect(const Astar::Vec& min, const Astar::Vec& max)
+      : min(min)
+      , max(max)  // NOLINT(build/include_what_you_use)
+    {
+    }
+  };
+
   struct DebugData
   {
     size_t search_queue_size;
@@ -83,10 +94,7 @@ public:
 
   void update(
       const Astar::Vec& s, Astar::Vec e,
-      const int search_range_x_min,
-      const int search_range_x_max,
-      const int search_range_y_min,
-      const int search_range_y_max);
+      const Rect& rect);
 
   void create(const Astar::Vec& s, Astar::Vec e);
 
