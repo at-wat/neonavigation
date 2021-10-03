@@ -191,7 +191,6 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
 
     g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
   }
-  model_ = model;
   p_ = p;
 
   {
@@ -226,7 +225,7 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
         }
         diffs.grid_to_len = grid_to_len;
         diffs.d = d;
-        diffs.euclid_cost = model_->euclidCostRough(d);
+        diffs.euclid_cost = model->euclidCostRough(d);
         search_diffs_.push_back(std::move(diffs));
       }
     }

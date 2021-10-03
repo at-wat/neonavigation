@@ -117,21 +117,15 @@ public:
 
 protected:
   Astar::Gridmap<float> g_;
-  GridAstarModel3D::Ptr model_;
-
-  Astar::Vecf euclid_cost_;
   Params p_;
-
-  std::vector<SearchDiffs> search_diffs_;
-
   CostCoeff cc_;
   int num_cost_estim_task_;
-
-  float rough_cost_max_;
-  DebugData debug_data_;
-
   const BlockMemGridmapBase<char, 3, 2>& cm_rough_;
   const CostmapBBF& bbf_costmap_;
+
+  std::vector<SearchDiffs> search_diffs_;
+  float rough_cost_max_;
+  DebugData debug_data_;
 
   reservable_priority_queue<Astar::PriorityVec> pq_open_;
   reservable_priority_queue<Astar::PriorityVec> pq_erase_;
