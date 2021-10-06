@@ -88,7 +88,7 @@ public:
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
       const CostmapBBF& bbf_costmap);
 
-  void setParams(const CostCoeff cc, const int num_cost_estim_task);
+  void setParams(const CostCoeff& cc, const int num_cost_estim_task);
 
   void init(const GridAstarModel3D::Ptr model, const Params& p);
 
@@ -96,7 +96,7 @@ public:
       const Astar::Vec& s, Astar::Vec e,
       const Rect& rect);
 
-  void create(const Astar::Vec& s, Astar::Vec e);
+  void create(const Astar::Vec& s, const Astar::Vec& e);
 
   inline const Astar::Vec& size() const
   {

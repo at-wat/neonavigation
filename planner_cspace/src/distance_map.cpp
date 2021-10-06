@@ -175,7 +175,7 @@ DistanceMap::DistanceMap(
 {
 }
 
-void DistanceMap::setParams(const CostCoeff cc, const int num_cost_estim_task)
+void DistanceMap::setParams(const CostCoeff& cc, const int num_cost_estim_task)
 {
   cc_ = cc;
   num_cost_estim_task_ = num_cost_estim_task;
@@ -314,16 +314,16 @@ void DistanceMap::update(
   fillCostmap(pq_open_, s, e);
 }
 
-void DistanceMap::create(const Astar::Vec& s, Astar::Vec e)
+void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
 {
   pq_open_.clear();
   pq_erase_.clear();
   g_.clear(std::numeric_limits<float>::max());
-  e[2] = 0;
-  g_[e] = -p_.euclid_cost[0] * 0.5;  // Decrement to reduce calculation error
-  pq_open_.push(Astar::PriorityVec(g_[e], g_[e], e));
-  fillCostmap(pq_open_, s, e);
-  g_[e] = 0;
+  const Astar::Vec e2(e[0], e[1], 0);
+  g_[e2] = -p_.euclid_cost[0] * 0.5;  // Decrement to reduce calculation error
+  pq_open_.push(Astar::PriorityVec(g_[e2], g_[e2], e2));
+  fillCostmap(pq_open_, s, e2);
+  g_[e2] = 0;
 }
 
 }  // namespace planner_3d
