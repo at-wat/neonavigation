@@ -45,20 +45,39 @@ namespace planner_cspace
 namespace planner_3d
 {
 using Vec3 = CyclicVecInt<3, 2>;
+using Astar = GridAstar<3, 2>;
 
 namespace
 {
-static std::string xyStr(const float x, const float y)
+std::string xyStr(const float x, const float y)
 {
   return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
+}
+
+void debugOutput(const DistanceMap& dm, const Astar::Gridmap<char, 0x80>& cm_rough)
+{
+  for (int y = 0; y < cm_rough.size()[1]; y++)
+  {
+    for (int x = 0; x < cm_rough.size()[0]; x++)
+    {
+      const Astar::Vec pos(x, y, 0);
+      const float d = dm[pos];
+      if (d == std::numeric_limits<float>::max() ||
+          cm_rough[pos] == 100)
+      {
+        fprintf(stderr, "xxx ");
+        continue;
+      }
+      fprintf(stderr, "%3.1f ", d);
+    }
+    fprintf(stderr, "\n");
+  }
 }
 }  // namespace
 
 class DistanceMapTest : public ::testing::Test
 {
 protected:
-  using Astar = GridAstar<3, 2>;
-
   const int w_ = 10;
   const int h_ = 10;
   const int angle_ = 10;
@@ -66,6 +85,7 @@ protected:
   const Astar::Vec s_;
   const Astar::Vec e_;
 
+  const Astar::Vecf ec_;
   const float tolerance_ = 0.4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
@@ -76,11 +96,11 @@ protected:
   DistanceMapTest()
     : s_(2, 2, 0)
     , e_(8, 8, 0)
+    , ec_(0.5f, 0.5f, 0.2f)
     , dm_(cm_rough_, bbf_costmap_)
   {
     const int range = 4;
     const int local_range = 10;
-    const Astar::Vecf ec(0.5f, 0.5f, 0.2f);
     CostCoeff cc;
     cc.weight_costmap_ = 1.0f;
     omp_set_num_threads(2);
@@ -100,7 +120,7 @@ protected:
     GridAstarModel3D::Ptr model(
         new GridAstarModel3D(
             map_info,
-            ec,
+            ec_,
             local_range,
             dm_.gridmap(), cm, cm_hyst, cm_rough_,
             cc, range));
@@ -111,7 +131,7 @@ protected:
 
     const DistanceMap::Params dmp =
         {
-            .euclid_cost = ec,
+            .euclid_cost = ec_,
             .range = range,
             .local_range = local_range,
             .longcut_range = 10,
@@ -152,14 +172,14 @@ protected:
     if (p[1] < 5)
     {
       ASSERT_NEAR(
-          2.7 + 0.5 * (p - Astar::Vec(3, 5, 0)).norm(),
+          2.7 + ec_[0] * (p - Astar::Vec(3, 5, 0)).norm(),
           d, tolerance_)
           << msg;
     }
     else if (p[1] > 5)
     {
       ASSERT_NEAR(
-          0.5 * (p - Astar::Vec(8, 8, 0)).norm(),
+          ec_[0] * (p - e_).norm(),
           d, tolerance_)
           << msg;
     }
@@ -182,26 +202,6 @@ protected:
       }
     }
     return true;
-  }
-
-  void debugOutput() const
-  {
-    for (int y = 0; y < h_; y++)
-    {
-      for (int x = 0; x < w_; x++)
-      {
-        const Astar::Vec pos(x, y, 0);
-        const float d = dm_[pos];
-        if (d == std::numeric_limits<float>::max() ||
-            cm_rough_[pos] == 100)
-        {
-          fprintf(stderr, "xxx ");
-          continue;
-        }
-        fprintf(stderr, "%3.1f ", d);
-      }
-      fprintf(stderr, "\n");
-    }
   }
 };
 
@@ -236,11 +236,11 @@ TEST_F(DistanceMapTest, Create)
   setupCostmap();
 
   dm_.create(s_, e_);
-  debugOutput();
+  debugOutput(dm_, cm_rough_);
 
   if (!validate("create"))
   {
-    debugOutput();
+    debugOutput(dm_, cm_rough_);
     return;
   }
 }
@@ -285,7 +285,7 @@ TEST_P(DistanceMapTestWithParam, Update)
                     Vec3(from_x, from_y, 0), Vec3(to_x, to_y, 0)));
             if (!validate("update " + from + "-" + to))
             {
-              debugOutput();
+              debugOutput(dm_, cm_rough_);
               return;
             }
           }
@@ -293,6 +293,111 @@ TEST_P(DistanceMapTestWithParam, Update)
       }
     }
   }
+}
+
+TEST(DistanceMap, LongcutRange)
+{
+  const int w = 20;
+  const int h = 3;
+  const int angle = 10;
+
+  const Astar::Vec s(4, 1, 0);
+  const Astar::Vec e(1, 1, 0);
+
+  const int range = 2;
+  const int local_range = 2;
+  const int longcut_range = 2;
+
+  // search_range is hardcoded in DistanceMap::init()
+  // +1 for <= condition.
+  const int search_range = 4 + 1;
+
+  const Astar::Vecf ec(0.5f, 0.5f, 0.2f);
+
+  const float tolerance = 0.4;
+
+  Astar::Gridmap<char, 0x80> cm_rough;
+  CostmapBBF bbf_costmap;
+
+  DistanceMap dm(cm_rough, bbf_costmap);
+
+  CostCoeff cc;
+  cc.weight_costmap_ = 1.0f;
+  omp_set_num_threads(1);
+  dm.setParams(cc, 1);
+
+  costmap_cspace_msgs::MapMetaData3D map_info;
+  map_info.width = w;
+  map_info.height = h;
+  map_info.angle = angle;
+  map_info.linear_resolution = 1.0;
+  map_info.angular_resolution = M_PI * 2 / angle;
+
+  const Astar::Vec size3d(w, h, angle);
+  const Astar::Vec size2d(w, h, 1);
+  Astar::Gridmap<char, 0x40> cm;
+  Astar::Gridmap<char, 0x80> cm_hyst;
+  GridAstarModel3D::Ptr model(
+      new GridAstarModel3D(
+          map_info,
+          ec,
+          local_range,
+          dm.gridmap(), cm, cm_hyst, cm_rough,
+          cc, range));
+  cm.reset(size3d);
+  cm_hyst.reset(size3d);
+  cm_rough.reset(size2d);
+  bbf_costmap.reset(size2d);
+  cm_rough.clear(0);
+
+  const DistanceMap::Params dmp =
+      {
+          .euclid_cost = ec,
+          .range = range,
+          .local_range = local_range,
+          .longcut_range = longcut_range,
+          .size = size2d,
+          .resolution = map_info.linear_resolution,
+      };
+  dm.init(model, dmp);
+
+  // range_overshoot +1 for `center.p_raw_ - range_overshoot ">" start_cost`
+  // condition in DistanceMap::fillCostmap()
+  const int range_overshoot = range + local_range + longcut_range + search_range + 1;
+
+  const auto validate = [&dm, s, e, &ec, tolerance, range_overshoot]()
+  {
+    for (int y = 0; y < h; y++)
+    {
+      for (int x = 0; x < w; x++)
+      {
+        const Astar::Vec p(x, y, 0);
+        const float cost = dm[p];
+        const float d = (p - e).norm();
+        if (x < s[0] || d < range_overshoot)
+        {
+          ASSERT_NEAR(ec[0] * d, cost, tolerance) << xyStr(x, y);
+        }
+        else if (std::ceil(d) > range_overshoot + 1)
+        {
+          ASSERT_EQ(std::numeric_limits<float>::max(), cost) << xyStr(x, y);
+        }
+      }
+    }
+  };
+
+  dm.create(s, e);
+  validate();
+  if (::testing::Test::HasFatalFailure())
+    debugOutput(dm, cm_rough);
+
+  dm.update(
+      s, e,
+      DistanceMap::Rect(
+          Vec3(8, 0, 0), Vec3(9, 2, 0)));
+  validate();
+  if (::testing::Test::HasFatalFailure())
+    debugOutput(dm, cm_rough);
 }
 }  // namespace planner_3d
 }  // namespace planner_cspace
