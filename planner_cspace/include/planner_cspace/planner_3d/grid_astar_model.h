@@ -85,10 +85,10 @@ protected:
   std::vector<std::vector<Vec>> motion_primitives_;
   std::vector<Vec> search_list_rough_;
   int local_range_;
-  BlockMemGridmapBase<float, 3, 2>& cost_estim_cache_;
-  BlockMemGridmapBase<char, 3, 2>& cm_;
-  BlockMemGridmapBase<char, 3, 2>& cm_hyst_;
-  BlockMemGridmapBase<char, 3, 2>& cm_rough_;
+  const BlockMemGridmapBase<float, 3, 2>& cost_estim_cache_;
+  const BlockMemGridmapBase<char, 3, 2>& cm_;
+  const BlockMemGridmapBase<char, 3, 2>& cm_hyst_;
+  const BlockMemGridmapBase<char, 3, 2>& cm_rough_;
   const CostCoeff& cc_;
   int range_;
   RotationCache rot_cache_;
@@ -103,10 +103,10 @@ public:
       const costmap_cspace_msgs::MapMetaData3D& map_info,
       const Vecf& euclid_cost_coef,
       const int local_range,
-      BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
-      BlockMemGridmapBase<char, 3, 2>& cm,
-      BlockMemGridmapBase<char, 3, 2>& cm_hyst,
-      BlockMemGridmapBase<char, 3, 2>& cm_rough,
+      const BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
+      const BlockMemGridmapBase<char, 3, 2>& cm,
+      const BlockMemGridmapBase<char, 3, 2>& cm_hyst,
+      const BlockMemGridmapBase<char, 3, 2>& cm_rough,
       const CostCoeff& cc,
       const int range);
   void enableHysteresis(const bool enable);

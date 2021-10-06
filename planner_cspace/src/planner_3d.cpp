@@ -74,6 +74,7 @@
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
+#include <planner_cspace/planner_3d/distance_map.h>
 
 namespace planner_cspace
 {
@@ -118,8 +119,8 @@ protected:
   Astar::Gridmap<char, 0x80> cm_rough_base_;
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<char, 0x80> cm_updates_;
-  Astar::Gridmap<float> cost_estim_cache_;
   CostmapBBF bbf_costmap_;
+  DistanceMap cost_estim_cache_;
 
   GridAstarModel3D::Ptr model_;
 
@@ -133,7 +134,6 @@ protected:
   int range_;
   int local_range_;
   double local_range_f_;
-  int longcut_range_;
   double longcut_range_f_;
   int esc_range_;
   int esc_angle_;
@@ -170,7 +170,6 @@ protected:
   int max_retry_num_;
 
   int num_task_;
-  int num_cost_estim_task_;
 
   // Cost weights
   CostCoeff cc_;
@@ -192,7 +191,6 @@ protected:
   geometry_msgs::PoseStamped sw_pos_;
   bool is_path_switchback_;
 
-  float rough_cost_max_;
   bool rough_;
 
   bool force_goal_orientation_;
@@ -209,9 +207,6 @@ protected:
   int prev_map_update_x_max_;
   int prev_map_update_y_min_;
   int prev_map_update_y_max_;
-
-  reservable_priority_queue<Astar::PriorityVec> pq_open_;
-  reservable_priority_queue<Astar::PriorityVec> pq_erase_;
 
   bool cbForget(std_srvs::EmptyRequest& req,
                 std_srvs::EmptyResponse& res)
@@ -428,169 +423,6 @@ protected:
     }
     return true;
   }
-  void fillCostmap(
-      reservable_priority_queue<Astar::PriorityVec>& open,
-      Astar::Gridmap<float>& g,
-      const Astar::Vec& s, const Astar::Vec& e)
-  {
-    ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu", open.size(), open.capacity());
-
-    const Astar::Vec s_rough(s[0], s[1], 0);
-
-    struct SearchDiffs
-    {
-      Astar::Vec d;
-      std::vector<Astar::Vec> pos;
-      float grid_to_len;
-    };
-    std::vector<SearchDiffs> search_diffs;
-    {
-      Astar::Vec d;
-      d[2] = 0;
-      const int range_rough = 4;
-      for (d[0] = -range_rough; d[0] <= range_rough; d[0]++)
-      {
-        for (d[1] = -range_rough; d[1] <= range_rough; d[1]++)
-        {
-          if (d[0] == 0 && d[1] == 0)
-            continue;
-          if (d.sqlen() > range_rough * range_rough)
-            continue;
-
-          SearchDiffs diffs;
-
-          const float grid_to_len = d.gridToLenFactor();
-          const int dist = d.len();
-          const float dpx = static_cast<float>(d[0]) / dist;
-          const float dpy = static_cast<float>(d[1]) / dist;
-          Astar::Vecf pos(0, 0, 0);
-          for (int i = 0; i < dist; i++)
-          {
-            Astar::Vec ipos(pos);
-            if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
-            {
-              diffs.pos.push_back(std::move(ipos));
-            }
-            pos[0] += dpx;
-            pos[1] += dpy;
-          }
-          diffs.grid_to_len = grid_to_len;
-          diffs.d = d;
-          search_diffs.push_back(std::move(diffs));
-        }
-      }
-    }
-
-    std::vector<Astar::PriorityVec> centers;
-    centers.reserve(num_cost_estim_task_);
-
-#pragma omp parallel
-    {
-      std::vector<Astar::GridmapUpdate> updates;
-      updates.reserve(num_cost_estim_task_ * search_diffs.size() / omp_get_num_threads());
-
-      const float range_overshoot = ec_[0] * (range_ + local_range_ + longcut_range_);
-
-      while (true)
-      {
-#pragma omp barrier
-#pragma omp single
-        {
-          centers.clear();
-          for (size_t i = 0; i < static_cast<size_t>(num_cost_estim_task_);)
-          {
-            if (open.size() < 1)
-              break;
-            Astar::PriorityVec center(open.top());
-            open.pop();
-            if (center.p_raw_ > g[center.v_])
-              continue;
-            if (center.p_raw_ - range_overshoot > g[s_rough])
-              continue;
-            centers.emplace_back(std::move(center));
-            ++i;
-          }
-        }  // omp single
-
-        if (centers.size() == 0)
-          break;
-        updates.clear();
-
-#pragma omp for schedule(static)
-        for (auto it = centers.cbegin(); it < centers.cend(); ++it)
-        {
-          const Astar::Vec p = it->v_;
-
-          for (const SearchDiffs& ds : search_diffs)
-          {
-            const Astar::Vec d = ds.d;
-            const Astar::Vec next = p + d;
-
-            if (static_cast<size_t>(next[0]) >= static_cast<size_t>(map_info_.width) ||
-                static_cast<size_t>(next[1]) >= static_cast<size_t>(map_info_.height))
-              continue;
-
-            float cost = model_->euclidCostRough(d);
-
-            const float gnext = g[next];
-
-            if (gnext < g[p] + cost)
-            {
-              // Skip as this search task has no chance to find better way.
-              continue;
-            }
-
-            {
-              float sum = 0, sum_hist = 0;
-              bool collision = false;
-              for (const auto& d : ds.pos)
-              {
-                const Astar::Vec pos = p + d;
-                const char c = cm_rough_[pos];
-                if (c > 99)
-                {
-                  collision = true;
-                  break;
-                }
-                sum += c;
-                sum_hist += bbf_costmap_.getCost(pos);
-              }
-              if (collision)
-                continue;
-              cost +=
-                  (map_info_.linear_resolution * ds.grid_to_len / 100.0) *
-                  (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
-
-              if (cost < 0)
-              {
-                cost = 0;
-                ROS_WARN_THROTTLE(1.0, "Negative cost value is detected. Limited to zero.");
-              }
-            }
-
-            const float cost_next = it->p_raw_ + cost;
-            if (gnext > cost_next)
-            {
-              updates.emplace_back(p, next, cost_next, cost_next);
-            }
-          }
-        }
-#pragma omp barrier
-#pragma omp critical
-        {
-          for (const Astar::GridmapUpdate& u : updates)
-          {
-            if (g[u.getPos()] > u.getCost())
-            {
-              g[u.getPos()] = u.getCost();
-              open.push(std::move(u.getPriorityVec()));
-            }
-          }
-        }  // omp critical
-      }
-    }  // omp parallel
-    rough_cost_max_ = g[s_rough] + ec_[0] * (range_ + local_range_);
-  }
 
   template <class T>
   bool searchAvailablePos(const T& cm, Astar::Vec& s, const int xy_range, const int angle_range,
@@ -710,16 +542,10 @@ protected:
         break;
     }
     const auto ts = boost::chrono::high_resolution_clock::now();
-    pq_open_.clear();
-    cost_estim_cache_.clear(std::numeric_limits<float>::max());
-    e[2] = 0;
-    cost_estim_cache_[e] = -ec_[0] * 0.5;  // Decrement to reduce calculation error
-    pq_open_.push(Astar::PriorityVec(cost_estim_cache_[e], cost_estim_cache_[e], e));
-    fillCostmap(pq_open_, cost_estim_cache_, s, e);
+    cost_estim_cache_.create(s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
-    cost_estim_cache_[e] = 0;
 
     if (goal_changed)
     {
@@ -884,6 +710,9 @@ protected:
     const int map_update_x_max = static_cast<int>(msg->x + msg->width);
     const int map_update_y_min = static_cast<int>(msg->y);
     const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+
+    // Should search 1px around the region to
+    // update the costmap even if the edge of the local map is obstacle
     const int search_range_x_min = std::max(0, std::min(prev_map_update_x_min_, map_update_x_min) - 1);
     const int search_range_x_max = std::min(static_cast<int>(map_info_.width),
                                             std::max(prev_map_update_x_max_, map_update_x_max) + 1);
@@ -989,90 +818,20 @@ protected:
       return;
     }
 
-    e[2] = 0;
-
     const auto ts = boost::chrono::high_resolution_clock::now();
-
-    Astar::Vec p, p_cost_min;
-    p[2] = 0;
-    float cost_min = std::numeric_limits<float>::max();
-    for (p[1] = search_range_y_min; p[1] < search_range_y_max; p[1]++)
-    {
-      for (p[0] = search_range_x_min; p[0] < search_range_x_max; p[0]++)
-      {
-        if (cost_min > cost_estim_cache_[p])
-        {
-          p_cost_min = p;
-          cost_min = cost_estim_cache_[p];
-        }
-      }
-    }
-
-    pq_open_.clear();
-    pq_erase_.clear();
-
-    if (cost_min != std::numeric_limits<float>::max())
-      pq_erase_.emplace(cost_min, cost_min, p_cost_min);
-    while (true)
-    {
-      if (pq_erase_.size() < 1)
-        break;
-      const Astar::PriorityVec center(pq_erase_.top());
-      const Astar::Vec p = center.v_;
-      pq_erase_.pop();
-
-      if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
-        continue;
-      cost_estim_cache_[p] = std::numeric_limits<float>::max();
-
-      Astar::Vec d;
-      d[2] = 0;
-      for (d[0] = -1; d[0] <= 1; d[0]++)
-      {
-        for (d[1] = -1; d[1] <= 1; d[1]++)
-        {
-          if (!((d[0] == 0) ^ (d[1] == 0)))
-            continue;
-          Astar::Vec next = p + d;
-          next[2] = 0;
-          if ((unsigned int)next[0] >= (unsigned int)map_info_.width ||
-              (unsigned int)next[1] >= (unsigned int)map_info_.height)
-            continue;
-          const float gn = cost_estim_cache_[next];
-          if (gn == std::numeric_limits<float>::max())
-            continue;
-          if (gn < cost_min)
-          {
-            pq_open_.emplace(gn, gn, next);
-            continue;
-          }
-          pq_erase_.emplace(gn, gn, next);
-        }
-      }
-    }
-    if (pq_open_.size() == 0)
-    {
-      pq_open_.emplace(-ec_[0] * 0.5, -ec_[0] * 0.5, e);
-    }
-    ROS_DEBUG("Cost estimation cache partial update from: %0.3f", rough_cost_max_);
-    {
-      Astar::Vec p;
-      p[2] = 0;
-      for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
-      {
-        for (p[1] = 0; p[1] < static_cast<int>(map_info_.height); p[1]++)
-        {
-          const auto gp = cost_estim_cache_[p];
-          if ((gp > rough_cost_max_) && (gp != std::numeric_limits<float>::max()))
-          {
-            pq_open_.emplace(gp, gp, p);
-          }
-        }
-      }
-    }
-
-    fillCostmap(pq_open_, cost_estim_cache_, s, e);
+    cost_estim_cache_.update(
+        s, e,
+        DistanceMap::Rect(
+            Astar::Vec(search_range_x_min, search_range_y_min, 0),
+            Astar::Vec(search_range_x_max, search_range_y_max, 0)));
     const auto tnow = boost::chrono::high_resolution_clock::now();
+    const DistanceMap::DebugData dm_debug = cost_estim_cache_.getDebugData();
+    if (dm_debug.has_negative_cost)
+    {
+      ROS_WARN("Negative cost value is detected. Limited to zero.");
+    }
+    ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu",
+              dm_debug.search_queue_size, dm_debug.search_queue_cap);
     ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
     publishDebug();
@@ -1102,15 +861,10 @@ protected:
     {
       map_info_ = msg->info;
 
-      // Typical open/erase queue size is be approximated by perimeter of the map
-      pq_open_.reserve((map_info_.width + map_info_.height) * 2);
-      pq_erase_.reserve((map_info_.width + map_info_.height) * 2);
-
       range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
       hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
       hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
       local_range_ = std::lround(local_range_f_ / map_info_.linear_resolution);
-      longcut_range_ = std::lround(longcut_range_f_ / map_info_.linear_resolution);
       esc_range_ = std::lround(esc_range_f_ / map_info_.linear_resolution);
       esc_angle_ = map_info_.angle / 8;
       tolerance_range_ = std::lround(tolerance_range_f_ / map_info_.linear_resolution);
@@ -1124,7 +878,7 @@ protected:
               map_info_,
               ec_,
               local_range_,
-              cost_estim_cache_, cm_, cm_hyst_, cm_rough_,
+              cost_estim_cache_.gridmap(), cm_, cm_hyst_, cm_rough_,
               cc_, range_));
 
       ROS_DEBUG("Search model updated");
@@ -1142,14 +896,27 @@ protected:
             static_cast<int>(map_info_.height),
             static_cast<int>(map_info_.angle),
         };
-    as_.reset(Astar::Vec(size[0], size[1], size[2]));
-    cm_.reset(Astar::Vec(size[0], size[1], size[2]));
-    cm_hyst_.reset(Astar::Vec(size[0], size[1], size[2]));
 
-    cost_estim_cache_.reset(Astar::Vec(size[0], size[1], 1));
-    cm_rough_.reset(Astar::Vec(size[0], size[1], 1));
-    cm_updates_.reset(Astar::Vec(size[0], size[1], 1));
-    bbf_costmap_.reset(Astar::Vec(size[0], size[1], 1));
+    const Astar::Vec size3d(size[0], size[1], size[2]);
+    const Astar::Vec size2d(size[0], size[1], 1);
+
+    as_.reset(size3d);
+    cm_.reset(size3d);
+    cm_hyst_.reset(size3d);
+
+    const DistanceMap::Params dmp =
+        {
+            .euclid_cost = ec_,
+            .range = range_,
+            .local_range = local_range_,
+            .longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
+            .size = size2d,
+            .resolution = map_info_.linear_resolution,
+        };
+    cost_estim_cache_.init(model_, dmp);
+    cm_rough_.reset(size2d);
+    cm_updates_.reset(size2d);
+    bbf_costmap_.reset(size2d);
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1248,6 +1015,7 @@ public:
     : nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
+    , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
@@ -1396,7 +1164,9 @@ public:
     int num_task;
     pnh_.param("num_search_task", num_task, num_threads * 16);
     as_.setSearchTaskNum(num_task);
-    pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
+    int num_cost_estim_task;
+    pnh_.param("num_cost_estim_task", num_cost_estim_task, num_threads * 16);
+    cost_estim_cache_.setParams(cc_, num_cost_estim_task);
 
     pnh_.param("retain_last_error_status", retain_last_error_status_, true);
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;

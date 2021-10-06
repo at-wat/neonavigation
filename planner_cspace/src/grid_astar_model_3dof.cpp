@@ -51,10 +51,10 @@ GridAstarModel3D::GridAstarModel3D(
     const costmap_cspace_msgs::MapMetaData3D& map_info,
     const Vecf& euclid_cost_coef,
     const int local_range,
-    BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
-    BlockMemGridmapBase<char, 3, 2>& cm,
-    BlockMemGridmapBase<char, 3, 2>& cm_hyst,
-    BlockMemGridmapBase<char, 3, 2>& cm_rough,
+    const BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
+    const BlockMemGridmapBase<char, 3, 2>& cm,
+    const BlockMemGridmapBase<char, 3, 2>& cm_hyst,
+    const BlockMemGridmapBase<char, 3, 2>& cm_rough,
     const CostCoeff& cc,
     const int range)
   : hysteresis_(false)
@@ -146,7 +146,9 @@ float GridAstarModel3D::euclidCostRough(const Vec& v) const
     rootsum += v[i] * v[i];
 
   if (rootsum < static_cast<int>(euclid_cost_lin_cache_.size()))
+  {
     return euclid_cost_lin_cache_[rootsum];
+  }
 
   return std::sqrt(rootsum) * euclid_cost_coef_[0];
 }
