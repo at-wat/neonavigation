@@ -114,10 +114,6 @@ public:
   {
     return g_;
   }
-  inline const float roughCostMax() const
-  {
-    return rough_cost_max_;
-  }
   inline const DebugData& getDebugData() const
   {
     return debug_data_;
@@ -132,7 +128,6 @@ protected:
   const CostmapBBF& bbf_costmap_;
 
   std::vector<SearchDiffs> search_diffs_;
-  float rough_cost_max_;
   DebugData debug_data_;
 
   reservable_priority_queue<Astar::PriorityVec> pq_open_;

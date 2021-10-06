@@ -163,7 +163,6 @@ void DistanceMap::fillCostmap(
       }  // omp critical
     }
   }  // omp parallel
-  rough_cost_max_ = g_[s_rough] + p_.euclid_cost[0] * (p_.range + p_.local_range);
 }
 
 DistanceMap::DistanceMap(
@@ -233,9 +232,9 @@ void DistanceMap::update(
 {
   Astar::Vec p_cost_min;
   float cost_min = std::numeric_limits<float>::max();
-  for (Astar::Vec p(0, rect.min[1], 0); p[1] < rect.max[1]; p[1]++)
+  for (Astar::Vec p(0, rect.min[1], 0); p[1] <= rect.max[1]; p[1]++)
   {
-    for (p[0] = rect.min[0]; p[0] < rect.max[0]; p[0]++)
+    for (p[0] = rect.min[0]; p[0] <= rect.max[0]; p[0]++)
     {
       if (cost_min > g_[p])
       {
@@ -297,18 +296,6 @@ void DistanceMap::update(
   if (pq_open_.size() == 0)
   {
     pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
-  }
-
-  for (Astar::Vec p(0, 0, 0); p[0] < p_.size[0]; p[0]++)
-  {
-    for (p[1] = 0; p[1] < p_.size[1]; p[1]++)
-    {
-      const float gp = g_[p];
-      if ((gp > rough_cost_max_) && (gp != std::numeric_limits<float>::max()))
-      {
-        pq_open_.emplace(gp, gp, p);
-      }
-    }
   }
 
   fillCostmap(pq_open_, s_rough);

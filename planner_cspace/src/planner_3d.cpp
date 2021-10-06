@@ -710,6 +710,9 @@ protected:
     const int map_update_x_max = static_cast<int>(msg->x + msg->width);
     const int map_update_y_min = static_cast<int>(msg->y);
     const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+
+    // Should search 1px around the region to
+    // update the costmap even if the edge of the local map is obstacle
     const int search_range_x_min = std::max(0, std::min(prev_map_update_x_min_, map_update_x_min) - 1);
     const int search_range_x_max = std::min(static_cast<int>(map_info_.width),
                                             std::max(prev_map_update_x_max_, map_update_x_max) + 1);
@@ -829,7 +832,6 @@ protected:
     }
     ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu",
               dm_debug.search_queue_size, dm_debug.search_queue_cap);
-    ROS_DEBUG("Cost estimation cache partial update from: %0.3f", cost_estim_cache_.roughCostMax());
     ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
     publishDebug();
