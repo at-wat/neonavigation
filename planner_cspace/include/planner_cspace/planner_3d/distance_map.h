@@ -93,7 +93,7 @@ public:
   void init(const GridAstarModel3D::Ptr model, const Params& p);
 
   void update(
-      const Astar::Vec& s, Astar::Vec e,
+      const Astar::Vec& s, const Astar::Vec& e,
       const Rect& rect);
 
   void create(const Astar::Vec& s, const Astar::Vec& e);
@@ -140,7 +140,7 @@ protected:
 
   void fillCostmap(
       reservable_priority_queue<Astar::PriorityVec>& open,
-      const Astar::Vec& s, const Astar::Vec& e);
+      const Astar::Vec& s_rough);
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace

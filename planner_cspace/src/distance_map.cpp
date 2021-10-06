@@ -44,7 +44,7 @@ namespace planner_3d
 {
 void DistanceMap::fillCostmap(
     reservable_priority_queue<Astar::PriorityVec>& open,
-    const Astar::Vec& s, const Astar::Vec& e)
+    const Astar::Vec& s_rough)
 {
   debug_data_.search_queue_size = open.size();
   debug_data_.search_queue_cap = open.capacity();
@@ -61,7 +61,6 @@ void DistanceMap::fillCostmap(
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
     const float weight_linear = p_.resolution / 100.0;
-    const Astar::Vec s_rough(s[0], s[1], 0);
 
     while (true)
     {
@@ -164,7 +163,7 @@ void DistanceMap::fillCostmap(
       }  // omp critical
     }
   }  // omp parallel
-  rough_cost_max_ = g_[Astar::Vec(s[0], s[1], 0)] + p_.euclid_cost[0] * (p_.range + p_.local_range);
+  rough_cost_max_ = g_[s_rough] + p_.euclid_cost[0] * (p_.range + p_.local_range);
 }
 
 DistanceMap::DistanceMap(
@@ -229,11 +228,9 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
 }
 
 void DistanceMap::update(
-    const Astar::Vec& s, Astar::Vec e,
+    const Astar::Vec& s, const Astar::Vec& e,
     const Rect& rect)
 {
-  e[2] = 0;
-
   Astar::Vec p_cost_min;
   float cost_min = std::numeric_limits<float>::max();
   for (Astar::Vec p(0, rect.min[1], 0); p[1] < rect.max[1]; p[1]++)
@@ -255,6 +252,9 @@ void DistanceMap::update(
   }
   pq_open_.clear();
   pq_erase_.clear();
+
+  const Astar::Vec e_rough(e[0], e[1], 0);
+  const Astar::Vec s_rough(s[0], s[1], 0);
 
   if (cost_min != std::numeric_limits<float>::max())
     pq_erase_.emplace(cost_min, cost_min, p_cost_min);
@@ -296,7 +296,7 @@ void DistanceMap::update(
   }
   if (pq_open_.size() == 0)
   {
-    pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e);
+    pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
   }
 
   for (Astar::Vec p(0, 0, 0); p[0] < p_.size[0]; p[0]++)
@@ -311,7 +311,7 @@ void DistanceMap::update(
     }
   }
 
-  fillCostmap(pq_open_, s, e);
+  fillCostmap(pq_open_, s_rough);
 }
 
 void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
@@ -319,11 +319,14 @@ void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
   pq_open_.clear();
   pq_erase_.clear();
   g_.clear(std::numeric_limits<float>::max());
-  const Astar::Vec e2(e[0], e[1], 0);
-  g_[e2] = -p_.euclid_cost[0] * 0.5;  // Decrement to reduce calculation error
-  pq_open_.push(Astar::PriorityVec(g_[e2], g_[e2], e2));
-  fillCostmap(pq_open_, s, e2);
-  g_[e2] = 0;
+
+  const Astar::Vec e_rough(e[0], e[1], 0);
+  const Astar::Vec s_rough(s[0], s[1], 0);
+
+  g_[e_rough] = -p_.euclid_cost[0] * 0.5;  // Decrement to reduce calculation error
+  pq_open_.push(Astar::PriorityVec(g_[e_rough], g_[e_rough], e_rough));
+  fillCostmap(pq_open_, s_rough);
+  g_[e_rough] = 0;
 }
 
 }  // namespace planner_3d
