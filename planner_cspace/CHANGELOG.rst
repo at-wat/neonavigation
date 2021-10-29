@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.11.1 (2021-10-29)
+-------------------
 * planner_cspace: refactor distance map generator (`#617 <https://github.com/at-wat/neonavigation/issues/617>`_)
 * planner_cspace: recover error on FINISHING state (`#615 <https://github.com/at-wat/neonavigation/issues/615>`_)
 * planner_cspace: fix flaky actionlib tests (`#616 <https://github.com/at-wat/neonavigation/issues/616>`_)

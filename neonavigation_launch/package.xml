@@ -4,7 +4,7 @@
   schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>neonavigation_launch</name>
-  <version>0.11.0</version>
+  <version>0.11.1</version>
   <description>Demonstration and sample launch files for neonavigation meta-package</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
