@@ -2,6 +2,11 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.1 (2021-10-29)
+-------------------
+* trajectory_tracker: increase SwitchBackWithPathUpdate test timeout (`#611 <https://github.com/at-wat/neonavigation/issues/611>`_)
+* Contributors: Atsushi Watanabe
+
 0.11.0 (2021-08-30)
 -------------------
 * trajectory_tracker: add velocity tolerance parameters (`#607 <https://github.com/at-wat/neonavigation/issues/607>`_)

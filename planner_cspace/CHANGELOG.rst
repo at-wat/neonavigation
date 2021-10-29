@@ -2,6 +2,14 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.1 (2021-10-29)
+-------------------
+* planner_cspace: refactor distance map generator (`#617 <https://github.com/at-wat/neonavigation/issues/617>`_)
+* planner_cspace: recover error on FINISHING state (`#615 <https://github.com/at-wat/neonavigation/issues/615>`_)
+* planner_cspace: fix flaky actionlib tests (`#616 <https://github.com/at-wat/neonavigation/issues/616>`_)
+* planner_cspace: remove unused variable (`#614 <https://github.com/at-wat/neonavigation/issues/614>`_)
+* Contributors: Atsushi Watanabe
+
 0.11.0 (2021-08-30)
 -------------------
 * Apply clang-format-11 with new setting (`#605 <https://github.com/at-wat/neonavigation/issues/605>`_)
