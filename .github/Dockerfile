@@ -3,7 +3,7 @@
 
 ARG ROS_DISTRO=noetic
 # ========================================
-FROM alpine:latest as cloner
+FROM alpine:3.13 as cloner
 
 RUN apk add --no-cache git py3-pip \
   && python3 -m pip install wstool
