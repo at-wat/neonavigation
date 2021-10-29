@@ -2,6 +2,9 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.11.0 (2021-08-30)
 -------------------
 * Rename PointcloudAccumurator to PointcloudAccumulator (`#608 <https://github.com/at-wat/neonavigation/issues/608>`_)
