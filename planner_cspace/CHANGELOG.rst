@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.2 (2021-11-08)
+-------------------
+* planner_cspace: Fix header of fihish path (`#622 <https://github.com/at-wat/neonavigation/issues/622>`_)
+* Contributors: Kazuki Takahashi
+
 0.11.1 (2021-10-29)
 -------------------
 * planner_cspace: refactor distance map generator (`#617 <https://github.com/at-wat/neonavigation/issues/617>`_)
