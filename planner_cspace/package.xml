@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>planner_cspace</name>
-  <version>0.11.1</version>
+  <version>0.11.2</version>
   <description>3-dof configuration space planner for mobile robot</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
