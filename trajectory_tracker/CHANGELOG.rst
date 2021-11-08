@@ -2,6 +2,9 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.11.1 (2021-10-29)
 -------------------
 * trajectory_tracker: increase SwitchBackWithPathUpdate test timeout (`#611 <https://github.com/at-wat/neonavigation/issues/611>`_)
