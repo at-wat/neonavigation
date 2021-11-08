@@ -667,7 +667,7 @@ protected:
   void publishFinishPath()
   {
     nav_msgs::Path path;
-    path.header.frame_id = robot_frame_;
+    path.header.frame_id = map_header_.frame_id;
     path.header.stamp = ros::Time::now();
     // Specify single pose to control only orientation
     path.poses.resize(1);
