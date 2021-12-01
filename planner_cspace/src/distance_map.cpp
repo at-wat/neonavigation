@@ -190,6 +190,7 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
     g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
   }
   p_ = p;
+  search_diffs_.clear();
 
   const int range_rough = 4;
   for (Astar::Vec d(-range_rough, 0, 0); d[0] <= range_rough; d[0]++)
