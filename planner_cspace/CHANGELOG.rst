@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.3 (2021-12-02)
+-------------------
+* planner_cspace: fix DistanceMap::init() (`#625 <https://github.com/at-wat/neonavigation/issues/625>`_)
+* Fix flaky tests and add debug outputs (`#628 <https://github.com/at-wat/neonavigation/issues/628>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.11.2 (2021-11-08)
 -------------------
 * planner_cspace: Fix header of fihish path (`#622 <https://github.com/at-wat/neonavigation/issues/622>`_)
