@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.11.3 (2021-12-02)
+-------------------
 * planner_cspace: fix DistanceMap::init() (`#625 <https://github.com/at-wat/neonavigation/issues/625>`_)
 * Fix flaky tests and add debug outputs (`#628 <https://github.com/at-wat/neonavigation/issues/628>`_)
 * Contributors: Atsushi Watanabe, Naotaka Hatao
