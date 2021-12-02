@@ -545,12 +545,12 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
     }
     if (vel > 0)
     {
-      EXPECT_GT(1.01, x);
+      EXPECT_GT(1.02, x);
       EXPECT_LT(0.95, x);
     }
     else
     {
-      EXPECT_LT(-1.01, x);
+      EXPECT_LT(-1.02, x);
       EXPECT_GT(-0.95, x);
     }
   }

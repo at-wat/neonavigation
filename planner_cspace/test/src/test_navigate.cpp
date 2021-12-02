@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <vector>
 
 #include <ros/ros.h>
 
@@ -86,7 +87,7 @@ protected:
     pose.pose.pose.orientation.z = 1.0;
     pub_initial_pose_.publish(pose);
 
-    srv_forget_.waitForExistence(ros::Duration(2.0));
+    srv_forget_.waitForExistence(ros::Duration(10.0));
     ros::Rate rate(10.0);
 
     while (ros::ok() && !map_)
@@ -159,15 +160,17 @@ TEST_F(Navigate, Navigate)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   ros::Rate wait(10);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
+  std::vector<tf2::Stamped<tf2::Transform>> traj;
   while (ros::ok())
   {
     ros::spinOnce();
     wait.sleep();
 
+    const ros::Time now = ros::Time::now();
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      const ros::Time now = ros::Time::now();
       geometry_msgs::TransformStamped trans_tmp =
           tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
       tf2::fromMsg(trans_tmp, trans);
@@ -176,6 +179,20 @@ TEST_F(Navigate, Navigate)
     {
       std::cerr << e.what() << std::endl;
       continue;
+    }
+    traj.push_back(trans);
+
+    if (now > deadline)
+    {
+      for (const auto& t : traj)
+      {
+        std::cerr << t.stamp_.toSec() << " "
+                  << t.getOrigin().getX() << " "
+                  << t.getOrigin().getY() << " "
+                  << tf2::getYaw(t.getRotation()) << std::endl;
+      }
+      FAIL() << "Navigation timeout.";
+      break;
     }
 
     auto goal_rel = trans.inverse() * goal;
@@ -231,16 +248,18 @@ TEST_F(Navigate, NavigateWithLocalMap)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   ros::Rate wait(10);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
+  std::vector<tf2::Stamped<tf2::Transform>> traj;
   while (ros::ok())
   {
     pubMapLocal();
     ros::spinOnce();
     wait.sleep();
 
+    const ros::Time now = ros::Time::now();
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      const ros::Time now = ros::Time::now();
       geometry_msgs::TransformStamped trans_tmp =
           tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
       tf2::fromMsg(trans_tmp, trans);
@@ -249,6 +268,20 @@ TEST_F(Navigate, NavigateWithLocalMap)
     {
       std::cerr << e.what() << std::endl;
       continue;
+    }
+    traj.push_back(trans);
+
+    if (now > deadline)
+    {
+      for (const auto& t : traj)
+      {
+        std::cerr << t.stamp_.toSec() << " "
+                  << t.getOrigin().getX() << " "
+                  << t.getOrigin().getY() << " "
+                  << tf2::getYaw(t.getRotation()) << std::endl;
+      }
+      FAIL() << "Navigation timeout.";
+      break;
     }
 
     auto goal_rel = trans.inverse() * goal;
