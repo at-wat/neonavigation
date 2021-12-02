@@ -87,7 +87,7 @@ protected:
     pose.pose.pose.orientation.z = 1.0;
     pub_initial_pose_.publish(pose);
 
-    srv_forget_.waitForExistence(ros::Duration(2.0));
+    srv_forget_.waitForExistence(ros::Duration(10.0));
     ros::Rate rate(10.0);
 
     while (ros::ok() && !map_)
