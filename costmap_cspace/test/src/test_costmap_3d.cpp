@@ -388,7 +388,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
       costmap_cspace::MapOverlayMode::OVERWRITE);
   cm_over->setExpansion(0.0, 0.0);
   cm_over->setFootprint(footprint);
-  auto cm_output = cms.addLayer<costmap_cspace::Costmap3dLayerOutput>();
+  auto cm_output = cms.addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
 
   cm_ref.setAngleResolution(4);
   cm_ref.setExpansion(0.0, 0.0);
@@ -436,9 +436,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
 
   // Overlay local map
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::CSpace3DUpdate);
-  auto cb = [&updated](
-                const costmap_cspace::CSpace3DMsg::Ptr map,
-                const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+  auto cb = [&updated](const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated = update;
     return true;
@@ -480,9 +478,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm_over->setExpansion(0.0, 0.0);
   cm_over->setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::CSpace3DUpdate);
-  auto cb_max = [&updated_max](
-                    const costmap_cspace::CSpace3DMsg::Ptr map,
-                    const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+  auto cb_max = [&updated_max](const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated_max = update;
     return true;
@@ -650,7 +646,7 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     auto cm_stop = cms.addLayer<costmap_cspace::Costmap3dLayerStopPropagation>();
     auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerPlain>(
         costmap_cspace::MapOverlayMode::OVERWRITE);
-    auto cm_output = cms.addLayer<costmap_cspace::Costmap3dLayerOutput>();
+    auto cm_output = cms.addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
 
     // Generate two sample maps
     nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
@@ -674,9 +670,7 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
 
     // Overlay local map
     costmap_cspace_msgs::CSpace3DUpdate::Ptr updated;
-    auto cb = [&updated](
-                  const costmap_cspace::CSpace3DMsg::Ptr& map,
-                  const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+    auto cb = [&updated](const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
     {
       updated = update;
       return true;

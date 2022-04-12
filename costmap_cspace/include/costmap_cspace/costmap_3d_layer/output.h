@@ -41,11 +41,12 @@
 
 namespace costmap_cspace
 {
+template <class OUTPUT_MSG>
 class Costmap3dLayerOutput : public Costmap3dLayerBase
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
-  using Callback = boost::function<bool(const CSpace3DMsg::Ptr, const costmap_cspace_msgs::CSpace3DUpdate::Ptr)>;
+  using Callback = boost::function<bool(const typename OUTPUT_MSG::Ptr)>;
 
 protected:
   Callback cb_;
@@ -68,18 +69,42 @@ protected:
   {
     return 0;
   }
-  bool updateChain(const bool output)
-  {
-    auto update_msg = generateUpdateMsg();
-    if (cb_ && output)
-      return cb_(map_, update_msg);
-    return true;
-  }
   void updateCSpace(
       const nav_msgs::OccupancyGrid::ConstPtr& map,
       const UpdatedRegion& region)
   {
   }
+};
+
+class Costmap3dStaticLayerOutput : public Costmap3dLayerOutput<costmap_cspace::CSpace3DMsg>
+{
+public:
+  using Ptr = std::shared_ptr<Costmap3dStaticLayerOutput>;
+
+protected:
+  bool updateChain(const bool output)
+  {
+    if (cb_ && output)
+      return cb_(map_);
+    return true;
+  }
+};
+
+class Costmap3dUpdateLayerOutput : public Costmap3dLayerOutput<costmap_cspace_msgs::CSpace3DUpdate>
+{
+public:
+  using Ptr = std::shared_ptr<Costmap3dUpdateLayerOutput>;
+  using Parent = Costmap3dLayerOutput<costmap_cspace_msgs::CSpace3DUpdate>;
+
+protected:
+  bool updateChain(const bool output)
+  {
+    auto update_msg = generateUpdateMsg();
+    if (cb_ && output)
+      return cb_(update_msg);
+    return true;
+  }
+
   costmap_cspace_msgs::CSpace3DUpdate::Ptr generateUpdateMsg()
   {
     costmap_cspace_msgs::CSpace3DUpdate::Ptr update_msg(new costmap_cspace_msgs::CSpace3DUpdate);
