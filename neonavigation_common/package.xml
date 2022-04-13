@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>neonavigation_common</name>
-  <version>0.11.3</version>
+  <version>0.11.4</version>
   <description>Common headers for neonavigation meta-package</description>
 
   <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
