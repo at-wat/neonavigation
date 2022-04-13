@@ -103,16 +103,15 @@ protected:
     ROS_DEBUG("C-Space costmap updated");
   }
   bool cbUpdateStatic(
-      const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
+      const costmap_cspace::CSpace3DMsg::Ptr& map)
   {
     publishDebug(*map);
     pub_costmap_.publish<costmap_cspace_msgs::CSpace3D>(*map);
     return true;
   }
   bool cbUpdate(
-      const costmap_cspace::CSpace3DMsg::Ptr map,
-      const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
+      const costmap_cspace::CSpace3DMsg::Ptr& map,
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update)
   {
     if (update)
     {
@@ -276,8 +275,8 @@ public:
       }
     }
 
-    auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
-    static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1, _2));
+    auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dStaticLayerOutput>();
+    static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1));
 
     sub_map_ = nh_.subscribe<nav_msgs::OccupancyGrid>(
         "map", 1,
@@ -370,7 +369,7 @@ public:
           boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
     }
 
-    auto update_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerOutput>();
+    auto update_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
     update_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
 
     const geometry_msgs::PolygonStamped footprint_msg = footprint.toMsg();

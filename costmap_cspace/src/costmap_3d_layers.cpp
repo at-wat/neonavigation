@@ -47,11 +47,6 @@ COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
     Costmap3dLayerPlain);
 
 COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
-    "Costmap3dLayerOutput",
-    costmap_cspace::Costmap3dLayerOutput,
-    Costmap3dLayerOutput);
-
-COSTMAP_3D_LAYER_CLASS_LOADER_REGISTER(
     "Costmap3dLayerStopPropagation",
     costmap_cspace::Costmap3dLayerStopPropagation,
     Costmap3dLayerStopPropagation);
