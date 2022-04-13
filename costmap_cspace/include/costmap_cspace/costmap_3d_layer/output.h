@@ -41,22 +41,21 @@
 
 namespace costmap_cspace
 {
-template <class OUTPUT_MSG>
+template <class CALLBACK>
 class Costmap3dLayerOutput : public Costmap3dLayerBase
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
-  using Callback = boost::function<bool(const typename OUTPUT_MSG::Ptr)>;
 
 protected:
-  Callback cb_;
+  CALLBACK cb_;
   UpdatedRegion region_prev_;
 
 public:
   void loadConfig(XmlRpc::XmlRpcValue config)
   {
   }
-  void setHandler(Callback cb)
+  void setHandler(CALLBACK cb)
   {
     cb_ = cb;
   }
@@ -76,7 +75,8 @@ protected:
   }
 };
 
-class Costmap3dStaticLayerOutput : public Costmap3dLayerOutput<costmap_cspace::CSpace3DMsg>
+class Costmap3dStaticLayerOutput
+  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&)>>
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dStaticLayerOutput>;
@@ -90,18 +90,19 @@ protected:
   }
 };
 
-class Costmap3dUpdateLayerOutput : public Costmap3dLayerOutput<costmap_cspace_msgs::CSpace3DUpdate>
+class Costmap3dUpdateLayerOutput
+  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&,
+                                                     const typename costmap_cspace_msgs::CSpace3DUpdate::Ptr&)>>
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dUpdateLayerOutput>;
-  using Parent = Costmap3dLayerOutput<costmap_cspace_msgs::CSpace3DUpdate>;
 
 protected:
   bool updateChain(const bool output)
   {
     auto update_msg = generateUpdateMsg();
     if (cb_ && output)
-      return cb_(update_msg);
+      return cb_(map_, update_msg);
     return true;
   }
 

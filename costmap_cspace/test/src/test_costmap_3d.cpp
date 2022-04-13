@@ -436,7 +436,8 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
 
   // Overlay local map
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::CSpace3DUpdate);
-  auto cb = [&updated](const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+  auto cb = [&updated](const costmap_cspace::CSpace3DMsg::Ptr& map,
+                       const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated = update;
     return true;
@@ -478,7 +479,9 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm_over->setExpansion(0.0, 0.0);
   cm_over->setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
   costmap_cspace_msgs::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::CSpace3DUpdate);
-  auto cb_max = [&updated_max](const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+
+  auto cb_max = [&updated_max](const costmap_cspace::CSpace3DMsg::Ptr& map,
+                               const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     updated_max = update;
     return true;
@@ -670,7 +673,8 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
 
     // Overlay local map
     costmap_cspace_msgs::CSpace3DUpdate::Ptr updated;
-    auto cb = [&updated](const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+    auto cb = [&updated](const costmap_cspace::CSpace3DMsg::Ptr& map,
+                         const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
     {
       updated = update;
       return true;
@@ -754,8 +758,9 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
   // Overlay local map
   costmap_cspace_msgs::CSpace3DUpdate::Ptr overlay_updated;
   int overlay_received_num = 0;
-  auto cb_overlay =
-      [&overlay_updated, &overlay_received_num](const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
+  auto cb_overlay = [&overlay_updated,
+                     &overlay_received_num](const costmap_cspace::CSpace3DMsg::Ptr& map,
+                                            const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update) -> bool
   {
     overlay_updated = update;
     ++overlay_received_num;

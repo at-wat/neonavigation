@@ -102,16 +102,17 @@ protected:
     map->processMapOverlay(msg);
     ROS_DEBUG("C-Space costmap updated");
   }
-  bool cbUpdateStatic(const costmap_cspace::CSpace3DMsg::Ptr map)
+  bool cbUpdateStatic(const costmap_cspace::CSpace3DMsg::Ptr& map)
   {
     publishDebug(*map);
     pub_costmap_.publish<costmap_cspace_msgs::CSpace3D>(*map);
     return true;
   }
-  bool cbUpdate(const costmap_cspace_msgs::CSpace3DUpdate::Ptr update)
+  bool cbUpdate(const costmap_cspace::CSpace3DMsg::Ptr& map, const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update)
   {
     if (update)
     {
+      publishDebug(*map);
       pub_costmap_update_.publish(*update);
     }
     else
@@ -120,7 +121,7 @@ protected:
     }
     return true;
   }
-  void publishDebug(const costmap_cspace_msgs::CSpace3D& map)
+  void publishDebug(const costmap_cspace_msgs::CSpace3D map)
   {
     if (pub_debug_.getNumSubscribers() == 0)
       return;
@@ -366,7 +367,7 @@ public:
     }
 
     auto update_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
-    update_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1));
+    update_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
 
     const geometry_msgs::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = nh_.createTimer(
