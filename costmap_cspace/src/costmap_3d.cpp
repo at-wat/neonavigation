@@ -102,13 +102,16 @@ protected:
     map->processMapOverlay(msg);
     ROS_DEBUG("C-Space costmap updated");
   }
-  bool cbUpdateStatic(const costmap_cspace::CSpace3DMsg::Ptr& map)
+  bool cbUpdateStatic(
+      const costmap_cspace::CSpace3DMsg::Ptr& map)
   {
     publishDebug(*map);
     pub_costmap_.publish<costmap_cspace_msgs::CSpace3D>(*map);
     return true;
   }
-  bool cbUpdate(const costmap_cspace::CSpace3DMsg::Ptr& map, const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update)
+  bool cbUpdate(
+      const costmap_cspace::CSpace3DMsg::Ptr& map,
+      const costmap_cspace_msgs::CSpace3DUpdate::Ptr& update)
   {
     if (update)
     {
@@ -121,7 +124,7 @@ protected:
     }
     return true;
   }
-  void publishDebug(const costmap_cspace_msgs::CSpace3D map)
+  void publishDebug(const costmap_cspace_msgs::CSpace3D& map)
   {
     if (pub_debug_.getNumSubscribers() == 0)
       return;
