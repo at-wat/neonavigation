@@ -2,6 +2,9 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.11.3 (2021-12-02)
 -------------------
 
