@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.4 (2022-04-13)
+-------------------
+* Divide output layer class into specific classes (`#633 <https://github.com/at-wat/neonavigation/issues/633>`_)
+* Contributors: Naotaka Hatao
+
 0.11.3 (2021-12-02)
 -------------------
 

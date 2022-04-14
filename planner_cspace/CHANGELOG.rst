@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.4 (2022-04-13)
+-------------------
+
 0.11.3 (2021-12-02)
 -------------------
 * planner_cspace: fix DistanceMap::init() (`#625 <https://github.com/at-wat/neonavigation/issues/625>`_)

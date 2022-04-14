@@ -2,6 +2,9 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.4 (2022-04-13)
+-------------------
+
 0.11.3 (2021-12-02)
 -------------------
 * Fix flaky tests and add debug outputs (`#628 <https://github.com/at-wat/neonavigation/issues/628>`_)
