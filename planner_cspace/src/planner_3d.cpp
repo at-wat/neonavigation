@@ -125,6 +125,7 @@ protected:
   GridAstarModel3D::Ptr model_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
+  costmap_cspace_msgs::CSpace3DUpdate::ConstPtr map_update_retained_;
   std_msgs::Header map_header_;
   float freq_;
   float freq_min_;
@@ -697,6 +698,23 @@ protected:
 
     const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
     const ros::Time now = ros::Time::now();
+
+    const int map_update_x_min = static_cast<int>(msg->x);
+    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
+    const int map_update_y_min = static_cast<int>(msg->y);
+    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+
+    if (map_update_x_max > map_info_.width || map_update_y_max > map_info_.height)
+    {
+      ROS_WARN(
+          "Map update out of range (update range: %dx%d, map range: %dx%d)",
+          map_update_x_max, map_update_y_max,
+          map_info_.width, map_info_.height);
+      map_update_retained_ = msg;
+      return;
+    }
+    map_update_retained_ = nullptr;
+
     last_costmap_ = now;
 
     cm_.copy_partially(cm_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
@@ -705,11 +723,6 @@ protected:
                              Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
     cm_updates_.clear_partially(-1, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
                                 Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
-
-    const int map_update_x_min = static_cast<int>(msg->x);
-    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
-    const int map_update_y_min = static_cast<int>(msg->y);
-    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
 
     // Should search 1px around the region to
     // update the costmap even if the edge of the local map is obstacle
@@ -738,6 +751,7 @@ protected:
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
+            assert(addr < cm_hyst_.ser_size());
             const char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
@@ -752,6 +766,7 @@ protected:
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
+            assert(addr < cm_.ser_size());
             const char c = msg->data[addr];
             if (overwrite_cost_)
             {
@@ -956,6 +971,13 @@ protected:
     prev_map_update_y_max_ = std::numeric_limits<int>::lowest();
 
     updateGoal();
+
+    if (map_update_retained_ && map_update_retained_->header.stamp > msg->header.stamp)
+    {
+      ROS_INFO("Applying retained map update");
+      cbMapUpdate(map_update_retained_);
+    }
+    map_update_retained_ = nullptr;
   }
   void cbAction()
   {
