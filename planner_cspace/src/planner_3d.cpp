@@ -125,6 +125,7 @@ protected:
   GridAstarModel3D::Ptr model_;
 
   costmap_cspace_msgs::MapMetaData3D map_info_;
+  costmap_cspace_msgs::CSpace3DUpdate::ConstPtr map_update_retained_;
   std_msgs::Header map_header_;
   float freq_;
   float freq_min_;
@@ -689,7 +690,7 @@ protected:
     }
   }
 
-  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
+  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
   {
     if (!has_map_)
       return;
@@ -697,6 +698,25 @@ protected:
 
     const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
     const ros::Time now = ros::Time::now();
+
+    const int map_update_x_min = static_cast<int>(msg->x);
+    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
+    const int map_update_y_min = static_cast<int>(msg->y);
+    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+
+    if (static_cast<size_t>(map_update_x_max) > map_info_.width ||
+        static_cast<size_t>(map_update_y_max) > map_info_.height ||
+        msg->angle > map_info_.angle)
+    {
+      ROS_WARN(
+          "Map update out of range (update range: %dx%dx%d, map range: %dx%dx%d)",
+          map_update_x_max, map_update_y_max, msg->angle,
+          map_info_.width, map_info_.height, map_info_.angle);
+      map_update_retained_ = msg;
+      return;
+    }
+    map_update_retained_ = nullptr;
+
     last_costmap_ = now;
 
     cm_.copy_partially(cm_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
@@ -705,11 +725,6 @@ protected:
                              Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
     cm_updates_.clear_partially(-1, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
                                 Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
-
-    const int map_update_x_min = static_cast<int>(msg->x);
-    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
-    const int map_update_y_min = static_cast<int>(msg->y);
-    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
 
     // Should search 1px around the region to
     // update the costmap even if the edge of the local map is obstacle
@@ -956,6 +971,13 @@ protected:
     prev_map_update_y_max_ = std::numeric_limits<int>::lowest();
 
     updateGoal();
+
+    if (map_update_retained_ && map_update_retained_->header.stamp >= msg->header.stamp)
+    {
+      ROS_INFO("Applying retained map update");
+      cbMapUpdate(map_update_retained_);
+    }
+    map_update_retained_ = nullptr;
   }
   void cbAction()
   {

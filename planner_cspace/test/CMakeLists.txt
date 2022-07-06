@@ -116,6 +116,13 @@ add_rostest_gtest(test_planner_2dof_serial_joints
 target_link_libraries(test_planner_2dof_serial_joints ${catkin_LIBRARIES})
 add_dependencies(test_planner_2dof_serial_joints planner_2dof_serial_joints)
 
+add_rostest_gtest(test_planner_3d_map_size
+  test/planner_3d_map_size_rostest.test
+  src/test_planner_3d_map_size.cpp
+)
+target_link_libraries(test_planner_3d_map_size ${catkin_LIBRARIES})
+add_dependencies(test_planner_3d_map_size planner_3d)
+
 
 if(NEONAVIGATION_EXTRA_TESTS)
 
