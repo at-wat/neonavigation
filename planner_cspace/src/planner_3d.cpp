@@ -690,7 +690,7 @@ protected:
     }
   }
 
-  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
+  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
   {
     if (!has_map_)
       return;
@@ -704,12 +704,12 @@ protected:
     const int map_update_y_min = static_cast<int>(msg->y);
     const int map_update_y_max = static_cast<int>(msg->y + msg->height);
 
-    if (map_update_x_max > map_info_.width || map_update_y_max > map_info_.height)
+    if (map_update_x_max > map_info_.width || map_update_y_max > map_info_.height || msg->angle > map_info_.angle)
     {
       ROS_WARN(
-          "Map update out of range (update range: %dx%d, map range: %dx%d)",
-          map_update_x_max, map_update_y_max,
-          map_info_.width, map_info_.height);
+          "Map update out of range (update range: %dx%dx%d, map range: %dx%dx%d)",
+          map_update_x_max, map_update_y_max, msg->angle,
+          map_info_.width, map_info_.height, map_info_.angle);
       map_update_retained_ = msg;
       return;
     }
@@ -751,7 +751,6 @@ protected:
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
-            assert(addr < cm_hyst_.ser_size());
             const char c = msg->data[addr];
             if (c < cost_min)
               cost_min = c;
@@ -766,7 +765,6 @@ protected:
           for (p[2] = 0; p[2] < static_cast<int>(msg->angle); p[2]++)
           {
             const size_t addr = ((p[2] * msg->height) + p[1]) * msg->width + p[0];
-            assert(addr < cm_.ser_size());
             const char c = msg->data[addr];
             if (overwrite_cost_)
             {
@@ -972,7 +970,7 @@ protected:
 
     updateGoal();
 
-    if (map_update_retained_ && map_update_retained_->header.stamp > msg->header.stamp)
+    if (map_update_retained_ && map_update_retained_->header.stamp >= msg->header.stamp)
     {
       ROS_INFO("Applying retained map update");
       cbMapUpdate(map_update_retained_);
