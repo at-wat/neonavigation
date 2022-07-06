@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.11.5 (2022-07-06)
+-------------------
 * planner_cspace: fix access violation on wrong size costmap_update message (`#637 <https://github.com/at-wat/neonavigation/issues/637>`_)
 * Contributors: Atsushi Watanabe
 
