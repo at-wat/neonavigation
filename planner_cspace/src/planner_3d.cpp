@@ -704,7 +704,9 @@ protected:
     const int map_update_y_min = static_cast<int>(msg->y);
     const int map_update_y_max = static_cast<int>(msg->y + msg->height);
 
-    if (map_update_x_max > map_info_.width || map_update_y_max > map_info_.height || msg->angle > map_info_.angle)
+    if (static_cast<size_t>(map_update_x_max) > map_info_.width ||
+        static_cast<size_t>(map_update_y_max) > map_info_.height ||
+        msg->angle > map_info_.angle)
     {
       ROS_WARN(
           "Map update out of range (update range: %dx%dx%d, map range: %dx%dx%d)",
