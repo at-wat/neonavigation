@@ -51,7 +51,7 @@ protected:
   Planner3DMapSize()
     : cnt_status_(0)
   {
-    sub_status_ = nh_.subscribe("/planner_3d/status", 1, &Planner3DMapSize::cbStatus, this);
+    sub_status_ = nh_.subscribe("/planner_3d/status", 100, &Planner3DMapSize::cbStatus, this);
     pub_map_ = nh_.advertise<costmap_cspace_msgs::CSpace3D>("costmap", 1, true);
     pub_map_update_ = nh_.advertise<costmap_cspace_msgs::CSpace3DUpdate>("costmap_update", 1);
   }
@@ -64,7 +64,7 @@ protected:
   virtual void SetUp()
   {
     // Wait planner
-    waitStatus(ros::Duration(10));
+    ASSERT_TRUE(waitStatus(ros::Duration(5))) << "planner_3d is not up";
   }
 
   bool waitStatus(const ros::Duration timeout)
@@ -97,6 +97,10 @@ protected:
     msg.info.angular_resolution = M_PI * 2 / angle;
     msg.info.origin.orientation.w = 1;
     msg.data.resize(msg.info.width * msg.info.height * msg.info.angle);
+    for (auto& c : msg.data)
+    {
+      c = 100;
+    }
     return msg;
   }
 
@@ -115,6 +119,10 @@ protected:
     msg.height = h;
     msg.angle = angle;
     msg.data.resize(msg.width * msg.height * msg.angle);
+    for (auto& c : msg.data)
+    {
+      c = 100;
+    }
     return msg;
   }
 };
@@ -122,37 +130,49 @@ protected:
 TEST_F(Planner3DMapSize, OutOfRangeX)
 {
   const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 10, 10, 4));
+  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 11, 10, 4));
+  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x80, 4));
   ros::Duration(0.5).sleep();
   ros::spinOnce();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(10)));
+  ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeY)
 {
   const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 10, 10, 4));
+  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 10, 11, 4));
+  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x81, 4));
   ros::Duration(0.5).sleep();
   ros::spinOnce();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(10)));
+  ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeAngle)
 {
   const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 10, 10, 4));
+  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 10, 10, 8));
+  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x80, 8));
   ros::Duration(0.5).sleep();
   ros::spinOnce();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(10)));
+  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+}
+
+TEST_F(Planner3DMapSize, OutOfRangeAll)
+{
+  const ros::Time now = ros::Time::now();
+  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  ros::Duration(0.1).sleep();
+  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x81, 8));
+  ros::Duration(0.5).sleep();
+  ros::spinOnce();
+  cnt_status_ = 0;
+  ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, IllOrderedUpdate)
@@ -160,18 +180,18 @@ TEST_F(Planner3DMapSize, IllOrderedUpdate)
   const ros::Time now = ros::Time::now();
   const ros::Time next = now + ros::Duration(0.1);
 
-  pub_map_.publish(generateCSpace3DMsg(now, 10, 10, 4));
+  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
 
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 20, 20, 8));
+  pub_map_update_.publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
   ros::Duration(0.1).sleep();
 
-  pub_map_.publish(generateCSpace3DMsg(now, 20, 20, 8));
+  pub_map_.publish(generateCSpace3DMsg(next, 0x81, 0x81, 8));
   ros::Duration(0.5).sleep();
 
   ros::spinOnce();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(10)));
+  ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 int main(int argc, char** argv)
