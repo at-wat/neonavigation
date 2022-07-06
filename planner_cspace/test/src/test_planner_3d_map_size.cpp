@@ -194,6 +194,25 @@ TEST_F(Planner3DMapSize, IllOrderedUpdate)
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
+TEST_F(Planner3DMapSize, IllOrderedUpdateShrink)
+{
+  const ros::Time now = ros::Time::now();
+  const ros::Time next = now + ros::Duration(0.1);
+
+  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  ros::Duration(0.1).sleep();
+
+  pub_map_update_.publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
+  ros::Duration(0.1).sleep();
+
+  pub_map_.publish(generateCSpace3DMsg(next, 0x40, 0x40, 4));
+  ros::Duration(0.5).sleep();
+
+  ros::spinOnce();
+  cnt_status_ = 0;
+  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
