@@ -63,21 +63,6 @@ public:
         static_cast<double>(config["linear_expand"]),
         static_cast<double>(config["linear_spread"]));
   }
-
-protected:
-  void generateCSpace(
-      CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr& msg,
-      const UpdatedRegion& region) final
-  {
-    ROS_ASSERT(ang_grid_ > 0);
-    clearTravelableArea(map, msg);
-    generateSpecifiedCSpace(map, msg, 0);
-    for (size_t i = 1; i < map->info.angle; ++i)
-    {
-      CSpace3DMsg::copyCells(*map, 0, 0, i, *map, 0, 0, 0, map->info.width * map->info.height);
-    }
-  }
 };
 }  // namespace costmap_cspace
 
