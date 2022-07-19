@@ -964,6 +964,63 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
     }
   }
 }
+
+TEST(Costmap3dLayerFootprint, PlainOnFootprint)
+{
+  // Set example footprint
+  int footprint_offset = 0;
+  XmlRpc::XmlRpcValue footprint_xml;
+  footprint_xml.fromXml(footprint_str, &footprint_offset);
+  costmap_cspace::Polygon footprint(footprint_xml);
+
+  // Settings: 4 angular grids, no expand/spread
+  costmap_cspace::Costmap3d cms(4);
+  auto cm = cms.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
+  cm->setExpansion(0.0, 0.0);
+  cm->setFootprint(footprint);
+  auto cm_over = cms.addLayer<costmap_cspace::Costmap3dLayerPlain>(
+      costmap_cspace::MapOverlayMode::MAX);
+  cm_over->setExpansion(0.0, 0.0);
+
+  // Generate sample map
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+  map->info.width = 5;
+  map->info.height = 5;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height, 0);
+
+  nav_msgs::OccupancyGrid::Ptr map2(new nav_msgs::OccupancyGrid);
+  *map2 = *map;
+
+  const int max_cost = 100;
+  map->data[2 + 2 * map->info.width] = max_cost;
+  cm->setBaseMap(map);
+
+  map2->data[3 + 4 * map->info.width] = max_cost;
+  cm_over->processMapOverlay(map2);
+
+  const costmap_cspace::CSpace3DMsg::Ptr static_map = cm->getMap();
+  const costmap_cspace::CSpace3DMsg::Ptr overlay_map = cm_over->getMapOverlay();
+  for (int k = 0; k < cm_over->getAngularGrid(); ++k)
+  {
+    for (size_t j = 0; j < map->info.height; ++j)
+    {
+      for (size_t i = 0; i < map->info.width; ++i)
+      {
+        if (i == 3 && j == 4)
+        {
+          EXPECT_EQ(overlay_map->getCost(i, j, k), 100);
+        }
+        else
+        {
+          EXPECT_EQ(overlay_map->getCost(i, j, k), static_map->getCost(i, j, k));
+        }
+      }
+    }
+  }
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
