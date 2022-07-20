@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.6 (2022-07-20)
+-------------------
+* costmap_cspace: fix Costmap3dLayerPlain when its parent is not plain (`#641 <https://github.com/at-wat/neonavigation/issues/641>`_)
+* Contributors: Naotaka Hatao
+
 0.11.5 (2022-07-06)
 -------------------
 
