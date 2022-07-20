@@ -379,7 +379,7 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
       const tf2::Vector3 translation(odom->twist.twist.linear.x * predict_dt, 0, 0);
 
       prediction_offset[0] = odom->twist.twist.linear.x * predict_dt;
-      prediction_offset[1] = odom->twist.twist.angular.z * predict_dt;
+      prediction_offset[2] = odom->twist.twist.angular.z * predict_dt;
 
       tf2::fromMsg(odom->pose.pose, trans);
       trans.setOrigin(trans.getOrigin() + tf2::Transform(trans.getRotation()) * translation);
