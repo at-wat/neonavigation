@@ -28,6 +28,7 @@
  */
 
 #include <cmath>
+#include <string>
 
 #include <ros/ros.h>
 
@@ -48,6 +49,7 @@ private:
   ros::Publisher pub_int_;
   double linear_vel_;
   double angular_vel_;
+  double linear_y_vel_;
   double timeout_;
   double linear_high_speed_ratio_;
   double angular_high_speed_ratio_;
@@ -55,10 +57,35 @@ private:
   int angular_axis_;
   int linear_axis2_;
   int angular_axis2_;
+  int linear_y_axis_;
+  int linear_y_axis2_;
   int interrupt_button_;
   int high_speed_button_;
   ros::Time last_joy_msg_;
   geometry_msgs::Twist last_input_twist_;
+
+  float getAxisValue(const sensor_msgs::Joy::Ptr& msg, const int axis, const std::string& axis_name) const
+  {
+    if (axis < 0)
+    {
+      return 0.0;
+    }
+    if (static_cast<size_t>(axis) >= msg->axes.size())
+    {
+      ROS_ERROR("Out of range: number of axis (%lu) must be greater than %s (%d).",
+                msg->axes.size(), axis_name.c_str(), axis);
+      return 0.0;
+    }
+    return msg->axes[axis];
+  }
+
+  float getJoyValue(const sensor_msgs::Joy::Ptr& msg, const int axis, const int axis2,
+                    const std::string& axis_name) const
+  {
+    const float value = getAxisValue(msg, axis, axis_name);
+    const float value2 = getAxisValue(msg, axis2, axis_name + "2");
+    return (std::abs(value2) > std::abs(value)) ? value2 : value;
+  }
 
   void cbJoy(const sensor_msgs::Joy::Ptr msg)
   {
@@ -81,41 +108,9 @@ private:
 
     last_joy_msg_ = ros::Time::now();
 
-    float lin(0.0f);
-    float ang(0.0f);
-    if (static_cast<size_t>(linear_axis_) < msg->axes.size())
-      lin = msg->axes[linear_axis_];
-    else
-      ROS_ERROR("Out of range: number of axis (%lu) must be greater than linear_axis (%d).",
-                msg->axes.size(), linear_axis_);
-    if (static_cast<size_t>(angular_axis_) < msg->axes.size())
-      ang = msg->axes[angular_axis_];
-    else
-      ROS_ERROR("Out of range: number of axis (%lu) must be greater than angular_axis (%d).",
-                msg->axes.size(), angular_axis_);
-
-    if (linear_axis2_ >= 0)
-    {
-      if (static_cast<size_t>(linear_axis2_) < msg->axes.size())
-      {
-        if (std::abs(msg->axes[linear_axis2_]) > std::abs(lin))
-          lin = msg->axes[linear_axis2_];
-      }
-      else
-        ROS_ERROR("Out of range: number of axis (%lu) must be greater than linear_axis2 (%d).",
-                  msg->axes.size(), linear_axis2_);
-    }
-    if (angular_axis2_ >= 0)
-    {
-      if (static_cast<size_t>(angular_axis2_) < msg->axes.size())
-      {
-        if (std::abs(msg->axes[angular_axis2_]) > std::abs(ang))
-          ang = msg->axes[angular_axis2_];
-      }
-      else
-        ROS_ERROR("Out of range: number of axis (%lu) must be greater than angular_axis2 (%d).",
-                  msg->axes.size(), angular_axis2_);
-    }
+    float lin_x = getJoyValue(msg, linear_axis_, linear_axis2_, "linear_axis");
+    float lin_y = getJoyValue(msg, linear_y_axis_, linear_y_axis2_, "linear_y_axis");
+    float ang = getJoyValue(msg, angular_axis_, angular_axis2_, "angular_axis");
 
     if (high_speed_button_ >= 0)
     {
@@ -123,7 +118,8 @@ private:
       {
         if (msg->buttons[high_speed_button_])
         {
-          lin *= linear_high_speed_ratio_;
+          lin_x *= linear_high_speed_ratio_;
+          lin_y *= linear_high_speed_ratio_;
           ang *= angular_high_speed_ratio_;
         }
       }
@@ -133,8 +129,9 @@ private:
     }
 
     geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = lin * linear_vel_;
-    cmd_vel.linear.y = cmd_vel.linear.z = 0.0;
+    cmd_vel.linear.x = lin_x * linear_vel_;
+    cmd_vel.linear.y = lin_y * linear_y_vel_;
+    cmd_vel.linear.z = 0.0;
     cmd_vel.angular.z = ang * angular_vel_;
     cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
     pub_twist_.publish(cmd_vel);
@@ -182,6 +179,10 @@ public:
     pnh_.param("linear_high_speed_ratio", linear_high_speed_ratio_, 1.3);
     pnh_.param("angular_high_speed_ratio", angular_high_speed_ratio_, 1.1);
     pnh_.param("timeout", timeout_, 0.5);
+    pnh_.param("linear_y_vel", linear_y_vel_, 0.0);
+    pnh_.param("linear_y_axis", linear_y_axis_, -1);
+    pnh_.param("linear_y_axis2", linear_y_axis2_, -1);
+
     last_joy_msg_ = ros::Time(0);
 
     if (interrupt_button_ < 0)

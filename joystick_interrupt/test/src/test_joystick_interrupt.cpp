@@ -27,6 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
+
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/Joy.h>
@@ -50,12 +52,12 @@ protected:
   }
 
 public:
-  JoystickInterruptTest()
+  explicit JoystickInterruptTest(const std::string& cmd_vel_topic = "cmd_vel")
     : nh_()
   {
     pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_input", 1);
     pub_joy_ = nh_.advertise<sensor_msgs::Joy>("joy", 1);
-    sub_cmd_vel_ = nh_.subscribe("cmd_vel", 1, &JoystickInterruptTest::cbCmdVel, this);
+    sub_cmd_vel_ = nh_.subscribe(cmd_vel_topic, 1, &JoystickInterruptTest::cbCmdVel, this);
 
     ros::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
@@ -88,11 +90,13 @@ public:
     joy.buttons.resize(2);
     joy.buttons[0] = button;
     joy.buttons[1] = high_speed;
-    joy.axes.resize(4);
+    joy.axes.resize(6);
     joy.axes[0] = lin0;
     joy.axes[1] = ang0;
     joy.axes[2] = lin1;
     joy.axes[3] = ang1;
+    joy.axes[4] = 0;
+    joy.axes[5] = 0;
     pub_joy_.publish(joy);
   }
 };
@@ -244,6 +248,111 @@ TEST_F(JoystickInterruptTest, InterruptHighSpeed)
     {
       ASSERT_NEAR(cmd_vel_->linear.x, 0.0, 1e-3);
       ASSERT_NEAR(cmd_vel_->angular.z, 2.0, 1e-3);
+    }
+  }
+}
+
+class JoystickInterruptOmniTest : public JoystickInterruptTest
+{
+public:
+  JoystickInterruptOmniTest()
+    : JoystickInterruptTest("cmd_vel_omni")
+  {
+  }
+  void publishJoy(
+      const int button,
+      const int high_speed,
+      const float lin0,
+      const float lin_y0,
+      const float ang0,
+      const float lin1,
+      const float lin_y1,
+      const float ang1)
+  {
+    sensor_msgs::Joy joy;
+    joy.header.stamp = ros::Time::now();
+    joy.buttons.resize(2);
+    joy.buttons[0] = button;
+    joy.buttons[1] = high_speed;
+    joy.axes.resize(6);
+    joy.axes[0] = lin0;
+    joy.axes[1] = ang0;
+    joy.axes[2] = lin1;
+    joy.axes[3] = ang1;
+    joy.axes[4] = lin_y0;
+    joy.axes[5] = lin_y1;
+    pub_joy_.publish(joy);
+  }
+};
+
+TEST_F(JoystickInterruptOmniTest, Interrupt)
+{
+  ros::Duration(1.0).sleep();
+  ros::Rate rate(20);
+  for (size_t i = 0; i < 25; ++i)
+  {
+    publishCmdVel(0.1, 0.2);
+    if (i < 5)
+      publishJoy(0, 0, 0, 0, 0, 0, 0, 0);
+    else if (i < 10)
+      publishJoy(1, 0, 0.5, 0, 0, 0, 0, 0);
+    else if (i < 15)
+      publishJoy(1, 0, 0.5, 0, 0, -1, 0, 0);
+    else if (i < 20)
+      publishJoy(1, 0, 0, 0.3, 0, 0, 0, 0);
+    else if (i < 25)
+      publishJoy(1, 0, 0, 0.3, 0, 0, 1, 0);
+    else if (i < 30)
+      publishJoy(1, 0, 0, 0, -0.7, 0, 0, 0);
+    else
+      publishJoy(1, 0, 0, 0, -0.7, 0, 0, 1);
+
+    rate.sleep();
+    ros::spinOnce();
+    if (i < 3)
+      continue;
+    ASSERT_TRUE(static_cast<bool>(cmd_vel_));
+    if (i < 5)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.1, 1e-3);
+      ASSERT_NEAR(cmd_vel_->linear.y, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0.2, 1e-3);
+    }
+    else if (i < 10)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.5, 1e-3);
+      ASSERT_NEAR(cmd_vel_->linear.y, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0.0, 1e-3);
+    }
+    else if (i < 15)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, -1.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->linear.y, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0.0, 1e-3);
+    }
+    else if (i < 20)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->linear.y, 0.15, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0.0, 1e-3);
+    }
+    else if (i < 25)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->linear.y, 0.5, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 0.0, 1e-3);
+    }
+    else if (i < 30)
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->linear.y, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, -0.7, 1e-3);
+    }
+    else
+    {
+      ASSERT_NEAR(cmd_vel_->linear.x, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->linear.y, 0.0, 1e-3);
+      ASSERT_NEAR(cmd_vel_->angular.z, 1.0, 1e-3);
     }
   }
 }
