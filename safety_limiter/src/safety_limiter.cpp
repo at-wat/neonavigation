@@ -426,9 +426,9 @@ protected:
     Eigen::Affine3f move_inv;
     Eigen::Affine3f motion =
         Eigen::AngleAxisf(-twist_.angular.z * dt_, Eigen::Vector3f::UnitZ()) *
-        Eigen::Translation3f(Eigen::Vector3f(-twist_.linear.x * dt_, 0.0, 0.0));
+        Eigen::Translation3f(Eigen::Vector3f(-twist_.linear.x * dt_, -twist_.linear.y * dt_, 0.0));
     Eigen::Affine3f motion_inv =
-        Eigen::Translation3f(Eigen::Vector3f(twist_.linear.x * dt_, 0.0, 0.0)) *
+        Eigen::Translation3f(Eigen::Vector3f(twist_.linear.x * dt_, twist_.linear.y * dt_, 0.0)) *
         Eigen::AngleAxisf(twist_.angular.z * dt_, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
@@ -442,13 +442,14 @@ protected:
     float d_escape_remain = 0;
     float yaw_escape_remain = 0;
     has_collision_at_now_ = false;
+    const double linear_vel = std::hypot(twist_.linear.x, twist_.linear.y);
 
     for (float t = 0; t < tmax_; t += dt_)
     {
       if (t != 0)
       {
-        d_col += twist_.linear.x * dt_;
-        d_escape_remain -= std::abs(twist_.linear.x) * dt_;
+        d_col += linear_vel * dt_;
+        d_escape_remain -= linear_vel * dt_;
         yaw_col += twist_.angular.z * dt_;
         yaw_escape_remain -= std::abs(twist_.angular.z) * dt_;
         move = move * motion;
@@ -457,7 +458,6 @@ protected:
 
       pcl::PointXYZ center;
       center = pcl::transformPoint(center, move_inv);
-
       std::vector<int> indices;
       std::vector<float> dist;
       const int num = kdtree.radiusSearch(center, footprint_radius_, indices, dist);
@@ -541,7 +541,7 @@ protected:
             std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
 
     float d_r =
-        std::sqrt(std::abs(2 * acc_[0] * d_col)) / std::abs(twist_.linear.x);
+        std::sqrt(std::abs(2 * acc_[0] * d_col)) / linear_vel;
     float yaw_r =
         std::sqrt(std::abs(2 * acc_[1] * yaw_col)) / std::abs(twist_.angular.z);
     if (!std::isfinite(d_r))
@@ -559,14 +559,16 @@ protected:
     if (r_lim_ < 1.0 - EPSILON)
     {
       out.linear.x *= r_lim_;
+      out.linear.y *= r_lim_;
       out.angular.z *= r_lim_;
       if (std::abs(in.linear.x - out.linear.x) > EPSILON ||
+          std::abs(in.linear.y - out.linear.y) > EPSILON ||
           std::abs(in.angular.z - out.angular.z) > EPSILON)
       {
         ROS_WARN_THROTTLE(
-            1.0, "safety_limiter: (%0.2f, %0.2f)->(%0.2f, %0.2f)",
-            in.linear.x, in.angular.z,
-            out.linear.x, out.angular.z);
+            1.0, "safety_limiter: (%0.2f, %0.2f, %0.2f)->(%0.2f, %0.2f, %0.2f)",
+            in.linear.x, in.linear.y, in.angular.z,
+            out.linear.x, out.linear.y, out.angular.z);
       }
     }
     return out;
@@ -576,9 +578,12 @@ protected:
   limitMaxVelocities(const geometry_msgs::Twist& in)
   {
     auto out = in;
-    out.linear.x = (out.linear.x > 0) ?
-                       std::min(out.linear.x, max_values_[0]) :
-                       std::max(out.linear.x, -max_values_[0]);
+    const double vel_ratio = max_values_[0] / std::hypot(out.linear.x, out.linear.y);
+    if (vel_ratio < 1.0)
+    {
+      out.linear.x *= vel_ratio;
+      out.linear.y *= vel_ratio;
+    }
 
     out.angular.z = (out.angular.z > 0) ?
                         std::min(out.angular.z, max_values_[1]) :

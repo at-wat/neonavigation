@@ -166,10 +166,12 @@ public:
   }
   inline void publishTwist(
       const float lin,
-      const float ang)
+      const float ang,
+      const float lin_y = 0.0)
   {
     geometry_msgs::Twist cmd_vel_out;
     cmd_vel_out.linear.x = lin;
+    cmd_vel_out.linear.y = lin_y;
     cmd_vel_out.angular.z = ang;
     pub_cmd_vel_.publish(cmd_vel_out);
   }

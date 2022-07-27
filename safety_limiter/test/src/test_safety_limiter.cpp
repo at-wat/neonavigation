@@ -609,6 +609,81 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
   }
 }
 
+TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
+{
+  ros::Rate wait(20.0);
+
+  // Skip initial state
+  for (int i = 0; i < 10 && ros::ok(); ++i)
+  {
+    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
+    publishWatchdogReset();
+
+    wait.sleep();
+    ros::spinOnce();
+  }
+
+  const double vel = 1.5;
+  for (double angle = -M_PI; angle < M_PI; angle += M_PI / 16)
+  {
+    double obstacle_x = 0.5 * std::cos(angle);
+    double obstacle_y = 0.5 * std::sin(angle);
+
+    if ((angle < -M_PI * 0.75) || (M_PI * 0.75 < angle))
+    {
+      // Moving backward
+      obstacle_x += -2.0;
+    }
+    else if (angle < -M_PI * 0.25)
+    {
+      // Moving right
+      obstacle_x += -1.0;
+      obstacle_y += -0.1;
+    }
+    else if ((M_PI * 0.25 < angle) && (angle < M_PI * 0.75))
+    {
+      // Moving left
+      obstacle_x += -1.0;
+      obstacle_y += 0.1;
+    }
+    // Otherwise moving foward
+
+    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
+    bool received = false;
+    bool en = false;
+
+    for (int i = 0; i < 10 && ros::ok(); ++i)
+    {
+      if (i > 5)
+        en = true;
+      publishSinglePointPointcloud2(obstacle_x, obstacle_y, 0, "base_link", ros::Time::now());
+      publishWatchdogReset();
+      publishTwist(vel * std::cos(angle), 0, vel * std::sin(angle));
+      broadcastTF("odom", "base_link", 0.0, 0.0);
+
+      wait.sleep();
+      ros::spinOnce();
+      if (en && cmd_vel_)
+      {
+        received = true;
+        const double current_speed = std::hypot(cmd_vel_->linear.x, cmd_vel_->linear.y);
+        ASSERT_NEAR(current_speed, 1.0, 1e-1);
+        ASSERT_FLOAT_EQ(std::atan2(cmd_vel_->linear.y, cmd_vel_->linear.x), angle);
+      }
+    }
+    ASSERT_TRUE(hasDiag());
+    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+        << "message: " << diag_->status[0].message;
+
+    ASSERT_TRUE(hasStatus());
+    EXPECT_TRUE(status_->is_cloud_available);
+    EXPECT_FALSE(status_->has_watchdog_timed_out);
+    EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+
+    ASSERT_TRUE(received);
+  }
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
