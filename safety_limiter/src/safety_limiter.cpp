@@ -578,13 +578,21 @@ protected:
   limitMaxVelocities(const geometry_msgs::Twist& in)
   {
     auto out = in;
-    const double vel_ratio = max_values_[0] / std::hypot(out.linear.x, out.linear.y);
-    if (vel_ratio < 1.0)
+    if (max_values_[0] <= 0.0)
     {
-      out.linear.x *= vel_ratio;
-      out.linear.y *= vel_ratio;
+      out.linear.x = 0;
+      out.linear.y = 0;
     }
-
+    else
+    {
+      const double out_speed = std::hypot(out.linear.x, out.linear.y);
+      if (out_speed > max_values_[0])
+      {
+        const double ratio = max_values_[0] / out_speed;
+        out.linear.x *= ratio;
+        out.linear.y *= ratio;
+      }
+    }
     out.angular.z = (out.angular.z > 0) ?
                         std::min(out.angular.z, max_values_[1]) :
                         std::max(out.angular.z, -max_values_[1]);
