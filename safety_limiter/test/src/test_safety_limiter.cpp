@@ -609,6 +609,88 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
   }
 }
 
+TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
+{
+  ros::Rate wait(20.0);
+  const double vel = 1.5;
+  const double threshold_angle = std::atan2(1.0, 0.1);
+  for (double angle = -M_PI; angle < M_PI; angle += M_PI / 8)
+  {
+    for (int i = 0; i < 10 && ros::ok(); ++i)
+    {
+      publishSinglePointPointcloud2(2.0, 0, 0, "base_link", ros::Time::now());
+      publishWatchdogReset();
+      publishTwist(0, 0);
+      wait.sleep();
+      ros::spinOnce();
+    }
+
+    double obstacle_x;
+    double obstacle_y;
+    if (std::abs(angle) < threshold_angle)
+    {
+      // Moving forward
+      obstacle_x = 0.5 * std::cos(angle);
+      obstacle_y = 0.5 * std::sin(angle);
+    }
+    else if ((M_PI - threshold_angle) < std::abs(angle))
+    {
+      // Moving backward
+      obstacle_x = 0.5 * std::cos(angle) - 2.0;
+      obstacle_y = 0.5 * std::sin(angle);
+    }
+    else if (angle > 0)
+    {
+      // Moving left
+      obstacle_x = 0.5 * std::cos(angle) - 1.0;
+      obstacle_y = 0.5 * std::sin(angle) + 0.1;
+    }
+    else
+    {
+      // Moving right
+      obstacle_x = 0.5 * std::cos(angle) - 1.0;
+      obstacle_y = 0.5 * std::sin(angle) - 0.1;
+    }
+
+    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
+    bool received = false;
+    bool en = false;
+    for (int i = 0; i < 10 && ros::ok(); ++i)
+    {
+      if (i > 5)
+        en = true;
+      publishSinglePointPointcloud2(obstacle_x, obstacle_y, 0, "base_link", ros::Time::now());
+      publishWatchdogReset();
+      publishTwist(vel * std::cos(angle), 0, vel * std::sin(angle));
+      broadcastTF("odom", "base_link", 0.0, 0.0);
+
+      wait.sleep();
+      ros::spinOnce();
+      if (en && cmd_vel_)
+      {
+        received = true;
+        const double current_speed = std::hypot(cmd_vel_->linear.x, cmd_vel_->linear.y);
+        ASSERT_NEAR(current_speed, 1.0, 1e-1)
+            << " Angle: " << angle << " i: " << i
+            << " vel: (" << cmd_vel_->linear.x << "," << cmd_vel_->linear.y << ")";
+        ASSERT_FLOAT_EQ(std::atan2(cmd_vel_->linear.y, cmd_vel_->linear.x), angle)
+            << " Angle: " << angle << " i: " << i
+            << " vel: (" << cmd_vel_->linear.x << "," << cmd_vel_->linear.y << ")";
+      }
+    }
+    ASSERT_TRUE(hasDiag());
+    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+        << "message: " << diag_->status[0].message;
+
+    ASSERT_TRUE(hasStatus());
+    EXPECT_TRUE(status_->is_cloud_available);
+    EXPECT_FALSE(status_->has_watchdog_timed_out);
+    EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+
+    ASSERT_TRUE(received);
+  }
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
