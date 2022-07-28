@@ -625,34 +625,36 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
       ros::spinOnce();
     }
 
-    double obstacle_x = 0.5 * std::cos(angle);
-    double obstacle_y = 0.5 * std::sin(angle);
-    if ((M_PI - threshold_angle) < std::abs(angle))
+    double obstacle_x;
+    double obstacle_y;
+    if (std::abs(angle) < threshold_angle)
+    {
+      // Moving forward
+      obstacle_x = 0.5 * std::cos(angle);
+      obstacle_y = 0.5 * std::sin(angle);
+    }
+    else if ((M_PI - threshold_angle) < std::abs(angle))
     {
       // Moving backward
-      obstacle_x += -2.0;
+      obstacle_x = 0.5 * std::cos(angle) - 2.0;
+      obstacle_y = 0.5 * std::sin(angle);
     }
-    else if (threshold_angle < std::abs(angle))
+    else if (angle > 0)
     {
-      if (angle > 0)
-      {
-        // Moving left
-        obstacle_x += -1.0;
-        obstacle_y += 0.1;
-      }
-      else
-      {
-        // Moving right
-        obstacle_x += -1.0;
-        obstacle_y += -0.1;
-      }
+      // Moving left
+      obstacle_x = 0.5 * std::cos(angle) - 1.0;
+      obstacle_y = 0.5 * std::sin(angle) + 0.1;
     }
-    // Otherwise moving forward.
+    else
+    {
+      // Moving right
+      obstacle_x = 0.5 * std::cos(angle) - 1.0;
+      obstacle_y = 0.5 * std::sin(angle) - 0.1;
+    }
 
-    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
+    // 1.5 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
     bool received = false;
     bool en = false;
-
     for (int i = 0; i < 10 && ros::ok(); ++i)
     {
       if (i > 5)
