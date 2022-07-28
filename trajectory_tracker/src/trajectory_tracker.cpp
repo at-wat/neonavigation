@@ -90,14 +90,16 @@ private:
   double look_forward_;
   double curv_forward_;
   double k_[3];
+  double k_y_[3];
   double gain_at_vel_;
   double d_lim_;
   double d_stop_;
-  double vel_[2];
-  double acc_[2];
-  double acc_toc_[2];
+  double vel_[3];
+  double acc_[3];
+  double acc_toc_[3];
   trajectory_tracker::VelAccLimitter v_lim_;
   trajectory_tracker::VelAccLimitter w_lim_;
+  trajectory_tracker::VelAccLimitter vy_lim_;
   double rotate_ang_;
   double goal_tolerance_dist_;
   double goal_tolerance_ang_;
@@ -184,9 +186,9 @@ private:
   void cbOdometry(const nav_msgs::Odometry::ConstPtr&);
   void cbTimer(const ros::TimerEvent&);
   void cbOdomTimeout(const ros::TimerEvent&);
-  void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
+  void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const bool, const double);
   TrackingResult getTrackingResult(
-      const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double) const;
+      const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const bool) const;
   void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
@@ -267,6 +269,12 @@ void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint3
   k_avel_rotation_ = config.k_avel_rotation;
   goal_tolerance_lin_vel_ = config.goal_tolerance_lin_vel;
   goal_tolerance_ang_vel_ = config.goal_tolerance_ang_vel;
+  k_y_[0] = config.k_vy_dist;
+  k_y_[1] = config.k_vy_ang;
+  k_y_[2] = config.k_vy_acc;
+  vel_[2] = config.max_y_vel;
+  acc_[2] = config.max_y_acc;
+  acc_toc_[2] = acc_[2] * config.y_acc_toc_factor;
 }
 
 TrackerNode::~TrackerNode()
@@ -375,12 +383,11 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
     {
       const double predict_dt = std::max(0.0, std::min(max_dt_, (ros::Time::now() - odom->header.stamp).toSec()));
       tf2::Transform trans;
-      const tf2::Quaternion rotation(tf2::Vector3(0, 0, 1), odom->twist.twist.angular.z * predict_dt);
-      const tf2::Vector3 translation(odom->twist.twist.linear.x * predict_dt, 0, 0);
-
       prediction_offset[0] = odom->twist.twist.linear.x * predict_dt;
+      prediction_offset[1] = odom->twist.twist.linear.y * predict_dt;
       prediction_offset[2] = odom->twist.twist.angular.z * predict_dt;
-
+      const tf2::Quaternion rotation(tf2::Vector3(0, 0, 1), prediction_offset[2]);
+      const tf2::Vector3 translation(prediction_offset[0], prediction_offset[1], 0);
       tf2::fromMsg(odom->pose.pose, trans);
       trans.setOrigin(trans.getOrigin() + tf2::Transform(trans.getRotation()) * translation);
       trans.setRotation(trans.getRotation() * rotation);
@@ -392,8 +399,12 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
     const tf2::Stamped<tf2::Transform> robot_to_odom(
         odom_to_robot.inverse(),
         odom->header.stamp, odom->header.frame_id);
-
-    control(robot_to_odom, prediction_offset, odom->twist.twist.linear.x, odom->twist.twist.angular.z, dt);
+    const double current_lin_vel = std::hypot(odom->twist.twist.linear.x, odom->twist.twist.linear.y);
+    const double current_ang_vel = std::abs(odom->twist.twist.angular.z);
+    const bool is_robot_stopping =
+        ((goal_tolerance_lin_vel_ == 0.0) || (current_lin_vel < goal_tolerance_lin_vel_)) &&
+        ((goal_tolerance_ang_vel_ == 0.0) || (current_ang_vel < goal_tolerance_ang_vel_));
+    control(robot_to_odom, prediction_offset, is_robot_stopping, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
 }
@@ -405,7 +416,7 @@ void TrackerNode::cbTimer(const ros::TimerEvent& event)
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
         tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
-    control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / hz_);
+    control(transform, Eigen::Vector3d(0, 0, 0), true, 1.0 / hz_);
   }
   catch (tf2::TransformException& e)
   {
@@ -426,6 +437,7 @@ void TrackerNode::cbOdomTimeout(const ros::TimerEvent& event)
   ROS_WARN_STREAM("Odometry timeout. Last odometry stamp: " << prev_odom_stamp_);
   v_lim_.clear();
   w_lim_.clear();
+  vy_lim_.clear();
   geometry_msgs::Twist cmd_vel;
   cmd_vel.linear.x = 0.0;
   cmd_vel.angular.z = 0.0;
@@ -453,8 +465,7 @@ void TrackerNode::spin()
 void TrackerNode::control(
     const tf2::Stamped<tf2::Transform>& robot_to_odom,
     const Eigen::Vector3d& prediction_offset,
-    const double odom_linear_vel,
-    const double odom_angular_vel,
+    const bool is_robot_stopping,
     const double dt)
 {
   trajectory_tracker_msgs::TrajectoryTrackerStatus status;
@@ -464,12 +475,12 @@ void TrackerNode::control(
   {
     // Call getTrackingResult to update path_step_done_.
     const TrackingResult initial_tracking_result =
-        getTrackingResult(robot_to_odom, prediction_offset, odom_linear_vel, odom_angular_vel);
+        getTrackingResult(robot_to_odom, prediction_offset, is_robot_stopping);
     path_step_done_ = initial_tracking_result.path_step_done;
     is_path_updated_ = false;
   }
   const TrackingResult tracking_result =
-      getTrackingResult(robot_to_odom, prediction_offset, odom_linear_vel, odom_angular_vel);
+      getTrackingResult(robot_to_odom, prediction_offset, is_robot_stopping);
   switch (tracking_result.status)
   {
     case trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH:
@@ -477,8 +488,10 @@ void TrackerNode::control(
     {
       v_lim_.clear();
       w_lim_.clear();
+      vy_lim_.clear();
       geometry_msgs::Twist cmd_vel;
       cmd_vel.linear.x = 0;
+      cmd_vel.linear.y = 0;
       cmd_vel.angular.z = 0;
       pub_vel_.publish(cmd_vel);
       break;
@@ -488,6 +501,7 @@ void TrackerNode::control(
       if (tracking_result.turning_in_place)
       {
         v_lim_.set(0.0, tracking_result.target_linear_vel, acc_[0], dt);
+        vy_lim_.set(0.0, vel_[2], acc_[2], dt);
 
         if (use_time_optimal_control_)
         {
@@ -528,10 +542,19 @@ void TrackerNode::control(
         const double wvel_diff = w_lim_.get() - wref;
         w_lim_.increment(dt * (-dist_diff * k_[0] - angle_diff * k_ang - wvel_diff * k_[2]), vel_[1], acc_[1], dt);
 
+        const double dist_diff_y = tracking_result.signed_local_distance < 0 ? dist_diff : -dist_diff;
+        const double angle_diff_y = tracking_result.signed_local_distance < 0 ? angle_diff : -angle_diff;
+        const double kp1 = dist_diff_y * k_y_[0];
+        const double kp2 = angle_diff_y * k_y_[1];
+        const double kp3 = vy_lim_.get() * k_y_[2];
+        vy_lim_.increment(dt * (-kp1 - kp2 - kp3), vel_[2], acc_[2], dt);
+
         ROS_DEBUG(
             "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
-            ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f",
-            dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang);
+            ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f"
+            ", y vel: %0.3f, k_vy_dist: %0.3f, k_vy_ang: %0.3f, k_vy_ang: %0.3f",
+            dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang,
+            vy_lim_.get(), kp1, kp2, kp3);
       }
       if (std::abs(tracking_result.distance_remains) < stop_tolerance_dist_ &&
           std::abs(tracking_result.angle_remains) < stop_tolerance_ang_ &&
@@ -540,9 +563,11 @@ void TrackerNode::control(
       {
         v_lim_.clear();
         w_lim_.clear();
+        vy_lim_.clear();
       }
       geometry_msgs::Twist cmd_vel;
       cmd_vel.linear.x = v_lim_.get();
+      cmd_vel.linear.y = vy_lim_.get();
       cmd_vel.angular.z = w_lim_.get();
       pub_vel_.publish(cmd_vel);
       path_step_done_ = tracking_result.path_step_done;
@@ -557,7 +582,7 @@ void TrackerNode::control(
 
 TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     const tf2::Stamped<tf2::Transform>& robot_to_odom, const Eigen::Vector3d& prediction_offset,
-    const double odom_linear_vel, const double odom_angular_vel) const
+    const bool is_robot_stopping) const
 {
   if (path_header_.frame_id.size() == 0 || path_.size() == 0)
   {
@@ -734,9 +759,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       std::abs(result.angle_remains) < goal_tolerance_ang_ &&
       std::abs(result.distance_remains_raw) < goal_tolerance_dist_ &&
       std::abs(result.angle_remains_raw) < goal_tolerance_ang_ &&
-      (goal_tolerance_lin_vel_ == 0.0 || std::abs(odom_linear_vel) < goal_tolerance_lin_vel_) &&
-      (goal_tolerance_ang_vel_ == 0.0 || std::abs(odom_angular_vel) < goal_tolerance_ang_vel_) &&
-      it_local_goal == lpath.end())
+      is_robot_stopping && it_local_goal == lpath.end())
   {
     result.status = trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL;
   }
