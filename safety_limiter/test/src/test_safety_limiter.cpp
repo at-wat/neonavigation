@@ -612,41 +612,42 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
 TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
 {
   ros::Rate wait(20.0);
-
-  // Skip initial state
-  for (int i = 0; i < 10 && ros::ok(); ++i)
-  {
-    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
-    publishWatchdogReset();
-
-    wait.sleep();
-    ros::spinOnce();
-  }
-
   const double vel = 1.5;
-  for (double angle = -M_PI; angle < M_PI; angle += M_PI / 16)
+  const double threshold_angle = std::atan2(1.0, 0.1);
+  for (double angle = -M_PI; angle < M_PI; angle += M_PI / 8)
   {
+    for (int i = 0; i < 10 && ros::ok(); ++i)
+    {
+      publishSinglePointPointcloud2(2.0, 0, 0, "base_link", ros::Time::now());
+      publishWatchdogReset();
+      publishTwist(0, 0);
+      wait.sleep();
+      ros::spinOnce();
+    }
+
     double obstacle_x = 0.5 * std::cos(angle);
     double obstacle_y = 0.5 * std::sin(angle);
-
-    if ((angle < -M_PI * 0.75) || (M_PI * 0.75 < angle))
+    if ((M_PI - threshold_angle) < std::abs(angle))
     {
       // Moving backward
       obstacle_x += -2.0;
     }
-    else if (angle < -M_PI * 0.25)
+    else if (threshold_angle < std::abs(angle))
     {
-      // Moving right
-      obstacle_x += -1.0;
-      obstacle_y += -0.1;
+      if (angle > 0)
+      {
+        // Moving left
+        obstacle_x += -1.0;
+        obstacle_y += 0.1;
+      }
+      else
+      {
+        // Moving right
+        obstacle_x += -1.0;
+        obstacle_y += -0.1;
+      }
     }
-    else if ((M_PI * 0.25 < angle) && (angle < M_PI * 0.75))
-    {
-      // Moving left
-      obstacle_x += -1.0;
-      obstacle_y += 0.1;
-    }
-    // Otherwise moving foward
+    // Otherwise moving forward.
 
     // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
     bool received = false;
@@ -667,8 +668,12 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
       {
         received = true;
         const double current_speed = std::hypot(cmd_vel_->linear.x, cmd_vel_->linear.y);
-        ASSERT_NEAR(current_speed, 1.0, 1e-1);
-        ASSERT_FLOAT_EQ(std::atan2(cmd_vel_->linear.y, cmd_vel_->linear.x), angle);
+        ASSERT_NEAR(current_speed, 1.0, 1e-1)
+            << " Angle: " << angle << " i: " << i
+            << " vel: (" << cmd_vel_->linear.x << "," << cmd_vel_->linear.y << ")";
+        ASSERT_FLOAT_EQ(std::atan2(cmd_vel_->linear.y, cmd_vel_->linear.x), angle)
+            << " Angle: " << angle << " i: " << i
+            << " vel: (" << cmd_vel_->linear.x << "," << cmd_vel_->linear.y << ")";
       }
     }
     ASSERT_TRUE(hasDiag());
