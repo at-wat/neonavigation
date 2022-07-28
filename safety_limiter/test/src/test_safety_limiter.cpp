@@ -652,7 +652,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
       obstacle_y = 0.5 * std::sin(angle) - 0.1;
     }
 
-    // 1.5 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
+    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
     bool received = false;
     bool en = false;
     for (int i = 0; i < 10 && ros::ok(); ++i)
