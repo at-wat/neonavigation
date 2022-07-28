@@ -552,7 +552,7 @@ void TrackerNode::control(
         ROS_DEBUG(
             "trajectory_tracker: distance residual %0.3f, angular residual %0.3f, ang vel residual %0.3f"
             ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f"
-            ", y vel: %0.3f, k_vy_dist: %0.3f, k_vy_ang: %0.3f, k_vy_ang: %0.3f",
+            ", y vel: %0.3f, k_vy_dist: %0.3f, k_vy_ang: %0.3f, k_vy_acc: %0.3f",
             dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang,
             vy_lim_.get(), kp1, kp2, kp3);
       }
