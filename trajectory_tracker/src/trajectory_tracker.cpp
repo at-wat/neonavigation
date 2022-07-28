@@ -271,7 +271,7 @@ void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint3
   goal_tolerance_ang_vel_ = config.goal_tolerance_ang_vel;
   k_y_[0] = config.k_vy_dist;
   k_y_[1] = config.k_vy_ang;
-  k_y_[2] = config.k_vy_acc;
+  k_y_[2] = config.k_vy_vel;
   vel_[2] = config.max_y_vel;
   acc_[2] = config.max_y_acc;
   acc_toc_[2] = acc_[2] * config.y_acc_toc_factor;
