@@ -585,12 +585,12 @@ protected:
     }
     else
     {
-      const double out_speed = std::hypot(out.linear.x, out.linear.y);
-      if (out_speed > max_values_[0])
+      const double out_linear_vel = std::hypot(out.linear.x, out.linear.y);
+      if (out_linear_vel > max_values_[0])
       {
-        const double ratio = max_values_[0] / out_speed;
-        out.linear.x *= ratio;
-        out.linear.y *= ratio;
+        const double vel_ratio = max_values_[0] / out_linear_vel;
+        out.linear.x *= vel_ratio;
+        out.linear.y *= vel_ratio;
       }
     }
     out.angular.z = (out.angular.z > 0) ?
