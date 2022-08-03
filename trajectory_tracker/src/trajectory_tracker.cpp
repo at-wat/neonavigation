@@ -332,7 +332,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
     {
       if (in_place_turning)
       {
-        if (path_.empty() || (std::abs(path_.back().yaw_ - in_place_turn_end.yaw_) < 1.e-5))
+        if (path_.empty() || (std::abs(path_.back().yaw_ - in_place_turn_end.yaw_) > 1.e-5))
         {
           path_.push_back(in_place_turn_end);
         }
@@ -349,7 +349,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   }
   if (in_place_turning)
   {
-    if (path_.empty() || (std::abs(path_.back().yaw_ - in_place_turn_end.yaw_) < 1.e-5))
+    if (path_.empty() || (std::abs(path_.back().yaw_ - in_place_turn_end.yaw_) > 1.e-5))
     {
       path_.push_back(in_place_turn_end);
     }
