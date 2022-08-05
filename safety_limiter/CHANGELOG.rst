@@ -2,6 +2,11 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.7 (2022-08-05)
+-------------------
+* safety_limiter: enable omni-directional safety brake (`#646 <https://github.com/at-wat/neonavigation/issues/646>`_)
+* Contributors: Naotaka Hatao
+
 0.11.6 (2022-07-20)
 -------------------
 

@@ -2,6 +2,11 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.7 (2022-08-05)
+-------------------
+* joystick_interrupt: enable omni-directional movement (`#645 <https://github.com/at-wat/neonavigation/issues/645>`_)
+* Contributors: Naotaka Hatao
+
 0.11.6 (2022-07-20)
 -------------------
 
