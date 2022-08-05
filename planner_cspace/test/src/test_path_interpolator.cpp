@@ -74,11 +74,12 @@ TEST(PathInterpolator, DuplicatedPose)
 {
   PathInterpolator pi;
   pi.reset(4.0, 5);
-  const std::list<CyclicVecInt<3, 2>> in = {
-      CyclicVecInt<3, 2>(0, 0, 0),
-      CyclicVecInt<3, 2>(1, 0, 0),
-      CyclicVecInt<3, 2>(2, 0, 0),
-  };
+  const std::list<CyclicVecInt<3, 2>> in =
+      {
+          CyclicVecInt<3, 2>(0, 0, 0),
+          CyclicVecInt<3, 2>(1, 0, 0),
+          CyclicVecInt<3, 2>(2, 0, 0),
+      };
   const std::list<CyclicVecFloat<3, 2>> out = pi.interpolate(in, 0.4999999, 0);
 
   costmap_cspace_msgs::MapMetaData3D map_info;
