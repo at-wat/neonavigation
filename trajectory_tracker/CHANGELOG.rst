@@ -2,6 +2,11 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* trajectory_tracker: fix prediction_offset of trajectory_tracker (`#644 <https://github.com/at-wat/neonavigation/issues/644>`_)
+* Contributors: Naotaka Hatao
+
 0.11.6 (2022-07-20)
 -------------------
 

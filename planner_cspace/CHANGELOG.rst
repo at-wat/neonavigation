@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_cspace: fix pose duplication on path interpolation (`#648 <https://github.com/at-wat/neonavigation/issues/648>`_)
+* Contributors: Atsushi Watanabe
+
 0.11.6 (2022-07-20)
 -------------------
 * planner_cspace: add more test case to Planner3DMapSize (`#640 <https://github.com/at-wat/neonavigation/issues/640>`_)
