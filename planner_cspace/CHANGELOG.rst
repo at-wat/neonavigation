@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.11.7 (2022-08-05)
+-------------------
 * planner_cspace: fix pose duplication on path interpolation (`#648 <https://github.com/at-wat/neonavigation/issues/648>`_)
 * Contributors: Atsushi Watanabe
 
