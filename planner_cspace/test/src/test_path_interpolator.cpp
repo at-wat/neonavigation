@@ -28,7 +28,6 @@
  */
 
 #include <list>
-#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -89,13 +88,14 @@ TEST(PathInterpolator, DuplicatedPose)
   map_info.origin.position.y = -200.5;
 
   CyclicVecFloat<3, 2> m_prev;
-  for (auto it = out.begin(); it != out.end(); ++it)
+  for (const auto& g : out)
   {
     CyclicVecFloat<3, 2> m;
+
     // Introduce quantization error
     grid_metric_converter::grid2Metric<float>(
         map_info,
-        (*it)[0], (*it)[1], (*it)[2],
+        g[0], g[1], g[2],
         m[0], m[1], m[2]);
 
     ASSERT_NE(m_prev, m);
