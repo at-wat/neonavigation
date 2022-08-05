@@ -48,6 +48,13 @@ catkin_add_gtest(test_motion_primitive_builder
 )
 target_link_libraries(test_motion_primitive_builder ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+catkin_add_gtest(test_path_interpolator
+  src/test_path_interpolator.cpp
+  ../src/path_interpolator.cpp
+  ../src/rotation_cache.cpp
+)
+target_link_libraries(test_path_interpolator ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_rostest_gtest(test_debug_outputs
   test/debug_outputs_rostest.test
   src/test_debug_outputs.cpp
