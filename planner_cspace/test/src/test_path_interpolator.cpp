@@ -42,6 +42,34 @@ namespace planner_cspace
 {
 namespace planner_3d
 {
+TEST(PathInterpolator, SimpleStraight)
+{
+  PathInterpolator pi;
+  pi.reset(4.0, 5);
+  const std::list<CyclicVecInt<3, 2>> in =
+      {
+          CyclicVecInt<3, 2>(0, 0, 0),
+          CyclicVecInt<3, 2>(1, 0, 0),
+          CyclicVecInt<3, 2>(2, 0, 0),
+      };
+  const std::list<CyclicVecFloat<3, 2>> out = pi.interpolate(in, 0.25, 0);
+
+  const std::list<CyclicVecFloat<3, 2>> expected =
+      {
+          CyclicVecFloat<3, 2>(0.00f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(0.25f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(0.50f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(0.75f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(1.00f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(1.25f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(1.50f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(1.75f, 0.f, 0.f),
+          CyclicVecFloat<3, 2>(2.00f, 0.f, 0.f),
+      };
+
+  ASSERT_EQ(expected, out);
+}
+
 TEST(PathInterpolator, DuplicatedPose)
 {
   PathInterpolator pi;
