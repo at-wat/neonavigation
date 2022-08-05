@@ -70,7 +70,7 @@ std::list<CyclicVecFloat<3, 2>> PathInterpolator::interpolate(
       }
       else if (d[2] == 0 || ds.sqlen() > local_range * local_range)
       {
-        for (float i = 0; i < 1.0; i += inter)
+        for (float i = 0; i < 1.0 - inter / 2; i += inter)
         {
           const float x2 = p_prev[0] * (1 - i) + p[0] * i;
           const float y2 = p_prev[1] * (1 - i) + p[1] * i;
@@ -92,7 +92,7 @@ std::list<CyclicVecFloat<3, 2>> PathInterpolator::interpolate(
         const float cx_prev = p_prev[0] + r1 * cosf(yawf_prev + M_PI / 2);
         const float cy_prev = p_prev[1] + r1 * sinf(yawf_prev + M_PI / 2);
 
-        for (float i = 0; i < 1.0; i += inter)
+        for (float i = 0; i < 1.0 - inter / 2; i += inter)
         {
           const float r = r1 * (1.0 - i) + r2 * i;
           const float cx2 = cx_prev * (1.0 - i) + cx * i;
