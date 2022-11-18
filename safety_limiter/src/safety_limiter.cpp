@@ -478,6 +478,8 @@ protected:
           pos.z = p.z;
           col_points.points.push_back(pos);
           colliding = true;
+          d_col -= linear_vel;
+          yaw_col -= twist_.angular.z;
           break;
         }
       }
