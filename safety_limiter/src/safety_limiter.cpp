@@ -489,8 +489,8 @@ protected:
         {
           // The robot is already in collision.
           // Allow movement under d_escape_ and yaw_escape_
-          d_escape_remain += d_escape_;
-          yaw_escape_remain += yaw_escape_;
+          d_escape_remain = d_escape_;
+          yaw_escape_remain = yaw_escape_;
           has_collision_at_now_ = true;
         }
         if (d_escape_remain <= 0 || yaw_escape_remain <= 0)
