@@ -478,13 +478,13 @@ protected:
           pos.z = p.z;
           col_points.points.push_back(pos);
           colliding = true;
-          d_col -= linear_vel * dt_;
-          yaw_col -= twist_.angular.z * dt_;
           break;
         }
       }
       if (colliding)
       {
+        d_col -= linear_vel * dt_;
+        yaw_col -= twist_.angular.z * dt_;
         if (t == 0)
         {
           // The robot is already in collision.
