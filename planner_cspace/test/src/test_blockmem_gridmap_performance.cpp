@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <array>
 #include <cstddef>
 #include <memory>
 
