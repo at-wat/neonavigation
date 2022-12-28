@@ -483,6 +483,8 @@ protected:
       }
       if (colliding)
       {
+        d_col -= linear_vel * dt_;
+        yaw_col -= twist_.angular.z * dt_;
         if (t == 0)
         {
           // The robot is already in collision.

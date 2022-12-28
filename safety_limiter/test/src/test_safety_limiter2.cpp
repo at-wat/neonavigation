@@ -43,6 +43,8 @@
 TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 {
   const float dt = 0.02;
+  const double ax = 2.0;  // [m/ss]
+  double v = 0.0;   // [m/s]
   ros::Rate wait(1.0 / dt);
 
   const float velocities[] = {-0.8, -0.4, 0.4, 0.8};
@@ -51,12 +53,20 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
     float x = 0;
     bool stop = false;
     const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
-        [dt, &x, &stop](const geometry_msgs::Twist::ConstPtr& msg) -> void
+        [dt, ax, &x, &v, &stop](const geometry_msgs::Twist::ConstPtr& msg) -> void
     {
-      if (std::abs(msg->linear.x) < 1e-4 && x > 0.5)
+      if (std::abs(v) < 1e-4 && std::abs(x) > 0.5)
         stop = true;
 
-      x += dt * msg->linear.x;
+      if (msg->linear.x >= v)
+      {
+        v = std::min(v + ax * dt, msg->linear.x);
+      }
+      else
+      {
+        v = std::max(v - ax * dt, msg->linear.x);
+      }
+      x += dt * v;
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
@@ -76,13 +86,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
     // margin is set to 0.2
     if (vel > 0)
     {
-      EXPECT_GT(0.81, x);
-      EXPECT_LT(0.75, x);
+      EXPECT_GT(0.95, x);  // Collision point - margin
+      EXPECT_LT(0.90, x);  // Collision point - margin * 2
     }
     else
     {
-      EXPECT_LT(-0.81, x);
-      EXPECT_GT(-0.75, x);
+      EXPECT_LT(-0.95, x);  // Collision point + margin
+      EXPECT_GT(-0.90, x);  // Collision point + margin * 2
     }
     sub_cmd_vel.shutdown();
   }
