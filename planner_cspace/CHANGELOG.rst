@@ -2,8 +2,10 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.11.8 (2022-12-28)
--------------------
+Forthcoming
+-----------
+* planner_cspace: add missing array include (`#658 <https://github.com/at-wat/neonavigation/issues/658>`_)
+* Contributors: Atsushi Watanabe
 
 0.11.7 (2022-08-05)
 -------------------
