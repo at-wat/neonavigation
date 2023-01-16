@@ -2,6 +2,11 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.11.8 (2022-12-28)
+-------------------
+* safety_limiter: make sure to keep margin from obstacles (`#654 <https://github.com/at-wat/neonavigation/issues/654>`_)
+* Contributors: Kazuki Takahashi
+
 0.11.7 (2022-08-05)
 -------------------
 * safety_limiter: enable omni-directional safety brake (`#646 <https://github.com/at-wat/neonavigation/issues/646>`_)
