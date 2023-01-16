@@ -478,8 +478,6 @@ protected:
           pos.z = p.z;
           col_points.points.push_back(pos);
           colliding = true;
-          d_col -= linear_vel * dt_;
-          yaw_col -= twist_.angular.z * dt_;
           break;
         }
       }
@@ -491,8 +489,8 @@ protected:
         {
           // The robot is already in collision.
           // Allow movement under d_escape_ and yaw_escape_
-          d_escape_remain += d_escape_;
-          yaw_escape_remain += yaw_escape_;
+          d_escape_remain = d_escape_;
+          yaw_escape_remain = yaw_escape_;
           has_collision_at_now_ = true;
         }
         if (d_escape_remain <= 0 || yaw_escape_remain <= 0)
