@@ -130,6 +130,13 @@ add_rostest_gtest(test_planner_3d_map_size
 target_link_libraries(test_planner_3d_map_size ${catkin_LIBRARIES})
 add_dependencies(test_planner_3d_map_size planner_3d)
 
+add_rostest_gtest(test_tolerant_action
+  test/tolerant_action_rostest.test
+  src/test_tolerant_action.cpp
+)
+target_link_libraries(test_tolerant_action ${catkin_LIBRARIES})
+add_dependencies(test_tolerant_action planner_3d)
+
 
 if(NEONAVIGATION_EXTRA_TESTS)
 
