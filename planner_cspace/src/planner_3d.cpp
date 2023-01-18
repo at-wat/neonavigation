@@ -1531,7 +1531,7 @@ protected:
           {
             ROS_INFO("Robot reached near the goal.");
             act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(),
-                                        "Goal reached(Continuous movement mode).");
+                                        "Goal reached (Continuous movement mode).");
             goal_tolerant_ = nullptr;
           }
           else
