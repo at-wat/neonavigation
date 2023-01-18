@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_test_tolerant_action" />
+
+  <test test-name="test_tolerant_action" pkg="planner_cspace" type="test_tolerant_action" time-limit="90.0" />
+  <include file="$(find planner_cspace)/test/test/actionlib_common_rostest.test" />
+</launch>

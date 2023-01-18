@@ -1523,14 +1523,25 @@ protected:
           escaping_ = false;
           updateGoal();
           ROS_INFO("Escaped");
+          return true;
         }
         else
         {
-          status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
-          publishFinishPath();
-          ROS_INFO("Path plan finishing");
+          if (act_tolerant_->isActive() && goal_tolerant_->continuous_movement_mode)
+          {
+            ROS_INFO("Robot reached near the goal.");
+            act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(),
+                                        "Goal reached (Continuous movement mode).");
+            goal_tolerant_ = nullptr;
+          }
+          else
+          {
+            status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
+            publishFinishPath();
+            ROS_INFO("Path plan finishing");
+            return true;
+          }
         }
-        return true;
       }
     }
 
