@@ -1,4 +1,4 @@
 - git:
     local-name: neonavigation_msgs
     uri: https://github.com/at-wat/neonavigation_msgs.git
-    version: add-continueous-movement-mode
+    version: master
