@@ -80,7 +80,7 @@ protected:
     goal.target_pose.pose.orientation.y = 0.0;
     goal.target_pose.pose.orientation.z = 1.0;
     goal.target_pose.pose.orientation.w = 0.0;
-    goal.is_continuous_movement_mode = true;
+    goal.continuous_movement_mode = true;
     goal.goal_tolerance_ang = 0.1;
     goal.goal_tolerance_ang_finish = 0.05;
     goal.goal_tolerance_lin = 0.2;

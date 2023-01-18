@@ -1527,7 +1527,7 @@ protected:
         }
         else
         {
-          if (act_tolerant_->isActive() && goal_tolerant_->is_continuous_movement_mode)
+          if (act_tolerant_->isActive() && goal_tolerant_->continuous_movement_mode)
           {
             ROS_INFO("Robot reached near the goal.");
             act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(),
