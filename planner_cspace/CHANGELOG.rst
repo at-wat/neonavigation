@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.12.0 (2023-01-30)
+-------------------
 * planner_cspace: add continuous movement mode to MoveWithTolerance (`#652 <https://github.com/at-wat/neonavigation/issues/652>`_)
 * Contributors: Naotaka Hatao
 
