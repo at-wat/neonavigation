@@ -2,6 +2,9 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.12.0 (2023-01-30)
+-------------------
+
 0.11.8 (2022-12-28)
 -------------------
 * safety_limiter: make sure to keep margin from obstacles (`#654 <https://github.com/at-wat/neonavigation/issues/654>`_)
