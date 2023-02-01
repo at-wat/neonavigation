@@ -91,13 +91,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
     // margin is set to 0.2
     if (vel > 0)
     {
-      EXPECT_GT(0.95, x);  // Collision point - margin
-      EXPECT_LT(0.90, x);  // Collision point - margin * 2
+      EXPECT_GT(0.95, x)
+          << "vel: " << vel;  // Collision point - margin
+      EXPECT_LT(0.90, x)
+          << "vel: " << vel;  // Collision point - margin * 2
     }
     else
     {
-      EXPECT_LT(-0.95, x);  // Collision point + margin
-      EXPECT_GT(-0.90, x);  // Collision point + margin * 2
+      EXPECT_LT(-0.95, x)
+          << "vel: " << vel;  // Collision point + margin
+      EXPECT_GT(-0.90, x)
+          << "vel: " << vel;  // Collision point + margin * 2
     }
     sub_cmd_vel.shutdown();
   }
