@@ -67,23 +67,23 @@ public:
     }
 
     ros::ServiceClient srv_plan =
-        nh_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
+        node_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
             "/planner_3d/make_plan");
-    nav_msgs::GetPlanRequest req;
-    req.tolerance = 0.0;
-    req.start.header.frame_id = "map";
-    req.start.pose.position.x = 2.1;
-    req.start.pose.position.y = 0.45;
-    req.start.pose.orientation.z = 1;
-    req.goal.header.frame_id = "map";
-    req.goal.pose.position.x = 2.1;
-    req.goal.pose.position.y = 0.45;
-    req.goal.pose.orientatio.z = 1;
 
     const ros::Time deadline = ros::Time::now() + ros::Duration(10.0);
     while (ros::ok())
     {
+      nav_msgs::GetPlanRequest req;
       nav_msgs::GetPlanResponse res;
+      req.tolerance = 10.0;
+      req.start.header.frame_id = "map";
+      req.start.pose.position.x = 1.24;
+      req.start.pose.position.y = 0.65;
+      req.start.pose.orientation.w = 1;
+      req.goal.header.frame_id = "map";
+      req.goal.pose.position.x = 1.25;
+      req.goal.pose.position.y = 0.75;
+      req.goal.pose.orientation.w = 1;
       if (srv_plan.call(req, res))
       {
         // Planner is ready.
@@ -104,15 +104,6 @@ public:
 protected:
   using ActionClient = actionlib::SimpleActionClient<ACTION>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
-
-  void cbRosout(const rosgraph_msgs::Log::ConstPtr& msg)
-  {
-    std::cerr << msg->msg << std::endl;
-    if (msg->msg == "Map received")
-    {
-      map_ready_ = true;
-    }
-  }
 
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
