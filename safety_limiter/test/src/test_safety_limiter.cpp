@@ -513,7 +513,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
 
 TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
 {
-  const float dt = 0.01;
+  const float dt = 0.02;
   ros::Rate wait(1.0 / dt);
 
   const float velocities[] = {-0.8, -0.5, 0.5, 0.8};
@@ -522,7 +522,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
     float x = 0;
     bool stopped = false;
 
-    int count_after_stop = 3;
+    int count_after_stop = 10;
     for (float t = 0; t < 10.0 && ros::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
