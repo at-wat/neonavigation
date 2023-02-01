@@ -39,7 +39,9 @@
 
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
+#include <nav_msgs/GetPlan.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
+#include <tf2/utils.h>
 #include <tf2_ros/transform_listener.h>
 
 const char ACTION_TOPIC_MOVE_BASE[] = "/move_base";
@@ -51,14 +53,48 @@ class ActionTestBase : public ::testing::Test
 public:
   ActionTestBase()
     : tfl_(tfbuf_)
+    , map_ready_(false)
   {
     move_base_ = std::make_shared<ActionClient>(TOPIC);
-    status_sub_ = node_.subscribe(
+    sub_status_ = node_.subscribe(
         "/planner_3d/status", 10, &ActionTestBase::cbStatus, this);
+  }
+  void SetUp()
+  {
     if (!move_base_->waitForServer(ros::Duration(30.0)))
     {
-      ROS_ERROR("Failed to connect move_base action");
-      exit(EXIT_FAILURE);
+      FAIL() << "Failed to connect move_base action";
+    }
+
+    ros::ServiceClient srv_plan =
+        nh_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
+            "/planner_3d/make_plan");
+    nav_msgs::GetPlanRequest req;
+    req.tolerance = 0.0;
+    req.start.header.frame_id = "map";
+    req.start.pose.position.x = 2.1;
+    req.start.pose.position.y = 0.45;
+    req.start.pose.orientation.z = 1;
+    req.goal.header.frame_id = "map";
+    req.goal.pose.position.x = 2.1;
+    req.goal.pose.position.y = 0.45;
+    req.goal.pose.orientatio.z = 1;
+
+    const ros::Time deadline = ros::Time::now() + ros::Duration(10.0);
+    while (ros::ok())
+    {
+      nav_msgs::GetPlanResponse res;
+      if (srv_plan.call(req, res))
+      {
+        // Planner is ready.
+        break;
+      }
+      if (ros::Time::now() > deadline)
+      {
+        FAIL() << "planner_3d didn't receive map";
+      }
+      ros::Duration(1).sleep();
+      ros::spinOnce();
     }
   }
   ~ActionTestBase()
@@ -69,10 +105,20 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<ACTION>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
+  void cbRosout(const rosgraph_msgs::Log::ConstPtr& msg)
+  {
+    std::cerr << msg->msg << std::endl;
+    if (msg->msg == "Map received")
+    {
+      map_ready_ = true;
+    }
+  }
+
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
     planner_status_ = msg;
   }
+
   std::string statusString() const
   {
     if (!planner_status_)
@@ -84,11 +130,12 @@ protected:
   }
 
   ros::NodeHandle node_;
-  ros::Subscriber status_sub_;
+  ros::Subscriber sub_status_;
   ActionClientPtr move_base_;
   planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
+  bool map_ready_;
 };
 
 #endif  // PLANNER_CSPACE_ACTION_TEST_BASE_H
