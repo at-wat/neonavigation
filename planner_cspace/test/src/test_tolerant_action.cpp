@@ -41,33 +41,12 @@
 
 #include <ros/ros.h>
 
-class TolerantActionTest : public ::testing::Test
+#include <planner_cspace/action_test_base.h>
+
+class TolerantActionTest
+  : public ActionTestBase<planner_cspace_msgs::MoveWithToleranceAction, ACTION_TOPIC_TOLERANT_MOVE>
 {
-public:
-  TolerantActionTest()
-    : node_()
-    , tfl_(tfbuf_)
-
-  {
-    move_base_ = std::make_shared<ActionClient>("/tolerant_move");
-    status_sub_ = node_.subscribe(
-        "/planner_3d/status", 10, &TolerantActionTest::cbStatus, this);
-    if (!move_base_->waitForServer(ros::Duration(30.0)))
-    {
-      ROS_ERROR("Failed to connect move_base action");
-      exit(EXIT_FAILURE);
-    }
-  }
-
 protected:
-  using ActionClient = actionlib::SimpleActionClient<planner_cspace_msgs::MoveWithToleranceAction>;
-  using ActionClientPtr = std::shared_ptr<ActionClient>;
-
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
-  {
-    planner_status_ = msg;
-  }
-
   planner_cspace_msgs::MoveWithToleranceGoal createGoalInFree()
   {
     planner_cspace_msgs::MoveWithToleranceGoal goal;
@@ -86,15 +65,6 @@ protected:
     goal.goal_tolerance_lin = 0.2;
     return goal;
   }
-  std::string statusString() const
-  {
-    if (!planner_status_)
-    {
-      return "(no status)";
-    }
-    return "(status: " + std::to_string(planner_status_->status) +
-           ", error: " + std::to_string(planner_status_->error) + ")";
-  }
 
   double getDistBetweenRobotAndGoal(const planner_cspace_msgs::MoveWithToleranceGoal& goal)
   {
@@ -110,13 +80,6 @@ protected:
       return std::numeric_limits<double>::max();
     }
   }
-
-  ros::NodeHandle node_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
-  ros::Subscriber status_sub_;
-  ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
 };
 
 TEST_F(TolerantActionTest, GoalWithTolerance)
