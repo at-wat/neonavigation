@@ -42,7 +42,7 @@
 
 TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 {
-  const float dt = 0.02;
+  const float dt = 0.01;
   const double ax = 2.0;  // [m/ss]
   double v = 0.0;         // [m/s]
   ros::Rate wait(1.0 / dt);
