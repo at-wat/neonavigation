@@ -32,6 +32,6 @@
   <depend>costmap_cspace</depend>
   <depend>costmap_cspace_msgs</depend>
   <depend>neonavigation_common</depend>
-  <depend version_gte="0.7.0">planner_cspace_msgs</depend>
+  <depend version_gte="0.12.0">planner_cspace_msgs</depend>
   <depend>trajectory_tracker_msgs</depend>
 </package>
