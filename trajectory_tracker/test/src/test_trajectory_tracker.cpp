@@ -47,7 +47,10 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
+        << "Timeout" << std::endl
+        << "Pos " << pos_ << std::endl
+        << "Yaw " << yaw_ << std::endl;
 
     publishTransform();
     rate.sleep();
@@ -100,7 +103,11 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
     const ros::Time start = ros::Time::now();
     while (ros::ok())
     {
-      ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0)) << info_message;
+      ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
+          << "Timeout" << std::endl
+          << "Pos " << pos_ << std::endl
+          << "Yaw " << yaw_ << std::endl
+          << info_message;
 
       publishTransform();
       rate.sleep();
@@ -204,7 +211,10 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0));
+    ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
+        << "Timeout" << std::endl
+        << "Pos " << pos_ << std::endl
+        << "Yaw " << yaw_ << std::endl;
 
     publishTransform();
     rate.sleep();
@@ -264,7 +274,10 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(20.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(20.0))
+        << "Timeout" << std::endl
+        << "Pos " << pos_ << std::endl
+        << "Yaw " << yaw_ << std::endl;
 
     publishTransform();
     rate.sleep();
@@ -331,7 +344,11 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         const ros::Time start = ros::Time::now();
         for (int i = 0; ros::ok(); ++i)
         {
-          ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0)) << condition_name.str();
+          ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
+              << condition_name.str()
+              << "Timeout" << std::endl
+              << "Pos " << pos_ << std::endl
+              << "Yaw " << yaw_ << std::endl;
 
           publishTransform();
           rate.sleep();
@@ -396,7 +413,10 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
+        << "Timeout" << std::endl
+        << "Pos " << pos_ << std::endl
+        << "Yaw " << yaw_ << std::endl;
 
     publishTransform();
     rate.sleep();
@@ -450,7 +470,10 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   const ros::Time start = ros::Time::now();
   for (int i = 0; ros::ok(); i++)
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(15.0));
+    ASSERT_LT(ros::Time::now() - start, ros::Duration(15.0))
+        << "Timeout" << std::endl
+        << "Pos " << pos_ << std::endl
+        << "Yaw " << yaw_ << std::endl;
 
     publishTransform();
     rate.sleep();
