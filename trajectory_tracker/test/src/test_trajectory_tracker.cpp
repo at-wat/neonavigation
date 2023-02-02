@@ -444,7 +444,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   int cnt_arrive_local_goal(0);
   ros::Rate rate(50);
   const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  for (int i = 0; ros::ok(); i++)
   {
     ASSERT_LT(ros::Time::now() - start, ros::Duration(15.0));
 
@@ -457,10 +457,18 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     if ((pos_local_goal - pos_).norm() < 0.1)
       cnt_arrive_local_goal++;
 
-    if (cnt_arrive_local_goal > 25)
-      publishPath(poses_second_half);
-    else
-      publishPath(poses);
+    if (i % 5)
+    {
+      // Republish path in 10Hz
+      if (cnt_arrive_local_goal > 25)
+      {
+        publishPath(poses_second_half);
+      }
+      else
+      {
+        publishPath(poses);
+      }
+    }
   }
   ASSERT_GT(cnt_arrive_local_goal, 25)
       << "failed to update path";
