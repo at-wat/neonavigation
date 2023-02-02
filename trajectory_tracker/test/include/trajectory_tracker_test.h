@@ -165,6 +165,7 @@ public:
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
+    ros::Duration(0.5).sleep();
   }
   void waitUntilStart(const std::function<void()> func = nullptr)
   {
