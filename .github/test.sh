@@ -37,7 +37,7 @@ for i in $(seq 20)
 do
   (
     set -o pipefail
-    catkin_make run_tests ${CM_OPTIONS} | grep -A20 -B20 FAILURE
+    catkin_make run_tests ${CM_OPTIONS} 2>&1 | grep -A20 -B20 FAILURE
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
 done
 
