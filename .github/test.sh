@@ -32,8 +32,14 @@ catkin_make ${CM_OPTIONS} || \
   (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)
 catkin_make tests ${CM_OPTIONS} || \
   (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
-catkin_make run_tests ${CM_OPTIONS} || \
-  (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
+
+for i in $(seq 20)
+do
+  (
+    set -o pipefail
+    catkin_make run_tests ${CM_OPTIONS} | grep -A20 -B20 FAILURE
+  ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
+done
 
 if [ catkin_test_results ]
 then
