@@ -152,7 +152,11 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     const ros::Time start = ros::Time::now();
     while (ros::ok())
     {
-      ASSERT_LT(ros::Time::now() - start, ros::Duration(5.0 + path_length / vel)) << info_message;
+      ASSERT_LT(ros::Time::now() - start, ros::Duration(5.0 + path_length / vel))
+          << "Timeout" << std::endl
+          << "Pos " << pos_ << std::endl
+          << "Yaw " << yaw_ << std::endl
+          << info_message;
 
       publishTransform();
       rate.sleep();
