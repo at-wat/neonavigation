@@ -37,33 +37,12 @@
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <ros/ros.h>
 
-class AbortTest : public ::testing::Test
+#include <planner_cspace/action_test_base.h>
+
+class AbortTest
+  : public ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>
 {
-public:
-  AbortTest()
-    : node_()
-  {
-    move_base_ = std::make_shared<ActionClient>("/move_base");
-    status_sub_ = node_.subscribe(
-        "/planner_3d/status", 10, &AbortTest::cbStatus, this);
-    if (!move_base_->waitForServer(ros::Duration(30.0)))
-    {
-      ROS_ERROR("Failed to connect move_base action");
-      exit(EXIT_FAILURE);
-    }
-  }
-  ~AbortTest()
-  {
-  }
-
 protected:
-  using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
-  using ActionClientPtr = std::shared_ptr<ActionClient>;
-
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
-  {
-    status_ = msg;
-  }
   move_base_msgs::MoveBaseGoal createGoalInRock()
   {
     move_base_msgs::MoveBaseGoal goal;
@@ -92,20 +71,6 @@ protected:
     goal.target_pose.pose.orientation.w = 0.0;
     return goal;
   }
-  std::string statusString() const
-  {
-    if (!status_)
-    {
-      return "(no status)";
-    }
-    return "(status: " + std::to_string(status_->status) +
-           ", error: " + std::to_string(status_->error) + ")";
-  }
-
-  ros::NodeHandle node_;
-  ros::Subscriber status_sub_;
-  ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr status_;
 };
 
 TEST_F(AbortTest, AbortByGoalInRock)
@@ -137,13 +102,13 @@ TEST_F(AbortTest, AbortByGoalInRock)
   }
   wait.sleep();
 
-  ASSERT_TRUE(status_);
+  ASSERT_TRUE(planner_status_);
 
   // Abort after exceeding max_retry_num
   ASSERT_EQ(actionlib::SimpleClientGoalState::ABORTED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND,
-            status_->error);
+            planner_status_->error);
 
   // Send another goal which is not in Rock
   move_base_->sendGoal(createGoalInFree());
@@ -169,7 +134,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   ASSERT_EQ(actionlib::SimpleClientGoalState::SUCCEEDED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
-            status_->error);
+            planner_status_->error);
 }
 
 int main(int argc, char** argv)

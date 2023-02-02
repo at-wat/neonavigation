@@ -1,3 +1,5 @@
+include_directories(include)
+
 catkin_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 

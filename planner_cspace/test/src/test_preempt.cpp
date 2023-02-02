@@ -37,33 +37,12 @@
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <ros/ros.h>
 
-class PreemptTest : public ::testing::Test
+#include <planner_cspace/action_test_base.h>
+
+class PreemptTest
+  : public ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>
 {
-public:
-  PreemptTest()
-    : node_()
-  {
-    move_base_ = std::make_shared<ActionClient>("/move_base");
-    status_sub_ = node_.subscribe(
-        "/planner_3d/status", 10, &PreemptTest::cbStatus, this);
-    if (!move_base_->waitForServer(ros::Duration(30.0)))
-    {
-      ROS_ERROR("Failed to connect move_base action");
-      exit(EXIT_FAILURE);
-    }
-  }
-  ~PreemptTest()
-  {
-  }
-
 protected:
-  using ActionClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
-  using ActionClientPtr = std::shared_ptr<ActionClient>;
-
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
-  {
-    status_ = msg;
-  }
   move_base_msgs::MoveBaseGoal CreateGoalInFree()
   {
     move_base_msgs::MoveBaseGoal goal;
@@ -78,20 +57,6 @@ protected:
     goal.target_pose.pose.orientation.w = 1.0;
     return goal;
   }
-  std::string statusString() const
-  {
-    if (!status_)
-    {
-      return "(no status)";
-    }
-    return "(status: " + std::to_string(status_->status) +
-           ", error: " + std::to_string(status_->error) + ")";
-  }
-
-  ros::NodeHandle node_;
-  ros::Subscriber status_sub_;
-  ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr status_;
 };
 
 TEST_F(PreemptTest, Preempt)
@@ -118,14 +83,14 @@ TEST_F(PreemptTest, Preempt)
         << statusString();
   }
 
-  ASSERT_TRUE(status_);
+  ASSERT_TRUE(planner_status_);
 
   ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
-            status_->error);
+            planner_status_->error);
   ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DONE,
-            status_->status);
+            planner_status_->status);
 }
 
 int main(int argc, char** argv)
