@@ -52,12 +52,14 @@ jobs:
           eval export $(cat .github/test.conf)
           BUILD_LINK="[${GITHUB_RUN_NUMBER}]"
           touch .rosinstall .rosinstall-isolated
+          echo '::group::docker build'
           docker build \
             -t tester \
             -f .github/Dockerfile \
             --build-arg ROS_DISTRO \
             --pull=true . \
             || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" "docker build failed"; false)
+          echo '::endgroup::'
           docker run --rm \
             -e BUILD_LINK=${BUILD_LINK} \
             $(gh-pr-comment-env.sh) \
