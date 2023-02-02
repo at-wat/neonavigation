@@ -520,9 +520,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
   for (const float vel : velocities)
   {
     float x = 0;
-    bool stop = false;
+    bool stopped = false;
 
-    for (int i = 0; i < std::lround(10.0 / dt) && ros::ok() && !stop; ++i)
+    int count_after_stop = 10;
+    for (float t = 0; t < 10.0 && ros::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
         publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
@@ -538,9 +539,14 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
       if (cmd_vel_)
       {
         if (std::abs(cmd_vel_->linear.x) < 1e-4 && x > 0.5)
-          stop = true;
-
+        {
+          stopped = true;
+        }
         x += dt * cmd_vel_->linear.x;
+      }
+      if (stopped)
+      {
+        count_after_stop--;
       }
     }
     if (vel > 0)

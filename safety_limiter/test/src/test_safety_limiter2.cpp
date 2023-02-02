@@ -44,20 +44,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 {
   const float dt = 0.02;
   const double ax = 2.0;  // [m/ss]
-  double v = 0.0;   // [m/s]
+  double v = 0.0;         // [m/s]
   ros::Rate wait(1.0 / dt);
 
   const float velocities[] = {-0.8, -0.4, 0.4, 0.8};
   for (const float vel : velocities)
   {
     float x = 0;
-    bool stop = false;
+    bool stopped = false;
     const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
-        [dt, ax, &x, &v, &stop](const geometry_msgs::Twist::ConstPtr& msg) -> void
+        [dt, ax, &x, &v, &stopped](const geometry_msgs::Twist::ConstPtr& msg) -> void
     {
-      if (std::abs(v) < 1e-4 && std::abs(x) > 0.5)
-        stop = true;
-
       if (msg->linear.x >= v)
       {
         v = std::min(v + ax * dt, msg->linear.x);
@@ -67,10 +64,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
         v = std::max(v - ax * dt, msg->linear.x);
       }
       x += dt * v;
+
+      if (std::abs(v) < 1e-4 && std::abs(x) > 0.5)
+      {
+        stopped = true;
+      }
     };
     ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
 
-    for (int i = 0; i < std::lround(10.0 / dt) && ros::ok() && !stop; ++i)
+    int count_after_stop = 10;
+    for (float t = 0; t < 10.0 && ros::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
         publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
@@ -82,17 +85,25 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 
       wait.sleep();
       ros::spinOnce();
+      if (stopped)
+      {
+        count_after_stop--;
+      }
     }
     // margin is set to 0.2
     if (vel > 0)
     {
-      EXPECT_GT(0.95, x);  // Collision point - margin
-      EXPECT_LT(0.90, x);  // Collision point - margin * 2
+      EXPECT_GT(0.95, x)
+          << "vel: " << vel;  // Collision point - margin
+      EXPECT_LT(0.90, x)
+          << "vel: " << vel;  // Collision point - margin * 2
     }
     else
     {
-      EXPECT_LT(-0.95, x);  // Collision point + margin
-      EXPECT_GT(-0.90, x);  // Collision point + margin * 2
+      EXPECT_LT(-0.95, x)
+          << "vel: " << vel;  // Collision point + margin
+      EXPECT_GT(-0.90, x)
+          << "vel: " << vel;  // Collision point + margin * 2
     }
     sub_cmd_vel.shutdown();
   }
