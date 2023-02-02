@@ -462,6 +462,8 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     else
       publishPath(poses);
   }
+  ASSERT_GT(cnt_arrive_local_goal, 25)
+      << "failed to update path";
   for (int j = 0; j < 5; ++j)
   {
     for (int i = 0; i < 5; ++i)
