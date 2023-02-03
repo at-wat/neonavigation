@@ -42,9 +42,9 @@ echo '::endgroup::'
 for i in $(seq 10)
 do
   (
-    echo
-    echo '============'
-    catkin_make run_tests ${CM_OPTIONS} 2>&1 | grep -A5 -B40 "RESULT: FAIL"
+    echo '::group::catkin_make run_tests'
+    catkin_make run_tests ${CM_OPTIONS} 2>&1 | grep -A5 -B60 "RESULT: FAIL" || true
+    echo '::endgroup::'
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
 done
 
