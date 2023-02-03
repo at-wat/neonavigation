@@ -76,9 +76,9 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
     for (float t = 0; t < 10.0 && ros::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
-        publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(1.5 - x, 0, 0, "base_link", ros::Time::now());
       else
-        publishSinglePointPointcloud2(-3.0 - x, 0, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(-3.5 - x, 0, 0, "base_link", ros::Time::now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
       broadcastTF("odom", "base_link", x, 0.0);
@@ -93,16 +93,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
     // margin is set to 0.2
     if (vel > 0)
     {
-      EXPECT_GT(0.95, x)
+      EXPECT_GT(1.4, x)
           << "vel: " << vel;  // Collision point - margin
-      EXPECT_LT(0.90, x)
+      EXPECT_LT(1.3, x)
           << "vel: " << vel;  // Collision point - margin * 2
     }
     else
     {
-      EXPECT_LT(-0.95, x)
+      EXPECT_LT(-1.4, x)
           << "vel: " << vel;  // Collision point + margin
-      EXPECT_GT(-0.90, x)
+      EXPECT_GT(-1.3, x)
           << "vel: " << vel;  // Collision point + margin * 2
     }
     sub_cmd_vel.shutdown();

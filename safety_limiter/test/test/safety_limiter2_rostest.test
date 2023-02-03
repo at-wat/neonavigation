@@ -16,7 +16,7 @@
     <param name="lin_vel" value="2.0" />
     <param name="ang_acc" value="1.57" />
     <param name="ang_vel" value="3.14" />
-    <param name="d_margin" value="0.05" />
+    <param name="d_margin" value="0.1" />
     <param name="yaw_margin" value="0.0" />
     <param name="z_range_min" value="-100.0" />
     <param name="z_range_max" value="100.0" />
