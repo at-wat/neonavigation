@@ -200,7 +200,12 @@ TEST_F(Navigate, Navigate)
                   << t.getOrigin().getY() << " "
                   << tf2::getYaw(t.getRotation()) << std::endl;
       }
-      FAIL() << "Navigation timeout.";
+      FAIL()
+          << "Navigation timeout." << std::endl
+          << "planner status stamp: " << planner_status_->header.stamp << std::endl
+          << "now: " << now << std::endl
+          << "planner status: " << planner_status_->status << std::endl
+          << "planner error: " << planner_status_->error;
       break;
     }
 
@@ -291,9 +296,9 @@ TEST_F(Navigate, NavigateWithLocalMap)
       }
       FAIL()
           << "Navigation timeout." << std::endl
-          << "planner status stamp: " << planner_status_->header.stamp
-          << "now: " << now
-          << "planner status: " << planner_status_->status
+          << "planner status stamp: " << planner_status_->header.stamp << std::endl
+          << "now: " << now << std::endl
+          << "planner status: " << planner_status_->status << std::endl
           << "planner error: " << planner_status_->error;
       break;
     }
