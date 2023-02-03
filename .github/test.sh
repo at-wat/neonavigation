@@ -28,24 +28,12 @@ echo "-------------------------"
 
 CM_OPTIONS=${CATKIN_MAKE_OPTIONS:-}
 
-echo '::group::catkin_make'
 catkin_make ${CM_OPTIONS} || \
   (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make``` failed'; false)
-echo '::endgroup::'
-echo '::group::catkin_make tests'
 catkin_make tests ${CM_OPTIONS} || \
   (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
-echo '::endgroup::'
-
-for i in $(seq 10)
-do
-  (
-    set -o pipefail
-    echo '::group::catkin_make run_tests'
-    catkin_make run_tests ${CM_OPTIONS} 2>&1 | grep -A5 -B40 "RESULT: FAIL"
-    echo '::endgroup::'
-  ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
-done
+catkin_make run_tests ${CM_OPTIONS} || \
+  (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
 
 if [ catkin_test_results ]
 then
