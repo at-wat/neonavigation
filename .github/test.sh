@@ -42,7 +42,6 @@ echo '::endgroup::'
 for i in $(seq 10)
 do
   (
-    set -o pipefail
     echo
     echo '============'
     catkin_make run_tests ${CM_OPTIONS} 2>&1 | grep -A5 -B40 "RESULT: FAIL"
