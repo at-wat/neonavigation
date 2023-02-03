@@ -33,14 +33,15 @@
 
 #include <ros/ros.h>
 
+#include <costmap_cspace_msgs/CSpace3D.h>
+#include <nav_msgs/GetPlan.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
+#include <std_srvs/Empty.h>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
-#include <std_srvs/Empty.h>
-#include <nav_msgs/Path.h>
-#include <nav_msgs/GetPlan.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <costmap_cspace_msgs/CSpace3D.h>
 
 #include <gtest/gtest.h>
 
@@ -52,10 +53,12 @@ protected:
   tf2_ros::TransformListener tfl_;
   nav_msgs::OccupancyGrid::ConstPtr map_;
   nav_msgs::OccupancyGrid::ConstPtr map_local_;
+  planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_local_;
   ros::Subscriber sub_costmap_;
+  ros::Subscriber sub_status_;
   ros::ServiceClient srv_forget_;
   ros::Publisher pub_map_;
   ros::Publisher pub_map_local_;
@@ -69,6 +72,8 @@ protected:
     sub_map_ = nh_.subscribe("map_global", 1, &Navigate::cbMap, this);
     sub_map_local_ = nh_.subscribe("map_local", 1, &Navigate::cbMapLocal, this);
     sub_costmap_ = nh_.subscribe("costmap", 1, &Navigate::cbCostmap, this);
+    sub_status_ = nh_.subscribe(
+        "/planner_3d/status", 10, &Navigate::cbStatus, this);
     srv_forget_ =
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
@@ -124,6 +129,10 @@ protected:
   {
     map_local_ = msg;
     std::cerr << "Local map received." << std::endl;
+  }
+  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  {
+    planner_status_ = msg;
   }
   void pubMapLocal()
   {
@@ -280,7 +289,12 @@ TEST_F(Navigate, NavigateWithLocalMap)
                   << t.getOrigin().getY() << " "
                   << tf2::getYaw(t.getRotation()) << std::endl;
       }
-      FAIL() << "Navigation timeout.";
+      FAIL()
+          << "Navigation timeout." << std::endl
+          << "planner status stamp: " << planner_status_->header.stamp
+          << "now: " << now
+          << "planner status: " << planner_status_->status
+          << "planner error: " << planner_status_->error;
       break;
     }
 
