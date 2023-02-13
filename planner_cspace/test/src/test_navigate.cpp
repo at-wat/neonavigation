@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 #include <vector>
 
 #include <ros/ros.h>
@@ -147,7 +148,7 @@ protected:
 
 namespace
 {
-std::ostream& operator<<(std::ostream& os, const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+std::ostream& operator<<(std::ostream& os, const planner_cspace_msgs::PlannerStatus& msg)
 {
   if (!msg)
   {
@@ -155,9 +156,9 @@ std::ostream& operator<<(std::ostream& os, const planner_cspace_msgs::PlannerSta
   }
   else
   {
-    os << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
-       << "  status: " << static_cast<int>(msg->status) << std::endl
-       << "  error: " << static_cast<int>(msg->error);
+    os << "  header: " << msg.header.stamp << " " << msg.header.frame_id << std::endl
+       << "  status: " << static_cast<int>(msg.status) << std::endl
+       << "  error: " << static_cast<int>(msg.error);
   }
   return os;
 }
@@ -208,6 +209,7 @@ TEST_F(Navigate, Navigate)
       continue;
     }
     traj.push_back(trans);
+    FAIL() << "status: " << *planner_status_;
 
     if (now > deadline)
     {
@@ -221,7 +223,7 @@ TEST_F(Navigate, Navigate)
       FAIL()
           << "Navigation timeout." << std::endl
           << "now: " << now << std::endl
-          << "status: " << planner_status_;
+          << "status: " << *planner_status_;
       break;
     }
 
@@ -313,7 +315,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
       FAIL()
           << "Navigation timeout." << std::endl
           << "now: " << now << std::endl
-          << "status: " << planner_status_;
+          << "status: " << *planner_status_;
       break;
     }
 
