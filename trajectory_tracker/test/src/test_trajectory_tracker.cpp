@@ -47,12 +47,15 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
-        << "Timeout" << std::endl
-        << "Pos " << pos_ << std::endl
-        << "Yaw " << yaw_ << std::endl
-        << "Status " << std::endl
-        << status_ << std::endl;
+    if (ros::Time::now() > start + ros::Duration(10.0))
+    {
+      FAIL()
+          << "Timeout" << std::endl
+          << "Pos " << pos_ << std::endl
+          << "Yaw " << yaw_ << std::endl
+          << "Status " << std::endl
+          << status_ << std::endl;
+    }
 
     publishTransform();
     rate.sleep();
@@ -105,13 +108,16 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
     const ros::Time start = ros::Time::now();
     while (ros::ok())
     {
-      ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
-          << "Timeout" << std::endl
-          << "Pos " << pos_ << std::endl
-          << "Yaw " << yaw_ << std::endl
-          << "Status " << std::endl
-          << status_ << std::endl
-          << info_message;
+      if (ros::Time::now() > start + ros::Duration(10.0))
+      {
+        FAIL()
+            << "Timeout" << std::endl
+            << "Pos " << pos_ << std::endl
+            << "Yaw " << yaw_ << std::endl
+            << "Status " << std::endl
+            << status_ << std::endl
+            << info_message;
+      }
 
       publishTransform();
       rate.sleep();
@@ -163,13 +169,16 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     const ros::Time start = ros::Time::now();
     while (ros::ok())
     {
-      ASSERT_LT(ros::Time::now() - start, ros::Duration(5.0 + path_length / vel))
-          << "Timeout" << std::endl
-          << "Pos " << pos_ << std::endl
-          << "Yaw " << yaw_ << std::endl
-          << "Status " << std::endl
-          << status_ << std::endl
-          << info_message;
+      if (ros::Time::now() > start + ros::Duration(5.0 + path_length / vel))
+      {
+        FAIL()
+            << "Timeout" << std::endl
+            << "Pos " << pos_ << std::endl
+            << "Yaw " << yaw_ << std::endl
+            << "Status " << std::endl
+            << status_ << std::endl
+            << info_message;
+      }
 
       publishTransform();
       rate.sleep();
@@ -217,12 +226,15 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now(), start + ros::Duration(10.0))
-        << "Timeout" << std::endl
-        << "Pos " << pos_ << std::endl
-        << "Yaw " << yaw_ << std::endl
-        << "Status " << std::endl
-        << status_ << std::endl;
+    if (ros::Time::now() > start + ros::Duration(10.0))
+    {
+      FAIL()
+          << "Timeout" << std::endl
+          << "Pos " << pos_ << std::endl
+          << "Yaw " << yaw_ << std::endl
+          << "Status " << std::endl
+          << status_ << std::endl;
+    }
 
     publishTransform();
     rate.sleep();
@@ -282,12 +294,15 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(20.0))
-        << "Timeout" << std::endl
-        << "Pos " << pos_ << std::endl
-        << "Yaw " << yaw_ << std::endl
-        << "Status " << std::endl
-        << status_ << std::endl;
+    if (ros::Time::now() > start + ros::Duration(20.0))
+    {
+      FAIL()
+          << "Timeout" << std::endl
+          << "Pos " << pos_ << std::endl
+          << "Yaw " << yaw_ << std::endl
+          << "Status " << std::endl
+          << status_ << std::endl;
+    }
 
     publishTransform();
     rate.sleep();
@@ -354,13 +369,16 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         const ros::Time start = ros::Time::now();
         for (int i = 0; ros::ok(); ++i)
         {
-          ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
-              << condition_name.str()
-              << "Timeout" << std::endl
-              << "Pos " << pos_ << std::endl
-              << "Yaw " << yaw_ << std::endl
-              << "Status " << std::endl
-              << status_ << std::endl;
+          if (ros::Time::now() > start + ros::Duration(10.0))
+          {
+            FAIL()
+                << condition_name.str()
+                << "Timeout" << std::endl
+                << "Pos " << pos_ << std::endl
+                << "Yaw " << yaw_ << std::endl
+                << "Status " << std::endl
+                << status_ << std::endl;
+          }
 
           publishTransform();
           rate.sleep();
@@ -425,12 +443,15 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   const ros::Time start = ros::Time::now();
   while (ros::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0))
-        << "Timeout" << std::endl
-        << "Pos " << pos_ << std::endl
-        << "Yaw " << yaw_ << std::endl
-        << "Status " << std::endl
-        << status_ << std::endl;
+    if (ros::Time::now() > start + ros::Duration(10.0))
+    {
+      FAIL()
+          << "Timeout" << std::endl
+          << "Pos " << pos_ << std::endl
+          << "Yaw " << yaw_ << std::endl
+          << "Status " << std::endl
+          << status_ << std::endl;
+    }
 
     publishTransform();
     rate.sleep();
@@ -484,12 +505,15 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   const ros::Time start = ros::Time::now();
   for (int i = 0; ros::ok(); i++)
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(15.0))
-        << "Timeout" << std::endl
-        << "Pos " << pos_ << std::endl
-        << "Yaw " << yaw_ << std::endl
-        << "Status " << std::endl
-        << status_ << std::endl;
+    if (ros::Time::now() > start + ros::Duration(15.0))
+    {
+      FAIL()
+          << "Timeout" << std::endl
+          << "Pos " << pos_ << std::endl
+          << "Yaw " << yaw_ << std::endl
+          << "Status " << std::endl
+          << status_ << std::endl;
+    }
 
     publishTransform();
     rate.sleep();
