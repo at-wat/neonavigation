@@ -54,7 +54,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
           << "Pos " << pos_ << std::endl
           << "Yaw " << yaw_ << std::endl
           << "Status " << std::endl
-          << *status_ << std::endl;
+          << status_ << std::endl;
     }
 
     publishTransform();
@@ -115,7 +115,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
             << "Pos " << pos_ << std::endl
             << "Yaw " << yaw_ << std::endl
             << "Status " << std::endl
-            << *status_ << std::endl
+            << status_ << std::endl
             << info_message;
       }
 
@@ -176,7 +176,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
             << "Pos " << pos_ << std::endl
             << "Yaw " << yaw_ << std::endl
             << "Status " << std::endl
-            << *status_ << std::endl
+            << status_ << std::endl
             << info_message;
       }
 
@@ -233,7 +233,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
           << "Pos " << pos_ << std::endl
           << "Yaw " << yaw_ << std::endl
           << "Status " << std::endl
-          << *status_ << std::endl;
+          << status_ << std::endl;
     }
 
     publishTransform();
@@ -301,7 +301,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
           << "Pos " << pos_ << std::endl
           << "Yaw " << yaw_ << std::endl
           << "Status " << std::endl
-          << *status_ << std::endl;
+          << status_ << std::endl;
     }
 
     publishTransform();
@@ -377,7 +377,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
                 << "Pos " << pos_ << std::endl
                 << "Yaw " << yaw_ << std::endl
                 << "Status " << std::endl
-                << *status_ << std::endl;
+                << status_ << std::endl;
           }
 
           publishTransform();
@@ -450,7 +450,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
           << "Pos " << pos_ << std::endl
           << "Yaw " << yaw_ << std::endl
           << "Status " << std::endl
-          << *status_ << std::endl;
+          << status_ << std::endl;
     }
 
     publishTransform();
@@ -512,7 +512,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
           << "Pos " << pos_ << std::endl
           << "Yaw " << yaw_ << std::endl
           << "Status " << std::endl
-          << *status_ << std::endl;
+          << status_ << std::endl;
     }
 
     publishTransform();

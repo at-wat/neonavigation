@@ -332,7 +332,7 @@ public:
 
 namespace
 {
-std::ostream& operator<<(std::ostream& os, const trajectory_tracker_msgs::TrajectoryTrackerStatus& msg)
+std::ostream& operator<<(std::ostream& os, const trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr& msg)
 {
   if (!msg)
   {
@@ -340,11 +340,11 @@ std::ostream& operator<<(std::ostream& os, const trajectory_tracker_msgs::Trajec
   }
   else
   {
-    os << "  header: " << msg.header.stamp << " " << msg.header.frame_id << std::endl
-       << "  distance_remains: " << msg.distance_remains << std::endl
-       << "  angle_remains: " << msg.angle_remains << std::endl
-       << "  status: " << msg.status << std::endl
-       << "  path_header: " << msg.path_header.stamp << " " << msg.header.frame_id;
+    os << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
+       << "  distance_remains: " << msg->distance_remains << std::endl
+       << "  angle_remains: " << msg->angle_remains << std::endl
+       << "  status: " << msg->status << std::endl
+       << "  path_header: " << msg->path_header.stamp << " " << msg->header.frame_id;
   }
   return os;
 }
