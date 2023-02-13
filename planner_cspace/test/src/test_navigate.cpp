@@ -145,9 +145,9 @@ protected:
   }
 };
 
-namespace
+namespace planner_cspace_msgs
 {
-std::ostream& operator<<(std::ostream& os, const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
 {
   if (!msg)
   {
@@ -155,13 +155,14 @@ std::ostream& operator<<(std::ostream& os, const planner_cspace_msgs::PlannerSta
   }
   else
   {
-    os << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
+    os << std::endl
+       << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
        << "  status: " << static_cast<int>(msg->status) << std::endl
        << "  error: " << static_cast<int>(msg->error);
   }
   return os;
 }
-}  // namespace
+}  // namespace planner_cspace_msgs
 
 TEST_F(Navigate, Navigate)
 {
