@@ -39,7 +39,7 @@ catkin_make tests ${CM_OPTIONS} || \
   (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
 echo '::endgroup::'
 
-for i in $(seq 10)
+for i in $(seq 5)
 do
   (
     echo '::group::catkin_make run_tests'
