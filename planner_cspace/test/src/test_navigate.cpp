@@ -145,6 +145,24 @@ protected:
   }
 };
 
+namespace
+{
+std::ostream& operator<<(std::ostream& os, const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+{
+  if (!msg)
+  {
+    os << "nullptr";
+  }
+  else
+  {
+    os << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
+       << "  status: " << static_cast<int>(msg->status) << std::endl
+       << "  error: " << static_cast<int>(msg->error);
+  }
+  return os;
+}
+}  // namespace
+
 TEST_F(Navigate, Navigate)
 {
   ros::Publisher pub_path = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
@@ -202,10 +220,8 @@ TEST_F(Navigate, Navigate)
       }
       FAIL()
           << "Navigation timeout." << std::endl
-          << "planner status stamp: " << planner_status_->header.stamp << std::endl
           << "now: " << now << std::endl
-          << "planner status: " << planner_status_->status << std::endl
-          << "planner error: " << planner_status_->error;
+          << "status: " << planner_status_;
       break;
     }
 
@@ -296,10 +312,8 @@ TEST_F(Navigate, NavigateWithLocalMap)
       }
       FAIL()
           << "Navigation timeout." << std::endl
-          << "planner status stamp: " << planner_status_->header.stamp << std::endl
           << "now: " << now << std::endl
-          << "planner status: " << planner_status_->status << std::endl
-          << "planner error: " << planner_status_->error;
+          << "status: " << planner_status_;
       break;
     }
 
