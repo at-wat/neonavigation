@@ -330,9 +330,9 @@ public:
   }
 };
 
-namespace
+namespace trajectory_tracker_msgs
 {
-std::ostream& operator<<(std::ostream& os, const trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr& msg)
+std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstPtr& msg)
 {
   if (!msg)
   {
@@ -348,6 +348,6 @@ std::ostream& operator<<(std::ostream& os, const trajectory_tracker_msgs::Trajec
   }
   return os;
 }
-}  // namespace
+}  // namespace trajectory_tracker_msgs
 
 #endif  // TRAJECTORY_TRACKER_TEST_H
