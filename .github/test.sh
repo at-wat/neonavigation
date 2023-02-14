@@ -39,6 +39,8 @@ catkin_make tests ${CM_OPTIONS} || \
   (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make tests``` failed'; false)
 echo '::endgroup::'
 
+export ROSCONSOLE_FORMAT='[${severity}] [${time}] [${node}]: ${message}'
+
 for i in $(seq 5)
 do
   (
