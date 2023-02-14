@@ -300,13 +300,17 @@ TEST_F(Navigate, NavigateWithLocalMap)
       std::cerr << e.what() << std::endl;
       continue;
     }
-    traj.push_back(trans);
+    if (traj.size() == 0 ||
+        static_cast<tf2::Transform&>(traj.back()) != static_cast<tf2::Transform&>(trans))
+    {
+      traj.push_back(trans);
+    }
 
     if (now > deadline)
     {
       for (const auto& t : traj)
       {
-        std::cerr << t.stamp_.toSec() << " "
+        std::cerr << t.stamp_ << " "
                   << t.getOrigin().getX() << " "
                   << t.getOrigin().getY() << " "
                   << tf2::getYaw(t.getRotation()) << std::endl;
