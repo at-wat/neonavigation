@@ -305,7 +305,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
     if (now > deadline)
     {
       double x_prev(0), y_prev(0);
-      tf2::Quaternion rot_prev;
+      tf2::Quaternion rot_prev(0, 0, 0, 1);
       for (const auto& t : traj)
       {
         const double x = t.getOrigin().getX();
