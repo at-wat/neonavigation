@@ -300,20 +300,25 @@ TEST_F(Navigate, NavigateWithLocalMap)
       std::cerr << e.what() << std::endl;
       continue;
     }
-    if (traj.size() == 0 ||
-        !(static_cast<tf2::Transform&>(traj.back()) == static_cast<tf2::Transform&>(trans)))
-    {
-      traj.push_back(trans);
-    }
+    traj.push_back(trans);
 
     if (now > deadline)
     {
+      double x_prev(0), y_prev(0);
+      tf2::Quaternion rot_prev;
       for (const auto& t : traj)
       {
-        std::cerr << t.stamp_ << " "
-                  << t.getOrigin().getX() << " "
-                  << t.getOrigin().getY() << " "
-                  << tf2::getYaw(t.getRotation()) << std::endl;
+        const double x = t.getOrigin().getX();
+        const double y = t.getOrigin().getY();
+        const tf2::Quaternion rot = t.getRotation();
+        const double yaw_diff = tf2::getYaw(rot - rot_prev);
+        if (std::abs(x - x_prev) > 0.1 || std::abs(y - y_prev) > 0.1 || std::abs(yaw_diff) > 0.1)
+        {
+          x_prev = x;
+          y_prev = y;
+          rot_prev = rot;
+          std::cerr << t.stamp_ << " " << x << " " << y << " " << tf2::getYaw(rot) << std::endl;
+        }
       }
       FAIL()
           << "Navigation timeout." << std::endl
