@@ -301,7 +301,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
       continue;
     }
     if (traj.size() == 0 ||
-        static_cast<tf2::Transform&>(traj.back()) != static_cast<tf2::Transform&>(trans))
+        !(static_cast<tf2::Transform&>(traj.back()) == static_cast<tf2::Transform&>(trans)))
     {
       traj.push_back(trans);
     }
