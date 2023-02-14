@@ -45,6 +45,25 @@
 
 #include <gtest/gtest.h>
 
+namespace planner_cspace_msgs
+{
+std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
+{
+  if (!msg)
+  {
+    os << "nullptr";
+  }
+  else
+  {
+    os << std::endl
+       << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
+       << "  status: " << static_cast<int>(msg->status) << std::endl
+       << "  error: " << static_cast<int>(msg->error);
+  }
+  return os;
+}
+}  // namespace planner_cspace_msgs
+
 class Navigate : public ::testing::Test
 {
 protected:
@@ -132,6 +151,10 @@ protected:
   }
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
+    if (!planner_status_ || planner_status_->status != msg->status || planner_status->error != msg->error)
+    {
+      std::cerr << "Status updated." << msg << std::endl;
+    }
     planner_status_ = msg;
   }
   void pubMapLocal()
@@ -144,25 +167,6 @@ protected:
     }
   }
 };
-
-namespace planner_cspace_msgs
-{
-std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
-{
-  if (!msg)
-  {
-    os << "nullptr";
-  }
-  else
-  {
-    os << std::endl
-       << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
-       << "  status: " << static_cast<int>(msg->status) << std::endl
-       << "  error: " << static_cast<int>(msg->error);
-  }
-  return os;
-}
-}  // namespace planner_cspace_msgs
 
 TEST_F(Navigate, Navigate)
 {
@@ -280,7 +284,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
 
   ros::Rate wait(10);
   const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  std::vector<tf2::Stamped<tf2::Transform>> traj;
+  statusstd::vector<tf2::Stamped<tf2::Transform>> traj;
   while (ros::ok())
   {
     pubMapLocal();
