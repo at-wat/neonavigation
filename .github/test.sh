@@ -45,7 +45,7 @@ for i in $(seq 5)
 do
   (
     echo '::group::catkin_make run_tests'
-    catkin_make run_tests ${CM_OPTIONS} 2>&1 | grep -A5 -B150 "RESULT: FAIL" || true
+    catkin_make run_tests ${CM_OPTIONS} 2>&1 | grep -A5 -B200 "RESULT: FAIL" || true
     echo '::endgroup::'
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
 done
