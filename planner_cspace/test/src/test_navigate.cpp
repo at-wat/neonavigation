@@ -151,7 +151,7 @@ protected:
   }
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
-    if (!planner_status_ || planner_status_->status != msg->status || planner_status->error != msg->error)
+    if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
       std::cerr << "Status updated." << msg << std::endl;
     }
@@ -284,7 +284,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
 
   ros::Rate wait(10);
   const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  statusstd::vector<tf2::Stamped<tf2::Transform>> traj;
+  std::vector<tf2::Stamped<tf2::Transform>> traj;
   while (ros::ok())
   {
     pubMapLocal();
