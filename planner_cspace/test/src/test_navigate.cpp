@@ -85,15 +85,15 @@ protected:
 
   virtual void SetUp()
   {
+    srv_forget_.waitForExistence(ros::Duration(10.0));
+    ros::Rate rate(10.0);
+
     geometry_msgs::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
     pose.pose.pose.position.x = 2.5;
     pose.pose.pose.position.y = 0.45;
     pose.pose.pose.orientation.z = 1.0;
     pub_initial_pose_.publish(pose);
-
-    srv_forget_.waitForExistence(ros::Duration(10.0));
-    ros::Rate rate(10.0);
 
     while (ros::ok() && !map_)
     {
