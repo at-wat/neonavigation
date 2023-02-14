@@ -114,10 +114,31 @@ protected:
     pose.pose.pose.orientation.z = 1.0;
     pub_initial_pose_.publish(pose);
 
+    const ros::Time deadline = ros::Time::now() + ros::Duration(15);
+
+    while (ros::ok())
+    {
+      ros::spinOnce();
+      rate.sleep();
+      const ros::Time now = ros::Time::now();
+      if (now > deadline)
+      {
+        FAIL() << "SetUp: transform timeout" << std::endl;
+      }
+      if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
+      {
+        break;
+      }
+    }
+
     while (ros::ok() && !map_)
     {
       ros::spinOnce();
       rate.sleep();
+      if (ros::Time::now() > deadline)
+      {
+        FAIL() << "SetUp: map timeout" << std::endl;
+      }
     }
     pub_map_.publish(map_);
     std::cerr << "Map applied." << std::endl;
@@ -126,13 +147,17 @@ protected:
     {
       ros::spinOnce();
       rate.sleep();
+      if (ros::Time::now() > deadline)
+      {
+        FAIL() << "SetUp: costmap timeout" << std::endl;
+      }
     }
 
     std_srvs::EmptyRequest req;
     std_srvs::EmptyResponse res;
     srv_forget_.call(req, res);
 
-    ros::Duration(3.0).sleep();
+    ros::Duration(1.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
