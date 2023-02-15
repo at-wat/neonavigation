@@ -192,7 +192,7 @@ protected:
         std::cerr << "Local map applied." << std::endl;
     }
   }
-  tf2::Stamped<tf2::Transform> lookupRobotTrans()
+  tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
   {
     geometry_msgs::TransformStamped trans_tmp =
         tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
@@ -270,7 +270,7 @@ TEST_F(Navigate, Navigate)
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      sizetrans = lookupRobotTrans();
+      trans = lookupRobotTrans(now);
     }
     catch (tf2::TransformException& e)
     {
@@ -353,7 +353,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      trans = lookupRobotTrans();
+      trans = lookupRobotTrans(now);
     }
     catch (tf2::TransformException& e)
     {
