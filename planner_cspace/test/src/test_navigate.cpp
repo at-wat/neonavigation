@@ -282,7 +282,7 @@ TEST_F(Navigate, Navigate)
     if (goal_rel.getOrigin().length() < 0.2 &&
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
-      std::cerr << "Navagation success." << std::endl;
+      std::cerr << "Navigation success." << std::endl;
       ros::Duration(2.0).sleep();
       return;
     }
