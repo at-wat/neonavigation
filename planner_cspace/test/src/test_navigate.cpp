@@ -83,6 +83,7 @@ protected:
   ros::Publisher pub_map_local_;
   ros::Publisher pub_initial_pose_;
   size_t local_map_apply_cnt_;
+  std::vector<tf2::Stamped<tf2::Transform>> traj_;
 
   Navigate()
     : tfl_(tfbuf_)
@@ -191,6 +192,37 @@ protected:
         std::cerr << "Local map applied." << std::endl;
     }
   }
+  tf2::Stamped<tf2::Transform> lookupRobotTrans()
+  {
+    geometry_msgs::TransformStamped trans_tmp =
+        tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
+    tf2::Stamped<tf2::Transform> trans;
+    tf2::fromMsg(trans_tmp, trans);
+    traj_.push_back(trans);
+    return trans;
+  }
+  void dumpRobotTrajectory()
+  {
+    double x_prev(0), y_prev(0);
+    tf2::Quaternion rot_prev(0, 0, 0, 1);
+
+    std::cerr << traj_.size() << " points recorded" << std::endl;
+
+    for (const auto& t : traj_)
+    {
+      const double x = t.getOrigin().getX();
+      const double y = t.getOrigin().getY();
+      const tf2::Quaternion rot = t.getRotation();
+      const double yaw_diff = tf2::getYaw(rot - rot_prev);
+      if (std::abs(x - x_prev) > 0.1 || std::abs(y - y_prev) > 0.1 || std::abs(yaw_diff) > 0.1)
+      {
+        x_prev = x;
+        y_prev = y;
+        rot_prev = rot;
+        std::cerr << t.stamp_ << " " << x << " " << y << " " << tf2::getYaw(rot) << std::endl;
+      }
+    }
+  }
 };
 
 TEST_F(Navigate, Navigate)
@@ -218,41 +250,32 @@ TEST_F(Navigate, Navigate)
 
   ros::Rate wait(10);
   const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  std::vector<tf2::Stamped<tf2::Transform>> traj;
   while (ros::ok())
   {
     ros::spinOnce();
     wait.sleep();
 
     const ros::Time now = ros::Time::now();
-    tf2::Stamped<tf2::Transform> trans;
-    try
-    {
-      geometry_msgs::TransformStamped trans_tmp =
-          tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
-      tf2::fromMsg(trans_tmp, trans);
-    }
-    catch (tf2::TransformException& e)
-    {
-      std::cerr << e.what() << std::endl;
-      continue;
-    }
-    traj.push_back(trans);
 
     if (now > deadline)
     {
-      for (const auto& t : traj)
-      {
-        std::cerr << t.stamp_.toSec() << " "
-                  << t.getOrigin().getX() << " "
-                  << t.getOrigin().getY() << " "
-                  << tf2::getYaw(t.getRotation()) << std::endl;
-      }
+      dumpRobotTrajectory();
       FAIL()
           << "Navigation timeout." << std::endl
           << "now: " << now << std::endl
           << "status: " << planner_status_;
       break;
+    }
+
+    tf2::Stamped<tf2::Transform> trans;
+    try
+    {
+      sizetrans = lookupRobotTrans();
+    }
+    catch (tf2::TransformException& e)
+    {
+      std::cerr << e.what() << std::endl;
+      continue;
     }
 
     auto goal_rel = trans.inverse() * goal;
@@ -309,7 +332,6 @@ TEST_F(Navigate, NavigateWithLocalMap)
 
   ros::Rate wait(10);
   const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  std::vector<tf2::Stamped<tf2::Transform>> traj;
   while (ros::ok())
   {
     pubMapLocal();
@@ -317,43 +339,26 @@ TEST_F(Navigate, NavigateWithLocalMap)
     wait.sleep();
 
     const ros::Time now = ros::Time::now();
-    tf2::Stamped<tf2::Transform> trans;
-    try
-    {
-      geometry_msgs::TransformStamped trans_tmp =
-          tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
-      tf2::fromMsg(trans_tmp, trans);
-    }
-    catch (tf2::TransformException& e)
-    {
-      std::cerr << e.what() << std::endl;
-      continue;
-    }
-    traj.push_back(trans);
 
     if (now > deadline)
     {
-      double x_prev(0), y_prev(0);
-      tf2::Quaternion rot_prev(0, 0, 0, 1);
-      for (const auto& t : traj)
-      {
-        const double x = t.getOrigin().getX();
-        const double y = t.getOrigin().getY();
-        const tf2::Quaternion rot = t.getRotation();
-        const double yaw_diff = tf2::getYaw(rot - rot_prev);
-        if (std::abs(x - x_prev) > 0.1 || std::abs(y - y_prev) > 0.1 || std::abs(yaw_diff) > 0.1)
-        {
-          x_prev = x;
-          y_prev = y;
-          rot_prev = rot;
-          std::cerr << t.stamp_ << " " << x << " " << y << " " << tf2::getYaw(rot) << std::endl;
-        }
-      }
+      dumpRobotTrajectory();
       FAIL()
           << "Navigation timeout." << std::endl
           << "now: " << now << std::endl
           << "status: " << planner_status_;
       break;
+    }
+
+    tf2::Stamped<tf2::Transform> trans;
+    try
+    {
+      trans = lookupRobotTrans();
+    }
+    catch (tf2::TransformException& e)
+    {
+      std::cerr << e.what() << std::endl;
+      continue;
     }
 
     auto goal_rel = trans.inverse() * goal;
