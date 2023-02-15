@@ -60,14 +60,26 @@ jobs:
             --pull=true . \
             || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" "docker build failed"; false)
           echo '::endgroup::'
+          mkdir -p /tmp/log
           docker run --rm \
             -e BUILD_LINK=${BUILD_LINK} \
             $(gh-pr-comment-env.sh) \
             -e GITHUB_ACTIONS \
             -e CATKIN_MAKE_OPTIONS \
             -v ${GITHUB_WORKSPACE}:/orig-src \
+            -v /tmp/log:/root/.ros/log \
             tester \
             /catkin_ws/src/self/.github/test.sh
+      - name: Compress logs
+        if: always()
+        run: cd /tmp; tar czf logs.tar.gz log
+      - name: Upload ROS logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs.tar.gz
+          path: /tmp/logs.tar.gz
+          retention-days: 1
       - uses: codecov/codecov-action@v3
       - name: Save layer cache
         run: |
