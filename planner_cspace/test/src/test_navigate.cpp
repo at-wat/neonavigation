@@ -213,8 +213,8 @@ protected:
       const double x = t.getOrigin().getX();
       const double y = t.getOrigin().getY();
       const tf2::Quaternion rot = t.getRotation();
-      const double yaw_diff = tf2::getYaw(rot - rot_prev);
-      if (std::abs(x - x_prev) > 0.25 || std::abs(y - y_prev) > 0.25 || std::abs(yaw_diff) > 0.5)
+      const double yaw_diff = rot.angleShortestPath(rot_prev);
+      if (std::abs(x - x_prev) > 0.1 || std::abs(y - y_prev) > 0.1 || std::abs(yaw_diff) > 0.2)
       {
         x_prev = x;
         y_prev = y;
