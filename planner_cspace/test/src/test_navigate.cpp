@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <unistd.h>
 #include <vector>
 
 #include <ros/ros.h>
@@ -84,6 +85,7 @@ protected:
   ros::Publisher pub_initial_pose_;
   size_t local_map_apply_cnt_;
   std::vector<tf2::Stamped<tf2::Transform>> traj_;
+  std::string test_scope_;
 
   Navigate()
     : tfl_(tfbuf_)
@@ -105,6 +107,8 @@ protected:
 
   virtual void SetUp()
   {
+    test_scope_ = "[" + std::to_string(getpid()) + "] ";
+
     srv_forget_.waitForExistence(ros::Duration(10.0));
     ros::Rate rate(10.0);
 
@@ -124,7 +128,7 @@ protected:
       const ros::Time now = ros::Time::now();
       if (now > deadline)
       {
-        FAIL() << "SetUp: transform timeout" << std::endl;
+        FAIL() << test_scope_ << "SetUp: transform timeout" << std::endl;
       }
       if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
       {
@@ -138,11 +142,11 @@ protected:
       rate.sleep();
       if (ros::Time::now() > deadline)
       {
-        FAIL() << "SetUp: map timeout" << std::endl;
+        FAIL() << test_scope_ << "SetUp: map timeout" << std::endl;
       }
     }
     pub_map_.publish(map_);
-    std::cerr << "Map applied." << std::endl;
+    std::cerr << test_scope_ << "Map applied." << std::endl;
 
     while (ros::ok() && !costmap_)
     {
@@ -150,7 +154,7 @@ protected:
       rate.sleep();
       if (ros::Time::now() > deadline)
       {
-        FAIL() << "SetUp: costmap timeout" << std::endl;
+        FAIL() << test_scope_ << "SetUp: costmap timeout" << std::endl;
       }
     }
 
@@ -163,23 +167,23 @@ protected:
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
     costmap_ = msg;
-    std::cerr << "Costmap received." << std::endl;
+    std::cerr << test_scope_ << "Costmap received." << std::endl;
   }
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
     map_ = msg;
-    std::cerr << "Map received." << std::endl;
+    std::cerr << test_scope_ << "Map received." << std::endl;
   }
   void cbMapLocal(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
     map_local_ = msg;
-    std::cerr << "Local map received." << std::endl;
+    std::cerr << test_scope_ << "Local map received." << std::endl;
   }
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
-      std::cerr << "Status updated." << msg << std::endl;
+      std::cerr << test_scope_ << "Status updated." << msg << std::endl;
     }
     planner_status_ = msg;
   }
@@ -189,7 +193,7 @@ protected:
     {
       pub_map_local_.publish(map_local_);
       if ((local_map_apply_cnt_++) % 30 == 0)
-        std::cerr << "Local map applied." << std::endl;
+        std::cerr << test_scope_ << "Local map applied." << std::endl;
     }
   }
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
@@ -206,7 +210,7 @@ protected:
     double x_prev(0), y_prev(0);
     tf2::Quaternion rot_prev(0, 0, 0, 1);
 
-    std::cerr << traj_.size() << " points recorded" << std::endl;
+    std::cerr << test_scope_ << traj_.size() << " points recorded" << std::endl;
 
     for (const auto& t : traj_)
     {
@@ -261,7 +265,7 @@ TEST_F(Navigate, Navigate)
     {
       dumpRobotTrajectory();
       FAIL()
-          << "Navigation timeout." << std::endl
+          << test_scope_ << "Navigation timeout." << std::endl
           << "now: " << now << std::endl
           << "status: " << planner_status_;
       break;
@@ -274,7 +278,7 @@ TEST_F(Navigate, Navigate)
     }
     catch (tf2::TransformException& e)
     {
-      std::cerr << e.what() << std::endl;
+      std::cerr << test_scope_ << e.what() << std::endl;
       continue;
     }
 
@@ -282,7 +286,7 @@ TEST_F(Navigate, Navigate)
     if (goal_rel.getOrigin().length() < 0.2 &&
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
-      std::cerr << "Navigation success." << std::endl;
+      std::cerr << test_scope_ << "Navigation success." << std::endl;
       ros::Duration(2.0).sleep();
       return;
     }
@@ -344,7 +348,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
     {
       dumpRobotTrajectory();
       FAIL()
-          << "Navigation timeout." << std::endl
+          << test_scope_ << "Navigation timeout." << std::endl
           << "now: " << now << std::endl
           << "status: " << planner_status_;
       break;
@@ -357,7 +361,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
     }
     catch (tf2::TransformException& e)
     {
-      std::cerr << e.what() << std::endl;
+      std::cerr << test_scope_ << e.what() << std::endl;
       continue;
     }
 
@@ -365,7 +369,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
     if (goal_rel.getOrigin().length() < 0.2 &&
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
-      std::cerr << "Navagation success." << std::endl;
+      std::cerr << test_scope_ << "Navagation success." << std::endl;
       ros::Duration(2.0).sleep();
       return;
     }
