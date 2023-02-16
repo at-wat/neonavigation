@@ -82,6 +82,8 @@ protected:
     x_ = pose_out.pose.position.x;
     y_ = pose_out.pose.position.y;
     yaw_ = tf2::getYaw(pose_out.pose.orientation);
+    v_ = 0;
+    w_ = 0;
   }
 
 public:
