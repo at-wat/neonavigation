@@ -75,10 +75,12 @@ protected:
   nav_msgs::OccupancyGrid::ConstPtr map_local_;
   planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
+  nav_msgs::Path::ConstPtr path_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_local_;
   ros::Subscriber sub_costmap_;
   ros::Subscriber sub_status_;
+  ros::Subscriber sub_path_;
   ros::ServiceClient srv_forget_;
   ros::Publisher pub_map_;
   ros::Publisher pub_map_local_;
@@ -96,6 +98,7 @@ protected:
     sub_costmap_ = nh_.subscribe("costmap", 1, &Navigate::cbCostmap, this);
     sub_status_ = nh_.subscribe(
         "/planner_3d/status", 10, &Navigate::cbStatus, this);
+    sub_path_ = nh_.subscribe("path", 1, &Navigate::cbPath, this);
     srv_forget_ =
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
@@ -186,6 +189,17 @@ protected:
       std::cerr << test_scope_ << "Status updated." << msg << std::endl;
     }
     planner_status_ = msg;
+  }
+  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  {
+    if (!path_ || path_->poses.size() != msg->poses.size())
+    {
+      std::cerr
+          << test_scope_ << "Path updated."
+          << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
+          << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
+      path_ = msg;
+    }
   }
   void pubMapLocal()
   {
