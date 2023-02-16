@@ -131,7 +131,7 @@ protected:
       const ros::Time now = ros::Time::now();
       if (now > deadline)
       {
-        FAIL() << test_scope_ << "SetUp: transform timeout" << std::endl;
+        FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
       }
       if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
       {
@@ -143,21 +143,23 @@ protected:
     {
       ros::spinOnce();
       rate.sleep();
-      if (ros::Time::now() > deadline)
+      const ros::Time now = ros::Time::now();
+      if (now > deadline)
       {
-        FAIL() << test_scope_ << "SetUp: map timeout" << std::endl;
+        FAIL() << test_scope_ << now << " SetUp: map timeout" << std::endl;
       }
     }
     pub_map_.publish(map_);
-    std::cerr << test_scope_ << "Map applied." << std::endl;
+    std::cerr << test_scope_ << ros::Time::now() << " Map applied." << std::endl;
 
     while (ros::ok() && !costmap_)
     {
       ros::spinOnce();
       rate.sleep();
-      if (ros::Time::now() > deadline)
+      const ros::Time now = ros::Time::now();
+      if (now > deadline)
       {
-        FAIL() << test_scope_ << "SetUp: costmap timeout" << std::endl;
+        FAIL() << test_scope_ << now << " SetUp: costmap timeout" << std::endl;
       }
     }
 
@@ -170,23 +172,23 @@ protected:
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
     costmap_ = msg;
-    std::cerr << test_scope_ << "Costmap received." << std::endl;
+    std::cerr << test_scope_ << msg->header.stamp << " Costmap received." << std::endl;
   }
   void cbMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
     map_ = msg;
-    std::cerr << test_scope_ << "Map received." << std::endl;
+    std::cerr << test_scope_ << msg->header.stamp << " Map received." << std::endl;
   }
   void cbMapLocal(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
     map_local_ = msg;
-    std::cerr << test_scope_ << "Local map received." << std::endl;
+    std::cerr << test_scope_ << msg->header.stamp << " Local map received." << std::endl;
   }
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
-      std::cerr << test_scope_ << "Status updated." << msg << std::endl;
+      std::cerr << test_scope_ << msg->header.stamp << " Status updated." << msg << std::endl;
     }
     planner_status_ = msg;
   }
@@ -196,12 +198,12 @@ protected:
     {
       if (msg->poses.size() == 0)
       {
-        std::cerr << test_scope_ << "Path updated. (empty)" << std::endl;
+        std::cerr << test_scope_ << msg->header.stamp << " Path updated. (empty)" << std::endl;
       }
       else
       {
         std::cerr
-            << test_scope_ << "Path updated." << std::endl
+            << test_scope_ << msg->header.stamp << " Path updated." << std::endl
             << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
             << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
       }
@@ -214,7 +216,7 @@ protected:
     {
       pub_map_local_.publish(map_local_);
       if ((local_map_apply_cnt_++) % 30 == 0)
-        std::cerr << test_scope_ << "Local map applied." << std::endl;
+        std::cerr << test_scope_ << " Local map applied." << std::endl;
     }
   }
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
