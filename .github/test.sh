@@ -46,8 +46,8 @@ do
   (
     echo '::group::catkin_make run_tests'
     catkin_make run_tests \
+      -j1 \
       ${CM_OPTIONS} \
-      --make-args -j1 \
       2>&1 | tee /root/.ros/log/${i}-full.log | grep -A5 -B500 "RESULT: FAIL" || true
     echo '::endgroup::'
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
