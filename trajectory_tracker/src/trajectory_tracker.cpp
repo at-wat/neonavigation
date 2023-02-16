@@ -409,7 +409,7 @@ void TrackerNode::cbTimer(const ros::TimerEvent& event)
   }
   catch (tf2::TransformException& e)
   {
-    ROS_WARN("TF exception: %s", e.what());
+    ROS_WARN_THROTTLE(1, "TF exception: %s", e.what());
     trajectory_tracker_msgs::TrajectoryTrackerStatus status;
     status.header.stamp = ros::Time::now();
     status.distance_remains = 0.0;
