@@ -50,6 +50,7 @@ jobs:
         run: |
           eval export ${{ matrix.env }}
           eval export $(cat .github/test.conf)
+          echo "ROS_DISTRO=${ROS_DISTRO}" >> ${GITHUB_ENV}
           BUILD_LINK="[${GITHUB_RUN_NUMBER}]"
           touch .rosinstall .rosinstall-isolated
           echo '::group::docker build'
