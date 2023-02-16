@@ -194,10 +194,17 @@ protected:
   {
     if (!path_ || path_->poses.size() != msg->poses.size())
     {
-      std::cerr
-          << test_scope_ << "Path updated."
-          << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
-          << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
+      if (msg->poses.size() == 0)
+      {
+        std::cerr << test_scope_ << "Path updated. (empty)" << std::endl;
+      }
+      else
+      {
+        std::cerr
+            << test_scope_ << "Path updated." << std::endl
+            << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
+            << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
+      }
       path_ = msg;
     }
   }
