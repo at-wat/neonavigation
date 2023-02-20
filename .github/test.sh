@@ -18,9 +18,9 @@ then
   ls -lh /catkin_ws/build/self/test/
 fi
 
-sed -i -e "/^set(CATKIN_TOPLEVEL TRUE)$/a set(CMAKE_C_FLAGS \"-Wall -Werror -O2 -coverage\")" \
+sed -i -e "/^set(CATKIN_TOPLEVEL TRUE)$/a set(CMAKE_C_FLAGS \"-Wall -Werror -O2 -g -coverage\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
-sed -i -e "/^set(CATKIN_TOPLEVEL TRUE)$/a set(CMAKE_CXX_FLAGS \"-Wall -Werror -O2 -coverage\")" \
+sed -i -e "/^set(CATKIN_TOPLEVEL TRUE)$/a set(CMAKE_CXX_FLAGS \"-Wall -Werror -O2 -g -coverage\")" \
   /opt/ros/${ROS_DISTRO}/share/catkin/cmake/toplevel.cmake
 
 echo "--- catkin cmake hook ---"
@@ -41,6 +41,7 @@ echo '::endgroup::'
 
 export ROSCONSOLE_FORMAT='[${severity}] [${time}] [${node}]: ${message}'
 
+
 for i in $(seq 2)
 do
   (
@@ -51,6 +52,7 @@ do
       2>&1 | tee /root/.ros/log/${i}-full.log | grep -A5 -B500 "RESULT: FAIL" || true
     echo '::endgroup::'
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
+  catkin_test_results || break
 done
 
 echo '::group::post process'

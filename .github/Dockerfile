@@ -40,6 +40,7 @@ RUN if [ ${ROS_DISTRO} = "noetic" ]; then PYTHON_VERSION_SUFFIX=3; else PYTHON_V
   && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    gdb \
     libxml2-utils \
     python${PYTHON_VERSION_SUFFIX}-catkin-pkg \
     python${PYTHON_VERSION_SUFFIX}-rosdep \
