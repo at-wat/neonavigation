@@ -26,7 +26,7 @@
   </node>
   <node
     pkg="planner_cspace" type="planner_3d" name="planner_3d" output="screen"
-    launch-prefix="gdb -batch -ex run -ex bt"
+    launch-prefix="gdb -batch -ex run -ex bt -ex 'gcore /root/.ros/log/planner.core'"
   >
     <remap from="move_base_simple/goal" to="goal" />
     <param name="max_vel" value="0.1" />

@@ -56,6 +56,12 @@ do
 done
 
 echo '::group::post process'
+if [ -f /root/.ros/log/planner.core ]
+then
+  mkdir -p /root/.ros/log/debug
+  cp $(find devel -name planner_cspace) /root/.ros/log/debug/
+fi
+
 if [ catkin_test_results ]
 then
   result_text="
