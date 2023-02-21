@@ -73,13 +73,13 @@ jobs:
             /catkin_ws/src/self/.github/test.sh
       - name: Compress logs
         if: always()
-        run: cd /tmp; tar cf logs.tar log
+        run: cd /tmp; tar cJf logs.tar.xz log
       - name: Upload ROS logs
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: logs-${{ env.ROS_DISTRO }}.tar
-          path: /tmp/logs.tar
+          name: logs-${{ env.ROS_DISTRO }}.tar.xz
+          path: /tmp/logs.tar.xz
           retention-days: 1
       - uses: codecov/codecov-action@v3
       - name: Save layer cache
