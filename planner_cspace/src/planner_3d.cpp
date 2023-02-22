@@ -548,6 +548,7 @@ protected:
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
+    cost_estim_cache_.validate("after generation");
 
     if (goal_changed)
     {
@@ -835,11 +836,13 @@ protected:
     }
 
     const auto ts = boost::chrono::high_resolution_clock::now();
+    cost_estim_cache_.validate("before update");
     cost_estim_cache_.update(
         s, e,
         DistanceMap::Rect(
             Astar::Vec(search_range_x_min, search_range_y_min, 0),
             Astar::Vec(search_range_x_max, search_range_y_max, 0)));
+    cost_estim_cache_.validate("after update");
     const auto tnow = boost::chrono::high_resolution_clock::now();
     const DistanceMap::DebugData dm_debug = cost_estim_cache_.getDebugData();
     if (dm_debug.has_negative_cost)
@@ -930,6 +933,7 @@ protected:
             .resolution = map_info_.linear_resolution,
         };
     cost_estim_cache_.init(model_, dmp);
+    cost_estim_cache_.validate("after init");
     cm_rough_.reset(size2d);
     cm_updates_.reset(size2d);
     bbf_costmap_.reset(size2d);
@@ -1569,6 +1573,7 @@ protected:
     }
     const Astar::Vec s_rough(s[0], s[1], 0);
 
+    cost_estim_cache_.validate("before plan");
     // If goal gets occupied, cost_estim_cache_ is not updated to reduce
     // computational cost for clearing huge map. In this case, cm_[e] is 100.
     if (cost_estim_cache_[s_rough] == std::numeric_limits<float>::max() || cm_[e] >= 100)
@@ -1641,10 +1646,12 @@ protected:
                     find_best_))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
+      cost_estim_cache_.validate("after plan (failed)");
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       if (!find_best_)
         return false;
     }
+    cost_estim_cache_.validate("after plan");
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Path found (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());

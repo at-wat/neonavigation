@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H
 
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -97,6 +98,20 @@ public:
       const Rect& rect);
 
   void create(const Astar::Vec& s, const Astar::Vec& e);
+
+  inline void validate(const std::string& msg)
+  {
+    int i = 0;
+    for (const SearchDiffs& ds : search_diffs_)
+    {
+      if (ds.pos.size() > 100)
+      {
+        std::cerr << msg << " " << i << " " << ds.pos.size() << std::endl;
+        return;
+      }
+      i++;
+    }
+  }
 
   inline const Astar::Vec& size() const
   {
