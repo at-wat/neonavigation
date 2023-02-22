@@ -59,11 +59,8 @@ do
 done
 
 echo '::group::post process'
-if [ -f /root/.ros/log/planner.core ]
-then
-  mkdir -p /root/.ros/log/debug
-  cp /catkin_ws/devel/lib/planner_cspace/planner_3d /root/.ros/log/debug/
-fi
+mkdir -p /root/.ros/log/debug
+cp /catkin_ws/devel/lib/planner_cspace/planner_3d /root/.ros/log/debug/
 
 if catkin_test_results
 then
