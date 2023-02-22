@@ -122,9 +122,10 @@ public:
         std::cerr << msg << " " << i << " " << ds.pos.size() << std::endl;
         return;
       }
+      volatile int dummy = 0;
       for (const auto& d : ds.pos)
       {
-        volatile int dummy = d[2];
+        dummy += d[2];
       }
       i++;
     }
