@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -54,6 +55,8 @@ void DistanceMap::fillCostmap(
 
   debug_data_.has_negative_cost = false;
 
+  validate("before parallel");
+
 #pragma omp parallel
   {
     std::vector<Astar::GridmapUpdate> updates;
@@ -61,6 +64,7 @@ void DistanceMap::fillCostmap(
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
     const float weight_linear = p_.resolution / 100.0;
+    validate("in thread");
 
     while (true)
     {
@@ -88,11 +92,14 @@ void DistanceMap::fillCostmap(
         break;
       updates.clear();
 
+      validate("before schedule");
+
 #pragma omp for schedule(static)
       for (auto it = centers.cbegin(); it < centers.cend(); ++it)
       {
         const Astar::Vec p = it->v_;
 
+        validate("in search");
         for (const SearchDiffs& ds : search_diffs_)
         {
           const Astar::Vec d = ds.d;
