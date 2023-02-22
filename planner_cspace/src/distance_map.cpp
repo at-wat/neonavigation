@@ -253,14 +253,18 @@ void DistanceMap::update(
     create(s, e);
     return;
   }
+  validate("update 0");
   pq_open_.clear();
   pq_erase_.clear();
+  validate("update 1");
 
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
 
   if (cost_min != std::numeric_limits<float>::max())
     pq_erase_.emplace(cost_min, cost_min, p_cost_min);
+
+  validate("update 2");
 
   while (true)
   {
@@ -297,11 +301,13 @@ void DistanceMap::update(
       }
     }
   }
+  validate("update 3");
   if (pq_open_.size() == 0)
   {
     pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
   }
 
+  validate("before fillCostmap");
   fillCostmap(pq_open_, s_rough);
 }
 
