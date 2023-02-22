@@ -28,6 +28,7 @@
  */
 
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <string>
 #include <utility>
@@ -266,8 +267,19 @@ void DistanceMap::update(
 
   validate("update 2");
 
+  int i = 0;
+  bool broken = false;
   while (true)
   {
+    i++;
+    if (!broken && !validate("update 2.5"))
+    {
+      broken = true;
+      std::cerr << "i=" << i << std::endl
+                << "pq_open_.size()=" << pq_open_.size() << std::endl
+                << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
+    }
+
     if (pq_erase_.size() < 1)
       break;
     const Astar::PriorityVec center(pq_erase_.top());
@@ -300,6 +312,13 @@ void DistanceMap::update(
         pq_erase_.emplace(gn, gn, next);
       }
     }
+  }
+  if (broken)
+  {
+    std::cerr << "After erase" << std::endl
+              << "i=" << i << std::endl
+              << "pq_open_.size()=" << pq_open_.size() << std::endl
+              << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
   }
   validate("update 3");
   if (pq_open_.size() == 0)

@@ -112,7 +112,7 @@ public:
 
   void create(const Astar::Vec& s, const Astar::Vec& e);
 
-  inline void validate(const std::string& msg)
+  inline bool validate(const std::string& msg)
   {
     int i = 0;
     for (const SearchDiffs& ds : search_diffs_)
@@ -120,15 +120,11 @@ public:
       if (ds.pos.size() > 100)
       {
         std::cerr << msg << " " << i << " " << ds.pos.size() << std::endl;
-        return;
-      }
-      volatile int dummy = 0;
-      for (const auto& d : ds.pos)
-      {
-        dummy += d[2];
+        return false;
       }
       i++;
     }
+    return true;
   }
 
   inline const Astar::Vec& size() const
