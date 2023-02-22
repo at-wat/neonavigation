@@ -52,53 +52,20 @@ do
       2>&1 | tee /root/.ros/log/${i}-full.log | grep -A5 -B500 "RESULT: FAIL" || true
     echo '::endgroup::'
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
-  catkin_test_results || break
+  if ! catkin_test_results
+  then
+    break
+  fi
 done
 
 echo '::group::post process'
 if [ -f /root/.ros/log/planner.core ]
 then
   mkdir -p /root/.ros/log/debug
-  cp \
-    /catkin_ws/devel/lib/planner_cspace/planner_3d \
-    /opt/ros/noetic/lib/libtf2_ros.so \
-    /opt/ros/noetic/lib/libactionlib.so \
-    /opt/ros/noetic/lib/libtf2.so \
-    /opt/ros/noetic/lib/libroscpp.so \
-    /lib/x86_64-linux-gnu/libpthread.so.0 \
-    /lib/x86_64-linux-gnu/libboost_chrono.so.1.71.0 \
-    /opt/ros/noetic/lib/librosconsole.so \
-    /opt/ros/noetic/lib/libroscpp_serialization.so \
-    /opt/ros/noetic/lib/librostime.so \
-    /lib/x86_64-linux-gnu/libboost_thread.so.1.71.0 \
-    /lib/x86_64-linux-gnu/libstdc++.so.6 \
-    /lib/x86_64-linux-gnu/libm.so.6 \
-    /lib/x86_64-linux-gnu/libgomp.so.1 \
-    /lib/x86_64-linux-gnu/libgcc_s.so.1 \
-    /lib/x86_64-linux-gnu/libc.so.6 \
-    /lib/x86_64-linux-gnu/libconsole_bridge.so.0.4 \
-    /opt/ros/noetic/lib/libxmlrpcpp.so \
-    /opt/ros/noetic/lib/libcpp_common.so \
-    /lib/x86_64-linux-gnu/libboost_filesystem.so.1.71.0 \
-    /lib64/ld-linux-x86-64.so.2 \
-    /opt/ros/noetic/lib/librosconsole_log4cxx.so \
-    /opt/ros/noetic/lib/librosconsole_backend_interface.so \
-    /lib/x86_64-linux-gnu/liblog4cxx.so.10 \
-    /lib/x86_64-linux-gnu/libboost_regex.so.1.71.0 \
-    /lib/x86_64-linux-gnu/libdl.so.2 \
-    /lib/x86_64-linux-gnu/libapr-1.so.0 \
-    /lib/x86_64-linux-gnu/libaprutil-1.so.0 \
-    /lib/x86_64-linux-gnu/libicui18n.so.66 \
-    /lib/x86_64-linux-gnu/libicuuc.so.66 \
-    /lib/x86_64-linux-gnu/libuuid.so.1 \
-    /lib/x86_64-linux-gnu/libcrypt.so.1 \
-    /lib/x86_64-linux-gnu/libexpat.so.1 \
-    /lib/x86_64-linux-gnu/libicudata.so.66 \
-    /lib/x86_64-linux-gnu/libnss_files.so.2 \
-    /root/.ros/log/debug/
+  cp /catkin_ws/devel/lib/planner_cspace/planner_3d /root/.ros/log/debug/
 fi
 
-if [ catkin_test_results ]
+if catkin_test_results
 then
   result_text="
 ${md_codeblock}
