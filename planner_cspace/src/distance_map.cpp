@@ -202,27 +202,23 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
       if (d.sqlen() > range_rough * range_rough)
         continue;
 
-      SearchDiffs diffs;
-
       const float grid_to_len = d.gridToLenFactor();
       const int dist = d.len();
       const float dpx = static_cast<float>(d[0]) / dist;
       const float dpy = static_cast<float>(d[1]) / dist;
       Astar::Vecf pos(0, 0, 0);
+      std::vector<Astar::Vec> motion;
       for (int i = 0; i < dist; i++)
       {
         Astar::Vec ipos(pos);
-        if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
+        if (motion.size() == 0 || motion.back() != ipos)
         {
-          diffs.pos.push_back(std::move(ipos));
+          motion.push_back(ipos);
         }
         pos[0] += dpx;
         pos[1] += dpy;
       }
-      diffs.grid_to_len = grid_to_len;
-      diffs.d = d;
-      diffs.euclid_cost = model->euclidCostRough(d);
-      search_diffs_.push_back(std::move(diffs));
+      search_diffs_.emplace_back(d, motion, grid_to_len, model->euclidCostRough(d));
     }
   }
 }

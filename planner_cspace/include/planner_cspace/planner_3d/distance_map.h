@@ -83,6 +83,14 @@ public:
     std::vector<Astar::Vec> pos;
     float grid_to_len;
     float euclid_cost;
+
+    SearchDiffs(const Astar::Vec& d0, const std::vector<Astar::Vec>& pos0, const float grid_to_len0, const float euclid_cost0)
+      : d(d0)
+      , pos(pos0)
+      , grid_to_len(grid_to_len0)
+      , euclid_cost(euclid_cost0)
+    {
+    }
   };
 
   DistanceMap(
