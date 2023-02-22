@@ -302,6 +302,8 @@ void DistanceMap::update(
     {
       broken = true;
       std::cerr << "i=" << i << std::endl
+                << "g.size()=" << g_.size()[0] << " " << g_.size()[1] << " " << g_.size()[2] << std::endl
+                << "p=" << p[0] << " " << p[1] << " " << p[2] << std::endl
                 << "pq_open_.size()=" << pq_open_.size() << std::endl
                 << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
     }
