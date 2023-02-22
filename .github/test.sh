@@ -52,7 +52,7 @@ do
       2>&1 | tee /root/.ros/log/${i}-full.log | grep -A5 -B500 "RESULT: FAIL" || true
     echo '::endgroup::'
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
-  if ! catkin_test_results
+  if grep "RESULT: FAIL" /root/.ros/log/${i}-full.log
   then
     break
   fi
