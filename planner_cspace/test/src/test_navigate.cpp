@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <string>
 #include <unistd.h>
 #include <vector>
 
