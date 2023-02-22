@@ -286,9 +286,25 @@ void DistanceMap::update(
     const Astar::Vec p = center.v_;
     pq_erase_.pop();
 
+    if (!broken && !validate("update 2.6"))
+    {
+      broken = true;
+      std::cerr << "i=" << i << std::endl
+                << "pq_open_.size()=" << pq_open_.size() << std::endl
+                << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
+    }
+
     if (g_[p] == std::numeric_limits<float>::max())
       continue;
     g_[p] = std::numeric_limits<float>::max();
+
+    if (!broken && !validate("update 2.7"))
+    {
+      broken = true;
+      std::cerr << "i=" << i << std::endl
+                << "pq_open_.size()=" << pq_open_.size() << std::endl
+                << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
+    }
 
     for (Astar::Vec d(-1, 0, 0); d[0] <= 1; d[0]++)
     {
