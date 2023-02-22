@@ -28,6 +28,7 @@
  */
 
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -58,7 +59,7 @@ void DistanceMap::fillCostmap(
   {
     if (ds.pos.size() > 100)
     {
-      ROS_ERROR("search_diffs_ is broken (0)");
+      std::cerr << "search_diffs_ is broken (0)" << std::endl;
       break;
     }
   }
@@ -75,7 +76,7 @@ void DistanceMap::fillCostmap(
     {
       if (ds.pos.size() > 100)
       {
-        ROS_ERROR("search_diffs_ is broken (1)");
+        std::cerr << "search_diffs_ is broken (1)" << std::endl;
         break;
       }
     }
@@ -110,7 +111,7 @@ void DistanceMap::fillCostmap(
       {
         if (ds.pos.size() > 100)
         {
-          ROS_ERROR("search_diffs_ is broken (2)");
+          std::cerr << "search_diffs_ is broken (2)" << std::endl;
           break;
         }
       }
