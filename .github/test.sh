@@ -49,7 +49,7 @@ do
     catkin_make run_tests \
       -j1 \
       ${CM_OPTIONS} \
-      2>&1 | tee /root/.ros/log/${i}-full.log | grep -A5 -B500 "RESULT: FAIL" || true
+      2>&1 | tee /root/.ros/log/${i}-full.log | grep -A5 -B500 "RESULT: FAIL\|FAILED" || true
     echo '::endgroup::'
   ) || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" '```catkin_make run_tests``` failed'; false)
   if grep "RESULT: FAIL" /root/.ros/log/${i}-full.log
