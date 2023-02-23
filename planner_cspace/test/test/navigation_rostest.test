@@ -24,10 +24,7 @@
       overlay_mode: max
     </rosparam>
   </node>
-  <node
-    pkg="planner_cspace" type="planner_3d" name="planner_3d" output="screen"
-    launch-prefix="gdb -batch -ex run -ex bt -ex 'gcore /root/.ros/log/planner-$(arg antialias_start)-$(arg fast_map_update)-$(arg with_tolerance).core'"
-  >
+  <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="screen">
     <remap from="move_base_simple/goal" to="goal" />
     <param name="max_vel" value="0.1" />
     <param name="max_ang_vel" value="0.3" />
