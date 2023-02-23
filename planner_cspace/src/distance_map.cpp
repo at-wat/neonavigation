@@ -239,10 +239,12 @@ void DistanceMap::update(
   float cost_min = std::numeric_limits<float>::max();
   for (Astar::Vec p(0, rect.min[1], 0); p[1] <= rect.max[1]; p[1]++)
   {
+    if ((size_t)p[1] >= (size_t)p_.size[1])
+      continue;
+
     for (p[0] = rect.min[0]; p[0] <= rect.max[0]; p[0]++)
     {
-      if ((size_t)p[0] >= (size_t)p_.size[0] ||
-          (size_t)p[1] >= (size_t)p_.size[1])
+      if ((size_t)p[0] >= (size_t)p_.size[0])
         continue;
 
       if (cost_min > g_[p])
