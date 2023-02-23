@@ -454,7 +454,10 @@ TEST_F(DistanceMapTestLongMap, BlockedAndRecovered)
       s, e,
       DistanceMap::Rect(
           Vec3(5, 0, 0), Vec3(5, 2, 0)));
-  validate(5);
+  {
+    SCOPED_TRACE("Obstacle at x=5");
+    validate(5);
+  }
   if (::testing::Test::HasFatalFailure())
   {
     debugOutput(dm_, cm_rough_, s, e);
@@ -467,7 +470,10 @@ TEST_F(DistanceMapTestLongMap, BlockedAndRecovered)
       s, e,
       DistanceMap::Rect(
           Vec3(5, 0, 0), Vec3(5, 2, 0)));
-  validate(w_);
+  {
+    SCOPED_TRACE("No obstacle");
+    validate(w_);
+  }
   if (::testing::Test::HasFatalFailure())
   {
     debugOutput(dm_, cm_rough_, s, e);
