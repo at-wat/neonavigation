@@ -985,7 +985,7 @@ protected:
 
     prev_map_update_x_min_ = map_info_.width;
     prev_map_update_x_max_ = 0;
-    prev_map_update_y_min_ = map_info_.width;
+    prev_map_update_y_min_ = map_info_.height;
     prev_map_update_y_max_ = 0;
 
     updateGoal();
