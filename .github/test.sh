@@ -42,7 +42,7 @@ echo '::endgroup::'
 export ROSCONSOLE_FORMAT='[${severity}] [${time}] [${node}]: ${message}'
 
 
-for i in $(seq 2)
+for i in $(seq 10)
 do
   (
     echo '::group::catkin_make run_tests'
