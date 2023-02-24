@@ -52,7 +52,7 @@ RUN if [ ${ROS_DISTRO} = "noetic" ]; then PYTHON_VERSION_SUFFIX=3; else PYTHON_V
     wget \
   && rosdep init \
   && rosdep update \
-  && rosdep install --from-paths /catkin_ws/src --ignore-src --rosdistro=${ROS_DISTRO} -y \
+  && rosdep install --from-paths /catkin_ws/src --rosdistro=${ROS_DISTRO} -y \
   && rosdep install --from-paths /catkin_ws_isolated/src --ignore-src --rosdistro=${ROS_DISTRO} -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
