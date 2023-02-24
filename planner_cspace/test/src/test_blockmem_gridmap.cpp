@@ -117,9 +117,9 @@ TEST(BlockmemGridmap, ClearAndCopyPartially)
     {
       for (p[2] = 0; p[2] < base_size[2]; ++p[2])
       {
-        if ((copy_min_pos[0] <= p[0]) && (p[0] < copy_max_pos[0]) &&
-            (copy_min_pos[1] <= p[1]) && (p[1] < copy_max_pos[1]) &&
-            (copy_min_pos[2] <= p[2]) && (p[2] < copy_max_pos[2]))
+        if ((copy_min_pos[0] <= p[0]) && (p[0] <= copy_max_pos[0]) &&
+            (copy_min_pos[1] <= p[1]) && (p[1] <= copy_max_pos[1]) &&
+            (copy_min_pos[2] <= p[2]) && (p[2] <= copy_max_pos[2]))
         {
           EXPECT_EQ(gm[p], -1) << p[0] << "," << p[1] << "," << p[2];
         }
@@ -153,9 +153,9 @@ TEST(BlockmemGridmap, ClearAndCopyPartially)
     {
       for (p[2] = 0; p[2] < base_size[2]; ++p[2])
       {
-        if ((copy_min_pos[0] <= p[0]) && (p[0] < copy_max_pos[0]) &&
-            (copy_min_pos[1] <= p[1]) && (p[1] < copy_max_pos[1]) &&
-            (copy_min_pos[2] <= p[2]) && (p[2] < copy_max_pos[2]))
+        if ((copy_min_pos[0] <= p[0]) && (p[0] <= copy_max_pos[0]) &&
+            (copy_min_pos[1] <= p[1]) && (p[1] <= copy_max_pos[1]) &&
+            (copy_min_pos[2] <= p[2]) && (p[2] <= copy_max_pos[2]))
         {
           ASSERT_EQ(gm[p], gm_update[p]);
         }

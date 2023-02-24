@@ -702,12 +702,12 @@ protected:
     const ros::Time now = ros::Time::now();
 
     const int map_update_x_min = static_cast<int>(msg->x);
-    const int map_update_x_max = static_cast<int>(msg->x + msg->width);
+    const int map_update_x_max = std::max(static_cast<int>(msg->x + msg->width) - 1, 0);
     const int map_update_y_min = static_cast<int>(msg->y);
-    const int map_update_y_max = static_cast<int>(msg->y + msg->height);
+    const int map_update_y_max = std::max(static_cast<int>(msg->y + msg->height) - 1, 0);
 
-    if (static_cast<size_t>(map_update_x_max) > map_info_.width ||
-        static_cast<size_t>(map_update_y_max) > map_info_.height ||
+    if (static_cast<size_t>(map_update_x_max) >= map_info_.width ||
+        static_cast<size_t>(map_update_y_max) >= map_info_.height ||
         msg->angle > map_info_.angle)
     {
       ROS_WARN(
@@ -721,21 +721,34 @@ protected:
 
     last_costmap_ = now;
 
-    cm_.copy_partially(cm_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
-                       Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, static_cast<int>(map_info_.angle)));
-    cm_rough_.copy_partially(cm_rough_base_, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
-                             Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
-    cm_updates_.clear_partially(-1, Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
-                                Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 1));
+    cm_.copy_partially(
+        cm_base_,
+        Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+        Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, static_cast<int>(map_info_.angle) - 1));
+    cm_rough_.copy_partially(
+        cm_rough_base_,
+        Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+        Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 0));
+    cm_updates_.clear_partially(
+        -1,
+        Astar::Vec(prev_map_update_x_min_, prev_map_update_y_min_, 0),
+        Astar::Vec(prev_map_update_x_max_, prev_map_update_y_max_, 0));
 
     // Should search 1px around the region to
     // update the costmap even if the edge of the local map is obstacle
-    const int search_range_x_min = std::max(0, std::min(prev_map_update_x_min_, map_update_x_min) - 1);
-    const int search_range_x_max = std::min(static_cast<int>(map_info_.width),
-                                            std::max(prev_map_update_x_max_, map_update_x_max) + 1);
-    const int search_range_y_min = std::max(0, std::min(prev_map_update_y_min_, map_update_y_min) - 1);
-    const int search_range_y_max = std::min(static_cast<int>(map_info_.height),
-                                            std::max(prev_map_update_y_max_, map_update_y_max) + 1);
+    const int search_range_x_min = std::max(
+        0,
+        std::min(prev_map_update_x_min_, map_update_x_min) - 1);
+    const int search_range_x_max = std::min(
+        static_cast<int>(map_info_.width - 1),
+        std::max(prev_map_update_x_max_, map_update_x_max) + 1);
+    const int search_range_y_min = std::max(
+        0,
+        std::min(prev_map_update_y_min_, map_update_y_min) - 1);
+    const int search_range_y_max = std::min(
+        static_cast<int>(map_info_.height - 1),
+        std::max(prev_map_update_y_max_, map_update_y_max) + 1);
+
     prev_map_update_x_min_ = map_update_x_min;
     prev_map_update_x_max_ = map_update_x_max;
     prev_map_update_y_min_ = map_update_y_min;
@@ -970,10 +983,10 @@ protected:
     cm_base_ = cm_;
     bbf_costmap_.clear();
 
-    prev_map_update_x_min_ = std::numeric_limits<int>::max();
-    prev_map_update_x_max_ = std::numeric_limits<int>::lowest();
-    prev_map_update_y_min_ = std::numeric_limits<int>::max();
-    prev_map_update_y_max_ = std::numeric_limits<int>::lowest();
+    prev_map_update_x_min_ = map_info_.width;
+    prev_map_update_x_max_ = 0;
+    prev_map_update_y_min_ = map_info_.width;
+    prev_map_update_y_max_ = 0;
 
     updateGoal();
 
