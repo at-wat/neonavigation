@@ -239,20 +239,8 @@ void DistanceMap::update(
   float cost_min = std::numeric_limits<float>::max();
   for (Astar::Vec p(0, rect.min[1], 0); p[1] <= rect.max[1]; p[1]++)
   {
-    if ((size_t)p[1] >= (size_t)p_.size[1])
-    {
-      std::cerr << "DistanceMap::update region out of range: y " << p[1] << " " << p_.size[1] << std::endl;
-      continue;
-    }
-
     for (p[0] = rect.min[0]; p[0] <= rect.max[0]; p[0]++)
     {
-      if ((size_t)p[0] >= (size_t)p_.size[0])
-      {
-        std::cerr << "DistanceMap::update region out of range: x " << p[0] << " " << p_.size[0] << std::endl;
-        continue;
-      }
-
       if (cost_min > g_[p])
       {
         p_cost_min = p;
