@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.12.1 (2023-02-25)
+-------------------
 * Improve test logs on timeout (`#673 <https://github.com/at-wat/neonavigation/issues/673>`_)
 * planner_cspace: fix map update range (`#672 <https://github.com/at-wat/neonavigation/issues/672>`_)
 * planner_cspace: clear velocity of dummy_robot on position set (`#669 <https://github.com/at-wat/neonavigation/issues/669>`_)
