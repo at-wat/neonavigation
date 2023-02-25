@@ -28,7 +28,7 @@
       linear_spread: 0.0
     </rosparam>
   </node>
-  <node pkg="planner_cspace" type="planner_3d" name="planner_3d">
+  <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="screen">
     <remap from="~/goal" to="/goal" />
     <remap from="~/costmap" to="/costmap_3d/costmap" />
     <remap from="~/costmap_update" to="/costmap_3d/costmap_update" />
