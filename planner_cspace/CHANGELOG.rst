@@ -2,6 +2,15 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Improve test logs on timeout (`#673 <https://github.com/at-wat/neonavigation/issues/673>`_)
+* planner_cspace: fix map update range (`#672 <https://github.com/at-wat/neonavigation/issues/672>`_)
+* planner_cspace: clear velocity of dummy_robot on position set (`#669 <https://github.com/at-wat/neonavigation/issues/669>`_)
+* planner_cspace: fix flaky action tests (`#665 <https://github.com/at-wat/neonavigation/issues/665>`_)
+* planner_cspace: fix planner_cspace_msgs version constraint (`#663 <https://github.com/at-wat/neonavigation/issues/663>`_)
+* Contributors: Atsushi Watanabe
+
 0.12.0 (2023-01-30)
 -------------------
 * planner_cspace: add continuous movement mode to MoveWithTolerance (`#652 <https://github.com/at-wat/neonavigation/issues/652>`_)
