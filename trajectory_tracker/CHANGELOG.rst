@@ -2,6 +2,14 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.12.1 (2023-02-25)
+-------------------
+* trajectory_tracker: relax test conditions (`#674 <https://github.com/at-wat/neonavigation/issues/674>`_)
+* Improve test logs on timeout (`#673 <https://github.com/at-wat/neonavigation/issues/673>`_)
+* trajectory_tracker: throttle tf exception logs (`#670 <https://github.com/at-wat/neonavigation/issues/670>`_)
+* trajectory_tracker: improve test stability (`#667 <https://github.com/at-wat/neonavigation/issues/667>`_)
+* Contributors: Atsushi Watanabe
+
 0.12.0 (2023-01-30)
 -------------------
 
