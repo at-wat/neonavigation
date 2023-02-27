@@ -120,12 +120,10 @@ protected:
     map_info.linear_resolution = 1.0;
     map_info.angular_resolution = M_PI * 2 / angle_;
 
-    CostCoeff cc =
-        {
-            .weight_costmap_ = 1.0f,
-            .weight_remembered_ = 0.0f,
-            .angle_resolution_aspect_ = 2.0f / tanf(map_info.angular_resolution),
-        };
+    CostCoeff cc;
+    cc.weight_costmap_ = 1.0f;
+    cc.weight_remembered_ = 0.0f;
+    cc.angle_resolution_aspect_ = 2.0f / tanf(map_info.angular_resolution);
     dm_.setParams(cc, 64 * 2);
 
     const Astar::Vec size3d(w_, h_, angle_);
@@ -345,12 +343,10 @@ protected:
     map_info.linear_resolution = 1.0;
     map_info.angular_resolution = M_PI * 2 / angle_;
 
-    CostCoeff cc =
-        {
-            .weight_costmap_ = 1.0f,
-            .weight_remembered_ = 0.0f,
-            .angle_resolution_aspect_ = 2.0f / tanf(map_info.angular_resolution),
-        };
+    CostCoeff cc;
+    cc.weight_costmap_ = 1.0f;
+    cc.weight_remembered_ = 0.0f;
+    cc.angle_resolution_aspect_ = 2.0f / tanf(map_info.angular_resolution);
     omp_set_num_threads(1);
     dm_.setParams(cc, 1);
 
