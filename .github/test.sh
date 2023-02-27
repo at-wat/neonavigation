@@ -58,25 +58,15 @@ do
   fi
 done
 
-echo '::group::post process'
+echo '::group::post-process'
 mkdir -p /root/.ros/log/debug
 cp /catkin_ws/devel/lib/planner_cspace/planner_3d /root/.ros/log/debug/
 
-if catkin_test_results
-then
-  result_text="
+result_text="
 ${md_codeblock}
 $(catkin_test_results --all | grep -v Skipping || true)
 ${md_codeblock}
 "
-else
-  result_text="
-${md_codeblock}
-$(catkin_test_results --all | grep -v Skipping || true)
-${md_codeblock}
-$(find build/test_results/ -name *.xml | xargs -n 1 -- bash -c 'echo; echo \#\#\# $0; echo; echo \\\`\\\`\\\`; xmllint --format $0; echo \\\`\\\`\\\`;')
-"
-fi
 catkin_test_results || (gh-pr-comment "${BUILD_LINK} FAILED on ${ROS_DISTRO}" "<details><summary>Test failed</summary>
 
 $result_text</details>"; false)
