@@ -176,8 +176,7 @@ void DistanceMap::fillCostmap(
 DistanceMap::DistanceMap(
     const BlockMemGridmapBase<char, 3, 2>& cm_rough,
     const CostmapBBF& bbf_costmap)
-  : initialized_(false)
-  , cm_rough_(cm_rough)
+  : cm_rough_(cm_rough)
   , bbf_costmap_(bbf_costmap)
 {
 }
@@ -190,7 +189,7 @@ void DistanceMap::setParams(const CostCoeff& cc, const int num_cost_estim_task)
 
 void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
 {
-  if (!initialized_ || p.size[0] != p_.size[0] || p.size[1] != p_.size[1])
+  if (p.size[0] != p_.size[0] || p.size[1] != p_.size[1])
   {
     // Typical open/erase queue size is be approximated by perimeter of the map
     pq_open_.reserve((p.size[0] + p.size[1]) * 2);
@@ -198,7 +197,6 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
 
     g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
     g_.clear(0);
-    initialized_ = true;
   }
   p_ = p;
   search_diffs_.clear();
