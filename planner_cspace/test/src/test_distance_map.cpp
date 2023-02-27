@@ -445,6 +445,10 @@ TEST_F(DistanceMapTestLongMap, BlockedAndRecovered)
   };
 
   dm_.create(s, e);
+  {
+    SCOPED_TRACE("No obstacle");
+    validate(w_);
+  }
 
   for (int y = 0; y < h_; y++)
   {
