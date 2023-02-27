@@ -972,6 +972,8 @@ protected:
     hyst_updated_cells_.clear();
     has_hysteresis_map_ = false;
 
+    cm_updates_.clear(0);
+
     has_map_ = true;
 
     cm_rough_base_ = cm_rough_;

@@ -120,6 +120,7 @@ public:
   }
 
 protected:
+  bool initialized_;
   Astar::Gridmap<float> g_;
   Params p_;
   CostCoeff cc_;
