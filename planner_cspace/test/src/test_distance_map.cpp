@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <limits>
 #include <string>
 #include <vector>
@@ -110,10 +111,7 @@ protected:
   {
     const int range = 4;
     const int local_range = 10;
-    CostCoeff cc;
-    cc.weight_costmap_ = 1.0f;
     omp_set_num_threads(2);
-    dm_.setParams(cc, 64 * 2);
 
     costmap_cspace_msgs::MapMetaData3D map_info;
     map_info.width = w_;
@@ -121,6 +119,12 @@ protected:
     map_info.angle = angle_;
     map_info.linear_resolution = 1.0;
     map_info.angular_resolution = M_PI * 2 / angle_;
+
+    CostCoeff cc;
+    cc.weight_costmap_ = 1.0f;
+    cc.weight_remembered_ = 0.0f;
+    cc.angle_resolution_aspect_ = 2.0f / tanf(map_info.angular_resolution);
+    dm_.setParams(cc, 64 * 2);
 
     const Astar::Vec size3d(w_, h_, angle_);
     const Astar::Vec size2d(w_, h_, 1);
@@ -137,6 +141,11 @@ protected:
     cm_hyst.reset(size3d);
     cm_rough_.reset(size2d);
     bbf_costmap_.reset(size2d);
+
+    cm.clear(0);
+    cm_hyst.clear(0);
+    cm_rough_.clear(0);
+    bbf_costmap_.clear();
 
     const DistanceMap::Params dmp =
         {
@@ -327,17 +336,19 @@ protected:
     : ec_(0.5f, 0.5f, 0.2f)
     , dm_(cm_rough_, bbf_costmap_)
   {
-    CostCoeff cc;
-    cc.weight_costmap_ = 1.0f;
-    omp_set_num_threads(1);
-    dm_.setParams(cc, 1);
-
     costmap_cspace_msgs::MapMetaData3D map_info;
     map_info.width = w_;
     map_info.height = h_;
     map_info.angle = angle_;
     map_info.linear_resolution = 1.0;
     map_info.angular_resolution = M_PI * 2 / angle_;
+
+    CostCoeff cc;
+    cc.weight_costmap_ = 1.0f;
+    cc.weight_remembered_ = 0.0f;
+    cc.angle_resolution_aspect_ = 2.0f / tanf(map_info.angular_resolution);
+    omp_set_num_threads(1);
+    dm_.setParams(cc, 1);
 
     const Astar::Vec size3d(w_, h_, angle_);
     const Astar::Vec size2d(w_, h_, 1);
@@ -354,7 +365,10 @@ protected:
     cm_hyst.reset(size3d);
     cm_rough_.reset(size2d);
     bbf_costmap_.reset(size2d);
+    cm.clear(0);
+    cm_hyst.clear(0);
     cm_rough_.clear(0);
+    bbf_costmap_.clear();
 
     const DistanceMap::Params dmp =
         {
