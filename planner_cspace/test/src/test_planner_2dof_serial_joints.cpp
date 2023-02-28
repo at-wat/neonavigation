@@ -28,8 +28,9 @@
  */
 
 #include <ros/ros.h>
-#include <trajectory_msgs/JointTrajectory.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/JointState.h>
+#include <trajectory_msgs/JointTrajectory.h>
 
 #include <gtest/gtest.h>
 
@@ -46,6 +47,14 @@ TEST(Planner2DOFSerialJoints, Plan)
   };
   ros::Subscriber sub_plan = nh.subscribe<trajectory_msgs::JointTrajectory>("joint_trajectory", 1, cb_plan);
 
+  planner_cspace_msgs::PlannerStatus::ConstPtr status;
+  const auto cb_status = [&status](const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  {
+    status = msg;
+  };
+  ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::PlannerStatus>(
+      "/planner_2dof_serial_joints/group0/status", 1, cb_status);
+
   sensor_msgs::JointState s;
   s.name.push_back("front");
   s.position.push_back(-1.57);
@@ -60,21 +69,34 @@ TEST(Planner2DOFSerialJoints, Plan)
   p.positions.push_back(0.0);
   cmd.points.push_back(p);
 
-  pub_state.publish(s);
-  ros::Duration(1.0).sleep();
-
   ros::Rate rate(1);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
+  int cnt = 0;
   while (ros::ok())
   {
+    if (ros::Time::now() > deadline)
+    {
+      FAIL() << "Timeout";
+    }
+
     pub_state.publish(s);
     pub_cmd.publish(cmd);
 
     ros::spinOnce();
     rate.sleep();
-    if (planned)
-      break;
+    if (planned && status)
+    {
+      cnt++;
+      if (cnt > 5)
+      {
+        break;
+      }
+    }
   }
   ASSERT_TRUE(ros::ok());
+
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DOING, status->status);
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL, status->error);
 
   ASSERT_EQ(2u, planned->joint_names.size());
   ASSERT_EQ("front", planned->joint_names[0]);
@@ -116,7 +138,68 @@ TEST(Planner2DOFSerialJoints, Plan)
         std::hypot(front_diff, rear_diff);
     // std::cerr << d << std::endl;
     ASSERT_GT(d, 0.15);
+
+    ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DOING, status->status);
+    ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL, status->error);
   }
+}
+
+TEST(Planner2DOFSerialJoints, NoPath)
+{
+  ros::NodeHandle nh;
+  ros::Publisher pub_state = nh.advertise<sensor_msgs::JointState>("joint_states", 1, true);
+  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::JointTrajectory>("trajectory_in", 1, true);
+
+  planner_cspace_msgs::PlannerStatus::ConstPtr status;
+  const auto cb_status = [&status](const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  {
+    status = msg;
+  };
+  ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::PlannerStatus>(
+      "/planner_2dof_serial_joints/group0/status", 1, cb_status);
+
+  sensor_msgs::JointState s;
+  s.name.push_back("front");
+  s.position.push_back(-1.57);
+  s.name.push_back("rear");
+  s.position.push_back(0.0);
+
+  trajectory_msgs::JointTrajectory cmd;
+  cmd.joint_names.push_back("front");
+  cmd.joint_names.push_back("rear");
+  trajectory_msgs::JointTrajectoryPoint p;
+  p.positions.push_back(3.14);
+  p.positions.push_back(0.0);  // Collided state
+  cmd.points.push_back(p);
+
+  ros::Rate rate(1);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
+  int cnt = 0;
+  while (ros::ok())
+  {
+    if (ros::Time::now() > deadline)
+    {
+      FAIL() << "Timeout";
+    }
+
+    pub_state.publish(s);
+    pub_cmd.publish(cmd);
+
+    ros::spinOnce();
+    rate.sleep();
+    if (status)
+    {
+      cnt++;
+      if (cnt > 5)
+      {
+        break;
+      }
+    }
+  }
+  ASSERT_TRUE(ros::ok());
+
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DOING, status->status);
+  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND, status->error);
 }
 
 int main(int argc, char** argv)
