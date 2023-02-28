@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.12.2 (2023-02-28)
+-------------------
 * planner_cspace: fix planner_2dof_serial_joints status (`#682 <https://github.com/at-wat/neonavigation/issues/682>`_)
 * planner_cspace: set timestamp to planner status message (`#681 <https://github.com/at-wat/neonavigation/issues/681>`_)
 * planner_cspace: fix uninitialized variables in DistanceMap (`#679 <https://github.com/at-wat/neonavigation/issues/679>`_)
