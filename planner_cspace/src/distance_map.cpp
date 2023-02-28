@@ -28,9 +28,7 @@
  */
 
 #include <cmath>
-#include <iostream>
 #include <limits>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -56,8 +54,6 @@ void DistanceMap::fillCostmap(
 
   debug_data_.has_negative_cost = false;
 
-  validate("before parallel");
-
 #pragma omp parallel
   {
     std::vector<Astar::GridmapUpdate> updates;
@@ -65,7 +61,6 @@ void DistanceMap::fillCostmap(
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
     const float weight_linear = p_.resolution / 100.0;
-    validate("in thread");
 
     while (true)
     {
@@ -93,14 +88,11 @@ void DistanceMap::fillCostmap(
         break;
       updates.clear();
 
-      validate("before schedule");
-
 #pragma omp for schedule(static)
       for (auto it = centers.cbegin(); it < centers.cend(); ++it)
       {
         const Astar::Vec p = it->v_;
 
-        validate("in search");
         for (const SearchDiffs& ds : search_diffs_)
         {
           const Astar::Vec d = ds.d;
@@ -196,7 +188,6 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
     pq_erase_.reserve((p.size[0] + p.size[1]) * 2);
 
     g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
-    g_.clear(0);
   }
   p_ = p;
   search_diffs_.clear();
@@ -211,23 +202,27 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
       if (d.sqlen() > range_rough * range_rough)
         continue;
 
+      SearchDiffs diffs;
+
       const float grid_to_len = d.gridToLenFactor();
       const int dist = d.len();
       const float dpx = static_cast<float>(d[0]) / dist;
       const float dpy = static_cast<float>(d[1]) / dist;
       Astar::Vecf pos(0, 0, 0);
-      std::vector<Astar::Vec> motion;
       for (int i = 0; i < dist; i++)
       {
         Astar::Vec ipos(pos);
-        if (motion.size() == 0 || motion.back() != ipos)
+        if (diffs.pos.size() == 0 || diffs.pos.back() != ipos)
         {
-          motion.push_back(ipos);
+          diffs.pos.push_back(std::move(ipos));
         }
         pos[0] += dpx;
         pos[1] += dpy;
       }
-      search_diffs_.emplace_back(d, motion, grid_to_len, model->euclidCostRough(d));
+      diffs.grid_to_len = grid_to_len;
+      diffs.d = d;
+      diffs.euclid_cost = model->euclidCostRough(d);
+      search_diffs_.push_back(std::move(diffs));
     }
   }
 }
@@ -255,10 +250,8 @@ void DistanceMap::update(
     create(s, e);
     return;
   }
-  validate("update 0");
   pq_open_.clear();
   pq_erase_.clear();
-  validate("update 1");
 
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
@@ -266,48 +259,17 @@ void DistanceMap::update(
   if (cost_min != std::numeric_limits<float>::max())
     pq_erase_.emplace(cost_min, cost_min, p_cost_min);
 
-  validate("update 2");
-
-  int i = 0;
-  bool broken = false;
   while (true)
   {
-    i++;
-    if (!broken && !validate("update 2.5"))
-    {
-      broken = true;
-      std::cerr << "i=" << i << std::endl
-                << "pq_open_.size()=" << pq_open_.size() << std::endl
-                << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
-    }
-
     if (pq_erase_.size() < 1)
       break;
     const Astar::PriorityVec center(pq_erase_.top());
     const Astar::Vec p = center.v_;
     pq_erase_.pop();
 
-    if (!broken && !validate("update 2.6"))
-    {
-      broken = true;
-      std::cerr << "i=" << i << std::endl
-                << "pq_open_.size()=" << pq_open_.size() << std::endl
-                << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
-    }
-
     if (g_[p] == std::numeric_limits<float>::max())
       continue;
     g_[p] = std::numeric_limits<float>::max();
-
-    if (!broken && !validate("update 2.7"))
-    {
-      broken = true;
-      std::cerr << "i=" << i << std::endl
-                << "g.size()=" << g_.size()[0] << " " << g_.size()[1] << " " << g_.size()[2] << std::endl
-                << "p=" << p[0] << " " << p[1] << " " << p[2] << std::endl
-                << "pq_open_.size()=" << pq_open_.size() << std::endl
-                << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
-    }
 
     for (Astar::Vec d(-1, 0, 0); d[0] <= 1; d[0]++)
     {
@@ -317,8 +279,8 @@ void DistanceMap::update(
           continue;
         Astar::Vec next = p + d;
         next[2] = 0;
-        if ((size_t)next[0] >= (size_t)p_.size[0] ||
-            (size_t)next[1] >= (size_t)p_.size[1])
+        if ((unsigned int)next[0] >= (unsigned int)p_.size[0] ||
+            (unsigned int)next[1] >= (unsigned int)p_.size[1])
           continue;
         const float gn = g_[next];
         if (gn == std::numeric_limits<float>::max())
@@ -332,20 +294,11 @@ void DistanceMap::update(
       }
     }
   }
-  if (broken)
-  {
-    std::cerr << "After erase" << std::endl
-              << "i=" << i << std::endl
-              << "pq_open_.size()=" << pq_open_.size() << std::endl
-              << "pq_erase_.size()=" << pq_erase_.size() << std::endl;
-  }
-  validate("update 3");
   if (pq_open_.size() == 0)
   {
     pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
   }
 
-  validate("before fillCostmap");
   fillCostmap(pq_open_, s_rough);
 }
 
