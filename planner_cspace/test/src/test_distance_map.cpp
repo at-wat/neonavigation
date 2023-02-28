@@ -415,7 +415,10 @@ TEST_F(DistanceMapTestLongMap, OvershootRange)
   };
 
   dm_.create(s, e);
-  validate();
+  {
+    SCOPED_TRACE("After create");
+    validate();
+  }
   if (::testing::Test::HasFatalFailure())
     debugOutput(dm_, cm_rough_, s, e);
 
@@ -423,7 +426,10 @@ TEST_F(DistanceMapTestLongMap, OvershootRange)
       s, e,
       DistanceMap::Rect(
           Vec3(8, 0, 0), Vec3(9, 2, 0)));
-  validate();
+  {
+    SCOPED_TRACE("After update");
+    validate();
+  }
   if (::testing::Test::HasFatalFailure())
     debugOutput(dm_, cm_rough_, s, e);
 }
