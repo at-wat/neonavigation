@@ -411,6 +411,7 @@ protected:
         return false;
       }
       status_.status = planner_cspace_msgs::PlannerStatus::DOING;
+      status_.header.stamp = ros::Time::now();
       pub_status_.publish(status_);
       diag_updater_.update();
     }
@@ -1438,6 +1439,7 @@ public:
         publishEmptyPath();
         previous_path.poses.clear();
       }
+      status_.header.stamp = now;
       pub_status_.publish(status_);
       diag_updater_.force_update();
 
