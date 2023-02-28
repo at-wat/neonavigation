@@ -2,6 +2,14 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.12.2 (2023-02-28)
+-------------------
+* planner_cspace: fix planner_2dof_serial_joints status (`#682 <https://github.com/at-wat/neonavigation/issues/682>`_)
+* planner_cspace: set timestamp to planner status message (`#681 <https://github.com/at-wat/neonavigation/issues/681>`_)
+* planner_cspace: fix uninitialized variables in DistanceMap (`#679 <https://github.com/at-wat/neonavigation/issues/679>`_)
+* planner_cspace: add scoped trace to some test cases (`#680 <https://github.com/at-wat/neonavigation/issues/680>`_)
+* Contributors: Atsushi Watanabe
+
 0.12.1 (2023-02-25)
 -------------------
 * Improve test logs on timeout (`#673 <https://github.com/at-wat/neonavigation/issues/673>`_)

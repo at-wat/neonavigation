@@ -2,6 +2,9 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.12.2 (2023-02-28)
+-------------------
+
 0.12.1 (2023-02-25)
 -------------------
 * trajectory_tracker: relax test conditions (`#674 <https://github.com/at-wat/neonavigation/issues/674>`_)
