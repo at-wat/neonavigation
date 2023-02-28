@@ -2,6 +2,9 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.12.1 (2023-02-25)
 -------------------
 * safety_limiter: update config to stabilize simulation test (`#668 <https://github.com/at-wat/neonavigation/issues/668>`_)
