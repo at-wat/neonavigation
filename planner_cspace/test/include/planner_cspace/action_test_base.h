@@ -44,8 +44,8 @@
 #include <tf2/utils.h>
 #include <tf2_ros/transform_listener.h>
 
-const char ACTION_TOPIC_MOVE_BASE[] = "/move_base";
-const char ACTION_TOPIC_TOLERANT_MOVE[] = "/tolerant_move";
+constexpr const char ACTION_TOPIC_MOVE_BASE[] = "/move_base";
+constexpr const char ACTION_TOPIC_TOLERANT_MOVE[] = "/tolerant_move";
 
 template <typename ACTION, char const* TOPIC>
 class ActionTestBase : public ::testing::Test

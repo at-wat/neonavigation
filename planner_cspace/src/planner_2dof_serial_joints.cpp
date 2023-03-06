@@ -243,6 +243,9 @@ private:
              traj_prev_.points[0].positions[id_[0]],
              traj_prev_.points[0].positions[id_[1]]);
 
+    status_.status = planner_cspace_msgs::PlannerStatus::DOING;
+    status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+
     ROS_INFO("Start searching");
     std::list<Astar::Vecf> path;
     if (makePlan(start, end, path))
@@ -362,6 +365,7 @@ private:
       ROS_WARN("Trajectory not found");
     }
 
+    status_.header.stamp = ros::Time::now();
     pub_status_.publish(status_);
   }
 
