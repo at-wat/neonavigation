@@ -30,7 +30,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 
-add_executable(costmap_3d src/costmap_3d.cpp src/costmap_3d_layers.cpp)
+add_executable(costmap_3d src/costmap_3d.cpp)
 target_link_libraries(costmap_3d ${catkin_LIBRARIES})
 add_dependencies(costmap_3d ${catkin_EXPORTED_TARGETS})
 set_property(TARGET costmap_3d PROPERTY PUBLIC_HEADER
@@ -49,6 +49,15 @@ add_executable(largemap_to_map src/largemap_to_map.cpp)
 target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
 add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
 
+add_executable(costmap_3d_layers src/costmap_3d_layers.cpp)
+target_link_libraries(costmap_3d_layers ${catkin_LIBRARIES})
+add_dependencies(costmap_3d_layers ${catkin_EXPORTED_TARGETS})
+
+# Add a library for the costmap 3D layer headers
+install(DIRECTORY include/costmap_cspace/costmap_3d_layer/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}/costmap_cspace/costmap_3d_layer
+  FILES_MATCHING PATTERN "*.h"
+)
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
@@ -59,14 +68,10 @@ if(CATKIN_ENABLE_TESTING)
   roslint_add_test()
 endif()
 
-# Add a library for the costmap 3D layer headers
-install(DIRECTORY include/costmap_cspace/costmap_3d_layer/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}/costmap_cspace/costmap_3d_layer
-  FILES_MATCHING PATTERN "*.h"
-)
 
 install(TARGETS
     costmap_3d
+    costmap_3d_layers
     largemap_to_map
     laserscan_to_map
     pointcloud2_to_map
