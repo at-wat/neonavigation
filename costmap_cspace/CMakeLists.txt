@@ -59,6 +59,11 @@ if(CATKIN_ENABLE_TESTING)
   roslint_add_test()
 endif()
 
+# Add a library for the costmap 3D layer headers
+install(DIRECTORY include/costmap_cspace/costmap_3d_layer/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}/costmap_cspace/costmap_3d_layer
+  FILES_MATCHING PATTERN "*.h"
+)
 
 install(TARGETS
     costmap_3d
