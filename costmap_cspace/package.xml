@@ -24,6 +24,5 @@
 
   <depend>costmap_cspace_msgs</depend>
   <depend>neonavigation_common</depend>
-
   <depend>xmlrpcpp</depend>
 </package>
