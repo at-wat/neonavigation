@@ -49,6 +49,7 @@ add_executable(largemap_to_map src/largemap_to_map.cpp)
 target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
 add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
 
+add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
 add_executable(costmap_3d_layers src/costmap_3d_layers.cpp)
 target_link_libraries(costmap_3d_layers ${catkin_LIBRARIES})
 add_dependencies(costmap_3d_layers ${catkin_EXPORTED_TARGETS})
