@@ -3,6 +3,7 @@ project(costmap_cspace)
 
 set(CATKIN_DEPENDS
   roscpp
+
   geometry_msgs
   laser_geometry
   nav_msgs
@@ -10,6 +11,7 @@ set(CATKIN_DEPENDS
   tf2_geometry_msgs
   tf2_ros
   tf2_sensor_msgs
+
   costmap_cspace_msgs
   neonavigation_common
 )
@@ -21,19 +23,19 @@ catkin_package(
   CATKIN_DEPENDS ${CATKIN_DEPENDS}
 )
 
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include/costmap_cspace) #add header files in costmap_cspace
 
-# Add library for costmap_3d_layers.cpp
-add_library(costmap_3d_layers_lib src/costmap_3d_layers.cpp)
-target_link_libraries(costmap_3d_layers_lib ${catkin_LIBRARIES})
-add_dependencies(costmap_3d_layers_lib ${catkin_EXPORTED_TARGETS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include/costmap_cspace)
 
-# Add executable and link to the new library
+add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
+target_link_libraries(costmap_3d_layers ${catkin_LIBRARIES})
+add_dependencies(costmap_3d_layers ${catkin_EXPORTED_TARGETS})
+
 add_executable(costmap_3d src/costmap_3d.cpp)
-target_link_libraries(costmap_3d costmap_3d_layers_lib ${catkin_LIBRARIES})
+target_link_libraries(costmap_3d costmap_3d_layers ${catkin_LIBRARIES})
 add_dependencies(costmap_3d ${catkin_EXPORTED_TARGETS})
 set_property(TARGET costmap_3d PROPERTY PUBLIC_HEADER
   include/costmap_cspace/pointcloud_accumulator.h
@@ -51,6 +53,7 @@ add_executable(largemap_to_map src/largemap_to_map.cpp)
 target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
 add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
 
+
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
   add_subdirectory(test)
@@ -60,12 +63,13 @@ if(CATKIN_ENABLE_TESTING)
   roslint_add_test()
 endif()
 
+
 install(TARGETS
     costmap_3d
     largemap_to_map
     laserscan_to_map
     pointcloud2_to_map
-    costmap_3d_layers_lib  # Include the new library in the installation
+    costmap_3d_layers
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
