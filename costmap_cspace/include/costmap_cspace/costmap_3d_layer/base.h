@@ -372,7 +372,7 @@ public:
     }
     else
     {
-      ROS_INFO("update_chain_entry execution has been avoided.");
+      ROS_DEBUG("update_chain_entry execution has been avoided.");
     }
   }
   CSpace3DMsg::Ptr getMap()
