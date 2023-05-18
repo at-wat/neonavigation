@@ -99,7 +99,7 @@ protected:
       return;
     }
 
-    map->processMapOverlay(msg, 1);
+    map->processMapOverlay(msg, true);
     ROS_DEBUG("C-Space costmap updated");
   }
   bool cbUpdateStatic(

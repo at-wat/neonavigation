@@ -444,7 +444,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
     return true;
   };
   cm_output->setHandler(cb);
-  cm_over->processMapOverlay(map2, 1);
+  cm_over->processMapOverlay(map2, true);
 
   // In this case, updated map must have same size as the base map. Check it.
   ASSERT_EQ(0u, updated->x);
@@ -489,7 +489,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
     return true;
   };
   cm_output->setHandler(cb_max);
-  cm_over->processMapOverlay(map2, 1);
+  cm_over->processMapOverlay(map2, true);
 
   ASSERT_EQ(0u, updated_max->x);
   ASSERT_EQ(0u, updated_max->y);
@@ -557,7 +557,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
     {
       map2->info.origin.position.x = map2->info.resolution * xp;
       map2->info.origin.position.y = map2->info.resolution * yp;
-      cm_over->processMapOverlay(map2, 1);
+      cm_over->processMapOverlay(map2, true);
       for (int k = 0; k < cm_over->getAngularGrid(); ++k)
       {
         const size_t i_center = map->info.width / 2;
@@ -684,7 +684,7 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     };
     cm_output->setHandler(cb);
     // First pass of the processing contains parent layer updates
-    cm_over->processMapOverlay(map2, 1);
+    cm_over->processMapOverlay(map2, true);
 
     if (d.valid)
     {
@@ -702,7 +702,7 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     }
 
     // Second pass has only local updates
-    cm_over->processMapOverlay(map2, 1);
+    cm_over->processMapOverlay(map2, true);
 
     if (d.valid)
     {
@@ -796,7 +796,7 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
   map3->info.origin.position.y = 0;
   map3->data.resize(map3->info.width * map3->info.height);
 
-  cm_over->processMapOverlay(map3, 1);
+  cm_over->processMapOverlay(map3, true);
   EXPECT_EQ(2, static_received_num);
   EXPECT_EQ(1, overlay_received_num);
   ASSERT_TRUE(overlay_updated);
@@ -804,7 +804,7 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
   EXPECT_EQ(map2->info.height, overlay_updated->height);
   overlay_updated.reset();
 
-  cm_over->processMapOverlay(map3, 1);
+  cm_over->processMapOverlay(map3, true);
   EXPECT_EQ(2, static_received_num);
   EXPECT_EQ(2, overlay_received_num);
   ASSERT_TRUE(overlay_updated);
@@ -855,7 +855,7 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   cm_normal->setFootprint(footprint);
   cm_normal->setKeepUnknown(false);
   cm_base1->setBaseMap(map);
-  cm_normal->processMapOverlay(map_overlay, 1);
+  cm_normal->processMapOverlay(map_overlay, true);
 
   costmap_cspace::Costmap3d cms2(4);
   auto cm_base2 = cms2.addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
@@ -867,7 +867,7 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   cm_keep_uknown->setFootprint(footprint);
   cm_keep_uknown->setKeepUnknown(true);
   cm_base2->setBaseMap(map);
-  cm_keep_uknown->processMapOverlay(map_overlay, 1);
+  cm_keep_uknown->processMapOverlay(map_overlay, true);
 
   const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal->getMapOverlay();
   const costmap_cspace::CSpace3DMsg::Ptr keep_unknown_result = cm_keep_uknown->getMapOverlay();
@@ -936,7 +936,7 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
   cm_normal->setFootprint(footprint);
   cm_normal->setKeepUnknown(false);
   cm_base1->setBaseMap(map);
-  cm_normal->processMapOverlay(map_overlay, 1);
+  cm_normal->processMapOverlay(map_overlay, true);
 
   costmap_cspace::Costmap3d cms2(4);
   auto cm_base2 = cms2.addRootLayer<costmap_cspace::Costmap3dLayerPlain>();
@@ -946,7 +946,7 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
   cm_plain->setExpansion(0.0, 2.0);
   cm_plain->setKeepUnknown(false);
   cm_base2->setBaseMap(map);
-  cm_plain->processMapOverlay(map_overlay, 1);
+  cm_plain->processMapOverlay(map_overlay, true);
 
   const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal->getMapOverlay();
   const costmap_cspace::CSpace3DMsg::Ptr plain_result = cm_plain->getMapOverlay();
@@ -998,7 +998,7 @@ TEST(Costmap3dLayerFootprint, PlainOnFootprint)
   cm->setBaseMap(map);
 
   map2->data[3 + 4 * map->info.width] = max_cost;
-  cm_over->processMapOverlay(map2, 1);
+  cm_over->processMapOverlay(map2, true);
 
   const costmap_cspace::CSpace3DMsg::Ptr static_map = cm->getMap();
   const costmap_cspace::CSpace3DMsg::Ptr overlay_map = cm_over->getMapOverlay();
