@@ -37,9 +37,6 @@ add_dependencies(costmap_3d_layers ${catkin_EXPORTED_TARGETS})
 add_executable(costmap_3d src/costmap_3d.cpp)
 target_link_libraries(costmap_3d costmap_3d_layers ${catkin_LIBRARIES})
 add_dependencies(costmap_3d ${catkin_EXPORTED_TARGETS})
-set_property(TARGET costmap_3d PROPERTY PUBLIC_HEADER
-  include/costmap_cspace/pointcloud_accumulator.h
-)
 
 add_executable(laserscan_to_map src/laserscan_to_map.cpp)
 target_link_libraries(laserscan_to_map ${catkin_LIBRARIES})
@@ -73,5 +70,8 @@ install(TARGETS
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  PUBLIC_HEADER DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
