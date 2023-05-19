@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -346,7 +346,7 @@ public:
             0, 0, 0, map_->info.width, map_->info.height, map_->info.angle,
             base_map->header.stamp));
   }
-  void processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  void processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr& msg, const bool update_chain_entry)
   {
     ROS_ASSERT(!root_);
     ROS_ASSERT(ang_grid_ > 0);
@@ -365,7 +365,15 @@ public:
     map_updated_ = msg;
 
     region_ = UpdatedRegion(ox, oy, 0, w, h, map_->info.angle, msg->header.stamp);
-    updateChainEntry(UpdatedRegion(ox, oy, 0, w, h, map_->info.angle, msg->header.stamp));
+
+    if (update_chain_entry)
+    {
+      updateChainEntry(UpdatedRegion(ox, oy, 0, w, h, map_->info.angle, msg->header.stamp));
+    }
+    else
+    {
+      ROS_DEBUG("update_chain_entry execution has been avoided.");
+    }
   }
   CSpace3DMsg::Ptr getMap()
   {
