@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
 find_package(xmlrpcpp REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
+  LIBRARIES costmap_3d_layers
   CATKIN_DEPENDS ${CATKIN_DEPENDS}
 )
 
