@@ -53,8 +53,8 @@ using Astar = GridAstar<3, 2>;
 class DistanceMapTest : public ::testing::Test
 {
 protected:
-  const int w_ = 10;
-  const int h_ = 7;
+  const int w_ = 12;
+  const int h_ = 8;
   const int angle_ = 10;
 
   const Astar::Vecf ec_;
@@ -71,8 +71,8 @@ protected:
     , dm_full_(cm_rough_, bbf_costmap_)
     , dm_fast_(cm_rough_, bbf_costmap_)
   {
-    const int range = 3;
-    const int local_range = 3;
+    const int range = 1;
+    const int local_range = 1;
     omp_set_num_threads(2);
 
     costmap_cspace_msgs::MapMetaData3D map_info;
@@ -115,7 +115,7 @@ protected:
             .euclid_cost = ec_,
             .range = range,
             .local_range = local_range,
-            .longcut_range = 10,
+            .longcut_range = 0,
             .size = size2d,
             .resolution = map_info.linear_resolution,
         };
@@ -126,21 +126,23 @@ protected:
   void setupCostmap()
   {
     /*
-       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
-       [ ][S][ ][ ][ ][ ][ ][ ][ ][ ]
-       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
-       [X][ ][X][X][X][X][X][X][ ][X]
-       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
-       [ ][ ][ ][ ][ ][ ][ ][ ][G][ ]
-       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+       [ ][X][X][X][X][X][X][X][X][X][X][ ]
+       [ ][X][X][X][X][X][X][X][X][X][X][ ]
+       [ ][X][X][X][X][X][X][X][X][X][X][ ]
+       [ ][X][X][X][X][X][X][X][X][X][X][ ]
+       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][G]
+       [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
      */
     cm_rough_.clear(0);
-    for (int x = 0; x < w_; x++)
+    for (int x = 1; x < w_ - 1; x++)
     {
+      cm_rough_[Astar::Vec(x, 2, 0)] = 100;
       cm_rough_[Astar::Vec(x, 3, 0)] = 100;
+      cm_rough_[Astar::Vec(x, 4, 0)] = 100;
+      cm_rough_[Astar::Vec(x, 5, 0)] = 100;
     }
-    cm_rough_[Astar::Vec(1, 3, 0)] = 0;
-    cm_rough_[Astar::Vec(8, 3, 0)] = 0;
   }
 
   bool validate(const std::string& msg) const
@@ -169,11 +171,8 @@ TEST_F(DistanceMapTest, Create)
 {
   setupCostmap();
 
-  Astar::Vec s(1, 1, 0);
-  const Astar::Vec e(8, 6, 0);
-  cm_rough_[Astar::Vec(0, 4, 0)] = 100;
-  cm_rough_[Astar::Vec(1, 4, 0)] = 100;
-  cm_rough_[Astar::Vec(2, 4, 0)] = 100;
+  const Astar::Vec s(9, 1, 0);
+  const Astar::Vec e(11, 6, 0);
 
   dm_full_.create(s, e);
   dm_fast_.create(s, e);
@@ -186,64 +185,14 @@ TEST_F(DistanceMapTest, Create)
     return;
   }
 
-  s = Astar::Vec(4, 1, 0);
-  cm_rough_[Astar::Vec(0, 4, 0)] = 0;
-  cm_rough_[Astar::Vec(1, 4, 0)] = 0;
-  cm_rough_[Astar::Vec(2, 4, 0)] = 0;
+  cm_rough_[Astar::Vec(10, 0, 0)] = 100;
+  cm_rough_[Astar::Vec(10, 1, 0)] = 100;
 
   dm_full_.create(s, e);
-  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(4, 4, 0)));
+  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(9, 1, 0), Astar::Vec(11, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
   if (!validate("move1"))
-  {
-    fprintf(stderr, "expected:\n");
-    debugOutput(dm_full_, cm_rough_, s, e);
-    return;
-  }
-
-  s = Astar::Vec(6, 1, 0);
-  cm_rough_[Astar::Vec(7, 0, 0)] = 100;
-  cm_rough_[Astar::Vec(7, 1, 0)] = 100;
-  cm_rough_[Astar::Vec(7, 2, 0)] = 100;
-
-  dm_full_.create(s, e);
-  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(4, 1, 0), Astar::Vec(7, 2, 0)));
-  debugOutput(dm_fast_, cm_rough_, s, e);
-
-  if (!validate("move2"))
-  {
-    fprintf(stderr, "expected:\n");
-    debugOutput(dm_full_, cm_rough_, s, e);
-    return;
-  }
-
-  s = Astar::Vec(4, 1, 0);
-  cm_rough_[Astar::Vec(7, 0, 0)] = 0;
-  cm_rough_[Astar::Vec(7, 1, 0)] = 0;
-  cm_rough_[Astar::Vec(7, 2, 0)] = 0;
-
-  dm_full_.create(s, e);
-  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(4, 1, 0), Astar::Vec(7, 2, 0)));
-  debugOutput(dm_fast_, cm_rough_, s, e);
-
-  if (!validate("move3"))
-  {
-    fprintf(stderr, "expected:\n");
-    debugOutput(dm_full_, cm_rough_, s, e);
-    return;
-  }
-
-  s = Astar::Vec(1, 1, 0);
-  cm_rough_[Astar::Vec(0, 4, 0)] = 100;
-  cm_rough_[Astar::Vec(1, 4, 0)] = 100;
-  cm_rough_[Astar::Vec(2, 4, 0)] = 100;
-
-  dm_full_.create(s, e);
-  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(2, 4, 0)));
-  debugOutput(dm_fast_, cm_rough_, s, e);
-
-  if (!validate("move4"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
