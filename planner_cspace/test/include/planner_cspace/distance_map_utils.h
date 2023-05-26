@@ -77,6 +77,11 @@ inline void debugOutput(
     }
     fprintf(stderr, "\n");
   }
+  for (int x = 0; x < cm_rough.size()[0]; x++)
+  {
+    fprintf(stderr, "---- ");
+  }
+  fprintf(stderr, "\n");
 }
 }  // namespace
 }  // namespace planner_3d
