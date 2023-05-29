@@ -272,7 +272,6 @@ void DistanceMap::update(
   pq_erase_.clear();
   while (pq_open_edge_.size() > 0)
   {
-    std::cerr << pq_open_edge_.top().v_[0] << " " << pq_open_edge_.top().v_[1] << std::endl;
     pq_open_.push(pq_open_edge_.top());
     pq_open_edge_.pop();
   }
