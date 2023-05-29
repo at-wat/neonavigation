@@ -281,7 +281,14 @@ void DistanceMap::update(
   const Astar::Vec s_rough(s[0], s[1], 0);
 
   if (cost_min != std::numeric_limits<float>::max())
-    pq_erase_.emplace(cost_min, cost_min, p_cost_min);
+  {
+    pq_erase_.emplace(0.0, 0.0, p_cost_min);
+  }
+
+  if (g_[s_rough] > cost_min)
+  {
+    pq_erase_.emplace(0.0, 0.0, s_rough);
+  }
 
   while (true)
   {
@@ -314,7 +321,7 @@ void DistanceMap::update(
           pq_open_.emplace(gn, gn, next);
           continue;
         }
-        pq_erase_.emplace(gn, gn, next);
+        pq_erase_.emplace(0.0, 0.0, next);
       }
     }
   }
