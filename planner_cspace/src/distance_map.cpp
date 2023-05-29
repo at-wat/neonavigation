@@ -51,6 +51,7 @@ void DistanceMap::fillCostmap(
 
   std::vector<Astar::PriorityVec> centers;
   centers.reserve(num_cost_estim_task_);
+  edges_.clear();
 
   debug_data_.has_negative_cost = false;
 
@@ -78,7 +79,14 @@ void DistanceMap::fillCostmap(
           if (center.p_raw_ > g_[center.v_])
             continue;
           if (center.p_raw_ - range_overshoot > start_cost)
+          {
+            const auto e = edges_.find(center.v_);
+            if (e == edges_.end() || e->second > center.p_raw_)
+            {
+              edges_[center.v_] = center.p_raw_;
+            }
             continue;
+          }
           centers.emplace_back(std::move(center));
           ++i;
         }
@@ -163,6 +171,14 @@ void DistanceMap::fillCostmap(
       }  // omp critical
     }
   }  // omp parallel
+
+  const float edge_cost =
+      g_[s_rough] +
+      p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
+  for (const auto& v : edges_)
+  {
+    pq_open_edge_.emplace(v.second, v.second, v.first);
+  }
 }
 
 DistanceMap::DistanceMap(
@@ -185,6 +201,7 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
   {
     // Typical open/erase queue size is be approximated by perimeter of the map
     pq_open_.reserve((p.size[0] + p.size[1]) * 2);
+    pq_open_edge_.reserve((p.size[0] + p.size[1]) * 2);
     pq_erase_.reserve((p.size[0] + p.size[1]) * 2);
 
     g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
@@ -253,6 +270,12 @@ void DistanceMap::update(
   }
   pq_open_.clear();
   pq_erase_.clear();
+  while (pq_open_edge_.size() > 0)
+  {
+    std::cerr << pq_open_edge_.top().v_[0] << " " << pq_open_edge_.top().v_[1] << std::endl;
+    pq_open_.push(pq_open_edge_.top());
+    pq_open_edge_.pop();
+  }
 
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
@@ -306,6 +329,7 @@ void DistanceMap::update(
 void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
 {
   pq_open_.clear();
+  pq_open_edge_.clear();
   pq_erase_.clear();
   g_.clear(std::numeric_limits<float>::max());
 
