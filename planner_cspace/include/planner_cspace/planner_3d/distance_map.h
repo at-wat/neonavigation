@@ -132,7 +132,6 @@ protected:
   DebugData debug_data_;
 
   reservable_priority_queue<Astar::PriorityVec> pq_open_;
-  reservable_priority_queue<Astar::PriorityVec> pq_open_edge_;
   std::unordered_map<Astar::Vec, float, Astar::Vec> edges_;
   reservable_priority_queue<Astar::PriorityVec> pq_erase_;
 
