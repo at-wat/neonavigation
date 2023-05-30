@@ -167,7 +167,7 @@ protected:
   }
 };
 
-TEST_F(DistanceMapTest, Create)
+TEST_F(DistanceMapTest, FarEdge)
 {
   setupCostmap();
 
