@@ -32,6 +32,7 @@
 
 #include <cmath>
 #include <limits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -131,6 +132,7 @@ protected:
   DebugData debug_data_;
 
   reservable_priority_queue<Astar::PriorityVec> pq_open_;
+  std::unordered_map<Astar::Vec, bool, Astar::Vec> edges_;
   reservable_priority_queue<Astar::PriorityVec> pq_erase_;
 
   void fillCostmap(
