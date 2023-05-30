@@ -71,8 +71,8 @@ protected:
     , dm_full_(cm_rough_, bbf_costmap_)
     , dm_fast_(cm_rough_, bbf_costmap_)
   {
-    const int range = 1;
-    const int local_range = 1;
+    const int range = 0;
+    const int local_range = 0;
     omp_set_num_threads(2);
 
     costmap_cspace_msgs::MapMetaData3D map_info;
@@ -192,7 +192,56 @@ TEST_F(DistanceMapTest, FarEdge)
   dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(9, 1, 0), Astar::Vec(11, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("move1"))
+  if (!validate("move"))
+  {
+    fprintf(stderr, "expected:\n");
+    debugOutput(dm_full_, cm_rough_, s, e);
+    return;
+  }
+}
+
+TEST_F(DistanceMapTest, BlockedEdge)
+{
+  setupCostmap();
+
+  Astar::Vec s(9, 1, 0);
+  const Astar::Vec e(11, 6, 0);
+
+  cm_rough_[Astar::Vec(10, 0, 0)] = 100;
+  cm_rough_[Astar::Vec(10, 1, 0)] = 100;
+
+  dm_full_.create(s, e);
+  dm_fast_.create(s, e);
+  debugOutput(dm_fast_, cm_rough_, s, e);
+
+  if (!validate("create"))
+  {
+    fprintf(stderr, "expected:\n");
+    debugOutput(dm_full_, cm_rough_, s, e);
+    return;
+  }
+
+  s = Astar::Vec(3, 1, 0);
+  dm_full_.create(s, e);
+  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(2, 0, 0), Astar::Vec(7, 1, 0)));
+  debugOutput(dm_fast_, cm_rough_, s, e);
+
+  if (!validate("update"))
+  {
+    fprintf(stderr, "expected:\n");
+    debugOutput(dm_full_, cm_rough_, s, e);
+    return;
+  }
+
+  s = Astar::Vec(0, 1, 0);
+  cm_rough_[Astar::Vec(10, 0, 0)] = 0;
+  cm_rough_[Astar::Vec(10, 1, 0)] = 0;
+
+  dm_full_.create(s, e);
+  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(0, 0, 0), Astar::Vec(10, 1, 0)));
+  debugOutput(dm_fast_, cm_rough_, s, e);
+
+  if (!validate("move"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
