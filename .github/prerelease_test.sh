@@ -31,7 +31,6 @@ sudo apt-get install -y --no-install-recommends \
   jq \
   python3-pip
 sudo python3 -m pip install \
-  catkin \
   git+https://github.com/at-wat/ros_buildfarm.git@apt-get-us-east-1
 
 mkdir -p /tmp/prerelease_job
