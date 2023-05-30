@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <limits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,8 @@ void DistanceMap::fillCostmap(
   {
     std::vector<Astar::GridmapUpdate> updates;
     updates.reserve(num_cost_estim_task_ * search_diffs_.size() / omp_get_num_threads());
+    std::unordered_map<Astar::Vec, bool, Astar::Vec> edges_local;
+    edges_local.reserve(open.capacity() / omp_get_num_threads());
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
     const float weight_linear = p_.resolution / 100.0;
@@ -80,11 +83,7 @@ void DistanceMap::fillCostmap(
             continue;
           if (center.p_raw_ - range_overshoot > start_cost)
           {
-            const auto e = edges_.find(center.v_);
-            if (e == edges_.end() || e->second > center.p_raw_)
-            {
-              edges_[center.v_] = center.p_raw_;
-            }
+            edges_[center.v_] = true;
             continue;
           }
           centers.emplace_back(std::move(center));
@@ -138,7 +137,10 @@ void DistanceMap::fillCostmap(
               sum_hist += bbf_costmap_.getCost(pos);
             }
             if (collision)
+            {
+              edges_local[p] = true;
               continue;
+            }
             cost +=
                 (weight_linear * ds.grid_to_len) *
                 (sum * cc_.weight_costmap_ + sum_hist * cc_.weight_remembered_);
@@ -167,6 +169,10 @@ void DistanceMap::fillCostmap(
             g_[u.getPos()] = u.getCost();
             open.push(std::move(u.getPriorityVec()));
           }
+        }
+        for (const auto& e : edges_local)
+        {
+          edges_[e.first] = true;
         }
       }  // omp critical
     }
