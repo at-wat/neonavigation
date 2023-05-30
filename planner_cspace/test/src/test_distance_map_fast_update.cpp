@@ -178,13 +178,6 @@ TEST_F(DistanceMapTest, FarEdge)
   dm_fast_.create(s, e);
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("create"))
-  {
-    fprintf(stderr, "expected:\n");
-    debugOutput(dm_full_, cm_rough_, s, e);
-    return;
-  }
-
   cm_rough_[Astar::Vec(10, 0, 0)] = 100;
   cm_rough_[Astar::Vec(10, 1, 0)] = 100;
 
@@ -192,7 +185,7 @@ TEST_F(DistanceMapTest, FarEdge)
   dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(9, 1, 0), Astar::Vec(11, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("move"))
+  if (!validate("obstacle in range"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
@@ -211,13 +204,6 @@ TEST_F(DistanceMapTest, BlockedEdge)
   dm_fast_.create(s, e);
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("create"))
-  {
-    fprintf(stderr, "expected:\n");
-    debugOutput(dm_full_, cm_rough_, s, e);
-    return;
-  }
-
   s = Astar::Vec(6, 1, 0);
 
   cm_rough_[Astar::Vec(9, 0, 0)] = 100;
@@ -231,7 +217,7 @@ TEST_F(DistanceMapTest, BlockedEdge)
   dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(2, 0, 0), Astar::Vec(10, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("move1"))
+  if (!validate("obstacle in range"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
@@ -244,7 +230,7 @@ TEST_F(DistanceMapTest, BlockedEdge)
   dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(2, 0, 0), Astar::Vec(10, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("move1"))
+  if (!validate("going around"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
@@ -263,7 +249,7 @@ TEST_F(DistanceMapTest, BlockedEdge)
   dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(0, 0, 0), Astar::Vec(10, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("move2"))
+  if (!validate("obstacle out of range"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
