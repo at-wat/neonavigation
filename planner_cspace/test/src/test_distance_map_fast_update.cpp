@@ -204,11 +204,8 @@ TEST_F(DistanceMapTest, BlockedEdge)
 {
   setupCostmap();
 
-  Astar::Vec s(9, 1, 0);
+  Astar::Vec s(4, 1, 0);
   const Astar::Vec e(11, 6, 0);
-
-  cm_rough_[Astar::Vec(10, 0, 0)] = 100;
-  cm_rough_[Astar::Vec(10, 1, 0)] = 100;
 
   dm_full_.create(s, e);
   dm_fast_.create(s, e);
@@ -221,12 +218,33 @@ TEST_F(DistanceMapTest, BlockedEdge)
     return;
   }
 
-  s = Astar::Vec(3, 1, 0);
+  s = Astar::Vec(6, 1, 0);
+
+  cm_rough_[Astar::Vec(9, 0, 0)] = 100;
+  cm_rough_[Astar::Vec(9, 1, 0)] = 100;
+  cm_rough_[Astar::Vec(10, 0, 0)] = 100;
+  cm_rough_[Astar::Vec(10, 1, 0)] = 100;
+  cm_rough_[Astar::Vec(11, 0, 0)] = 100;
+  cm_rough_[Astar::Vec(11, 1, 0)] = 100;
+
   dm_full_.create(s, e);
-  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(2, 0, 0), Astar::Vec(7, 1, 0)));
+  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(2, 0, 0), Astar::Vec(10, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("update"))
+  if (!validate("move1"))
+  {
+    fprintf(stderr, "expected:\n");
+    debugOutput(dm_full_, cm_rough_, s, e);
+    return;
+  }
+
+  s = Astar::Vec(4, 1, 0);
+
+  dm_full_.create(s, e);
+  dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(2, 0, 0), Astar::Vec(10, 1, 0)));
+  debugOutput(dm_fast_, cm_rough_, s, e);
+
+  if (!validate("move1"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
@@ -234,14 +252,18 @@ TEST_F(DistanceMapTest, BlockedEdge)
   }
 
   s = Astar::Vec(0, 1, 0);
+  cm_rough_[Astar::Vec(9, 0, 0)] = 0;
+  cm_rough_[Astar::Vec(9, 1, 0)] = 0;
   cm_rough_[Astar::Vec(10, 0, 0)] = 0;
   cm_rough_[Astar::Vec(10, 1, 0)] = 0;
+  cm_rough_[Astar::Vec(11, 0, 0)] = 0;
+  cm_rough_[Astar::Vec(11, 1, 0)] = 0;
 
   dm_full_.create(s, e);
   dm_fast_.update(s, e, DistanceMap::Rect(Astar::Vec(0, 0, 0), Astar::Vec(10, 1, 0)));
   debugOutput(dm_fast_, cm_rough_, s, e);
 
-  if (!validate("move"))
+  if (!validate("move2"))
   {
     fprintf(stderr, "expected:\n");
     debugOutput(dm_full_, cm_rough_, s, e);
