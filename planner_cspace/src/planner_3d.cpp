@@ -509,6 +509,9 @@ protected:
       ROS_INFO(
           "New goal received (%d, %d, %d)",
           e[0], e[1], e[2]);
+
+      clearHysteresis();
+      has_hysteresis_map_ = false;
     }
     const DiscretePoseStatus start_pose_status = relocateDiscretePoseIfNeeded(s, tolerance_range_, tolerance_angle_);
     const DiscretePoseStatus goal_pose_status = relocateDiscretePoseIfNeeded(e, tolerance_range_, tolerance_angle_);
@@ -519,6 +522,7 @@ protected:
         return false;
       case DiscretePoseStatus::IN_ROCK:
         ROS_WARN("Oops! You are in Rock!");
+        ++cnt_stuck_;
         return true;
       default:
         break;
@@ -548,12 +552,6 @@ protected:
     const auto tnow = boost::chrono::high_resolution_clock::now();
     ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)",
               boost::chrono::duration<float>(tnow - ts).count());
-
-    if (goal_changed)
-    {
-      clearHysteresis();
-      has_hysteresis_map_ = false;
-    }
 
     publishDebug();
 
@@ -1402,6 +1400,10 @@ public:
                   planner_cspace_msgs::MoveWithToleranceResult(), "Goal is in Rock");
 
             continue;
+          }
+          else if (cnt_stuck_ > 0)
+          {
+            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
           }
           else
           {

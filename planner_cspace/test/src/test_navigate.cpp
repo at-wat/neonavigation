@@ -486,6 +486,56 @@ TEST_F(Navigate, GlobalPlan)
   }
 }
 
+TEST_F(Navigate, RobotIsInRockOnSetGoal)
+{
+  ros::Publisher pub_path = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
+
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+  pubMapLocal();
+  ros::Duration(0.2).sleep();
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.19;
+  path.poses[0].pose.position.y = 1.90;
+  path.poses[0].pose.orientation.w = 1.0;
+  pub_path.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(10);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
+  while (ros::ok())
+  {
+    pubMapLocal();
+    ros::spinOnce();
+    wait.sleep();
+
+    const ros::Time now = ros::Time::now();
+
+    if (now > deadline)
+    {
+      dumpRobotTrajectory();
+      FAIL()
+          << test_scope_ << "Navigation timeout." << std::endl
+          << "now: " << now << std::endl
+          << "status: " << planner_status_;
+      break;
+    }
+
+    if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND)
+    {
+      return;
+    }
+  }
+  ASSERT_TRUE(false);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
