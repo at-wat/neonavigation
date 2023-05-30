@@ -29,21 +29,13 @@ sudo apt-get update -qq
 sudo apt-get install -y --no-install-recommends \
   git \
   jq \
-  python3-pip \
-  python3-ros-buildfarm
-sudo python3 -m pip install git+https://github.com/ros/catkin
+  python3-pip
+sudo python3 -m pip install \
+  catkin \
+  https://github.com/at-wat/ros_buildfarm.git@apt-get-us-east-1
 
 mkdir -p /tmp/prerelease_job
 cd /tmp/prerelease_job
-
-
-git clone \
-  --depth 1 \
-  -b apt-get-us-east-1 \
-  https://github.com/at-wat/ros_buildfarm.git ros_buildfarm
-
-sudo python3 -m pip install ./ros_buildfarm
-
 
 build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
 
