@@ -35,15 +35,6 @@ cd /tmp/prerelease_job
 
 build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
 
-echo
-echo
-python3 -m pip show ros_buildfarm
-echo
-echo
-which generate_prerelease_script.py
-cat $(which generate_prerelease_script.py)
-echo
-echo
 
 generate_prerelease_script.py \
   https://raw.githubusercontent.com/ros-infrastructure/ros_buildfarm_config/production/index.yaml \
