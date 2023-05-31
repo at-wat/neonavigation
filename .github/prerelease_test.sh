@@ -33,8 +33,13 @@ python3 -m pip install \
 mkdir -p /tmp/prerelease_job
 cd /tmp/prerelease_job
 
-build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
+git clone \
+  --depth 1 \
+  -b apt-get-us-east-1 \
+  https://github.com/at-wat/ros_buildfarm.git ros_buildfarm
 
+
+build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
 
 generate_prerelease_script.py \
   https://raw.githubusercontent.com/ros-infrastructure/ros_buildfarm_config/production/index.yaml \
