@@ -22,7 +22,6 @@ sudo apt-get update -qq
 sudo apt-get install -y --no-install-recommends \
   git \
   jq \
-  python-is-python3 \
   python3-pip
 sudo python3 -m pip install \
   git+https://github.com/at-wat/ros_buildfarm.git@apt-get-us-east-1
@@ -31,6 +30,10 @@ mkdir -p /tmp/prerelease_job
 cd /tmp/prerelease_job
 
 build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
+
+echo
+cat $(which generate_prerelease_script.py)
+echo
 
 generate_prerelease_script.py \
   https://raw.githubusercontent.com/ros-infrastructure/ros_buildfarm_config/production/index.yaml \
