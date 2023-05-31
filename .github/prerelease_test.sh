@@ -24,7 +24,6 @@ sudo apt-get install -y --no-install-recommends \
   jq \
   python3-pip
 python3 -m pip install --upgrade \
-  distutils \
   pip \
   setuptools \
   wheel
