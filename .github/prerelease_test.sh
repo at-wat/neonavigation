@@ -23,6 +23,11 @@ sudo apt-get install -y --no-install-recommends \
   git \
   jq \
   python3-pip
+python3 -m pip install --upgrade \
+  distutils \
+  pip \
+  setuptools \
+  wheel
 python3 -m pip install \
   git+https://github.com/at-wat/ros_buildfarm.git@apt-get-us-east-1
 
