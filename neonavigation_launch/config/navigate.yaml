@@ -1,50 +1,39 @@
 costmap_3d:
   ang_resolution: 16
-  layers:
-  - name: stop_propagation
-    type: Costmap3dLayerStopPropagation
-  - linear_expand: 0.08
-    linear_spread: 0.5
-    name: overlay1
-    overlay_mode: max
-    type: Costmap3dLayerFootprint
-  linear_expand: 0.05
-  linear_spread: 0.5
+  linear_expand: 0.08
+  linear_spread: 0.3
   static_layers:
-  - name: unknown
-    type: Costmap3dLayerUnknownHandle
-    unknown_cost: 100
+    - name: unknown
+      type: Costmap3dLayerUnknownHandle
+      unknown_cost: 100
+    - name: overlay0
+      type: Costmap3dLayerPlain
+      overlay_mode: max
+      linear_expand: 0.0
+      linear_spread: 0.0
+  layers:
+    - name: stop_propagation
+      type: Costmap3dLayerStopPropagation
+    - name: overlay2
+      type: Costmap3dLayerPlain
+      overlay_mode: max
+      linear_expand: 0.08
+      linear_spread: 0.0
+      keep_unknown: true
+    - name: overlay1
+      type: Costmap3dLayerFootprint
+      overlay_mode: max
+      linear_expand: 0.15
+      linear_spread: 0.3
+      keep_unknown: true
 planner_3d:
-  cost_in_place_turn: 1.0
-  costmap_watchdog: 2.0
-  fast_map_update: true
-  freq: 2.0
-  freq_min: 1.0
-  goal_tolerance_ang: 0.52
-  goal_tolerance_ang_finish: 0.05
-  goal_tolerance_lin: 0.25
-  hist_ignore_range: 0.5
-  hist_ignore_range_max: 2.5
-  hysteresis_expand: 0.3
-  hysteresis_max_dist: 0.15
-  jump_detect_frame: odom
-  max_ang_vel: 1.5  # same as spur/max_angvel safety_limiter/ang_vel
-  max_vel: 0.4  # same as spur/max_vel speed_controller/speed_base safety_limiter/lin_vel
-  min_curve_radius: 0.4
   num_threads: 2
-  pos_jump: 0.5
-  remember_hit_prob: 0.55
-  remember_miss_prob: 0.48
-  remember_updates: false
-  retain_last_error_status: false
-  temporary_escape: false
-  tolerance_range: 0.075
-  weight_ang_vel: 1.0
-  weight_backward: 0.5
-  weight_costmap: 50.0
-  weight_costmap_turn: 30.0
-  weight_hysteresis: 2.0
-  yaw_jump: 1.0
+  freq: 2.0
+  freq_min: 0.5
+  local_range: 2.0
+  remember_updates: true
+  hist_ignore_range: 0.0
+  hist_ignore_range_max: 1.5
 spur:
   hz: 30.0
   k_dist: 16.0
