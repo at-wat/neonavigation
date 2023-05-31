@@ -23,7 +23,7 @@ sudo apt-get install -y --no-install-recommends \
   git \
   jq \
   python3-pip
-sudo python3 -m pip install \
+python3 -m pip install \
   git+https://github.com/at-wat/ros_buildfarm.git@apt-get-us-east-1
 
 mkdir -p /tmp/prerelease_job
@@ -32,10 +32,13 @@ cd /tmp/prerelease_job
 build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
 
 echo
+echo
 python3 -m pip show ros_buildfarm
+echo
 echo
 which generate_prerelease_script.py
 cat $(which generate_prerelease_script.py)
+echo
 echo
 
 generate_prerelease_script.py \
