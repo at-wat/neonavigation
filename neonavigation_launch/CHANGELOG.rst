@@ -2,8 +2,8 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.13.0 (2023-05-31)
+-------------------
 * planner_cspace: fix fast map update (`#692 <https://github.com/at-wat/neonavigation/issues/692>`_)
 * Contributors: Atsushi Watanabe
 
