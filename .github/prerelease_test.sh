@@ -32,6 +32,9 @@ cd /tmp/prerelease_job
 build_link="[${GITHUB_RUN_NUMBER}-prerelease]"
 
 echo
+python3 -m pip show ros_buildfarm
+echo
+which generate_prerelease_script.py
 cat $(which generate_prerelease_script.py)
 echo
 
