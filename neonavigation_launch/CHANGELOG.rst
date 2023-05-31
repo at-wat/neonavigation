@@ -2,6 +2,12 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.13.0 (2023-05-31)
+-------------------
+* neonavigation_launch: revert unintended change to demo config (`#699 <https://github.com/at-wat/neonavigation/issues/699>`_)
+* planner_cspace: fix fast map update (`#692 <https://github.com/at-wat/neonavigation/issues/692>`_)
+* Contributors: Atsushi Watanabe
+
 0.12.2 (2023-02-28)
 -------------------
 

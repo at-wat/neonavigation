@@ -2,6 +2,13 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.13.0 (2023-05-31)
+-------------------
+* planner_cspace: fix fast map update (`#692 <https://github.com/at-wat/neonavigation/issues/692>`_)
+* planner_cspace: fix status when goal or robot is in rock on updating goal (`#694 <https://github.com/at-wat/neonavigation/issues/694>`_)
+* planner_cspace: fix string template constexpr in test (`#685 <https://github.com/at-wat/neonavigation/issues/685>`_)
+* Contributors: Atsushi Watanabe
+
 0.12.2 (2023-02-28)
 -------------------
 * planner_cspace: fix planner_2dof_serial_joints status (`#682 <https://github.com/at-wat/neonavigation/issues/682>`_)

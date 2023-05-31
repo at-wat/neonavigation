@@ -2,6 +2,14 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.13.0 (2023-05-31)
+-------------------
+* costmap_cspace: export costmap_3d_layers library (`#691 <https://github.com/at-wat/neonavigation/issues/691>`_)
+* costmap_cspace: install all headers (`#690 <https://github.com/at-wat/neonavigation/issues/690>`_)
+* costmap_cspace: added update_chain_entry bool arguement to processMapOverlay function (`#689 <https://github.com/at-wat/neonavigation/issues/689>`_)
+* costmap_cspace: add costmap_3d_layers library (`#688 <https://github.com/at-wat/neonavigation/issues/688>`_)
+* Contributors: ゆうちゃん
+
 0.12.2 (2023-02-28)
 -------------------
 
