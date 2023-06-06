@@ -19,6 +19,7 @@ set(CATKIN_DEPENDS
   costmap_cspace
   costmap_cspace_msgs
   neonavigation_common
+  neonavigation_metrics_msgs
   planner_cspace_msgs
   trajectory_tracker_msgs
 )
