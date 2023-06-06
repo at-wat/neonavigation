@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.14.0 (2023-06-06)
+-------------------
 * planner_cspace: publish planner_3d metrics (`#701 <https://github.com/at-wat/neonavigation/issues/701>`_)
 * Contributors: Atsushi Watanabe
 
