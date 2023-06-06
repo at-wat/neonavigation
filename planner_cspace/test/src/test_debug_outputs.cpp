@@ -31,6 +31,7 @@
 
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
+#include <neonavigation_metrics_msgs/Metrics.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 
@@ -46,6 +47,7 @@ public:
     , cnt_remembered_(0)
   {
     sub_status_ = nh_.subscribe("/planner_3d/status", 1, &DebugOutputsTest::cbStatus, this);
+    sub_metrics_ = nh_.subscribe("/planner_3d/metrics", 1, &DebugOutputsTest::cbMetrics, this);
     sub_path_ = nh_.subscribe("path", 1, &DebugOutputsTest::cbPath, this);
     sub_hysteresis_ = nh_.subscribe("/planner_3d/hysteresis_map", 1, &DebugOutputsTest::cbHysteresis, this);
     sub_remembered_ = nh_.subscribe("/planner_3d/remembered_map", 1, &DebugOutputsTest::cbRemembered, this);
@@ -120,6 +122,10 @@ protected:
         msg->status == planner_cspace_msgs::PlannerStatus::DOING)
       ++cnt_planner_ready_;
   }
+  void cbMetrics(const neonavigation_metrics_msgs::Metrics::ConstPtr& msg)
+  {
+    metrics_ = msg;
+  }
   void cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
     if (msg->poses.size() > 0)
@@ -134,11 +140,13 @@ protected:
   nav_msgs::OccupancyGrid::ConstPtr map_remembered_;
   sensor_msgs::PointCloud::ConstPtr map_distance_;
   nav_msgs::Path::ConstPtr path_;
+  neonavigation_metrics_msgs::Metrics::ConstPtr metrics_;
   ros::Subscriber sub_status_;
   ros::Subscriber sub_path_;
   ros::Subscriber sub_hysteresis_;
   ros::Subscriber sub_remembered_;
   ros::Subscriber sub_distance_;
+  ros::Subscriber sub_metrics_;
   int cnt_planner_ready_;
   int cnt_path_;
   int cnt_hysteresis_;
@@ -227,6 +235,15 @@ TEST_F(DebugOutputsTest, Distance)
       ASSERT_NEAR(dist_from_goal, d, 0.15);
     }
   }
+}
+
+TEST_F(DebugOutputsTest, Metrics)
+{
+  metrics_ = nullptr;
+  ros::Duration(0.5).sleep();
+  ros::spinOnce();
+  ASSERT_TRUE(metrics_);
+  ASSERT_NE(0u, metrics_->data.size());
 }
 
 int main(int argc, char** argv)

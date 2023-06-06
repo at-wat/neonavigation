@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2020, the neonavigation authors
+ * Copyright (c) 2014-2023, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,8 @@
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
+#include <neonavigation_metrics_msgs/Metrics.h>
+#include <neonavigation_metrics_msgs/helper.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_srvs/Empty.h>
@@ -103,6 +105,7 @@ protected:
   ros::Publisher pub_start_;
   ros::Publisher pub_end_;
   ros::Publisher pub_status_;
+  ros::Publisher pub_metrics_;
   ros::ServiceServer srs_forget_;
   ros::ServiceServer srs_make_plan_;
 
@@ -186,6 +189,7 @@ protected:
   int goal_tolerance_ang_;
 
   planner_cspace_msgs::PlannerStatus status_;
+  neonavigation_metrics_msgs::Metrics metrics_;
 
   bool find_best_;
   float sw_wait_;
@@ -550,8 +554,16 @@ protected:
     const auto ts = boost::chrono::high_resolution_clock::now();
     cost_estim_cache_.create(s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)",
-              boost::chrono::duration<float>(tnow - ts).count());
+    const float dur = boost::chrono::duration<float>(tnow - ts).count();
+    ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)", dur);
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "distance_map_init_dur",
+        dur,
+        "second"));
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "distance_map_update_dur",
+        0.0,
+        "second"));
 
     publishDebug();
 
@@ -795,7 +807,12 @@ protected:
       }
     }
     const auto ts_cm_init_end = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Costmaps updated (%.4f)", boost::chrono::duration<float>(ts_cm_init_end - ts_cm_init_start).count());
+    const float ts_cm_init_dur = boost::chrono::duration<float>(ts_cm_init_end - ts_cm_init_start).count();
+    ROS_DEBUG("Costmaps updated (%.4f)", ts_cm_init_dur);
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "costmap_dur",
+        ts_cm_init_dur,
+        "second"));
 
     if (clear_hysteresis && has_hysteresis_map_)
     {
@@ -859,8 +876,16 @@ protected:
     }
     ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu",
               dm_debug.search_queue_size, dm_debug.search_queue_cap);
-    ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)",
-              boost::chrono::duration<float>(tnow - ts).count());
+    const float dur = boost::chrono::duration<float>(tnow - ts).count();
+    ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)", dur);
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "distance_map_update_dur",
+        dur,
+        "second"));
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "distance_map_init_dur",
+        0.0,
+        "second"));
     publishDebug();
   }
   void cbMap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
@@ -1067,6 +1092,7 @@ public:
     pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_status_ = pnh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
+    pub_metrics_ = pnh_.advertise<neonavigation_metrics_msgs::Metrics>("metrics", 1, false);
     srs_forget_ = neonavigation_common::compat::advertiseService(
         nh_, "forget_planning_cost",
         pnh_, "forget", &Planner3dNode::cbForget, this);
@@ -1308,7 +1334,12 @@ public:
       bool has_costmap(false);
       if (costmap_watchdog_ > ros::Duration(0))
       {
-        if (last_costmap_ + costmap_watchdog_ < now)
+        const ros::Duration costmap_delay = now - last_costmap_;
+        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+            "costmap_delay",
+            costmap_delay.toSec(),
+            "second"));
+        if (costmap_delay > costmap_watchdog_)
         {
           ROS_WARN_THROTTLE(1.0,
                             "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
@@ -1324,6 +1355,10 @@ public:
       }
       else
       {
+        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+            "costmap_delay",
+            -1.0,
+            "second"));
         has_costmap = true;
       }
 
@@ -1444,6 +1479,22 @@ public:
       status_.header.stamp = now;
       pub_status_.publish(status_);
       diag_updater_.force_update();
+
+      metrics_.header.stamp = now;
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "stuck_cnt",
+          cnt_stuck_,
+          "count"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "error",
+          status_.error,
+          "enum"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "status",
+          status_.status,
+          "enum"));
+      pub_metrics_.publish(metrics_);
+      metrics_.data.clear();
 
       if (is_path_switchback)
       {
@@ -1663,8 +1714,12 @@ protected:
         return false;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_DEBUG("Path found (%0.4f sec.)",
-              boost::chrono::duration<float>(tnow - ts).count());
+    const float dur = boost::chrono::duration<float>(tnow - ts).count();
+    ROS_DEBUG("Path found (%0.4f sec.)", dur);
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "path_search_dur",
+        dur,
+        "second"));
 
     geometry_msgs::PoseArray poses;
     poses.header = path.header;
@@ -1741,8 +1796,12 @@ protected:
       }
       has_hysteresis_map_ = true;
       const auto tnow = boost::chrono::high_resolution_clock::now();
-      ROS_DEBUG("Hysteresis map generated (%0.4f sec.)",
-                boost::chrono::duration<float>(tnow - ts).count());
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Hysteresis map generated (%0.4f sec.)", dur);
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "hyst_map_dur",
+          dur,
+          "second"));
       publishDebug();
     }
 

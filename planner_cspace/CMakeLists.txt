@@ -19,6 +19,7 @@ set(CATKIN_DEPENDS
   costmap_cspace
   costmap_cspace_msgs
   neonavigation_common
+  neonavigation_metrics_msgs
   planner_cspace_msgs
   trajectory_tracker_msgs
 )
@@ -32,7 +33,7 @@ catkin_package(
 )
 
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
