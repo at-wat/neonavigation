@@ -557,8 +557,12 @@ protected:
     const float dur = boost::chrono::duration<float>(tnow - ts).count();
     ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)", dur);
     metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_dur",
+        "distance_map_init_dur",
         dur,
+        "second"));
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "distance_map_update_dur",
+        0.0,
         "second"));
 
     publishDebug();
@@ -875,8 +879,12 @@ protected:
     const float dur = boost::chrono::duration<float>(tnow - ts).count();
     ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)", dur);
     metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_dur",
+        "distance_map_update_dur",
         dur,
+        "second"));
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "distance_map_init_dur",
+        0.0,
         "second"));
     publishDebug();
   }
