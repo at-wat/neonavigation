@@ -2,6 +2,9 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.13.0 (2023-05-31)
 -------------------
 * neonavigation_launch: revert unintended change to demo config (`#699 <https://github.com/at-wat/neonavigation/issues/699>`_)

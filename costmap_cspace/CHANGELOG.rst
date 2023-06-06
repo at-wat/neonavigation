@@ -2,6 +2,9 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.13.0 (2023-05-31)
 -------------------
 * costmap_cspace: export costmap_3d_layers library (`#691 <https://github.com/at-wat/neonavigation/issues/691>`_)
