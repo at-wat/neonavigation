@@ -33,7 +33,7 @@ catkin_package(
 )
 
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
