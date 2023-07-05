@@ -551,7 +551,6 @@ protected:
       default:
         break;
     }
-    cnt_stuck_ = 0;
     const auto ts = boost::chrono::high_resolution_clock::now();
     cost_estim_cache_.create(s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
@@ -1437,10 +1436,6 @@ public:
 
             continue;
           }
-          else if (cnt_stuck_ > 0)
-          {
-            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-          }
           else
           {
             status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
@@ -1529,6 +1524,14 @@ protected:
     if (!cm_.validate(s, range_))
     {
       ROS_ERROR("You are on the edge of the world.");
+      status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
+      return false;
+    }
+
+    if (cm_[e] == 100)
+    {
+      ROS_DEBUG("Planning failed as the goal is occupied.");
+      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
 
