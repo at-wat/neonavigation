@@ -1436,6 +1436,10 @@ public:
 
             continue;
           }
+          else if (cnt_stuck_ > 0)
+          {
+            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+          }
           else
           {
             status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
@@ -1524,14 +1528,6 @@ protected:
     if (!cm_.validate(s, range_))
     {
       ROS_ERROR("You are on the edge of the world.");
-      status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
-      return false;
-    }
-
-    if (cm_[e] == 100)
-    {
-      ROS_DEBUG("Planning failed as the goal is occupied.");
-      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
 
