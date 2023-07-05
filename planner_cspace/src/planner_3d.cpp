@@ -551,6 +551,7 @@ protected:
       default:
         break;
     }
+    cnt_stuck_ = 0;
     const auto ts = boost::chrono::high_resolution_clock::now();
     cost_estim_cache_.create(s, e);
     const auto tnow = boost::chrono::high_resolution_clock::now();
