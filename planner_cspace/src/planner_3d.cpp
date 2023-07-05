@@ -1269,7 +1269,7 @@ public:
     {
       const ros::Time prev_map_update_stamp = last_costmap_;
       ros::spinOnce();
-      const bool costmap_udpated = last_costmap_ != prev_map_update_stamp;
+      const bool costmap_updated = last_costmap_ != prev_map_update_stamp;
 
       if (has_map_)
       {
@@ -1282,7 +1282,7 @@ public:
           return;
         }
 
-        if (costmap_udpated && previous_path.poses.size() > 1)
+        if (costmap_updated && previous_path.poses.size() > 1)
         {
           for (const auto& path_pose : previous_path.poses)
           {
