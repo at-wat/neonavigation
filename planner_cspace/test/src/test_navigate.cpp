@@ -582,8 +582,6 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   path.poses[0].pose.position.y = 2.55;
   path.poses[0].pose.orientation.w = 1.0;
   pub_patrol_nodes_.publish(path);
-  tf2::Transform goal;
-  tf2::fromMsg(path.poses.back().pose, goal);
 
   for (int x = 12; x <= 14; ++x)
   {
@@ -620,8 +618,6 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   path.poses[0].pose.position.y = 2.55;
   path.poses[0].pose.orientation.w = 1.0;
   pub_patrol_nodes_.publish(path);
-  tf2::Transform goal;
-  tf2::fromMsg(path.poses.back().pose, goal);
 
   for (int x = 23; x <= 26; ++x)
   {
