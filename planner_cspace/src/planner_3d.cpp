@@ -1417,6 +1417,7 @@ public:
         }
         else
         {
+          bool skip_path_planning = false;
           if (escaping_)
           {
             status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
@@ -1441,9 +1442,30 @@ public:
 
             continue;
           }
-          else if (cost_estim_cache_created_)
+          else if (!cost_estim_cache_created_)
+          {
+            skip_path_planning = true;
+            if (is_start_occupied_)
+            {
+              status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
+            }
+            else
+            {
+              status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+            }
+          }
+          else
           {
             status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+          }
+
+          if (skip_path_planning)
+          {
+            publishEmptyPath();
+            previous_path.poses.clear();
+          }
+          else
+          {
             nav_msgs::Path path;
             path.header = map_header_;
             path.header.stamp = now;
@@ -1466,19 +1488,6 @@ public:
               if (is_path_switchback)
                 sw_pos_ = path.poses[sw_index];
             }
-          }
-          else
-          {
-            if (is_start_occupied_)
-            {
-              status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
-            }
-            else
-            {
-              status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-            }
-            publishEmptyPath();
-            previous_path.poses.clear();
           }
         }
       }
