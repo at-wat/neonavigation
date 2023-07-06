@@ -73,7 +73,7 @@ protected:
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
   nav_msgs::OccupancyGrid::ConstPtr map_;
-  nav_msgs::OccupancyGrid::ConstPtr map_local_;
+  nav_msgs::OccupancyGrid::Ptr map_local_;
   planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
   nav_msgs::Path::ConstPtr path_;
@@ -86,6 +86,8 @@ protected:
   ros::Publisher pub_map_;
   ros::Publisher pub_map_local_;
   ros::Publisher pub_initial_pose_;
+  ros::Publisher pub_patrol_nodes_;
+
   size_t local_map_apply_cnt_;
   std::vector<tf2::Stamped<tf2::Transform>> traj_;
   std::string test_scope_;
@@ -107,6 +109,7 @@ protected:
     pub_map_local_ = nh_.advertise<nav_msgs::OccupancyGrid>("overlay", 1, true);
     pub_initial_pose_ =
         nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
+    pub_patrol_nodes_ = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
   }
 
   virtual void SetUp()
@@ -182,7 +185,7 @@ protected:
   }
   void cbMapLocal(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
-    map_local_ = msg;
+    map_local_.reset(new nav_msgs::OccupancyGrid(*msg));
     std::cerr << test_scope_ << msg->header.stamp << " Local map received." << std::endl;
   }
   void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
@@ -251,12 +254,47 @@ protected:
       }
     }
   }
+
+  void waitForPlannerStatus(const std::string& name, const int expected_error)
+  {
+    ros::spinOnce();
+    ASSERT_TRUE(static_cast<bool>(map_));
+    // ASSERT_TRUE(static_cast<bool>(map_local_));
+    pubMapLocal();
+    ros::Duration(0.2).sleep();
+
+    ros::Rate wait(10);
+    ros::Time deadline = ros::Time::now() + ros::Duration(10);
+    bool planning_failed = false;
+    while (ros::ok())
+    {
+      pubMapLocal();
+      ros::spinOnce();
+      wait.sleep();
+
+      const ros::Time now = ros::Time::now();
+
+      if (now > deadline)
+      {
+        ROS_ERROR("FAILED");
+        dumpRobotTrajectory();
+        FAIL()
+            << test_scope_ << "/" << name << ": Navigation timeout." << std::endl
+            << "now: " << now << std::endl
+            << "status: " << planner_status_ << " (expected: " << expected_error << ")";
+      }
+
+      if (planner_status_->error == expected_error)
+      {
+        ROS_ERROR("SUCCEEDED");
+        return;
+      }
+    }
+  }
 };
 
 TEST_F(Navigate, Navigate)
 {
-  ros::Publisher pub_path = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
-
   ros::spinOnce();
   ASSERT_TRUE(static_cast<bool>(map_));
 
@@ -271,7 +309,7 @@ TEST_F(Navigate, Navigate)
   path.poses[1].pose.position.x = 1.9;
   path.poses[1].pose.position.y = 2.8;
   path.poses[1].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -1.57));
-  pub_path.publish(path);
+  pub_patrol_nodes_.publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
@@ -338,8 +376,6 @@ TEST_F(Navigate, Navigate)
 
 TEST_F(Navigate, NavigateWithLocalMap)
 {
-  ros::Publisher pub_path = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
-
   ros::spinOnce();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
@@ -353,7 +389,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
   path.poses[0].pose.position.x = 1.7;
   path.poses[0].pose.position.y = 2.8;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
-  pub_path.publish(path);
+  pub_patrol_nodes_.publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
@@ -534,6 +570,82 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
     }
   }
   ASSERT_TRUE(false);
+}
+
+TEST_F(Navigate, GoalIsInRockRecovered)
+{
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.25;
+  path.poses[0].pose.position.y = 2.55;
+  path.poses[0].pose.orientation.w = 1.0;
+  pub_patrol_nodes_.publish(path);
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  for (int x = 12; x <= 14; ++x)
+  {
+    for (int y = 24; y <= 26; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 100;
+    }
+  }
+  waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+
+  for (int x = 12; x <= 14; ++x)
+  {
+    for (int y = 24; y <= 26; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 0;
+    }
+  }
+  waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::PlannerStatus::GOING_WELL);
+}
+
+TEST_F(Navigate, RobotIsInRockOnRecovered)
+{
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.25;
+  path.poses[0].pose.position.y = 2.55;
+  path.poses[0].pose.orientation.w = 1.0;
+  pub_patrol_nodes_.publish(path);
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  for (int x = 23; x <= 26; ++x)
+  {
+    for (int y = 4; y <= 6; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 100;
+    }
+  }
+  waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::IN_ROCK);
+
+  for (int x = 23; x <= 26; ++x)
+  {
+    for (int y = 4; y <= 6; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 0;
+    }
+  }
+  waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::PlannerStatus::GOING_WELL);
 }
 
 int main(int argc, char** argv)

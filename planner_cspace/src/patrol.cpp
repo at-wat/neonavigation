@@ -129,41 +129,44 @@ public:
   }
   void spin()
   {
-    ros::Rate rate(1.0);
-
+    ros::Rate rate(10.0);
+    int cnt = 0;
     while (ros::ok())
     {
       ros::spinOnce();
       rate.sleep();
 
-      if (path_.poses.size() == 0)
+      if (cnt % 10 == 0)
       {
-        continue;
-      }
+        if (path_.poses.size() == 0)
+        {
+          continue;
+        }
 
-      if (pos_ == 0)
-      {
-        sendNextGoal();
-        continue;
-      }
+        if (pos_ == 0)
+        {
+          sendNextGoal();
+          continue;
+        }
 
-      actionlib::SimpleClientGoalState state =
-          with_tolerance_ ?
-              act_cli_tolerant_->getState() :
-              act_cli_->getState();
-      if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
-      {
-        ROS_INFO("Action has been finished.");
-        sendNextGoal();
-      }
-      else if (state == actionlib::SimpleClientGoalState::ABORTED)
-      {
-        ROS_ERROR("Action has been aborted. Skipping.");
-        sendNextGoal();
-      }
-      else if (state == actionlib::SimpleClientGoalState::LOST)
-      {
-        ROS_WARN_ONCE("Action server is not ready.");
+        actionlib::SimpleClientGoalState state =
+            with_tolerance_ ?
+                act_cli_tolerant_->getState() :
+                act_cli_->getState();
+        if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
+        {
+          ROS_INFO("Action has been finished.");
+          sendNextGoal();
+        }
+        else if (state == actionlib::SimpleClientGoalState::ABORTED)
+        {
+          ROS_ERROR("Action has been aborted. Skipping.");
+          sendNextGoal();
+        }
+        else if (state == actionlib::SimpleClientGoalState::LOST)
+        {
+          ROS_WARN_ONCE("Action server is not ready.");
+        }
       }
     }
   }
