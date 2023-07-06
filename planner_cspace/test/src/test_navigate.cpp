@@ -87,7 +87,6 @@ protected:
   ros::Publisher pub_map_local_;
   ros::Publisher pub_initial_pose_;
   ros::Publisher pub_patrol_nodes_;
-
   size_t local_map_apply_cnt_;
   std::vector<tf2::Stamped<tf2::Transform>> traj_;
   std::string test_scope_;
@@ -259,13 +258,12 @@ protected:
   {
     ros::spinOnce();
     ASSERT_TRUE(static_cast<bool>(map_));
-    // ASSERT_TRUE(static_cast<bool>(map_local_));
+    ASSERT_TRUE(static_cast<bool>(map_local_));
     pubMapLocal();
     ros::Duration(0.2).sleep();
 
     ros::Rate wait(10);
     ros::Time deadline = ros::Time::now() + ros::Duration(10);
-    bool planning_failed = false;
     while (ros::ok())
     {
       pubMapLocal();
@@ -276,7 +274,6 @@ protected:
 
       if (now > deadline)
       {
-        ROS_ERROR("FAILED");
         dumpRobotTrajectory();
         FAIL()
             << test_scope_ << "/" << name << ": Navigation timeout." << std::endl
@@ -286,7 +283,6 @@ protected:
 
       if (planner_status_->error == expected_error)
       {
-        ROS_ERROR("SUCCEEDED");
         return;
       }
     }

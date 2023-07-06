@@ -130,10 +130,12 @@ public:
   void spin()
   {
     ros::Rate rate(10.0);
+
     while (ros::ok())
     {
       ros::spinOnce();
       rate.sleep();
+
       if (path_.poses.size() == 0)
       {
         continue;
