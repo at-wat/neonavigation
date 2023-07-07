@@ -129,7 +129,7 @@ public:
   }
   void spin()
   {
-    ros::Rate rate(1.0);
+    ros::Rate rate(10.0);
 
     while (ros::ok())
     {

@@ -153,7 +153,7 @@ protected:
   bool has_start_;
   bool has_hysteresis_map_;
   std::vector<Astar::Vec> hyst_updated_cells_;
-  bool goal_updated_;
+  bool cost_estim_cache_created_;
   bool remember_updates_;
   bool fast_map_update_;
   std::vector<Astar::Vec> search_list_;
@@ -203,6 +203,7 @@ protected:
   bool escaping_;
 
   int cnt_stuck_;
+  bool is_start_occupied_;
 
   diagnostic_updater::Updater diag_updater_;
   ros::Duration costmap_watchdog_;
@@ -409,7 +410,7 @@ protected:
       escaping_ = false;
       has_goal_ = true;
       cnt_stuck_ = 0;
-      if (!updateGoal())
+      if (!createCostEstimCache())
       {
         has_goal_ = false;
         return false;
@@ -485,7 +486,7 @@ protected:
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
-  bool updateGoal(const bool goal_changed = true)
+  bool createCostEstimCache(const bool goal_changed = true)
   {
     if (!has_goal_)
       return true;
@@ -496,6 +497,9 @@ protected:
                 static_cast<int>(has_map_), static_cast<int>(has_goal_), static_cast<int>(has_start_));
       return true;
     }
+
+    cost_estim_cache_created_ = false;
+    is_start_occupied_ = false;
 
     Astar::Vec s, e;
     grid_metric_converter::metric2Grid(
@@ -527,6 +531,7 @@ protected:
       case DiscretePoseStatus::IN_ROCK:
         ROS_WARN("Oops! You are in Rock!");
         ++cnt_stuck_;
+        is_start_occupied_ = true;
         return true;
       default:
         break;
@@ -567,7 +572,7 @@ protected:
 
     publishDebug();
 
-    goal_updated_ = true;
+    cost_estim_cache_created_ = true;
 
     return true;
   }
@@ -845,7 +850,7 @@ protected:
 
     if (!fast_map_update_)
     {
-      updateGoal(false);
+      createCostEstimCache(false);
       return;
     }
 
@@ -858,7 +863,7 @@ protected:
 
     if (cm_[e] == 100)
     {
-      updateGoal(false);
+      createCostEstimCache(false);
       return;
     }
 
@@ -1009,7 +1014,7 @@ protected:
     prev_map_update_y_min_ = map_info_.height;
     prev_map_update_y_max_ = 0;
 
-    updateGoal();
+    createCostEstimCache();
 
     if (map_update_retained_ && map_update_retained_->header.stamp >= msg->header.stamp)
     {
@@ -1236,7 +1241,7 @@ public:
     has_map_ = false;
     has_goal_ = false;
     has_start_ = false;
-    goal_updated_ = false;
+    cost_estim_cache_created_ = false;
 
     escaping_ = false;
     cnt_stuck_ = 0;
@@ -1264,7 +1269,7 @@ public:
     {
       const ros::Time prev_map_update_stamp = last_costmap_;
       ros::spinOnce();
-      const bool costmap_udpated = last_costmap_ != prev_map_update_stamp;
+      const bool costmap_updated = last_costmap_ != prev_map_update_stamp;
 
       if (has_map_)
       {
@@ -1277,7 +1282,7 @@ public:
           return;
         }
 
-        if (costmap_udpated && previous_path.poses.size() > 1)
+        if (costmap_updated && previous_path.poses.size() > 1)
         {
           for (const auto& path_pose : previous_path.poses)
           {
@@ -1327,9 +1332,9 @@ public:
       const ros::Time now = ros::Time::now();
       next_replan_time = now;
 
-      if (has_map_ && !goal_updated_ && has_goal_)
+      if (has_map_ && !cost_estim_cache_created_ && has_goal_)
       {
-        updateGoal();
+        createCostEstimCache();
       }
       bool has_costmap(false);
       if (costmap_watchdog_ > ros::Duration(0))
@@ -1412,6 +1417,7 @@ public:
         }
         else
         {
+          bool skip_path_planning = false;
           if (escaping_)
           {
             status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
@@ -1436,36 +1442,52 @@ public:
 
             continue;
           }
-          else if (cnt_stuck_ > 0)
+          else if (!cost_estim_cache_created_)
           {
-            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+            skip_path_planning = true;
+            if (is_start_occupied_)
+            {
+              status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
+            }
+            else
+            {
+              status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+            }
           }
           else
           {
             status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
           }
-          nav_msgs::Path path;
-          path.header = map_header_;
-          path.header.stamp = now;
-          makePlan(start_.pose, goal_.pose, path, true);
-          if (use_path_with_velocity_)
+
+          if (skip_path_planning)
           {
-            // NaN velocity means that don't care the velocity
-            pub_path_velocity_.publish(
-                trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
+            publishEmptyPath();
+            previous_path.poses.clear();
           }
           else
           {
-            pub_path_.publish(path);
-          }
-          previous_path = path;
-
-          if (sw_wait_ > 0.0)
-          {
-            const int sw_index = getSwitchIndex(path);
-            is_path_switchback = (sw_index >= 0);
-            if (is_path_switchback)
-              sw_pos_ = path.poses[sw_index];
+            nav_msgs::Path path;
+            path.header = map_header_;
+            path.header.stamp = now;
+            makePlan(start_.pose, goal_.pose, path, true);
+            if (use_path_with_velocity_)
+            {
+              // NaN velocity means that don't care the velocity
+              pub_path_velocity_.publish(
+                  trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
+            }
+            else
+            {
+              pub_path_.publish(path);
+            }
+            previous_path = path;
+            if (sw_wait_ > 0.0)
+            {
+              const int sw_index = getSwitchIndex(path);
+              is_path_switchback = (sw_index >= 0);
+              if (is_path_switchback)
+                sw_pos_ = path.poses[sw_index];
+            }
           }
         }
       }
@@ -1528,6 +1550,7 @@ protected:
     if (!cm_.validate(s, range_))
     {
       ROS_ERROR("You are on the edge of the world.");
+      status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
       return false;
     }
 
@@ -1591,7 +1614,7 @@ protected:
         {
           goal_ = goal_raw_;
           escaping_ = false;
-          updateGoal();
+          createCostEstimCache();
           ROS_INFO("Escaped");
           return true;
         }
@@ -1657,7 +1680,7 @@ protected:
           goal_.pose.position.x = x;
           goal_.pose.position.y = y;
 
-          updateGoal();
+          createCostEstimCache();
           return false;
         }
       }
