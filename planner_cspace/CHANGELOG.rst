@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_cspace: fix error status handling after cost_estim_cache\_ was not created (`#705 <https://github.com/at-wat/neonavigation/issues/705>`_)
+* Contributors: Naotaka Hatao
+
 0.14.0 (2023-06-06)
 -------------------
 * planner_cspace: publish planner_3d metrics (`#701 <https://github.com/at-wat/neonavigation/issues/701>`_)
