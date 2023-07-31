@@ -514,7 +514,7 @@ protected:
     e.cycleUnsigned(map_info_.angle);
     if (goal_changed)
     {
-      ROS_INFO("New goal received. Metric: (%f, %f, %f), Grid: (%d, %d, %d)",
+      ROS_INFO("New goal received. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
                goal_raw_.pose.position.x, goal_raw_.pose.position.y, tf2::getYaw(goal_raw_.pose.orientation),
                e[0], e[1], e[2]);
       clearHysteresis();
@@ -550,7 +550,7 @@ protected:
         goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
         goal_.pose.position.x = x;
         goal_.pose.position.y = y;
-        ROS_INFO("Goal moved. Metric: (%f, %f, %f), Grid: (%d, %d, %d)", x, y, yaw, e[0], e[1], e[2]);
+        ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)", x, y, yaw, e[0], e[1], e[2]);
         break;
       default:
         Astar::Vec e_prev;
@@ -560,7 +560,7 @@ protected:
             tf2::getYaw(goal_.pose.orientation));
         if (e[0] != e_prev[0] || e[1] != e_prev[1] || e[2] != e_prev[2])
         {
-          ROS_INFO("Goal reverted. Metric: (%f, %f, %f), Grid: (%d, %d, %d)",
+          ROS_INFO("Goal reverted. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
                    goal_raw_.pose.position.x, goal_raw_.pose.position.y, tf2::getYaw(goal_raw_.pose.orientation),
                    e[0], e[1], e[2]);
         }
