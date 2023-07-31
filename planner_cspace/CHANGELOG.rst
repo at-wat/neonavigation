@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_cspace: improve peformance of DistanceMap (`#709 <https://github.com/at-wat/neonavigation/issues/709>`_)
+* planner_cspace: avoid multiple goal pose relocation (`#708 <https://github.com/at-wat/neonavigation/issues/708>`_)
+* Contributors: Naotaka Hatao
+
 0.14.1 (2023-07-07)
 -------------------
 * planner_cspace: fix error status handling after cost_estim_cache\_ was not created (`#705 <https://github.com/at-wat/neonavigation/issues/705>`_)
