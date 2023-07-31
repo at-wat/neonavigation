@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.14.2 (2023-07-31)
+-------------------
 * planner_cspace: improve peformance of DistanceMap (`#709 <https://github.com/at-wat/neonavigation/issues/709>`_)
 * planner_cspace: avoid multiple goal pose relocation (`#708 <https://github.com/at-wat/neonavigation/issues/708>`_)
 * Contributors: Naotaka Hatao
