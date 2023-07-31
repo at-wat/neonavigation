@@ -553,6 +553,17 @@ protected:
         ROS_INFO("Goal moved. Metric: (%f, %f, %f), Grid: (%d, %d, %d)", x, y, yaw, e[0], e[1], e[2]);
         break;
       default:
+        Astar::Vec e_prev;
+        grid_metric_converter::metric2Grid(
+            map_info_, e_prev[0], e_prev[1], e_prev[2],
+            goal_.pose.position.x, goal_.pose.position.y,
+            tf2::getYaw(goal_.pose.orientation));
+        if (e[0] != e_prev[0] || e[1] != e_prev[1] || e[2] != e_prev[2])
+        {
+          ROS_INFO("Goal reverted. Metric: (%f, %f, %f), Grid: (%d, %d, %d)",
+                   goal_raw_.pose.position.x, goal_raw_.pose.position.y, tf2::getYaw(goal_raw_.pose.orientation),
+                   e[0], e[1], e[2]);
+        }
         goal_ = goal_raw_;
         break;
     }
