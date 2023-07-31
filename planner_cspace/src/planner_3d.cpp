@@ -509,15 +509,14 @@ protected:
     s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
-        goal_.pose.position.x, goal_.pose.position.y,
-        tf2::getYaw(goal_.pose.orientation));
+        goal_raw_.pose.position.x, goal_raw_.pose.position.y,
+        tf2::getYaw(goal_raw_.pose.orientation));
     e.cycleUnsigned(map_info_.angle);
     if (goal_changed)
     {
-      ROS_INFO(
-          "New goal received (%d, %d, %d)",
-          e[0], e[1], e[2]);
-
+      ROS_INFO("New goal received. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
+               goal_raw_.pose.position.x, goal_raw_.pose.position.y, tf2::getYaw(goal_raw_.pose.orientation),
+               e[0], e[1], e[2]);
       clearHysteresis();
       has_hysteresis_map_ = false;
     }
@@ -546,14 +545,26 @@ protected:
         ++cnt_stuck_;
         return true;
       case DiscretePoseStatus::RELOCATED:
-        ROS_INFO("Goal moved (%d, %d, %d)", e[0], e[1], e[2]);
         float x, y, yaw;
         grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
         goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
         goal_.pose.position.x = x;
         goal_.pose.position.y = y;
+        ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)", x, y, yaw, e[0], e[1], e[2]);
         break;
       default:
+        Astar::Vec e_prev;
+        grid_metric_converter::metric2Grid(
+            map_info_, e_prev[0], e_prev[1], e_prev[2],
+            goal_.pose.position.x, goal_.pose.position.y,
+            tf2::getYaw(goal_.pose.orientation));
+        if (e[0] != e_prev[0] || e[1] != e_prev[1] || e[2] != e_prev[2])
+        {
+          ROS_INFO("Goal reverted. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
+                   goal_raw_.pose.position.x, goal_raw_.pose.position.y, tf2::getYaw(goal_raw_.pose.orientation),
+                   e[0], e[1], e[2]);
+        }
+        goal_ = goal_raw_;
         break;
     }
     const auto ts = boost::chrono::high_resolution_clock::now();
