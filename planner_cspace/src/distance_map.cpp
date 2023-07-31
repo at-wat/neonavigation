@@ -52,7 +52,7 @@ void DistanceMap::fillCostmap(
 
   std::vector<Astar::PriorityVec> centers;
   centers.reserve(num_cost_estim_task_);
-  edges_.clear();
+  std::fill(edges_buf_.begin(), edges_buf_.end(), false);
 
   debug_data_.has_negative_cost = false;
 
@@ -60,8 +60,6 @@ void DistanceMap::fillCostmap(
   {
     std::vector<Astar::GridmapUpdate> updates;
     updates.reserve(num_cost_estim_task_ * search_diffs_.size() / omp_get_num_threads());
-    std::unordered_map<Astar::Vec, bool, Astar::Vec> edges_local;
-    edges_local.reserve(open.capacity() / omp_get_num_threads());
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
     const float weight_linear = p_.resolution / 100.0;
@@ -83,7 +81,7 @@ void DistanceMap::fillCostmap(
             continue;
           if (center.p_raw_ - range_overshoot > start_cost)
           {
-            edges_[center.v_] = true;
+            edges_buf_[center.v_[0] + center.v_[1] * p_.size[0]] = true;
             continue;
           }
           centers.emplace_back(std::move(center));
@@ -138,7 +136,7 @@ void DistanceMap::fillCostmap(
             }
             if (collision)
             {
-              edges_local[p] = true;
+              edges_buf_[p[0] + p[1] * p_.size[0]] = true;
               continue;
             }
             cost +=
@@ -169,10 +167,6 @@ void DistanceMap::fillCostmap(
             g_[u.getPos()] = u.getCost();
             open.push(std::move(u.getPriorityVec()));
           }
-        }
-        for (const auto& e : edges_local)
-        {
-          edges_[e.first] = true;
         }
       }  // omp critical
     }
@@ -240,6 +234,7 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
       search_diffs_.push_back(std::move(diffs));
     }
   }
+  edges_buf_.resize(p_.size[0] * p_.size[1], false);
 }
 
 void DistanceMap::update(
@@ -313,10 +308,7 @@ void DistanceMap::update(
           continue;
         }
         pq_erase_.emplace(0.0, 0.0, next);
-        if (edges_.find(next) != edges_.end())
-        {
-          edges_.erase(next);
-        }
+        edges_buf_[next[0] + next[1] * p_.size[0]] = false;
       }
     }
   }
@@ -326,10 +318,16 @@ void DistanceMap::update(
     pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
   }
 
-  for (const auto& e : edges_)
+  int pos = 0;
+  for (const auto& edge : edges_buf_)
   {
-    const float p = g_[e.first];
-    pq_open_.emplace(p, p, e.first);
+    if (edge)
+    {
+      const Astar::Vec v(static_cast<int>(pos % p_.size[0]), static_cast<int>(pos / p_.size[0]), 0);
+      const float p = g_[v];
+      pq_open_.emplace(p, p, v);
+    }
+    ++pos;
   }
 
   fillCostmap(pq_open_, s_rough);
