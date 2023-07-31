@@ -60,6 +60,8 @@ void DistanceMap::fillCostmap(
   {
     std::vector<Astar::GridmapUpdate> updates;
     updates.reserve(num_cost_estim_task_ * search_diffs_.size() / omp_get_num_threads());
+    std::vector<size_t> edge_indexes;
+    edge_indexes.reserve(num_cost_estim_task_ * search_diffs_.size() / omp_get_num_threads());
 
     const float range_overshoot = p_.euclid_cost[0] * (p_.range + p_.local_range + p_.longcut_range);
     const float weight_linear = p_.resolution / 100.0;
@@ -92,6 +94,7 @@ void DistanceMap::fillCostmap(
       if (centers.size() == 0)
         break;
       updates.clear();
+      edge_indexes.clear();
 
 #pragma omp for schedule(static)
       for (auto it = centers.cbegin(); it < centers.cend(); ++it)
@@ -136,7 +139,7 @@ void DistanceMap::fillCostmap(
             }
             if (collision)
             {
-              edges_buf_[p[0] + p[1] * p_.size[0]] = true;
+              edge_indexes.push_back(p[0] + p[1] * p_.size[0]);
               continue;
             }
             cost +=
@@ -167,6 +170,10 @@ void DistanceMap::fillCostmap(
             g_[u.getPos()] = u.getCost();
             open.push(std::move(u.getPriorityVec()));
           }
+        }
+        for (const size_t& edge_index : edge_indexes)
+        {
+          edges_buf_[edge_index] = true;
         }
       }  // omp critical
     }
