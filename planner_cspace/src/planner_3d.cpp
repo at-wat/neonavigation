@@ -509,8 +509,8 @@ protected:
     s.cycleUnsigned(map_info_.angle);
     grid_metric_converter::metric2Grid(
         map_info_, e[0], e[1], e[2],
-        goal_.pose.position.x, goal_.pose.position.y,
-        tf2::getYaw(goal_.pose.orientation));
+        goal_raw_.pose.position.x, goal_raw_.pose.position.y,
+        tf2::getYaw(goal_raw_.pose.orientation));
     e.cycleUnsigned(map_info_.angle);
     if (goal_changed)
     {
@@ -554,6 +554,7 @@ protected:
         goal_.pose.position.y = y;
         break;
       default:
+        goal_ = goal_raw_;
         break;
     }
     const auto ts = boost::chrono::high_resolution_clock::now();
