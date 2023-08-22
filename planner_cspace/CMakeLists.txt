@@ -6,6 +6,7 @@ set(CATKIN_DEPENDS
 
   actionlib
   diagnostic_updater
+  dynamic_reconfigure
   geometry_msgs
   move_base_msgs
   nav_msgs
@@ -27,6 +28,11 @@ set(CATKIN_DEPENDS
 find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
 find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
+
+generate_dynamic_reconfigure_options(
+  cfg/Planner3D.cfg
+)
+
 catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS ${CATKIN_DEPENDS}
@@ -51,7 +57,7 @@ add_executable(planner_3d
   src/rotation_cache.cpp
 )
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
+add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h

@@ -44,6 +44,7 @@
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 #include <diagnostic_updater/diagnostic_updater.h>
+#include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -67,6 +68,7 @@
 
 #include <neonavigation_common/compatibility.h>
 
+#include <planner_cspace/Planner3DConfig.h>
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/jump_detector.h>
@@ -114,6 +116,8 @@ protected:
   planner_cspace_msgs::MoveWithToleranceGoalConstPtr goal_tolerant_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
+
+  dynamic_reconfigure::Server<Planner3DConfig> parameter_server_;
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
@@ -167,6 +171,7 @@ protected:
   float remember_miss_odds_;
   bool use_path_with_velocity_;
   bool retain_last_error_status_;
+  int num_cost_estim_task_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -928,27 +933,7 @@ protected:
         map_info_.angular_resolution != msg->info.angular_resolution)
     {
       map_info_ = msg->info;
-
-      range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
-      hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
-      hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
-      local_range_ = std::lround(local_range_f_ / map_info_.linear_resolution);
-      esc_range_ = std::lround(esc_range_f_ / map_info_.linear_resolution);
-      esc_angle_ = map_info_.angle / 8;
-      tolerance_range_ = std::lround(tolerance_range_f_ / map_info_.linear_resolution);
-      tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
-      goal_tolerance_lin_ = std::lround(goal_tolerance_lin_f_ / map_info_.linear_resolution);
-      goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
-      cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
-
-      model_.reset(
-          new GridAstarModel3D(
-              map_info_,
-              ec_,
-              local_range_,
-              cost_estim_cache_.gridmap(), cm_, cm_hyst_, cm_rough_,
-              cc_, range_));
-
+      resetGridAstarModel();
       ROS_DEBUG("Search model updated");
     }
     else
@@ -1094,6 +1079,7 @@ public:
     , tfl_(tfbuf_)
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , jump_(tfbuf_)
+    , parameter_server_(pnh_)
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
@@ -1242,9 +1228,8 @@ public:
     int num_task;
     pnh_.param("num_search_task", num_task, num_threads * 16);
     as_.setSearchTaskNum(num_task);
-    int num_cost_estim_task;
-    pnh_.param("num_cost_estim_task", num_cost_estim_task, num_threads * 16);
-    cost_estim_cache_.setParams(cc_, num_cost_estim_task);
+    pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
+    cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
 
     pnh_.param("retain_last_error_status", retain_last_error_status_, true);
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -1263,6 +1248,102 @@ public:
 
     act_->start();
     act_tolerant_->start();
+
+    // cbParameter() with the inital parameters will be called within setCallback().
+    parameter_server_.setCallback(boost::bind(&Planner3dNode::cbParameter, this, _1, _2));
+  }
+
+  void resetGridAstarModel()
+  {
+    range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
+    hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
+    hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
+    local_range_ = std::lround(local_range_f_ / map_info_.linear_resolution);
+    esc_range_ = std::lround(esc_range_f_ / map_info_.linear_resolution);
+    esc_angle_ = map_info_.angle / 8;
+    tolerance_range_ = std::lround(tolerance_range_f_ / map_info_.linear_resolution);
+    tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
+    goal_tolerance_lin_ = std::lround(goal_tolerance_lin_f_ / map_info_.linear_resolution);
+    goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
+    cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
+
+    model_.reset(
+        new GridAstarModel3D(
+            map_info_,
+            ec_,
+            local_range_,
+            cost_estim_cache_.gridmap(), cm_, cm_hyst_, cm_rough_,
+            cc_, range_));
+  }
+
+  void cbParameter(const Planner3DConfig& config, const uint32_t /* level */)
+  {
+    freq_ = config.freq;
+    freq_min_ = config.freq_min;
+    search_timeout_abort_ = config.search_timeout_abort;
+    search_range_ = config.search_range;
+    antialias_start_ = config.antialias_start;
+    costmap_watchdog_ = ros::Duration(config.costmap_watchdog);
+
+    cc_.max_vel_ = config.max_vel;
+    cc_.max_ang_vel_ = config.max_ang_vel;
+    cc_.min_curve_radius_ = config.min_curve_radius;
+    cc_.weight_decel_ = config.weight_decel;
+    cc_.weight_backward_ = config.weight_backward;
+    cc_.weight_ang_vel_ = config.weight_ang_vel;
+    cc_.weight_costmap_ = config.weight_costmap;
+    cc_.weight_costmap_turn_ = config.weight_costmap_turn;
+    cc_.weight_remembered_ = config.weight_remembered;
+    cc_.in_place_turn_ = config.cost_in_place_turn;
+    cc_.hysteresis_max_dist_ = config.hysteresis_max_dist;
+    cc_.hysteresis_expand_ = config.hysteresis_expand;
+    cc_.weight_hysteresis_ = config.weight_hysteresis;
+
+    goal_tolerance_lin_f_ = config.goal_tolerance_lin;
+    goal_tolerance_ang_f_ = config.goal_tolerance_ang;
+    goal_tolerance_ang_finish_ = config.goal_tolerance_ang_finish;
+
+    overwrite_cost_ = config.overwrite_cost;
+    hist_ignore_range_f_ = config.hist_ignore_range;
+    hist_ignore_range_max_f_ = config.hist_ignore_range_max;
+
+    remember_updates_ = config.remember_updates;
+    remember_hit_odds_ = bbf::probabilityToOdds(config.remember_hit_prob);
+    remember_miss_odds_ = bbf::probabilityToOdds(config.remember_miss_prob);
+
+    local_range_f_ = config.local_range;
+    longcut_range_f_ = config.longcut_range;
+    esc_range_f_ = config.esc_range;
+    tolerance_range_f_ = config.tolerance_range;
+    tolerance_angle_f_ = config.tolerance_angle;
+    find_best_ = config.find_best;
+    force_goal_orientation_ = config.force_goal_orientation;
+    temporary_escape_ = config.temporary_escape;
+    fast_map_update_ = config.fast_map_update;
+    max_retry_num_ = config.max_retry_num;
+    sw_wait_ = config.sw_wait;
+
+    cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
+    ec_ = Astar::Vecf(
+        1.0f / cc_.max_vel_,
+        1.0f / cc_.max_vel_,
+        1.0f * cc_.weight_ang_vel_ / cc_.max_ang_vel_);
+
+    if (map_info_.linear_resolution != 0.0 && map_info_.angular_resolution != 0.0)
+    {
+      resetGridAstarModel();
+      const Astar::Vec size2d(static_cast<int>(map_info_.width), static_cast<int>(map_info_.height), 1);
+      const DistanceMap::Params dmp =
+          {
+              .euclid_cost = ec_,
+              .range = range_,
+              .local_range = local_range_,
+              .longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
+              .size = size2d,
+              .resolution = map_info_.linear_resolution,
+          };
+      cost_estim_cache_.init(model_, dmp);
+    }
   }
 
   GridAstarModel3D::Vec pathPose2Grid(const geometry_msgs::PoseStamped& pose) const
