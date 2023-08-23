@@ -273,6 +273,12 @@ void DistanceMap::update(
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
 
+  if (s_rough.isExceeded(g_.size()) || e_rough.isExceeded(g_.size()))
+  {
+    // Out of the map
+    return;
+  }
+
   if (cost_min != std::numeric_limits<float>::max())
   {
     pq_erase_.emplace(0.0, 0.0, p_cost_min);
@@ -342,12 +348,18 @@ void DistanceMap::update(
 
 void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
 {
+  const Astar::Vec e_rough(e[0], e[1], 0);
+  const Astar::Vec s_rough(s[0], s[1], 0);
+
+  if (s_rough.isExceeded(g_.size()) || e_rough.isExceeded(g_.size()))
+  {
+    // Out of the map
+    return;
+  }
+
   pq_open_.clear();
   pq_erase_.clear();
   g_.clear(std::numeric_limits<float>::max());
-
-  const Astar::Vec e_rough(e[0], e[1], 0);
-  const Astar::Vec s_rough(s[0], s[1], 0);
 
   g_[e_rough] = -p_.euclid_cost[0] * 0.5;  // Decrement to reduce calculation error
   pq_open_.push(Astar::PriorityVec(g_[e_rough], g_[e_rough], e_rough));
