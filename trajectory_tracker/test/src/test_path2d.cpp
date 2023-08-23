@@ -32,6 +32,7 @@
 #include <cstddef>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -224,18 +225,11 @@ TEST(Path2D, Conversions)
   trajectory_tracker::Path2D path;
   path.fromMsg(path_msg_org);
 
+  const std::vector<size_t> expected_index_array = {0, 1, 3, 4, 5, 7};
   ASSERT_EQ(path.size(), 6);
   for (size_t i = 0; i < path.size(); ++i)
   {
-    size_t org_idx = i;
-    if (i == 5)
-    {
-      org_idx += 2;
-    }
-    else if (i >= 2)
-    {
-      org_idx += 1;
-    }
+    const size_t org_idx = expected_index_array[i];
     EXPECT_EQ(path[i].pos_.x(), path_msg_org.poses[org_idx].pose.position.x) << "idx: " << i << " org_idx: " << org_idx;
     EXPECT_EQ(path[i].pos_.y(), path_msg_org.poses[org_idx].pose.position.y) << "idx: " << i << " org_idx: " << org_idx;
     EXPECT_NEAR(path[i].yaw_, tf2::getYaw(path_msg_org.poses[org_idx].pose.orientation), 1.0e-6)
@@ -271,15 +265,7 @@ TEST(Path2D, Conversions)
   ASSERT_EQ(path_with_vel.size(), 6);
   for (size_t i = 0; i < path_with_vel.size(); ++i)
   {
-    size_t org_idx = i;
-    if (i == 5)
-    {
-      org_idx += 2;
-    }
-    else if (i >= 2)
-    {
-      org_idx += 1;
-    }
+    const size_t org_idx = expected_index_array[i];
     EXPECT_EQ(path_with_vel[i].pos_.x(), path_with_vel_msg_org.poses[org_idx].pose.position.x)
         << "idx: " << i << " org_idx: " << org_idx;
     EXPECT_EQ(path_with_vel[i].pos_.y(), path_with_vel_msg_org.poses[org_idx].pose.position.y)
