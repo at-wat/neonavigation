@@ -288,8 +288,6 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   path_header_ = msg->header;
   is_path_updated_ = true;
   path_step_done_ = 0;
-  if (msg->poses.size() == 0)
-    return;
   path_.fromMsg(*msg, epsilon_);
   for (const auto& path_pose : path_)
   {
