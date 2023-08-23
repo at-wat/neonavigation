@@ -40,8 +40,6 @@
 #include <trajectory_tracker/path2d.h>
 #include <trajectory_tracker_msgs/PathWithVelocity.h>
 
-#include <ros/ros.h>
-
 namespace
 {
 double getRemainedDistance(const trajectory_tracker::Path2D& path, const Eigen::Vector2d& p)

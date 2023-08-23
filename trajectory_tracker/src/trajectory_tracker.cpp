@@ -290,7 +290,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   path_step_done_ = 0;
   if (msg->poses.size() == 0)
     return;
-  path_.fromMsg(*msg);
+  path_.fromMsg(*msg, epsilon_);
   for (const auto& path_pose : path_)
   {
     if (std::isfinite(path_pose.velocity_) && path_pose.velocity_ < -0.0)
