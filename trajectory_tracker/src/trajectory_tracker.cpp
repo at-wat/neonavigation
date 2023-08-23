@@ -291,6 +291,15 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   if (msg->poses.size() == 0)
     return;
   path_.fromMsg(*msg);
+  for (const auto& path_pose : path_)
+  {
+    if (std::isfinite(path_pose.velocity_) && path_pose.velocity_ < -0.0)
+    {
+      ROS_ERROR_THROTTLE(1.0, "path_velocity.velocity.x must be positive");
+      path_.clear();
+      return;
+    }
+  }
 }
 
 void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)

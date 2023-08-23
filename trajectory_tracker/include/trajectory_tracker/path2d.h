@@ -289,9 +289,7 @@ public:
   }
   // PATH_TYPE should be trajectory_tracker_msgs::PathWithVelocity or nav_msgs::Path
   template <typename PATH_TYPE>
-  inline void fromMsg(
-      const PATH_TYPE& path,
-      const double in_place_turn_eps = 1.0e-6)
+  inline void fromMsg(const PATH_TYPE& path, const double in_place_turn_eps = 1.0e-6)
   {
     clear();
     bool in_place_turning = false;
