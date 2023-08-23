@@ -282,62 +282,15 @@ void TrackerNode::cbSpeed(const std_msgs::Float32::ConstPtr& msg)
   vel_[0] = msg->data;
 }
 
-namespace
-{
-float getVelocity(const geometry_msgs::PoseStamped& msg)
-{
-  return std::numeric_limits<float>::quiet_NaN();
-}
-float getVelocity(const trajectory_tracker_msgs::PoseStampedWithVelocity& msg)
-{
-  return msg.linear_velocity.x;
-}
-}  // namespace
-
 template <typename MSG_TYPE>
 void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
 {
   path_header_ = msg->header;
-  path_.clear();
   is_path_updated_ = true;
   path_step_done_ = 0;
   if (msg->poses.size() == 0)
     return;
-
-  trajectory_tracker::Pose2D in_place_turn_end;
-  bool in_place_turning = false;
-
-  auto j = msg->poses.begin();
-  path_.push_back(trajectory_tracker::Pose2D(j->pose, getVelocity(*j)));
-  for (++j; j < msg->poses.end(); ++j)
-  {
-    const float velocity = getVelocity(*j);
-    if (std::isfinite(velocity) && velocity < -0.0)
-    {
-      ROS_ERROR_THROTTLE(1.0, "path_velocity.velocity.x must be positive");
-      path_.clear();
-      return;
-    }
-    const trajectory_tracker::Pose2D next(j->pose, velocity);
-
-    if ((path_.back().pos_ - next.pos_).squaredNorm() >= std::pow(epsilon_, 2))
-    {
-      if (in_place_turning)
-      {
-        path_.push_back(in_place_turn_end);
-        in_place_turning = false;
-      }
-      path_.push_back(next);
-    }
-    else
-    {
-      in_place_turn_end = trajectory_tracker::Pose2D(
-          path_.back().pos_, next.yaw_, next.velocity_);
-      in_place_turning = true;
-    }
-  }
-  if (in_place_turning)
-    path_.push_back(in_place_turn_end);
+  path_.fromMsg(*msg);
 }
 
 void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)

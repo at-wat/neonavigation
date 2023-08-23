@@ -30,8 +30,9 @@
 #ifndef TRAJECTORY_TRACKER_PATH2D_H
 #define TRAJECTORY_TRACKER_PATH2D_H
 
-#include <vector>
 #include <limits>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -39,6 +40,7 @@
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Path.h>
 #include <tf2/utils.h>
+#include <trajectory_tracker_msgs/PathWithVelocity.h>
 
 #include <trajectory_tracker/average.h>
 #include <trajectory_tracker/eigen_line.h>
@@ -64,10 +66,22 @@ public:
     , velocity_(velocity)
   {
   }
-  inline explicit Pose2D(const geometry_msgs::Pose& pose, float velocity)
+  inline Pose2D(const geometry_msgs::Pose& pose, float velocity)
     : pos_(Eigen::Vector2d(pose.position.x, pose.position.y))
     , yaw_(tf2::getYaw(pose.orientation))
     , velocity_(velocity)
+  {
+  }
+  inline explicit Pose2D(const geometry_msgs::PoseStamped& pose)
+    : pos_(Eigen::Vector2d(pose.pose.position.x, pose.pose.position.y))
+    , yaw_(tf2::getYaw(pose.pose.orientation))
+    , velocity_(std::numeric_limits<float>::quiet_NaN())
+  {
+  }
+  inline explicit Pose2D(const trajectory_tracker_msgs::PoseStampedWithVelocity& pose)
+    : pos_(Eigen::Vector2d(pose.pose.position.x, pose.pose.position.y))
+    , yaw_(tf2::getYaw(pose.pose.orientation))
+    , velocity_(pose.linear_velocity.x)
   {
   }
   inline void rotate(const float ang)
@@ -84,6 +98,19 @@ public:
       yaw_ += 2 * M_PI;
     while (yaw_ > 2 * M_PI)
       yaw_ -= 2 * M_PI;
+  }
+  void toMsg(geometry_msgs::PoseStamped& pose) const
+  {
+    pose.pose.position.x = pos_.x();
+    pose.pose.position.y = pos_.y();
+    pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw_));
+  }
+  void toMsg(trajectory_tracker_msgs::PoseStampedWithVelocity& pose) const
+  {
+    pose.pose.position.x = pos_.x();
+    pose.pose.position.y = pos_.y();
+    pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw_));
+    pose.linear_velocity.x = velocity_;
   }
 };
 class Path2D : public std::vector<Pose2D>
@@ -260,15 +287,18 @@ public:
     }
     return curv;
   }
-  inline void fromMsg(const nav_msgs::Path& path,
-                      const double in_place_turn_eps = 1.0e-6)
+  // PATH_TYPE should be trajectory_tracker_msgs::PathWithVelocity or nav_msgs::Path
+  template <typename PATH_TYPE>
+  inline void fromMsg(
+      const PATH_TYPE& path,
+      const double in_place_turn_eps = 1.0e-6)
   {
     clear();
     bool in_place_turning = false;
     trajectory_tracker::Pose2D in_place_turn_end;
     for (const auto& pose : path.poses)
     {
-      const trajectory_tracker::Pose2D next(pose.pose, 0.0);
+      const trajectory_tracker::Pose2D next(pose);
       if (empty())
       {
         push_back(next);
@@ -295,18 +325,16 @@ public:
       push_back(in_place_turn_end);
     }
   }
-  inline void toMsg(nav_msgs::Path& path) const
+  // PATH_TYPE should be trajectory_tracker_msgs::PathWithVelocity or nav_msgs::Path
+  template <typename PATH_TYPE>
+  inline void toMsg(PATH_TYPE& path) const
   {
     path.poses.clear();
-    for (const auto& pose : *this)
+    path.poses.resize(size());
+    for (size_t i = 0; i < size(); ++i)
     {
-      geometry_msgs::PoseStamped pose_msg;
-      pose_msg.header = path.header;
-      pose_msg.pose.position.x = pose.pos_.x();
-      pose_msg.pose.position.y = pose.pos_.y();
-      pose_msg.pose.orientation.z = std::sin(pose.yaw_ / 2);
-      pose_msg.pose.orientation.w = std::cos(pose.yaw_ / 2);
-      path.poses.push_back(pose_msg);
+      path.poses[i].header = path.header;
+      at(i).toMsg(path.poses[i]);
     }
   }
 };
