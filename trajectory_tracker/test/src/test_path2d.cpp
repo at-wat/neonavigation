@@ -225,15 +225,15 @@ TEST(Path2D, Conversions)
   trajectory_tracker::Path2D path;
   path.fromMsg(path_msg_org);
 
-  const std::vector<size_t> expected_index_array = {0, 1, 3, 4, 5, 7};
+  const std::vector<size_t> expected_org_indexes = {0, 1, 3, 4, 5, 7};
   ASSERT_EQ(path.size(), 6);
   for (size_t i = 0; i < path.size(); ++i)
   {
-    const size_t org_idx = expected_index_array[i];
-    EXPECT_EQ(path[i].pos_.x(), path_msg_org.poses[org_idx].pose.position.x) << "idx: " << i << " org_idx: " << org_idx;
-    EXPECT_EQ(path[i].pos_.y(), path_msg_org.poses[org_idx].pose.position.y) << "idx: " << i << " org_idx: " << org_idx;
-    EXPECT_NEAR(path[i].yaw_, tf2::getYaw(path_msg_org.poses[org_idx].pose.orientation), 1.0e-6)
-        << "idx: " << i << " org_idx: " << org_idx;
+    const size_t org_index = expected_org_indexes[i];
+    EXPECT_EQ(path[i].pos_.x(), path_msg_org.poses[org_index].pose.position.x) << "i: " << i << " org: " << org_index;
+    EXPECT_EQ(path[i].pos_.y(), path_msg_org.poses[org_index].pose.position.y) << "i: " << i << " org: " << org_index;
+    EXPECT_NEAR(path[i].yaw_, tf2::getYaw(path_msg_org.poses[org_index].pose.orientation), 1.0e-6)
+        << "i: " << i << " org: " << org_index;
     EXPECT_TRUE(std::isnan(path[i].velocity_));
   }
 
@@ -244,9 +244,9 @@ TEST(Path2D, Conversions)
   ASSERT_EQ(path_msg.poses.size(), 6);
   for (size_t i = 0; i < path.size(); ++i)
   {
-    EXPECT_EQ(path[i].pos_.x(), path_msg.poses[i].pose.position.x) << "idx: " << i;
-    EXPECT_EQ(path[i].pos_.y(), path_msg.poses[i].pose.position.y) << "idx: " << i;
-    EXPECT_NEAR(path[i].yaw_, tf2::getYaw(path_msg.poses[i].pose.orientation), 1.0e-6) << "idx: " << i;
+    EXPECT_EQ(path[i].pos_.x(), path_msg.poses[i].pose.position.x) << "i: " << i;
+    EXPECT_EQ(path[i].pos_.y(), path_msg.poses[i].pose.position.y) << "i: " << i;
+    EXPECT_NEAR(path[i].yaw_, tf2::getYaw(path_msg.poses[i].pose.orientation), 1.0e-6) << "i: " << i;
     EXPECT_EQ(path_msg.poses[i].header.frame_id, path_msg.header.frame_id);
     EXPECT_EQ(path_msg.poses[i].header.stamp, path_msg.header.stamp);
   }
@@ -265,14 +265,14 @@ TEST(Path2D, Conversions)
   ASSERT_EQ(path_with_vel.size(), 6);
   for (size_t i = 0; i < path_with_vel.size(); ++i)
   {
-    const size_t org_idx = expected_index_array[i];
-    EXPECT_EQ(path_with_vel[i].pos_.x(), path_with_vel_msg_org.poses[org_idx].pose.position.x)
-        << "idx: " << i << " org_idx: " << org_idx;
-    EXPECT_EQ(path_with_vel[i].pos_.y(), path_with_vel_msg_org.poses[org_idx].pose.position.y)
-        << "idx: " << i << " org_idx: " << org_idx;
-    EXPECT_NEAR(path_with_vel[i].yaw_, tf2::getYaw(path_with_vel_msg_org.poses[org_idx].pose.orientation), 1.0e-6)
-        << "idx: " << i << " org_idx: " << org_idx;
-    EXPECT_NEAR(path_with_vel[i].velocity_, org_idx * 0.1, 1.0e-6) << "idx: " << i << " org_idx: " << org_idx;
+    const size_t org_index = expected_org_indexes[i];
+    EXPECT_EQ(path_with_vel[i].pos_.x(), path_with_vel_msg_org.poses[org_index].pose.position.x)
+        << "i: " << i << " org: " << org_index;
+    EXPECT_EQ(path_with_vel[i].pos_.y(), path_with_vel_msg_org.poses[org_index].pose.position.y)
+        << "i: " << i << " org: " << org_index;
+    EXPECT_NEAR(path_with_vel[i].yaw_, tf2::getYaw(path_with_vel_msg_org.poses[org_index].pose.orientation), 1.0e-6)
+        << "i: " << i << " org: " << org_index;
+    EXPECT_NEAR(path_with_vel[i].velocity_, org_index * 0.1, 1.0e-6) << "i: " << i << " org: " << org_index;
   }
 
   trajectory_tracker_msgs::PathWithVelocity path_with_vel_msg;
@@ -282,10 +282,10 @@ TEST(Path2D, Conversions)
   ASSERT_EQ(path_with_vel_msg.poses.size(), 6);
   for (size_t i = 0; i < path_with_vel.size(); ++i)
   {
-    EXPECT_EQ(path_with_vel[i].pos_.x(), path_with_vel_msg.poses[i].pose.position.x) << "idx: " << i;
-    EXPECT_EQ(path_with_vel[i].pos_.y(), path_with_vel_msg.poses[i].pose.position.y) << "idx: " << i;
+    EXPECT_EQ(path_with_vel[i].pos_.x(), path_with_vel_msg.poses[i].pose.position.x) << "i: " << i;
+    EXPECT_EQ(path_with_vel[i].pos_.y(), path_with_vel_msg.poses[i].pose.position.y) << "i: " << i;
     EXPECT_NEAR(path_with_vel[i].yaw_, tf2::getYaw(path_with_vel_msg.poses[i].pose.orientation), 1.0e-6)
-        << "idx: " << i;
+        << "i: " << i;
     EXPECT_EQ(path_with_vel_msg.poses[i].header.frame_id, path_with_vel_msg.header.frame_id);
     EXPECT_EQ(path_with_vel_msg.poses[i].header.stamp, path_with_vel_msg.header.stamp);
   }
