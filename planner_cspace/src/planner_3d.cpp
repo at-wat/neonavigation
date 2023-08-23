@@ -116,7 +116,6 @@ protected:
   planner_cspace_msgs::MoveWithToleranceGoalConstPtr goal_tolerant_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-
   dynamic_reconfigure::Server<Planner3DConfig> parameter_server_;
 
   Astar as_;
@@ -1077,9 +1076,9 @@ public:
     : nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
+    , parameter_server_(pnh_)
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , jump_(tfbuf_)
-    , parameter_server_(pnh_)
   {
     neonavigation_common::compat::checkCompatMode();
     sub_map_ = neonavigation_common::compat::subscribe(
