@@ -273,11 +273,13 @@ void DistanceMap::update(
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
 
+  /*
   if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {
     // Out of the map
     return;
   }
+  */
 
   if (cost_min != std::numeric_limits<float>::max())
   {
@@ -351,11 +353,13 @@ void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
 
+  /*
   if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {
     // Out of the map
     return;
   }
+  */
 
   pq_open_.clear();
   pq_erase_.clear();
