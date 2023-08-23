@@ -37,10 +37,11 @@
 #include <Eigen/Geometry>
 
 #include <geometry_msgs/Pose.h>
+#include <nav_msgs/Path.h>
 #include <tf2/utils.h>
 
-#include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/average.h>
+#include <trajectory_tracker/eigen_line.h>
 
 namespace trajectory_tracker
 {
@@ -133,9 +134,23 @@ public:
       const float max_search_range = 0,
       const float epsilon = 1e-6) const
   {
+    return findNearestWithDistance(begin, end, target, max_search_range, epsilon).first;
+  }
+  inline std::pair<ConstIterator, double> findNearestWithDistance(
+      const ConstIterator& begin,
+      const ConstIterator& end,
+      const Eigen::Vector2d& target,
+      const float max_search_range = 0,
+      const float epsilon = 1e-6) const
+  {
     if (begin == end)
-      return end;
-
+    {
+      if (end == this->end())
+      {
+        return std::make_pair(end, std::numeric_limits<double>::max());
+      }
+      return std::make_pair(end, (end->pos_ - target).norm());
+    }
     float distance_path_search = 0;
     ConstIterator it_nearest = begin;
     float min_dist = (begin->pos_ - target).norm() + epsilon;
@@ -165,7 +180,7 @@ public:
       }
       it_prev = it;
     }
-    return it_nearest;
+    return std::make_pair(it_nearest, min_dist);
   }
   inline double remainedDistance(
       const ConstIterator& begin,
@@ -244,6 +259,55 @@ public:
       it_prev1 = it;
     }
     return curv;
+  }
+  inline void fromMsg(const nav_msgs::Path& path,
+                      const double in_place_turn_eps = 1.0e-6)
+  {
+    clear();
+    bool in_place_turning = false;
+    trajectory_tracker::Pose2D in_place_turn_end;
+    for (const auto& pose : path.poses)
+    {
+      const trajectory_tracker::Pose2D next(pose.pose, 0.0);
+      if (empty())
+      {
+        push_back(next);
+        continue;
+      }
+      if ((back().pos_ - next.pos_).squaredNorm() >= std::pow(in_place_turn_eps, 2))
+      {
+        if (in_place_turning)
+        {
+          push_back(in_place_turn_end);
+          in_place_turning = false;
+        }
+        push_back(next);
+      }
+      else
+      {
+        in_place_turn_end = trajectory_tracker::Pose2D(
+            back().pos_, next.yaw_, next.velocity_);
+        in_place_turning = true;
+      }
+    }
+    if (in_place_turning)
+    {
+      push_back(in_place_turn_end);
+    }
+  }
+  inline void toMsg(nav_msgs::Path& path) const
+  {
+    path.poses.clear();
+    for (const auto& pose : *this)
+    {
+      geometry_msgs::PoseStamped pose_msg;
+      pose_msg.header = path.header;
+      pose_msg.pose.position.x = pose.pos_.x();
+      pose_msg.pose.position.y = pose.pos_.y();
+      pose_msg.pose.orientation.z = std::sin(pose.yaw_ / 2);
+      pose_msg.pose.orientation.w = std::cos(pose.yaw_ / 2);
+      path.poses.push_back(pose_msg);
+    }
   }
 };
 }  // namespace trajectory_tracker
