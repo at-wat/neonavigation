@@ -273,7 +273,7 @@ void DistanceMap::update(
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
 
-  if (s_rough.isExceeded(g_.size()) || e_rough.isExceeded(g_.size()))
+  if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {
     // Out of the map
     return;
@@ -351,7 +351,7 @@ void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
 
-  if (s_rough.isExceeded(g_.size()) || e_rough.isExceeded(g_.size()))
+  if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {
     // Out of the map
     return;
