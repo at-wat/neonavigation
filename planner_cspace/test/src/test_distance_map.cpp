@@ -228,6 +228,32 @@ TEST_F(DistanceMapTest, Create)
   }
 }
 
+TEST_F(DistanceMapTest, StartOutOfMap)
+{
+  setupCostmap();
+  dm_.create(s_, e_);
+
+  const DistanceMap::Rect rect(Vec3(1, 1, 0), Vec3(2, 2, 0));
+
+  dm_.update(Astar::Vec(1000, 1000, 0), e_, rect);
+  dm_.update(Astar::Vec(-1000, 1000, 0), e_, rect);
+  dm_.update(Astar::Vec(-1000, -1000, 0), e_, rect);
+  dm_.update(Astar::Vec(1000, -1000, 0), e_, rect);
+}
+
+TEST_F(DistanceMapTest, GoalOutOfMap)
+{
+  setupCostmap();
+  dm_.create(s_, e_);
+
+  const DistanceMap::Rect rect(Vec3(1, 1, 0), Vec3(2, 2, 0));
+
+  dm_.update(s_, Astar::Vec(1000, 1000, 0), rect);
+  dm_.update(s_, Astar::Vec(-1000, 1000, 0), rect);
+  dm_.update(s_, Astar::Vec(-1000, -1000, 0), rect);
+  dm_.update(s_, Astar::Vec(1000, -1000, 0), rect);
+}
+
 TEST_P(DistanceMapTestWithParam, Update)
 {
   const std::vector<Vec3> obstacles = GetParam();

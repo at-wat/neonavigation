@@ -28,13 +28,18 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <limits>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
+#include <nav_msgs/Path.h>
 #include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/path2d.h>
+#include <trajectory_tracker_msgs/PathWithVelocity.h>
 
 namespace
 {
@@ -141,6 +146,148 @@ TEST(Path2D, LocalGoalWithSwitchBack)
 
     // no switch back motion under (allow_switchback == false)
     ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), false), path.end());
+  }
+}
+
+TEST(Path2D, FindNearestWithDistance)
+{
+  trajectory_tracker::Path2D path;
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.5, 0.5), 0, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.6, 0.5), 0, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.7, 0.5), 0, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.8, 0.6), M_PI / 4, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.9, 0.7), M_PI / 4, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.9, 0.8), M_PI / 2, 1));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.9, 0.9), M_PI / 2, 1));
+
+  {
+    // The nearest line is (0.8, 0.6) - (0.9, 0.7), and the nearest point on the line is (0.85, 0.65).
+    const auto nearest_with_dist = path.findNearestWithDistance(path.begin(), path.end(), Eigen::Vector2d(1.0, 0.5));
+    EXPECT_EQ(nearest_with_dist.first, path.begin() + 4);
+    EXPECT_NEAR(nearest_with_dist.second, std::sqrt(std::pow(1.0 - 0.85, 2) + std::pow(0.5 - 0.65, 2)), 1.0e-6);
+  }
+  {
+    // The nearest point is (0.7, 0.5).
+    const auto nearest_with_dist =
+        path.findNearestWithDistance(path.begin(), path.begin() + 3, Eigen::Vector2d(1.0, 0.5));
+    EXPECT_EQ(nearest_with_dist.first, path.begin() + 2);
+    EXPECT_NEAR(nearest_with_dist.second, std::sqrt(std::pow(1.0 - 0.7, 2) + std::pow(0.5 - 0.5, 2)), 1.0e-6);
+  }
+  {
+    // Test edge cases
+    const auto nearest_with_dist =
+        path.findNearestWithDistance(path.begin() + 5, path.begin() + 5, Eigen::Vector2d(1.0, 0.5));
+    EXPECT_EQ(nearest_with_dist.first, path.begin() + 5);
+    EXPECT_NEAR(nearest_with_dist.second, std::sqrt(std::pow(1.0 - 0.9, 2) + std::pow(0.5 - 0.8, 2)), 1.0e-6);
+
+    const auto invalid_result =
+        path.findNearestWithDistance(path.end(), path.end(), Eigen::Vector2d(1.0, 0.5));
+    EXPECT_EQ(invalid_result.first, path.end());
+    EXPECT_EQ(invalid_result.second, std::numeric_limits<double>::max());
+  }
+}
+
+TEST(Path2D, Conversions)
+{
+  nav_msgs::Path path_msg_org;
+  path_msg_org.poses.resize(8);
+  path_msg_org.poses[0].pose.position.x = 0.0;
+  path_msg_org.poses[0].pose.position.y = 0.0;
+  path_msg_org.poses[0].pose.orientation.w = 1.0;
+  path_msg_org.poses[1].pose.position.x = 1.0;  // Start of in-place turning
+  path_msg_org.poses[1].pose.position.y = 0.0;
+  path_msg_org.poses[1].pose.orientation.w = 1.0;
+  path_msg_org.poses[2].pose.position.x = 1.0;
+  path_msg_org.poses[2].pose.position.y = 0.0;
+  path_msg_org.poses[2].pose.orientation.z = std::sin(M_PI / 8);
+  path_msg_org.poses[2].pose.orientation.w = std::cos(M_PI / 8);
+  path_msg_org.poses[3].pose.position.x = 1.0;  // End of in-place turning
+  path_msg_org.poses[3].pose.position.y = 0.0;
+  path_msg_org.poses[3].pose.orientation.z = std::sin(M_PI / 4);
+  path_msg_org.poses[3].pose.orientation.w = std::cos(M_PI / 4);
+  path_msg_org.poses[4].pose.position.x = 1.0;
+  path_msg_org.poses[4].pose.position.y = 1.0;
+  path_msg_org.poses[4].pose.orientation.z = std::sin(M_PI / 4);
+  path_msg_org.poses[4].pose.orientation.w = std::cos(M_PI / 4);
+  path_msg_org.poses[5].pose.position.x = 1.0;  // Start of in-place turning
+  path_msg_org.poses[5].pose.position.y = 2.0;
+  path_msg_org.poses[5].pose.orientation.z = std::sin(M_PI / 4);
+  path_msg_org.poses[5].pose.orientation.w = std::cos(M_PI / 4);
+  path_msg_org.poses[6].pose.position.x = 1.0;
+  path_msg_org.poses[6].pose.position.y = 2.0;
+  path_msg_org.poses[6].pose.orientation.z = std::sin(M_PI / 4 + M_PI / 6);
+  path_msg_org.poses[6].pose.orientation.w = std::cos(M_PI / 4 + M_PI / 6);
+  path_msg_org.poses[7].pose.position.x = 1.0;  // End of in-place turning
+  path_msg_org.poses[7].pose.position.y = 2.0;
+  path_msg_org.poses[7].pose.orientation.z = std::sin(M_PI / 4 + M_PI / 3);
+  path_msg_org.poses[7].pose.orientation.w = std::cos(M_PI / 4 + M_PI / 3);
+
+  trajectory_tracker::Path2D path;
+  path.fromMsg(path_msg_org);
+
+  const std::vector<size_t> expected_org_indexes = {0, 1, 3, 4, 5, 7};
+  ASSERT_EQ(path.size(), 6);
+  for (size_t i = 0; i < path.size(); ++i)
+  {
+    const size_t org_index = expected_org_indexes[i];
+    EXPECT_EQ(path[i].pos_.x(), path_msg_org.poses[org_index].pose.position.x) << "i: " << i << " org: " << org_index;
+    EXPECT_EQ(path[i].pos_.y(), path_msg_org.poses[org_index].pose.position.y) << "i: " << i << " org: " << org_index;
+    EXPECT_NEAR(path[i].yaw_, tf2::getYaw(path_msg_org.poses[org_index].pose.orientation), 1.0e-6)
+        << "i: " << i << " org: " << org_index;
+    EXPECT_TRUE(std::isnan(path[i].velocity_));
+  }
+
+  nav_msgs::Path path_msg;
+  path_msg.header.frame_id = "map";
+  path_msg.header.stamp = ros::Time(123.456);
+  path.toMsg(path_msg);
+  ASSERT_EQ(path_msg.poses.size(), 6);
+  for (size_t i = 0; i < path.size(); ++i)
+  {
+    EXPECT_EQ(path[i].pos_.x(), path_msg.poses[i].pose.position.x) << "i: " << i;
+    EXPECT_EQ(path[i].pos_.y(), path_msg.poses[i].pose.position.y) << "i: " << i;
+    EXPECT_NEAR(path[i].yaw_, tf2::getYaw(path_msg.poses[i].pose.orientation), 1.0e-6) << "i: " << i;
+    EXPECT_EQ(path_msg.poses[i].header.frame_id, path_msg.header.frame_id);
+    EXPECT_EQ(path_msg.poses[i].header.stamp, path_msg.header.stamp);
+  }
+
+  trajectory_tracker_msgs::PathWithVelocity path_with_vel_msg_org;
+  path_with_vel_msg_org.poses.resize(path_msg_org.poses.size());
+  for (size_t i = 0; i < path_msg_org.poses.size(); ++i)
+  {
+    path_with_vel_msg_org.poses[i].pose = path_msg_org.poses[i].pose;
+    path_with_vel_msg_org.poses[i].linear_velocity.x = i * 0.1;
+  }
+
+  trajectory_tracker::Path2D path_with_vel;
+  path_with_vel.fromMsg(path_with_vel_msg_org);
+
+  ASSERT_EQ(path_with_vel.size(), 6);
+  for (size_t i = 0; i < path_with_vel.size(); ++i)
+  {
+    const size_t org_index = expected_org_indexes[i];
+    EXPECT_EQ(path_with_vel[i].pos_.x(), path_with_vel_msg_org.poses[org_index].pose.position.x)
+        << "i: " << i << " org: " << org_index;
+    EXPECT_EQ(path_with_vel[i].pos_.y(), path_with_vel_msg_org.poses[org_index].pose.position.y)
+        << "i: " << i << " org: " << org_index;
+    EXPECT_NEAR(path_with_vel[i].yaw_, tf2::getYaw(path_with_vel_msg_org.poses[org_index].pose.orientation), 1.0e-6)
+        << "i: " << i << " org: " << org_index;
+    EXPECT_NEAR(path_with_vel[i].velocity_, org_index * 0.1, 1.0e-6) << "i: " << i << " org: " << org_index;
+  }
+
+  trajectory_tracker_msgs::PathWithVelocity path_with_vel_msg;
+  path_with_vel_msg.header.frame_id = "map";
+  path_with_vel_msg.header.stamp = ros::Time(123.456);
+  path_with_vel.toMsg(path_with_vel_msg);
+  ASSERT_EQ(path_with_vel_msg.poses.size(), 6);
+  for (size_t i = 0; i < path_with_vel.size(); ++i)
+  {
+    EXPECT_EQ(path_with_vel[i].pos_.x(), path_with_vel_msg.poses[i].pose.position.x) << "i: " << i;
+    EXPECT_EQ(path_with_vel[i].pos_.y(), path_with_vel_msg.poses[i].pose.position.y) << "i: " << i;
+    EXPECT_NEAR(path_with_vel[i].yaw_, tf2::getYaw(path_with_vel_msg.poses[i].pose.orientation), 1.0e-6)
+        << "i: " << i;
+    EXPECT_EQ(path_with_vel_msg.poses[i].header.frame_id, path_with_vel_msg.header.frame_id);
+    EXPECT_EQ(path_with_vel_msg.poses[i].header.stamp, path_with_vel_msg.header.stamp);
   }
 }
 
