@@ -149,6 +149,12 @@ add_rostest_gtest(test_tolerant_action
 target_link_libraries(test_tolerant_action ${catkin_LIBRARIES})
 add_dependencies(test_tolerant_action planner_3d)
 
+add_rostest_gtest(test_dynamic_parameter_change
+  test/dynamic_parameter_change_rostest.test
+  src/test_dynamic_parameter_change.cpp
+)
+target_link_libraries(test_dynamic_parameter_change ${catkin_LIBRARIES})
+add_dependencies(test_dynamic_parameter_change planner_3d)
 
 if(NEONAVIGATION_EXTRA_TESTS)
 

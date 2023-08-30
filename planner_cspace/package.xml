@@ -19,6 +19,7 @@
 
   <depend>actionlib</depend>
   <depend>diagnostic_updater</depend>
+  <depend>dynamic_reconfigure</depend>
   <depend>geometry_msgs</depend>
   <depend>move_base_msgs</depend>
   <depend>nav_msgs</depend>

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+  <env name="GCOV_PREFIX" value="/tmp/gcov/dynamic_parameter_change" />
+
+  <test test-name="test_dynamic_parameter_change" pkg="planner_cspace" type="test_dynamic_parameter_change" time-limit="90.0" />
+  <include file="$(find planner_cspace)/test/test/actionlib_common_rostest.test" />
+</launch>
