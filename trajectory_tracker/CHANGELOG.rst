@@ -2,6 +2,11 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* trajectory_tracker: make trajectory_tracker library (`#713 <https://github.com/at-wat/neonavigation/issues/713>`_)
+* Contributors: Naotaka Hatao
+
 0.14.2 (2023-07-31)
 -------------------
 

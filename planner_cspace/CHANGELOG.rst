@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_cspace: enable dynamic reconfigure (`#714 <https://github.com/at-wat/neonavigation/issues/714>`_)
+* planner_space: fix segmentation fault on out-of-map (`#712 <https://github.com/at-wat/neonavigation/issues/712>`_)
+* Contributors: Atsushi Watanabe, Naotaka Hatao
+
 0.14.2 (2023-07-31)
 -------------------
 * planner_cspace: improve peformance of DistanceMap (`#709 <https://github.com/at-wat/neonavigation/issues/709>`_)
