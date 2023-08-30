@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.15.0 (2023-08-30)
+-------------------
 * planner_cspace: enable dynamic reconfigure (`#714 <https://github.com/at-wat/neonavigation/issues/714>`_)
 * planner_space: fix segmentation fault on out-of-map (`#712 <https://github.com/at-wat/neonavigation/issues/712>`_)
 * Contributors: Atsushi Watanabe, Naotaka Hatao
