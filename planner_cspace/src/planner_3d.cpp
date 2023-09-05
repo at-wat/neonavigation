@@ -73,12 +73,13 @@
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/jump_detector.h>
 #include <planner_cspace/planner_3d/costmap_bbf.h>
+#include <planner_cspace/planner_3d/distance_map.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
-#include <planner_cspace/planner_3d/distance_map.h>
+#include <planner_cspace/planner_3d/start_pose_predictor.h>
 
 namespace planner_cspace
 {
@@ -101,6 +102,7 @@ protected:
   ros::Publisher pub_path_;
   ros::Publisher pub_path_velocity_;
   ros::Publisher pub_path_poses_;
+  ros::Publisher pub_preserved_path_poses_;
   ros::Publisher pub_hysteresis_map_;
   ros::Publisher pub_distance_map_;
   ros::Publisher pub_remembered_map_;
@@ -171,6 +173,7 @@ protected:
   bool use_path_with_velocity_;
   bool retain_last_error_status_;
   int num_cost_estim_task_;
+  bool keep_a_part_of_previous_path_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -217,6 +220,8 @@ protected:
   int prev_map_update_x_max_;
   int prev_map_update_y_min_;
   int prev_map_update_y_max_;
+  nav_msgs::Path previous_path_;
+  StartPosePredictor start_pose_predictor_;
 
   bool cbForget(std_srvs::EmptyRequest& req,
                 std_srvs::EmptyResponse& res)
@@ -685,16 +690,7 @@ protected:
     nav_msgs::Path path;
     path.header.frame_id = robot_frame_;
     path.header.stamp = ros::Time::now();
-    if (use_path_with_velocity_)
-    {
-      pub_path_velocity_.publish(
-          trajectory_tracker_msgs::toPathWithVelocity(
-              path, std::numeric_limits<double>::quiet_NaN()));
-    }
-    else
-    {
-      pub_path_.publish(path);
-    }
+    publishPath(path);
   }
   void publishFinishPath()
   {
@@ -708,7 +704,10 @@ protected:
       path.poses[0].pose = goal_raw_.pose;
     else
       path.poses[0].pose = goal_.pose;
-
+    publishPath(path);
+  }
+  void publishPath(const nav_msgs::Path& path)
+  {
     if (use_path_with_velocity_)
     {
       pub_path_velocity_.publish(
@@ -719,6 +718,7 @@ protected:
     {
       pub_path_.publish(path);
     }
+    previous_path_ = path;
   }
 
   void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
@@ -1125,8 +1125,8 @@ public:
           nh_, "path",
           pnh_, "path", 1, true);
     }
-    pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>(
-        "path_poses", 1, true);
+    pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>("path_poses", 1, true);
+    pub_preserved_path_poses_ = pnh_.advertise<nav_msgs::Path>("preserved_path_poses", 1, true);
 
     pnh_.param("freq", freq_, 4.0f);
     pnh_.param("freq_min", freq_min_, 2.0f);
@@ -1343,6 +1343,24 @@ public:
           };
       cost_estim_cache_.init(model_, dmp);
     }
+
+    keep_a_part_of_previous_path_ = config.keep_a_part_of_previous_path;
+    StartPosePredictor::Config start_pose_predictor_config;
+    start_pose_predictor_config.lin_vel_ = config.max_vel;
+    start_pose_predictor_config.ang_vel_ = config.max_ang_vel;
+    start_pose_predictor_config.dist_stop_ = config.dist_stop_to_previous_path;
+    start_pose_predictor_config.prediction_sec_ = 1.0 / freq_;
+    start_pose_predictor_config.switch_back_prediction_sec_ = config.sw_wait;
+    if (keep_a_part_of_previous_path_)
+    {
+      // No need to wait additional times
+      sw_wait_ = 1.0 / freq_;
+    }
+    else
+    {
+      sw_wait_ = config.sw_wait;
+    }
+    start_pose_predictor_.setConfig(start_pose_predictor_config);
   }
 
   GridAstarModel3D::Vec pathPose2Grid(const geometry_msgs::PoseStamped& pose) const
@@ -1354,7 +1372,7 @@ public:
     return grid_vec;
   }
 
-  void waitUntil(const ros::Time& next_replan_time, const nav_msgs::Path& previous_path)
+  void waitUntil(const ros::Time& next_replan_time)
   {
     while (ros::ok())
     {
@@ -1373,9 +1391,9 @@ public:
           return;
         }
 
-        if (costmap_updated && previous_path.poses.size() > 1)
+        if (costmap_updated && previous_path_.poses.size() > 1)
         {
-          for (const auto& path_pose : previous_path.poses)
+          for (const auto& path_pose : previous_path_.poses)
           {
             if (cm_[pathPose2Grid(path_pose)] == 100)
             {
@@ -1414,11 +1432,10 @@ public:
     ROS_DEBUG("Initialized");
 
     ros::Time next_replan_time = ros::Time::now();
-    nav_msgs::Path previous_path;
 
     while (ros::ok())
     {
-      waitUntil(next_replan_time, previous_path);
+      waitUntil(next_replan_time);
 
       const ros::Time now = ros::Time::now();
       next_replan_time = now;
@@ -1442,7 +1459,6 @@ public:
                             last_costmap_.toSec());
           status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
           publishEmptyPath();
-          previous_path.poses.clear();
         }
         else
         {
@@ -1520,7 +1536,6 @@ public:
             has_goal_ = false;
 
             publishEmptyPath();
-            previous_path.poses.clear();
             next_replan_time += ros::Duration(1.0 / freq_);
             ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
 
@@ -1553,7 +1568,6 @@ public:
           if (skip_path_planning)
           {
             publishEmptyPath();
-            previous_path.poses.clear();
           }
           else
           {
@@ -1561,18 +1575,8 @@ public:
             path.header = map_header_;
             path.header.stamp = now;
             makePlan(start_.pose, goal_.pose, path, true);
-            if (use_path_with_velocity_)
-            {
-              // NaN velocity means that don't care the velocity
-              pub_path_velocity_.publish(
-                  trajectory_tracker_msgs::toPathWithVelocity(path, std::numeric_limits<double>::quiet_NaN()));
-            }
-            else
-            {
-              pub_path_.publish(path);
-            }
-            previous_path = path;
-            if (sw_wait_ > 0.0)
+            publishPath(path);
+            if ((sw_wait_ > 0.0) && !keep_a_part_of_previous_path_)
             {
               const int sw_index = getSwitchIndex(path);
               is_path_switchback = (sw_index >= 0);
@@ -1587,7 +1591,6 @@ public:
         if (!retain_last_error_status_)
           status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
         publishEmptyPath();
-        previous_path.poses.clear();
       }
       status_.header.stamp = now;
       pub_status_.publish(status_);
@@ -1640,6 +1643,24 @@ protected:
     pub_start_.publish(p);
   }
 
+  bool isPathFinishing(const Astar::Vec& start_grid, const Astar::Vec& end_grid) const
+  {
+    int g_tolerance_lin, g_tolerance_ang;
+    if (act_tolerant_->isActive())
+    {
+      g_tolerance_lin = std::lround(goal_tolerant_->goal_tolerance_lin / map_info_.linear_resolution);
+      g_tolerance_ang = std::lround(goal_tolerant_->goal_tolerance_ang / map_info_.angular_resolution);
+    }
+    else
+    {
+      g_tolerance_lin = goal_tolerance_lin_;
+      g_tolerance_ang = goal_tolerance_ang_;
+    }
+    Astar::Vec remain = start_grid - end_grid;
+    remain.cycle(map_info_.angle);
+    return (remain.sqlen() <= g_tolerance_lin * g_tolerance_lin && std::abs(remain[2]) <= g_tolerance_ang);
+  }
+
   enum class StartPoseStatus
   {
     START_OCCUPIED,
@@ -1647,8 +1668,11 @@ protected:
     NORMAL,
   };
   StartPoseStatus buildStartPoses(const geometry_msgs::Pose& start_metric, const geometry_msgs::Pose& end_metric,
-                                  std::vector<Astar::VecWithCost>& result_start_poses) const
+                                  std::vector<Astar::VecWithCost>& result_start_poses)
   {
+    result_start_poses.clear();
+    start_pose_predictor_.clear();
+
     Astar::Vecf sf;
     grid_metric_converter::metric2Grid(
         map_info_, sf[0], sf[1], sf[2],
@@ -1667,6 +1691,21 @@ protected:
       ROS_ERROR("You are on the edge of the world.");
       return StartPoseStatus::START_OCCUPIED;
     }
+
+    if (keep_a_part_of_previous_path_ && !previous_path_.poses.empty())
+    {
+      Astar::Vec expected_start_grid;
+      if (start_pose_predictor_.process(start_metric, cm_, map_info_, previous_path_, expected_start_grid))
+      {
+        result_start_poses.push_back(Astar::VecWithCost(expected_start_grid));
+        return isPathFinishing(start_grid, end_grid) ? StartPoseStatus::FINISHING : StartPoseStatus::NORMAL;
+      }
+      else
+      {
+        return StartPoseStatus::START_OCCUPIED;
+      }
+    }
+
     if (antialias_start_)
     {
       const int x_cand[] = {0, ((sf[0] - start_grid[0]) < 0.5 ? -1 : 1)};
@@ -1706,24 +1745,9 @@ protected:
       ROS_INFO("Start moved");
       result_start_poses.push_back(Astar::VecWithCost(start_grid));
     }
-    int g_tolerance_lin, g_tolerance_ang;
-    if (act_tolerant_->isActive())
-    {
-      g_tolerance_lin = std::lround(goal_tolerant_->goal_tolerance_lin / map_info_.linear_resolution);
-      g_tolerance_ang = std::lround(goal_tolerant_->goal_tolerance_ang / map_info_.angular_resolution);
-    }
-    else
-    {
-      g_tolerance_lin = goal_tolerance_lin_;
-      g_tolerance_ang = goal_tolerance_ang_;
-    }
     for (const Astar::VecWithCost& s : result_start_poses)
     {
-      // Check if arrived to the goal
-      Astar::Vec remain = s.v_ - end_grid;
-      remain.cycle(map_info_.angle);
-      if (remain.sqlen() <= g_tolerance_lin * g_tolerance_lin &&
-          std::abs(remain[2]) <= g_tolerance_ang)
+      if (isPathFinishing(s.v_, end_grid))
       {
         return StartPoseStatus::FINISHING;
       }
@@ -1836,12 +1860,21 @@ protected:
 
     model_->enableHysteresis(hyst && has_hysteresis_map_);
     std::list<Astar::Vec> path_grid;
-    if (!as_.search(starts, end_grid, path_grid,
-                    model_,
-                    cb_progress,
-                    range_limit,
-                    1.0f / freq_min_,
-                    find_best_))
+    bool is_goal_same_as_start = false;
+    for (const auto s : starts)
+    {
+      if (s.v_ == end_grid)
+      {
+        ROS_DEBUG("Start is same as end.");
+        path_grid.push_back(end_grid);
+      }
+    }
+    if (!is_goal_same_as_start && !as_.search(starts, end_grid, path_grid,
+                                              model_,
+                                              cb_progress,
+                                              range_limit,
+                                              1.0f / freq_min_,
+                                              find_best_))
     {
       ROS_WARN("Path plan failed (goal unreachable)");
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
@@ -1870,9 +1903,13 @@ protected:
       poses.poses.push_back(pose);
     }
     pub_path_poses_.publish(poses);
-
+    if (!start_pose_predictor_.getPreservedPath().poses.empty())
+    {
+      pub_preserved_path_poses_.publish(start_pose_predictor_.getPreservedPath());
+    }
     const std::list<Astar::Vecf> path_interpolated =
         model_->path_interpolator_.interpolate(path_grid, 0.5, local_range_);
+    path.poses = start_pose_predictor_.getPreservedPath().poses;
     grid_metric_converter::grid2MetricPath(map_info_, path_interpolated, path);
 
     if (hyst)

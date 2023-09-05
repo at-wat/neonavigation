@@ -35,5 +35,6 @@
   <depend>neonavigation_common</depend>
   <depend>neonavigation_metrics_msgs</depend>
   <depend version_gte="0.12.0">planner_cspace_msgs</depend>
+  <depend>trajectory_tracker</depend>
   <depend>trajectory_tracker_msgs</depend>
 </package>
