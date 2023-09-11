@@ -213,7 +213,9 @@ public:
     float linear_spread;
     pnh_.param("linear_expand", linear_expand, 0.2f);
     pnh_.param("linear_spread", linear_spread, 0.5f);
-    root_layer->setExpansion(linear_expand, linear_spread);
+    int cutoff_cost;
+    pnh_.param("cutoff_cost", cutoff_cost, 0);
+    root_layer->setExpansion(linear_expand, linear_spread, cutoff_cost);
     root_layer->setFootprint(footprint);
 
     if (pnh_.hasParam("static_layers"))
