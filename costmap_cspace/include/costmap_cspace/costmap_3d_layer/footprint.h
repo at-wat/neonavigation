@@ -60,6 +60,7 @@ protected:
   geometry_msgs::PolygonStamped footprint_;
   float linear_expand_;
   float linear_spread_;
+  int linear_spread_min_cost_;
   Polygon footprint_p_;
   bool keep_unknown_;
 
@@ -71,15 +72,19 @@ public:
   Costmap3dLayerFootprint()
     : linear_expand_(0.0)
     , linear_spread_(0.0)
+    , linear_spread_min_cost_(0)
     , keep_unknown_(false)
     , range_max_(0)
   {
   }
   void loadConfig(XmlRpc::XmlRpcValue config)
   {
+    const int linear_spread_min_cost =
+        config.hasMember("linear_spread_min_cost") ? static_cast<int>(config["linear_spread_min_cost"]) : 0;
     setExpansion(
         static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]));
+        static_cast<double>(config["linear_spread"]),
+        linear_spread_min_cost);
     setFootprint(costmap_cspace::Polygon(config["footprint"]));
     if (config.hasMember("keep_unknown"))
       setKeepUnknown(config["keep_unknown"]);
@@ -90,15 +95,19 @@ public:
   }
   void setExpansion(
       const float linear_expand,
-      const float linear_spread)
+      const float linear_spread,
+      const int linear_spread_min_cost = 0)
   {
     linear_expand_ = linear_expand;
     linear_spread_ = linear_spread;
+    linear_spread_min_cost_ = linear_spread_min_cost;
 
     ROS_ASSERT(linear_expand >= 0.0);
     ROS_ASSERT(std::isfinite(linear_expand));
     ROS_ASSERT(linear_spread >= 0.0);
     ROS_ASSERT(std::isfinite(linear_spread));
+    ROS_ASSERT(linear_spread_min_cost_ >= 0);
+    ROS_ASSERT(linear_spread_min_cost_ < 100);
   }
   void setFootprint(const Polygon footprint)
   {
@@ -134,6 +143,7 @@ public:
         std::ceil((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
     cs_template_.reset(range_max_, range_max_, info.angle);
 
+    const float eps = info.linear_resolution / 100.0;
     // C-Space template
     for (size_t yaw = 0; yaw < info.angle; yaw++)
     {
@@ -161,7 +171,11 @@ public:
             }
             else if (d < linear_expand_ + linear_spread_)
             {
-              cs_template_.e(x, y, yaw) = 100 - (d - linear_expand_) * 100 / linear_spread_;
+              cs_template_.e(x, y, yaw) = 100 - (d - linear_expand_) * (100 - linear_spread_min_cost_) / linear_spread_;
+            }
+            else if (std::abs(linear_expand_ + linear_spread_ - d) < eps)
+            {
+              cs_template_.e(x, y, yaw) = linear_spread_min_cost_;
             }
             else
             {
