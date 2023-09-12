@@ -1297,6 +1297,8 @@ public:
     cc_.hysteresis_max_dist_ = config.hysteresis_max_dist;
     cc_.hysteresis_expand_ = config.hysteresis_expand;
     cc_.weight_hysteresis_ = config.weight_hysteresis;
+    cc_.weight_costmap_turn_heuristics_ = config.weight_costmap_turn_heuristics;
+    cc_.turn_penalty_cost_threshold_ = config.turn_penalty_cost_threshold;
 
     goal_tolerance_lin_f_ = config.goal_tolerance_lin;
     goal_tolerance_ang_f_ = config.goal_tolerance_ang;

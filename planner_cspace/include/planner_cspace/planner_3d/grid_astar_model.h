@@ -56,6 +56,7 @@ public:
   float weight_ang_vel_;
   float weight_costmap_;
   float weight_costmap_turn_;
+  float weight_costmap_turn_heuristics_;
   float weight_remembered_;
   float weight_hysteresis_;
   float in_place_turn_;
@@ -65,6 +66,7 @@ public:
   float max_vel_;
   float max_ang_vel_;
   float angle_resolution_aspect_;
+  int turn_penalty_cost_threshold_;
 };
 
 class GridAstarModel3D : public GridAstarModelBase<3, 2>
