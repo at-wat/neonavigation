@@ -1021,7 +1021,7 @@ TEST(Costmap3dLayerFootprint, PlainOnFootprint)
   }
 }
 
-TEST(Costmap3dLayerOutput, CutoffCost)
+TEST(Costmap3dLayerOutput, LinearSpreadMinCost)
 {
   // clang-format off
   const std::vector<int8_t> input_base(49, 0);
