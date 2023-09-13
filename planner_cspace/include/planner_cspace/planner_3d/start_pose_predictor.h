@@ -60,6 +60,7 @@ public:
   void setConfig(const Config& config)
   {
     config_ = config;
+    clear();
   }
   bool process(const geometry_msgs::Pose& robot_pose,
                const GridAstar<3, 2>::Gridmap<char, 0x40>& cm,

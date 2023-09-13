@@ -1810,6 +1810,7 @@ protected:
     if (initial_2dof_cost == std::numeric_limits<float>::max() || cm_[end_grid] >= 100)
     {
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+      start_pose_predictor_.clear();
       ROS_WARN("Goal unreachable.");
       if (!escaping_ && temporary_escape_)
       {

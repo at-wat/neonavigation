@@ -52,6 +52,7 @@ bool StartPosePredictor::process(const geometry_msgs::Pose& robot_pose,
 
   if (previous_path_2d_.empty() || !removeAlreadyPassed(robot_pose))
   {
+    clear();
     return false;
   }
   const double initial_eta = getInitialETA(robot_pose, previous_path_2d_.front());
