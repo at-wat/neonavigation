@@ -59,9 +59,12 @@ public:
   }
   void loadConfig(XmlRpc::XmlRpcValue config)
   {
+    const int linear_spread_min_cost =
+        config.hasMember("linear_spread_min_cost") ? static_cast<int>(config["linear_spread_min_cost"]) : 0;
     setExpansion(
         static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]));
+        static_cast<double>(config["linear_spread"]),
+        linear_spread_min_cost);
   }
 };
 }  // namespace costmap_cspace

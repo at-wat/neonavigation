@@ -26,6 +26,7 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "ang_resolution" (int, default: 16)
 * "linear_expand" (double, default: 0.2f)
 * "linear_spread" (double, default: 0.5f)
+* "linear_spread_min_cost" (int, default: 0)
 * "unknown_cost" (int, default: 0)
 * "overlay_mode" (string, default: std::string(""))
 * "footprint" (?, default: footprint_xml)
@@ -49,6 +50,7 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "ang_resolution" (int, default: 16): for root layer
 * "linear_expand" (double, default: 0.2f): for root layer
 * "linear_spread" (double, default: 0.5f): for root layer
+* "linear_spread_min_cost" (int, default: 0)
 * "footprint" (?, default: footprint_xml): for root layer
 * "static_layers": array of layer configurations
 * "layers": array of layer configurations
@@ -62,16 +64,23 @@ Available layer types and parameters are:
 - **Costmap3dLayerFootprint**: Configuration space costmap layer according to the given footprint.
   - "linear_expand" (double)
   - "linear_spread" (double)
+  - "linear_spread_min_cost" (int, default: 0)
   - "footprint" (?, default: root layer's footprint)
 - **Costmap3dLayerPlain**: Costmap layer without considering footpring.
   - "linear_expand" (double)
   - "linear_spread" (double)
+  - "linear_spread_min_cost" (int, default: 0)
 - **Costmap3dLayerOutput**: Output generated costmap at this point. In most case, this is placed at the last layer.
 - **Costmap3dLayerStopPropagation**: Stop propagating parent layer's cost to the child. This can be used at the beginning of layer to ignore changes in static layers.
 - **Costmap3dLayerUnknownHandle**: Set unknown cell's cost.
   - "unknown_cost" (int)
 
 See [example parameters](https://github.com/at-wat/neonavigation/blob/master/neonavigation_launch/config/navigate.yaml).
+
+The diagram below shows how "linear_expand", "linear_spread" and "linear_spread_min_cost" work.
+"linear_spread_min_cost" can make the costs of grids near obstacles higher to avoid other costs such as preferences overriding the costs of these grids.
+
+![Screenshot from 2023-09-12 17-19-52](https://github.com/at-wat/neonavigation/assets/8833040/58001b49-b603-47e9-92e7-0517f0aaf8ba)
 
 ----
 ## laserscan_to_map
