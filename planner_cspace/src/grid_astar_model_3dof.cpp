@@ -186,6 +186,7 @@ float GridAstarModel3D::cost(
         euclid_cost_coef_[2] / euclid_cost_coef_[0] * cc_.weight_costmap_turn_heuristics_ / 100.0;
     const float turn_cost_multiplier = map_info_.angular_resolution * (turn_cost_ratio + turn_heuristic_cost_ratio);
     // simplified from sum * map_info_.angular_resolution * abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * abs(d[2]))
+    //               = sum * map_info_.angular_resolution * turn_cost_ratio
     return cost + cc_.in_place_turn_ + sum * turn_cost_multiplier;
   }
 
