@@ -140,13 +140,71 @@ TEST(Path2D, LocalGoalWithSwitchBack)
       yaw += yaw_diff;
       path.push_back(trajectory_tracker::Pose2D(p, yaw, 1));
     }
-    const auto it_local_goal = path.findLocalGoal(path.begin(), path.end(), true);
-    ASSERT_EQ(it_local_goal, path.begin() + 5);
-    ASSERT_EQ(path.findLocalGoal(it_local_goal, path.end(), true), path.end());
 
+    {
+      const auto it_local_goal = path.findLocalGoal(path.begin(), path.end(), true, true);
+      ASSERT_EQ(it_local_goal, path.begin() + 5);
+      ASSERT_EQ(path.findLocalGoal(it_local_goal, path.end(), true, true), path.end());
+    }
+    {
+      const auto it_local_goal = path.findLocalGoal(path.begin(), path.end(), true, false);
+      ASSERT_EQ(it_local_goal, path.begin() + 5);
+      ASSERT_EQ(path.findLocalGoal(it_local_goal, path.end(), true, false), path.end());
+    }
     // no switch back motion under (allow_switchback == false)
-    ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), false), path.end());
+    ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), false, true), path.end());
   }
+}
+
+TEST(Path2D, LocalGoalTest)
+{
+  trajectory_tracker::Path2D path;
+  Eigen::Vector2d p(0, 0);
+  for (size_t i = 0; i <= 10; ++i)
+  {
+    const double yaw = M_PI / 2 / 10;
+    p.x() = std::sin(i * yaw);
+    p.y() = 1.0 - std::cos(i * yaw);
+    path.push_back(trajectory_tracker::Pose2D(p, yaw, 0));
+  }
+  // Turn in-place and go back
+  for (size_t i = 0; i <= 10; ++i)
+  {
+    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(1.0 - i * 0.1, 1.0), 0, 0));
+  }
+  {
+    const auto it_local_goal = path.findLocalGoal(path.begin(), path.end(), true, true);
+    ASSERT_EQ(it_local_goal, path.begin() + 11);
+    ASSERT_EQ(path.findLocalGoal(it_local_goal, path.end(), true, true), path.end());
+  }
+  {
+    ASSERT_EQ(path.findLocalGoal(path.begin(), path.end(), true, false), path.end());
+  }
+}
+
+TEST(Path2D, EnumerateLocalGoals)
+{
+  trajectory_tracker::Path2D path;
+  const std::vector<float> yaws = {0.5, -0.2, 1.0};
+  double x = 0.0;
+  double y = 0.0;
+  for (const float yaw : yaws)
+  {
+    for (size_t i = 0; i < 10; ++i)
+    {
+      path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, y), yaw, 1.0));
+      x += std::cos(yaw) * 0.1;
+      y += std::sin(yaw) * 0.1;
+    }
+    path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, y), yaw, 1.0));
+  }
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(x, y), 0.3, 1.0));
+
+  const auto local_goals = path.enumerateLocalGoals(path.begin(), path.end(), true);
+  ASSERT_EQ(local_goals.size(), 3);
+  ASSERT_EQ(local_goals.at(0) - path.begin(), 11);
+  ASSERT_EQ(local_goals.at(1) - path.begin(), 22);
+  ASSERT_EQ(local_goals.at(2) - path.begin(), 33);
 }
 
 TEST(Path2D, FindNearestWithDistance)
@@ -288,6 +346,42 @@ TEST(Path2D, Conversions)
         << "i: " << i;
     EXPECT_EQ(path_with_vel_msg.poses[i].header.frame_id, path_with_vel_msg.header.frame_id);
     EXPECT_EQ(path_with_vel_msg.poses[i].header.stamp, path_with_vel_msg.header.stamp);
+  }
+}
+
+TEST(Path2D, EstimatedTimeOfArrivals)
+{
+  trajectory_tracker::Path2D path;
+  // Straight
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.0, 0.0), 135.0 / 180.0 * M_PI, 0));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.1, -0.1), 135.0 / 180.0 * M_PI, 0));
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.2, -0.2), 135.0 / 180.0 * M_PI, 0));
+  // In-place-turn
+  path.push_back(trajectory_tracker::Pose2D(Eigen::Vector2d(0.2, -0.2), -M_PI / 2, 0));
+  // Curve
+  for (int i = 1; i <= 4; ++i)
+  {
+    const double angle = M_PI / 8 * i;
+    path.push_back(trajectory_tracker::Pose2D(
+        Eigen::Vector2d(0.2 * std::cos(angle), -0.2 + 0.2 * std::sin(angle)), -M_PI / 2 - angle, 0));
+  }
+  const double linear_speed = 0.5;
+  const double angular_speed = M_PI;
+  const std::vector<double> etas =
+      path.getEstimatedTimeOfArrivals(path.begin(), path.end(), linear_speed, angular_speed, 1.0);
+  ASSERT_EQ(etas.size(), 8);
+  double expected_eta = 1.0;
+  EXPECT_NEAR(etas[0], expected_eta, 1.0e-6);
+  expected_eta += std::hypot(0.1, 0.1) / linear_speed;
+  EXPECT_NEAR(etas[1], expected_eta, 1.0e-6);
+  expected_eta += std::hypot(0.1, 0.1) / linear_speed;
+  EXPECT_NEAR(etas[2], expected_eta, 1.0e-6);
+  expected_eta += 135.0 / (180.0 / M_PI) / angular_speed;
+  EXPECT_NEAR(etas[3], expected_eta, 1.0e-6);
+  const double turn_dist = std::hypot(0.2 - 0.2 * std::cos(M_PI / 8), 0.2 * std::sin(M_PI / 8));
+  for (size_t p = 4; p < etas.size(); ++p)
+  {
+    EXPECT_NEAR(etas[p], expected_eta + (p - 3) * turn_dist / linear_speed, 1.0e-6);
   }
 }
 

@@ -119,7 +119,7 @@ TEST(GridMetricConverter, Path)
     path_grid.push_back(CyclicVecFloat<3, 2>(g[0], g[1], g[2]));
 
   nav_msgs::Path path;
-  grid_metric_converter::grid2MetricPath(map_info, path_grid, path);
+  grid_metric_converter::appendGridPath2MetricPath(map_info, path_grid, path);
   size_t ref = 0;
   for (const geometry_msgs::PoseStamped& p : path.poses)
   {

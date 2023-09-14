@@ -34,8 +34,12 @@
 
 #include <dynamic_reconfigure/client.h>
 #include <move_base_msgs/MoveBaseAction.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Odometry.h>
 #include <planner_cspace/Planner3DConfig.h>
 #include <ros/ros.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <planner_cspace/action_test_base.h>
 
@@ -45,11 +49,38 @@ class DynamicParameterChangeTest
 public:
   void SetUp() final
   {
-    ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>::SetUp();
     path_ = nullptr;
     planner_3d_client_.reset(
         new dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>("/planner_3d/"));
     sub_path_ = node_.subscribe("path", 1, &DynamicParameterChangeTest::cbPath, this);
+    pub_map_overlay_ = node_.advertise<nav_msgs::OccupancyGrid>("map_overlay", 1, true);
+    pub_odom_ = node_.advertise<nav_msgs::Odometry>("odom", 1, true);
+
+    map_overlay_.header.frame_id = "map";
+    map_overlay_.info.resolution = 0.1;
+    map_overlay_.info.width = 32;
+    map_overlay_.info.height = 32;
+    map_overlay_.info.origin.position.x = 0.0;
+    map_overlay_.info.origin.position.y = 0.0;
+    map_overlay_.info.origin.position.z = 0.0;
+    map_overlay_.info.origin.orientation.x = 0.0;
+    map_overlay_.info.origin.orientation.y = 0.0;
+    map_overlay_.info.origin.orientation.z = 0.0;
+    map_overlay_.info.origin.orientation.w = 1.0;
+    map_overlay_.data.resize(map_overlay_.info.width * map_overlay_.info.height, 0);
+    publishMapAndRobot(0, 0, 0);
+    ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>::SetUp();
+
+    default_config_ = planner_cspace::Planner3DConfig::__getDefault__();
+    default_config_.max_retry_num = 5;
+    default_config_.tolerance_range = 0.0;
+    default_config_.temporary_escape = false;
+    default_config_.goal_tolerance_lin = 0.05;
+    default_config_.cost_in_place_turn = 3.0;
+    default_config_.min_curve_radius = 0.4;
+    default_config_.max_vel = 0.3;
+    default_config_.max_ang_vel = 1.0;
+    ASSERT_TRUE(planner_3d_client_->setConfiguration(default_config_));
   }
 
 protected:
@@ -90,48 +121,151 @@ protected:
     return false;
   }
 
+  ::testing::AssertionResult comparePath(const nav_msgs::Path& path1, const nav_msgs::Path& path2)
+  {
+    if (path1.poses.size() != path2.poses.size())
+    {
+      return ::testing::AssertionFailure()
+             << "Path size different: " << path1.poses.size() << " != " << path2.poses.size();
+    }
+    for (size_t i = 0; i < path1.poses.size(); ++i)
+    {
+      const geometry_msgs::Point& pos1 = path1.poses[i].pose.position;
+      const geometry_msgs::Point& pos2 = path2.poses[i].pose.position;
+      if (std::abs(pos1.x - pos2.x) > 1.0e-6)
+      {
+        return ::testing::AssertionFailure() << "X different at #" << i << ": " << pos1.x << " != " << pos2.x;
+      }
+      if (std::abs(pos1.y - pos2.y) > 1.0e-6)
+      {
+        return ::testing::AssertionFailure() << "Y different at #" << i << ": " << pos1.y << " != " << pos2.y;
+      }
+      const double yaw1 = tf2::getYaw(path1.poses[i].pose.orientation);
+      const double yaw2 = tf2::getYaw(path2.poses[i].pose.orientation);
+      if (std::abs(yaw1 - yaw2) > 1.0e-6)
+      {
+        return ::testing::AssertionFailure() << "Yaw different at #" << i << ": " << yaw1 << " != " << yaw2;
+      }
+    }
+    return ::testing::AssertionSuccess();
+  }
+
+  void sendGoalAndWaitForPath()
+  {
+    path_ = nullptr;
+    const ros::Time start_time = ros::Time::now();
+    ros::Time deadline = start_time + ros::Duration(1.0);
+    move_base_->sendGoal(CreateGoalInFree());
+    while (ros::ok())
+    {
+      if (path_ && (path_->header.stamp > start_time) && (path_->poses.size() > 0))
+      {
+        break;
+      }
+      ASSERT_LT(ros::Time::now(), deadline)
+          << "Faile to plan:" << move_base_->getState().toString() << statusString();
+      ros::spinOnce();
+    }
+  }
+
+  void publishMapAndRobot(const double x, const double y, const double yaw)
+  {
+    const ros::Time current_time = ros::Time::now();
+    geometry_msgs::TransformStamped trans;
+    trans.header.stamp = current_time;
+    trans.header.frame_id = "odom";
+    trans.child_frame_id = "base_link";
+    trans.transform.translation = tf2::toMsg(tf2::Vector3(x, y, 0.0));
+    trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+    tfb_.sendTransform(trans);
+
+    nav_msgs::Odometry odom;
+    odom.header.frame_id = "odom";
+    odom.header.stamp = current_time;
+    odom.child_frame_id = "base_link";
+    odom.pose.pose.position.x = x;
+    odom.pose.pose.position.y = y;
+    odom.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+    pub_odom_.publish(odom);
+
+    pub_map_overlay_.publish(map_overlay_);
+  }
+
+  tf2_ros::TransformBroadcaster tfb_;
   ros::Subscriber sub_path_;
   nav_msgs::Path::ConstPtr path_;
   std::unique_ptr<dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>> planner_3d_client_;
+  ros::Publisher pub_map_overlay_;
+  ros::Publisher pub_odom_;
+  nav_msgs::OccupancyGrid map_overlay_;
+  planner_cspace::Planner3DConfig default_config_;
 };
 
 TEST_F(DynamicParameterChangeTest, DisableCurves)
 {
-  ros::Time deadline = ros::Time::now() + ros::Duration(1.0);
-  move_base_->sendGoal(CreateGoalInFree());
-  while (ros::ok())
-  {
-    if (path_ && (path_->poses.size() > 0))
-    {
-      break;
-    }
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Faile to plan:" << move_base_->getState().toString() << statusString();
-    ros::spinOnce();
-  }
+  publishMapAndRobot(2.55, 0.45, M_PI);
+  ros::Duration(0.5).sleep();
+
+  sendGoalAndWaitForPath();
   // The default path is including curves.
   EXPECT_TRUE(isPathIncludingCurves());
 
-  planner_cspace::Planner3DConfig config;
-  ASSERT_TRUE(planner_3d_client_->getCurrentConfiguration(config, ros::Duration(0.1)));
+  planner_cspace::Planner3DConfig config = default_config_;
   // Large min_curve_radius disables curves.
   config.min_curve_radius = 10.0;
   ASSERT_TRUE(planner_3d_client_->setConfiguration(config));
 
-  const ros::Time config_sent_time = ros::Time::now();
-  deadline = config_sent_time + ros::Duration(1.0);
-  path_ = nullptr;
-  while (ros::ok())
-  {
-    if (path_ && (path_->poses.size() > 0) && (path_->header.stamp > config_sent_time))
-    {
-      break;
-    }
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Faile to plan:" << move_base_->getState().toString() << statusString();
-    ros::spinOnce();
-  }
+  sendGoalAndWaitForPath();
+  // The default path is including curves.
   EXPECT_FALSE(isPathIncludingCurves());
+}
+
+TEST_F(DynamicParameterChangeTest, StartPosePrediction)
+{
+  publishMapAndRobot(1.65, 0.65, M_PI);
+  ros::Duration(0.5).sleep();
+  sendGoalAndWaitForPath();
+  const nav_msgs::Path initial_path = *path_;
+
+  // The path is changed to keep distance from the obstacle.
+  map_overlay_.data[13 + 5 * map_overlay_.info.width] = 100;
+  publishMapAndRobot(1.65, 0.65, M_PI);
+  ros::Duration(0.5).sleep();
+  sendGoalAndWaitForPath();
+  EXPECT_FALSE(comparePath(initial_path, *path_));
+
+  // Enable start pose prediction.
+  move_base_->cancelAllGoals();
+  planner_cspace::Planner3DConfig config = default_config_;
+  config.keep_a_part_of_previous_path = true;
+  config.dist_stop_to_previous_path = 0.1;
+  ASSERT_TRUE(planner_3d_client_->setConfiguration(config));
+
+  // No obstacle and the path is same as the first one.
+  map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
+  publishMapAndRobot(1.65, 0.65, M_PI);
+  ros::Duration(0.5).sleep();
+  sendGoalAndWaitForPath();
+  EXPECT_TRUE(comparePath(initial_path, *path_));
+
+  // The path does not change as a part of the previous path is kept and it is not possible to keep distance from
+  // the obstacle.
+  map_overlay_.data[13 + 5 * map_overlay_.info.width] = 100;
+  publishMapAndRobot(1.65, 0.65, M_PI);
+  ros::Duration(0.5).sleep();
+  sendGoalAndWaitForPath();
+  EXPECT_TRUE(comparePath(initial_path, *path_));
+
+  // It is expected that the robot reaches the goal during the path planning.
+  move_base_->cancelAllGoals();
+  map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
+  publishMapAndRobot(1.25, 0.95, M_PI / 2);
+  ros::Duration(0.5).sleep();
+  sendGoalAndWaitForPath();
+  const nav_msgs::Path short_path = *path_;
+  // In the second path planning after cancel, the exptected start pose is same as the goal.
+  sendGoalAndWaitForPath();
+  EXPECT_TRUE(comparePath(short_path, *path_));
 }
 
 int main(int argc, char** argv)

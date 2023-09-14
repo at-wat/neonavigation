@@ -22,6 +22,7 @@ set(CATKIN_DEPENDS
   neonavigation_common
   neonavigation_metrics_msgs
   planner_cspace_msgs
+  trajectory_tracker
   trajectory_tracker_msgs
 )
 
@@ -55,6 +56,7 @@ add_executable(planner_3d
   src/planner_3d.cpp
   src/distance_map.cpp
   src/rotation_cache.cpp
+  src/start_pose_predictor.cpp
 )
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
