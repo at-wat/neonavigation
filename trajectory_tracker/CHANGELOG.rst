@@ -2,6 +2,11 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.16.0 (2023-09-14)
+-------------------
+* planner_cspace: start planning from expected robot pose (`#717 <https://github.com/at-wat/neonavigation/issues/717>`_)
+* Contributors: Naotaka Hatao
+
 0.15.0 (2023-08-30)
 -------------------
 * trajectory_tracker: make trajectory_tracker library (`#713 <https://github.com/at-wat/neonavigation/issues/713>`_)
