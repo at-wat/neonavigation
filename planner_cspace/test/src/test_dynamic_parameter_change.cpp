@@ -121,7 +121,7 @@ protected:
     return false;
   }
 
-  ::testing::AssertionResult comparePath2(const nav_msgs::Path& path1, const nav_msgs::Path& path2)
+  ::testing::AssertionResult comparePath(const nav_msgs::Path& path1, const nav_msgs::Path& path2)
   {
     if (path1.poses.size() != path2.poses.size())
     {
@@ -232,7 +232,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   publishMapAndRobot(1.65, 0.65, M_PI);
   ros::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
-  EXPECT_FALSE(comparePath2(initial_path, *path_));
+  EXPECT_FALSE(comparePath(initial_path, *path_));
 
   // Enable start pose prediction.
   move_base_->cancelAllGoals();
@@ -246,7 +246,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   publishMapAndRobot(1.65, 0.65, M_PI);
   ros::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
-  EXPECT_TRUE(comparePath2(initial_path, *path_));
+  EXPECT_TRUE(comparePath(initial_path, *path_));
 
   // The path does not change as a part of the previous path is kept and it is not possible to keep distance from
   // the obstacle.
@@ -254,7 +254,18 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   publishMapAndRobot(1.65, 0.65, M_PI);
   ros::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
-  EXPECT_TRUE(comparePath2(initial_path, *path_));
+  EXPECT_TRUE(comparePath(initial_path, *path_));
+
+  // It is expected that the robot reaches the goal during the path planning.
+  move_base_->cancelAllGoals();
+  map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
+  publishMapAndRobot(1.25, 0.95, M_PI / 2);
+  ros::Duration(0.5).sleep();
+  sendGoalAndWaitForPath();
+  const nav_msgs::Path short_path = *path_;
+  // In the second path planning after cancel, the exptected start pose is same as the goal.
+  sendGoalAndWaitForPath();
+  EXPECT_TRUE(comparePath(short_path, *path_));
 }
 
 int main(int argc, char** argv)

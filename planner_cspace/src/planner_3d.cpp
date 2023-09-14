@@ -1699,6 +1699,9 @@ protected:
       Astar::Vec expected_start_grid;
       if (start_pose_predictor_.process(start_metric, cm_, map_info_, previous_path_, expected_start_grid))
       {
+        ROS_DEBUG("Start grid is moved to (%d, %d, %d) from (%d, %d, %d) by start pose predictor.",
+                  expected_start_grid[0], expected_start_grid[1], expected_start_grid[2],
+                  start_grid[0], start_grid[1], start_grid[2]);
         result_start_poses.push_back(Astar::VecWithCost(expected_start_grid));
         return isPathFinishing(start_grid, end_grid) ? StartPoseStatus::FINISHING : StartPoseStatus::NORMAL;
       }
@@ -1739,12 +1742,15 @@ protected:
     }
     if (result_start_poses.empty())
     {
+      const Astar::Vec original_start_grid = start_grid;
       if (!searchAvailablePos(cm_, start_grid, tolerance_range_, tolerance_angle_))
       {
         ROS_WARN("Oops! You are in Rock!");
         return StartPoseStatus::START_OCCUPIED;
       }
-      ROS_INFO("Start moved");
+      ROS_INFO("Start grid is moved to (%d, %d, %d) from (%d, %d, %d) by relocation.",
+               start_grid[0], start_grid[1], start_grid[2],
+               original_start_grid[0], original_start_grid[1], original_start_grid[2]);
       result_start_poses.push_back(Astar::VecWithCost(start_grid));
     }
     for (const Astar::VecWithCost& s : result_start_poses)
@@ -1868,8 +1874,10 @@ protected:
     {
       if (s.v_ == end_grid)
       {
-        ROS_DEBUG("Start is same as end.");
+        ROS_DEBUG("The start grid is the same as the end grid. Path planning skipped.");
         path_grid.push_back(end_grid);
+        is_goal_same_as_start = true;
+        break;
       }
     }
     if (!is_goal_same_as_start && !as_.search(starts, end_grid, path_grid,
