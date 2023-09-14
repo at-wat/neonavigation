@@ -2,6 +2,13 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_cspace: start planning from expected robot pose (`#717 <https://github.com/at-wat/neonavigation/issues/717>`_)
+* planner_cspace: add new parameters for cost function (`#720 <https://github.com/at-wat/neonavigation/issues/720>`_)
+* planner_cspace: refactor start pose building algorithm and fix finishing condition when start is relocated (`#718 <https://github.com/at-wat/neonavigation/issues/718>`_)
+* Contributors: Naotaka Hatao
+
 0.15.0 (2023-08-30)
 -------------------
 * planner_cspace: enable dynamic reconfigure (`#714 <https://github.com/at-wat/neonavigation/issues/714>`_)
