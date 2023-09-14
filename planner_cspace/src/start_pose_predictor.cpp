@@ -213,7 +213,6 @@ trajectory_tracker::Path2D::ConstIterator StartPosePredictor::getSwitchBack(cons
       {
         ROS_INFO("The robot will reach a switch back point in %f sec. The next plan starts from the switch back.",
                  local_goal_eta);
-        // Actually returning the next of the switch back point.
         return local_goal - 1;
       }
     }
