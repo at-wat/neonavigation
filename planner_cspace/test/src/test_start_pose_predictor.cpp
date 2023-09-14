@@ -92,7 +92,7 @@ protected:
             StartPosePredictor::Astar::Vec(6, 5, 0),
             StartPosePredictor::Astar::Vec(7, 5, 0),  // Moves 2 meters ahead
         };
-    paths_["straight"] = std::make_pair(path_grid_straight, getMetricPath(path_grid_straight));
+    paths_["straight"] = std::make_pair(path_grid_straight, convertToMetricPath(path_grid_straight));
 
     const std::list<StartPosePredictor::Astar::Vec> path_grid_switch_back =
         {
@@ -103,10 +103,10 @@ protected:
             StartPosePredictor::Astar::Vec(9, 5, 2),   // Curv from (3.0, 1.0, 0.0) to (4.0, 0.0, pi)
             StartPosePredictor::Astar::Vec(10, 5, 2),  // goal is (5.0, 0.0, pi)
         };
-    paths_["switch_back"] = std::make_pair(path_grid_switch_back, getMetricPath(path_grid_switch_back));
+    paths_["switch_back"] = std::make_pair(path_grid_switch_back, convertToMetricPath(path_grid_switch_back));
   }
 
-  nav_msgs::Path getMetricPath(const std::list<GridAstar<3, 2>::Vec>& path_grid) const
+  nav_msgs::Path convertToMetricPath(const std::list<GridAstar<3, 2>::Vec>& path_grid) const
   {
     const auto path_interpolated = interpolator_.interpolate(path_grid, 0.1, 10);
 
@@ -118,10 +118,7 @@ protected:
       pose.header.frame_id = "map";
       float x, y, yaw;
       grid_metric_converter::grid2Metric(map_info_, pose_grid[0], pose_grid[1], pose_grid[2], x, y, yaw);
-      pose.pose.position.x = x;
-      pose.pose.position.y = y;
-      pose.pose.orientation.z = sin(yaw / 2);
-      pose.pose.orientation.w = cos(yaw / 2);
+      pose.pose = getPose(x, y, yaw);
       result_path.poses.push_back(pose);
     }
     return result_path;
@@ -166,9 +163,7 @@ TEST_F(StartPosePredictorTester, EdgeCases)
   rotating_path.poses[0].pose.orientation.w = cos(M_PI / 4);
 
   EXPECT_TRUE(predictor_.process(getPose(0.0, 1.0, 1.3), cm_, map_info_, rotating_path, start_grid));
-  EXPECT_EQ(start_grid[0], 5);
-  EXPECT_EQ(start_grid[1], 6);
-  EXPECT_EQ(start_grid[2], 1);
+  EXPECT_EQ(StartPosePredictor::Astar::Vec(5, 6, 1), start_grid);
   EXPECT_TRUE(predictor_.getPreservedPath().poses.empty());
 }
 
@@ -177,9 +172,7 @@ TEST_F(StartPosePredictorTester, Normal)
   {
     StartPosePredictor::Astar::Vec start_grid;
     EXPECT_TRUE(predictor_.process(getPose(0.05, 0.05, 0.0), cm_, map_info_, paths_["straight"].second, start_grid));
-    EXPECT_EQ(start_grid[0], 6);
-    EXPECT_EQ(start_grid[1], 5);
-    EXPECT_EQ(start_grid[2], 0);
+    EXPECT_EQ(StartPosePredictor::Astar::Vec(6, 5, 0), start_grid);
     const auto preserved_path = predictor_.getPreservedPath();
     // Only (0, 0, 0) is removed as the nearest is the first line strip, that is from (0, 0, 0) to (0.1, 0, 0).
     ASSERT_EQ(preserved_path.poses.size(), 9);
@@ -195,9 +188,7 @@ TEST_F(StartPosePredictorTester, Normal)
   {
     StartPosePredictor::Astar::Vec start_grid;
     EXPECT_TRUE(predictor_.process(getPose(-0.05, 0.05, 0.0), cm_, map_info_, paths_["straight"].second, start_grid));
-    EXPECT_EQ(start_grid[0], 6);
-    EXPECT_EQ(start_grid[1], 5);
-    EXPECT_EQ(start_grid[2], 0);
+    EXPECT_EQ(StartPosePredictor::Astar::Vec(6, 5, 0), start_grid);
     const auto preserved_path = predictor_.getPreservedPath();
     // No points are removed as the robot have not reached the first line strip.
     ASSERT_EQ(preserved_path.poses.size(), 10);
@@ -228,9 +219,7 @@ TEST_F(StartPosePredictorTester, SwitchBack)
     StartPosePredictor::Astar::Vec start_grid;
     EXPECT_TRUE(predictor_.process(getPose(0.25, 0.0, 0.0), cm_, map_info_, paths_["switch_back"].second, start_grid));
     // The robot will not reach the switch back within 2.0 seconds, and the start grid will be on the first line.
-    EXPECT_EQ(start_grid[0], 7);
-    EXPECT_EQ(start_grid[1], 5);
-    EXPECT_EQ(start_grid[2], 0);
+    EXPECT_EQ(StartPosePredictor::Astar::Vec(7, 5, 0), start_grid);
     const auto preserved_path = predictor_.getPreservedPath();
     ASSERT_EQ(preserved_path.poses.size(), 17);
     for (size_t i = 0; i < preserved_path.poses.size(); ++i)
@@ -247,9 +236,7 @@ TEST_F(StartPosePredictorTester, SwitchBack)
     StartPosePredictor::Astar::Vec start_grid;
     EXPECT_TRUE(predictor_.process(getPose(0.55, 0.0, 0.0), cm_, map_info_, paths_["switch_back"].second, start_grid));
     // The robot will reach the switch back within 2.0 seconds, and the start grid is the switch back point.
-    EXPECT_EQ(start_grid[0], 8);
-    EXPECT_EQ(start_grid[1], 6);
-    EXPECT_EQ(start_grid[2], 1);
+    EXPECT_EQ(StartPosePredictor::Astar::Vec(8, 6, 1), start_grid);
     const auto preserved_path = predictor_.getPreservedPath();
     // A part of the first forward, the second forward, and the first turn.
     ASSERT_EQ(preserved_path.poses.size(), 5 + 10 + 13);
