@@ -129,8 +129,8 @@ protected:
     geometry_msgs::Pose pose;
     pose.position.x = x;
     pose.position.y = y;
-    pose.orientation.z = sin(yaw / 2);
-    pose.orientation.w = cos(yaw / 2);
+    pose.orientation.z = std::sin(yaw / 2);
+    pose.orientation.w = std::cos(yaw / 2);
     return pose;
   }
 
@@ -157,10 +157,7 @@ TEST_F(StartPosePredictorTester, EdgeCases)
   rotating_path.header.frame_id = "map";
   rotating_path.poses.resize(1);
   rotating_path.poses[0].header.frame_id = "map";
-  rotating_path.poses[0].pose.position.x = 0.01;
-  rotating_path.poses[0].pose.position.y = 1.01;
-  rotating_path.poses[0].pose.orientation.z = sin(M_PI / 4);
-  rotating_path.poses[0].pose.orientation.w = cos(M_PI / 4);
+  rotating_path.poses[0].pose = getPose(0.01, 1.01, M_PI / 2);
 
   EXPECT_TRUE(predictor_.process(getPose(0.0, 1.0, 1.3), cm_, map_info_, rotating_path, start_grid));
   EXPECT_EQ(StartPosePredictor::Astar::Vec(5, 6, 1), start_grid);
