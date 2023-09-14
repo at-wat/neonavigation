@@ -79,7 +79,7 @@ inline void metric2Grid(
 }
 
 template <template <class, class> class STL_CONTAINER = std::list>
-void grid2MetricPath(
+void appendGridPath2MetricPath(
     const costmap_cspace_msgs::MapMetaData3D& map_info,
     const STL_CONTAINER<CyclicVecFloat<3, 2>,
                         std::allocator<CyclicVecFloat<3, 2>>>& path_grid,
