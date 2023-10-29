@@ -194,13 +194,12 @@ public:
       if (footprint_radius_ == 0)
         cs_template_.e(0, 0, yaw) = 100;
     }
+
+    default_range_ = {-range_max_, range_max_, -range_max_, range_max_};
     template_ranges_.resize(16);
     for (size_t i = 0; i < template_ranges_.size(); i++)
     {
-      template_ranges_[i].x_min = -range_max_;
-      template_ranges_[i].x_max = range_max_;
-      template_ranges_[i].y_min = -range_max_;
-      template_ranges_[i].y_max = range_max_;
+      template_ranges_[i] = default_range_;
       if (i & 1)
       {
         template_ranges_[i].x_min = 0;
@@ -218,7 +217,6 @@ public:
         template_ranges_[i].y_max = 0;
       }
     }
-    default_range_ = {-range_max_, range_max_, -range_max_, range_max_};
   }
 
 protected:
@@ -308,19 +306,19 @@ protected:
     const int gx = pos % msg->info.width;
     const int gy = pos / msg->info.width;
     uint8_t mask = 0;
-    if (gx == 0 || (msg->data[pos - 1] == 100))
+    if (gx == 0 || (msg->data[pos - 1] >= msg->data[pos]))
     {
       mask += 1;
     }
-    if (gx == static_cast<int>(msg->info.width) - 1 || (msg->data[pos + 1] == 100))
+    if (gx == static_cast<int>(msg->info.width) - 1 || (msg->data[pos + 1] >= msg->data[pos]))
     {
       mask += 2;
     }
-    if (gy == 0 || (msg->data[pos - msg->info.width] == 100))
+    if (gy == 0 || (msg->data[pos - msg->info.width] >= msg->data[pos]))
     {
       mask += 4;
     }
-    if (gy == static_cast<int>(msg->info.height) - 1 || (msg->data[pos + msg->info.width] == 100))
+    if (gy == static_cast<int>(msg->info.height) - 1 || (msg->data[pos + msg->info.width] >= msg->data[pos]))
     {
       mask += 8;
     }
