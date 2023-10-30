@@ -91,6 +91,16 @@ TEST(GridAstarModel3D, Cost)
   EXPECT_LT(c_straight, c_curve);
   EXPECT_LT(c_straight, c_drift);
   EXPECT_LT(c_straight, c_drift_curve);
+
+  // These tests are added to confirm a bug is fixed by https://github.com/at-wat/neonavigation/pull/725
+  const GridAstarModel3D::Vec start2(5, 5, 0);
+  const GridAstarModel3D::Vec occupied(10, 5, 0);
+  const GridAstarModel3D::Vec goal2(10, 5, 3);
+  cm[occupied] = 100;
+  // The cost toward the occupied cell should be negative.
+  EXPECT_LT(model.cost(start2, occupied, {GridAstarModel3D::VecWithCost(start2)}, occupied), 0);
+  // The cost from the occupied cell should be negative.
+  EXPECT_LT(model.cost(occupied, goal2, {GridAstarModel3D::VecWithCost(occupied)}, goal2), 0);
 }
 }  // namespace planner_3d
 }  // namespace planner_cspace
