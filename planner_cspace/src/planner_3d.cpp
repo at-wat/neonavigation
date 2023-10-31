@@ -1397,6 +1397,7 @@ public:
     }
     start_pose_predictor_.setConfig(start_pose_predictor_config);
     trigger_plan_by_costmap_update_ = config.trigger_plan_by_costmap_update;
+    no_map_update_timer_.stop();
   }
 
   GridAstarModel3D::Vec pathPose2Grid(const geometry_msgs::PoseStamped& pose) const

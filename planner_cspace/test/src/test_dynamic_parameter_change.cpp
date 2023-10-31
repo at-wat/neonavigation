@@ -193,7 +193,7 @@ protected:
     pub_map_overlay_.publish(map_overlay_);
   }
 
-  double getPathHz(const ros::Duration costmap_publishing_interval)
+  double getAveragePathInterval(const ros::Duration costmap_publishing_interval)
   {
     publishMapAndRobot(2.55, 0.45, M_PI);
     ros::Duration(0.3).sleep();
@@ -229,9 +229,8 @@ protected:
       ros::spinOnce();
       r.sleep();
     }
-    const double elapesed_time_sec = (last_path_received_time_ - initial_path_received_time_).toSec();
-    const double hz = (path_received_count_ - prev_path_received_count) / elapesed_time_sec;
-    return hz;
+    return (last_path_received_time_ - initial_path_received_time_).toSec() /
+           (path_received_count_ - prev_path_received_count);
   }
 
   tf2_ros::TransformBroadcaster tfb_;
@@ -319,22 +318,25 @@ TEST_F(DynamicParameterChangeTest, TriggerPlanByCostmapUpdate)
   ros::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
 
-  const double hz = getPathHz(ros::Duration(0.1));
-  EXPECT_LT(3.0, hz);
-  EXPECT_LT(hz, 5.0);
+  const ros::Duration costmap_publishing_interval(0.1);
+  // The path planning frequency is 4.0 Hz (Designated by the "freq" paramteer)
+  const double default_interval = getAveragePathInterval(costmap_publishing_interval);
+  EXPECT_NEAR(default_interval, 1.0 / default_config_.freq, (1.0 / default_config_.freq) * 0.1);
 
   planner_cspace::Planner3DConfig config = default_config_;
   config.trigger_plan_by_costmap_update = true;
   config.costmap_watchdog = 0.5;
   ASSERT_TRUE(planner_3d_client_->setConfiguration(config));
 
-  const double hz2 = getPathHz(ros::Duration(0.1));
-  EXPECT_LT(9.0, hz2);
-  EXPECT_LT(hz2, 10.0);
+  // The path planning is trigger by the callback of CSpace3DUpdate, so its frequency is same as the frequency of
+  // CSpace3DUpdate (10 Hz).
+  const double interval_triggered_by_costmap = getAveragePathInterval(costmap_publishing_interval);
+  EXPECT_NEAR(interval_triggered_by_costmap, costmap_publishing_interval.toSec(),
+              costmap_publishing_interval.toSec() * 0.1);
 
-  const double hz3 = getPathHz(ros::Duration(100));
-  EXPECT_LT(1.0, hz3);
-  EXPECT_LT(hz3, 3.0);
+  // The path planning is trigger by costmap_watchdog_(0.5 seconds) when CSpace3DUpdate is not published.
+  const double interval_triggered_by_watchdog = getAveragePathInterval(ros::Duration(100));
+  EXPECT_NEAR(interval_triggered_by_watchdog, config.costmap_watchdog, config.costmap_watchdog * 0.1);
 }
 
 int main(int argc, char** argv)
