@@ -70,8 +70,6 @@ protected:
     int x_min, x_max, y_min, y_max;
   };
   std::vector<Rect> template_ranges_;
-  Rect default_range_;
-
   int range_max_;
   std::vector<bool> unknown_buf_;
 
@@ -195,11 +193,11 @@ public:
         cs_template_.e(0, 0, yaw) = 100;
     }
 
-    default_range_ = {-range_max_, range_max_, -range_max_, range_max_};
+    const Rect default_range = {-range_max_, range_max_, -range_max_, range_max_};
     template_ranges_.resize(16);
     for (size_t i = 0; i < template_ranges_.size(); i++)
     {
-      template_ranges_[i] = default_range_;
+      template_ranges_[i] = default_range;
       if (i & 1)
       {
         template_ranges_[i].x_min = 0;
@@ -299,7 +297,7 @@ protected:
 
   const Rect& getDefaultRange(const nav_msgs::OccupancyGrid::ConstPtr&, const int) const
   {
-    return default_range_;
+    return template_ranges_[0];
   }
   const Rect& getMaskedRange(const nav_msgs::OccupancyGrid::ConstPtr& msg, const int pos) const
   {
