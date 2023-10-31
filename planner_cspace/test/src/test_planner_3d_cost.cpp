@@ -66,6 +66,7 @@ TEST(GridAstarModel3D, Cost)
   cc.max_vel_ = 1.0;
   cc.max_ang_vel_ = 1.0;
   cc.angle_resolution_aspect_ = 1.0;
+  cc.turn_penalty_cost_threshold_ = 0;
 
   GridAstarModel3D model(
       map_info,
@@ -91,6 +92,25 @@ TEST(GridAstarModel3D, Cost)
   EXPECT_LT(c_straight, c_curve);
   EXPECT_LT(c_straight, c_drift);
   EXPECT_LT(c_straight, c_drift_curve);
+
+  // These tests are added to confirm that some bugs are fixed by https://github.com/at-wat/neonavigation/pull/725
+  const GridAstarModel3D::Vec start2(5, 5, 0);
+  const GridAstarModel3D::Vec occupied_waypoint(10, 5, 0);
+  const GridAstarModel3D::Vec goal2(10, 5, 3);
+  cm[occupied_waypoint] = 100;
+  // The cost toward the occupied cell should be negative.
+  EXPECT_LT(model.cost(start2, occupied_waypoint, {GridAstarModel3D::VecWithCost(start2)}, occupied_waypoint), 0);
+  // The cost from the occupied cell should be negative.
+  EXPECT_LT(model.cost(occupied_waypoint, goal2, {GridAstarModel3D::VecWithCost(occupied_waypoint)}, goal2), 0);
+
+  const GridAstarModel3D::Vec start3(10, 20, 0);
+  cm[start3] = 99;
+  const GridAstarModel3D::Vec waypoint3(10, 20, 3);
+  const GridAstarModel3D::Vec goal3(10, 20, 6);
+  // The cost between start3 and waypoint3 is larger than the cost between waypoint3 and goal3 because start3
+  // has a penalty.
+  EXPECT_GT(model.cost(start3, waypoint3, {GridAstarModel3D::VecWithCost(start3)}, waypoint3),
+            model.cost(waypoint3, goal3, {GridAstarModel3D::VecWithCost(waypoint3)}, goal3));
 }
 }  // namespace planner_3d
 }  // namespace planner_cspace
