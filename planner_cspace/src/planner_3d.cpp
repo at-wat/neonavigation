@@ -1467,7 +1467,6 @@ public:
 
   void planPath(const ros::Time& now)
   {
-    ROS_INFO("replan called");
     if (has_map_ && !cost_estim_cache_created_ && has_goal_)
     {
       createCostEstimCache();
@@ -1504,7 +1503,6 @@ public:
 
     if (has_map_ && has_goal_ && has_start_ && has_costmap)
     {
-      ROS_INFO("Generating path");
       if (act_->isActive())
       {
         move_base_msgs::MoveBaseFeedback feedback;
@@ -1565,7 +1563,6 @@ public:
           has_goal_ = false;
 
           publishEmptyPath();
-          // next_replan_time += ros::Duration(1.0 / freq_);
           ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
 
           if (act_->isActive())
@@ -1616,7 +1613,6 @@ public:
     }
     else if (!has_goal_)
     {
-      ROS_INFO("No goal");
       if (!retain_last_error_status_)
         status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
       publishEmptyPath();
