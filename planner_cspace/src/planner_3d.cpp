@@ -174,6 +174,7 @@ protected:
   bool retain_last_error_status_;
   int num_cost_estim_task_;
   bool keep_a_part_of_previous_path_;
+  bool trigger_plan_by_costmap_update_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -222,6 +223,7 @@ protected:
   int prev_map_update_y_max_;
   nav_msgs::Path previous_path_;
   StartPosePredictor start_pose_predictor_;
+  ros::Timer no_map_update_timer_;
 
   bool cbForget(std_srvs::EmptyRequest& req,
                 std_srvs::EmptyResponse& res)
@@ -721,12 +723,8 @@ protected:
     previous_path_ = path;
   }
 
-  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
+  void applyCostmapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
   {
-    if (!has_map_)
-      return;
-    ROS_DEBUG("Map updated");
-
     const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
     const ros::Time now = ros::Time::now();
 
@@ -907,6 +905,41 @@ protected:
         0.0,
         "second"));
     publishDebug();
+    return;
+  }
+
+  void cbNoMapUpdateTimer(const ros::TimerEvent& e)
+  {
+    planPath(e.current_real);
+    no_map_update_timer_ =
+        nh_.createTimer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+  }
+  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
+  {
+    if (!has_map_)
+      return;
+    ROS_DEBUG("Map updated");
+    if (trigger_plan_by_costmap_update_)
+    {
+      no_map_update_timer_.stop();
+      updateStart();
+      if (jump_.detectJump())
+      {
+        bbf_costmap_.clear();
+        // Robot pose jumped.
+      }
+      applyCostmapUpdate(msg);
+      planPath(last_costmap_);
+      if (costmap_watchdog_ > ros::Duration(0))
+      {
+        no_map_update_timer_ =
+            nh_.createTimer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+      }
+    }
+    else
+    {
+      applyCostmapUpdate(msg);
+    }
   }
   void cbMap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
@@ -1363,6 +1396,7 @@ public:
       sw_wait_ = config.sw_wait;
     }
     start_pose_predictor_.setConfig(start_pose_predictor_config);
+    trigger_plan_by_costmap_update_ = config.trigger_plan_by_costmap_update;
   }
 
   GridAstarModel3D::Vec pathPose2Grid(const geometry_msgs::PoseStamped& pose) const
@@ -1418,6 +1452,7 @@ public:
           {
             // robot has arrived at the switchback point
             is_path_switchback_ = false;
+            return;
           }
         }
       }
@@ -1429,201 +1464,211 @@ public:
     }
   }
 
+  void planPath(const ros::Time& now)
+  {
+    ROS_INFO("replan called");
+    if (has_map_ && !cost_estim_cache_created_ && has_goal_)
+    {
+      createCostEstimCache();
+    }
+    bool has_costmap(false);
+    if (costmap_watchdog_ > ros::Duration(0))
+    {
+      const ros::Duration costmap_delay = now - last_costmap_;
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "costmap_delay",
+          costmap_delay.toSec(),
+          "second"));
+      if (costmap_delay > costmap_watchdog_)
+      {
+        ROS_WARN_THROTTLE(1.0,
+                          "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
+                          last_costmap_.toSec());
+        status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
+        publishEmptyPath();
+      }
+      else
+      {
+        has_costmap = true;
+      }
+    }
+    else
+    {
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "costmap_delay",
+          -1.0,
+          "second"));
+      has_costmap = true;
+    }
+
+    if (has_map_ && has_goal_ && has_start_ && has_costmap)
+    {
+      ROS_INFO("Generating path");
+      if (act_->isActive())
+      {
+        move_base_msgs::MoveBaseFeedback feedback;
+        feedback.base_position = start_;
+        act_->publishFeedback(feedback);
+      }
+
+      if (act_tolerant_->isActive())
+      {
+        planner_cspace_msgs::MoveWithToleranceFeedback feedback;
+        feedback.base_position = start_;
+        act_tolerant_->publishFeedback(feedback);
+      }
+
+      is_path_switchback_ = false;
+      if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
+      {
+        const float yaw_s = tf2::getYaw(start_.pose.orientation);
+        float yaw_g = tf2::getYaw(goal_.pose.orientation);
+        if (force_goal_orientation_)
+          yaw_g = tf2::getYaw(goal_raw_.pose.orientation);
+
+        float yaw_diff = yaw_s - yaw_g;
+        if (yaw_diff > M_PI)
+          yaw_diff -= M_PI * 2.0;
+        else if (yaw_diff < -M_PI)
+          yaw_diff += M_PI * 2.0;
+        if (std::abs(yaw_diff) <
+            (act_tolerant_->isActive() ? goal_tolerant_->goal_tolerance_ang_finish : goal_tolerance_ang_finish_))
+        {
+          status_.status = planner_cspace_msgs::PlannerStatus::DONE;
+          has_goal_ = false;
+          // Don't publish empty path here in order a path follower
+          // to minimize the error to the desired final pose
+          ROS_INFO("Path plan finished");
+
+          if (act_->isActive())
+            act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
+          if (act_tolerant_->isActive())
+            act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(), "Goal reached.");
+        }
+        else
+        {
+          publishFinishPath();
+        }
+      }
+      else
+      {
+        bool skip_path_planning = false;
+        if (escaping_)
+        {
+          status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+        }
+        else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
+        {
+          status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+          status_.status = planner_cspace_msgs::PlannerStatus::DONE;
+          has_goal_ = false;
+
+          publishEmptyPath();
+          // next_replan_time += ros::Duration(1.0 / freq_);
+          ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
+
+          if (act_->isActive())
+            act_->setAborted(
+                move_base_msgs::MoveBaseResult(), "Goal is in Rock");
+          if (act_tolerant_->isActive())
+            act_tolerant_->setAborted(
+                planner_cspace_msgs::MoveWithToleranceResult(), "Goal is in Rock");
+          return;
+        }
+        else if (!cost_estim_cache_created_)
+        {
+          skip_path_planning = true;
+          if (is_start_occupied_)
+          {
+            status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
+          }
+          else
+          {
+            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+          }
+        }
+        else
+        {
+          status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+        }
+
+        if (skip_path_planning)
+        {
+          publishEmptyPath();
+        }
+        else
+        {
+          nav_msgs::Path path;
+          path.header = map_header_;
+          path.header.stamp = now;
+          makePlan(start_.pose, goal_.pose, path, true);
+          publishPath(path);
+          if ((sw_wait_ > 0.0) && !keep_a_part_of_previous_path_)
+          {
+            const int sw_index = getSwitchIndex(path);
+            is_path_switchback_ = (sw_index >= 0);
+            if (is_path_switchback_)
+              sw_pos_ = path.poses[sw_index];
+          }
+        }
+      }
+    }
+    else if (!has_goal_)
+    {
+      ROS_INFO("No goal");
+      if (!retain_last_error_status_)
+        status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+      publishEmptyPath();
+    }
+    status_.header.stamp = now;
+    pub_status_.publish(status_);
+    diag_updater_.force_update();
+
+    metrics_.header.stamp = now;
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "stuck_cnt",
+        cnt_stuck_,
+        "count"));
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "error",
+        status_.error,
+        "enum"));
+    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        "status",
+        status_.status,
+        "enum"));
+    pub_metrics_.publish(metrics_);
+    metrics_.data.clear();
+  }
+
   void spin()
   {
     ROS_DEBUG("Initialized");
 
     ros::Time next_replan_time = ros::Time::now();
-
+    ros::Rate r(100);
     while (ros::ok())
     {
-      waitUntil(next_replan_time);
-
-      const ros::Time now = ros::Time::now();
-      next_replan_time = now;
-
-      if (has_map_ && !cost_estim_cache_created_ && has_goal_)
+      if (trigger_plan_by_costmap_update_)
       {
-        createCostEstimCache();
-      }
-      bool has_costmap(false);
-      if (costmap_watchdog_ > ros::Duration(0))
-      {
-        const ros::Duration costmap_delay = now - last_costmap_;
-        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-            "costmap_delay",
-            costmap_delay.toSec(),
-            "second"));
-        if (costmap_delay > costmap_watchdog_)
-        {
-          ROS_WARN_THROTTLE(1.0,
-                            "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
-                            last_costmap_.toSec());
-          status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
-          publishEmptyPath();
-        }
-        else
-        {
-          has_costmap = true;
-        }
+        ros::spinOnce();
+        r.sleep();
       }
       else
       {
-        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-            "costmap_delay",
-            -1.0,
-            "second"));
-        has_costmap = true;
-      }
-
-      bool is_path_switchback = false;
-      if (has_map_ && has_goal_ && has_start_ && has_costmap)
-      {
-        if (act_->isActive())
+        waitUntil(next_replan_time);
+        const ros::Time now = ros::Time::now();
+        planPath(now);
+        if (is_path_switchback_)
         {
-          move_base_msgs::MoveBaseFeedback feedback;
-          feedback.base_position = start_;
-          act_->publishFeedback(feedback);
-        }
-
-        if (act_tolerant_->isActive())
-        {
-          planner_cspace_msgs::MoveWithToleranceFeedback feedback;
-          feedback.base_position = start_;
-          act_tolerant_->publishFeedback(feedback);
-        }
-
-        if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
-        {
-          const float yaw_s = tf2::getYaw(start_.pose.orientation);
-          float yaw_g = tf2::getYaw(goal_.pose.orientation);
-          if (force_goal_orientation_)
-            yaw_g = tf2::getYaw(goal_raw_.pose.orientation);
-
-          float yaw_diff = yaw_s - yaw_g;
-          if (yaw_diff > M_PI)
-            yaw_diff -= M_PI * 2.0;
-          else if (yaw_diff < -M_PI)
-            yaw_diff += M_PI * 2.0;
-          if (std::abs(yaw_diff) <
-              (act_tolerant_->isActive() ? goal_tolerant_->goal_tolerance_ang_finish : goal_tolerance_ang_finish_))
-          {
-            status_.status = planner_cspace_msgs::PlannerStatus::DONE;
-            has_goal_ = false;
-            // Don't publish empty path here in order a path follower
-            // to minimize the error to the desired final pose
-            ROS_INFO("Path plan finished");
-
-            if (act_->isActive())
-              act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
-            if (act_tolerant_->isActive())
-              act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(), "Goal reached.");
-          }
-          else
-          {
-            publishFinishPath();
-          }
+          next_replan_time = now + ros::Duration(sw_wait_);
+          ROS_INFO("Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.toSec());
         }
         else
         {
-          bool skip_path_planning = false;
-          if (escaping_)
-          {
-            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-          }
-          else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
-          {
-            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-            status_.status = planner_cspace_msgs::PlannerStatus::DONE;
-            has_goal_ = false;
-
-            publishEmptyPath();
-            next_replan_time += ros::Duration(1.0 / freq_);
-            ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
-
-            if (act_->isActive())
-              act_->setAborted(
-                  move_base_msgs::MoveBaseResult(), "Goal is in Rock");
-            if (act_tolerant_->isActive())
-              act_tolerant_->setAborted(
-                  planner_cspace_msgs::MoveWithToleranceResult(), "Goal is in Rock");
-
-            continue;
-          }
-          else if (!cost_estim_cache_created_)
-          {
-            skip_path_planning = true;
-            if (is_start_occupied_)
-            {
-              status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
-            }
-            else
-            {
-              status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-            }
-          }
-          else
-          {
-            status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
-          }
-
-          if (skip_path_planning)
-          {
-            publishEmptyPath();
-          }
-          else
-          {
-            nav_msgs::Path path;
-            path.header = map_header_;
-            path.header.stamp = now;
-            makePlan(start_.pose, goal_.pose, path, true);
-            publishPath(path);
-            if ((sw_wait_ > 0.0) && !keep_a_part_of_previous_path_)
-            {
-              const int sw_index = getSwitchIndex(path);
-              is_path_switchback = (sw_index >= 0);
-              if (is_path_switchback)
-                sw_pos_ = path.poses[sw_index];
-            }
-          }
+          next_replan_time = now + ros::Duration(1.0 / freq_);
         }
       }
-      else if (!has_goal_)
-      {
-        if (!retain_last_error_status_)
-          status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
-        publishEmptyPath();
-      }
-      status_.header.stamp = now;
-      pub_status_.publish(status_);
-      diag_updater_.force_update();
-
-      metrics_.header.stamp = now;
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-          "stuck_cnt",
-          cnt_stuck_,
-          "count"));
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-          "error",
-          status_.error,
-          "enum"));
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-          "status",
-          status_.status,
-          "enum"));
-      pub_metrics_.publish(metrics_);
-      metrics_.data.clear();
-
-      if (is_path_switchback)
-      {
-        next_replan_time += ros::Duration(sw_wait_);
-        ROS_INFO("Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.toSec());
-      }
-      else
-      {
-        next_replan_time += ros::Duration(1.0 / freq_);
-      }
-      is_path_switchback_ = is_path_switchback;
     }
   }
 
