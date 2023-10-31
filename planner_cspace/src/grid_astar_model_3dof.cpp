@@ -155,6 +155,10 @@ float GridAstarModel3D::euclidCostRough(const Vec& v) const
 float GridAstarModel3D::cost(
     const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
 {
+  if ((cm_[cur] > 99) || (cm_[next] > 99))
+  {
+    return -1;
+  }
   Vec d_raw = next - cur;
   d_raw.cycle(map_info_.angle);
   const Vec d = d_raw;
@@ -168,11 +172,6 @@ float GridAstarModel3D::cost(
     Vec pos = cur;
     for (int i = 0; i < std::abs(d[2]); i++)
     {
-      pos[2] += dir;
-      if (pos[2] < 0)
-        pos[2] += map_info_.angle;
-      else if (pos[2] >= static_cast<int>(map_info_.angle))
-        pos[2] -= map_info_.angle;
       const auto c = cm_[pos];
       if (c > 99)
         return -1;
@@ -180,6 +179,11 @@ float GridAstarModel3D::cost(
       {
         sum += c;
       }
+      pos[2] += dir;
+      if (pos[2] < 0)
+        pos[2] += map_info_.angle;
+      else if (pos[2] >= static_cast<int>(map_info_.angle))
+        pos[2] -= map_info_.angle;
     }
     const float turn_cost_ratio = cc_.weight_costmap_turn_ / 100.0;
     const float turn_heuristic_cost_ratio =
