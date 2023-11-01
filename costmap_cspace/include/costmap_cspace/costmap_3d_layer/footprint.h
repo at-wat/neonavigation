@@ -69,7 +69,6 @@ protected:
   {
     int x_min, x_max, y_min, y_max;
   };
-  std::vector<Rect> template_ranges_;
   int range_max_;
   std::vector<bool> unknown_buf_;
 
@@ -192,29 +191,6 @@ public:
       if (footprint_radius_ == 0)
         cs_template_.e(0, 0, yaw) = 100;
     }
-
-    const Rect default_range = {-range_max_, range_max_, -range_max_, range_max_};
-    template_ranges_.resize(16);
-    for (size_t i = 0; i < template_ranges_.size(); i++)
-    {
-      template_ranges_[i] = default_range;
-      if (i & 1)
-      {
-        template_ranges_[i].x_min = 0;
-      }
-      if (i & 2)
-      {
-        template_ranges_[i].x_max = 0;
-      }
-      if (i & 4)
-      {
-        template_ranges_[i].y_min = 0;
-      }
-      if (i & 8)
-      {
-        template_ranges_[i].y_max = 0;
-      }
-    }
   }
 
 protected:
@@ -295,32 +271,21 @@ protected:
     }
   }
 
-  const Rect& getDefaultRange(const nav_msgs::OccupancyGrid::ConstPtr&, const int) const
+  const void getDefaultRange(const nav_msgs::OccupancyGrid::ConstPtr&, const int, Rect&) const
   {
-    return template_ranges_[0];
+    // Do nothing
   }
-  const Rect& getMaskedRange(const nav_msgs::OccupancyGrid::ConstPtr& msg, const int pos) const
+
+  const void getMaskedRange(const nav_msgs::OccupancyGrid::ConstPtr& msg, const int pos, Rect& result) const
   {
     const int gx = pos % msg->info.width;
     const int gy = pos / msg->info.width;
-    uint8_t mask = 0;
-    if (gx == 0 || (msg->data[pos - 1] >= msg->data[pos]))
-    {
-      mask += 1;
-    }
-    if (gx == static_cast<int>(msg->info.width) - 1 || (msg->data[pos + 1] >= msg->data[pos]))
-    {
-      mask += 2;
-    }
-    if (gy == 0 || (msg->data[pos - msg->info.width] >= msg->data[pos]))
-    {
-      mask += 4;
-    }
-    if (gy == static_cast<int>(msg->info.height) - 1 || (msg->data[pos + msg->info.width] >= msg->data[pos]))
-    {
-      mask += 8;
-    }
-    return template_ranges_[mask];
+    const int8_t* const ptr = msg->data.data() + pos;
+    result.x_min = (gx == 0 || (*(ptr - 1) >= *ptr)) ? 0 : -range_max_;
+    result.x_max = (gx == static_cast<int>(msg->info.width) - 1 || (*(ptr + 1) >= *ptr)) ? 0 : range_max_;
+    result.y_min = (gy == 0 || (*(ptr - msg->info.width) >= *ptr)) ? 0 : -range_max_;
+    result.y_max =
+        (gy == static_cast<int>(msg->info.height) - 1 || (*(ptr + msg->info.width) >= *ptr)) ? 0 : range_max_;
   }
 
   void generateSpecifiedCSpace(
@@ -330,8 +295,10 @@ protected:
   {
     const auto range_getter =
         (msg->info.resolution == map->info.linear_resolution) ?
-            std::bind(&Costmap3dLayerFootprint::getMaskedRange, this, msg, std::placeholders::_1) :
-            std::bind(&Costmap3dLayerFootprint::getDefaultRange, this, msg, std::placeholders::_1);
+            std::bind(&Costmap3dLayerFootprint::getMaskedRange, this, msg, std::placeholders::_1,
+                      std::placeholders::_2) :
+            std::bind(&Costmap3dLayerFootprint::getDefaultRange, this, msg, std::placeholders::_1,
+                      std::placeholders::_2);
     const int ox =
         std::lround((msg->info.origin.position.x - map->info.origin.position.x) / map->info.linear_resolution);
     const int oy =
@@ -354,6 +321,7 @@ protected:
         unknown_buf_[i] = msg->data[i] < 0 && map->getCost(gx, gy, yaw) < 0;
       }
     }
+    Rect range = {-range_max_, range_max_, -range_max_, range_max_};
     for (size_t i = 0; i < msg->data.size(); i++)
     {
       const int8_t val = msg->data[i];
@@ -373,7 +341,7 @@ protected:
           m = 0;
         continue;
       }
-      const Rect& range = range_getter(i);
+      range_getter(i, range);
       const int map_x_min = std::max(gx + range.x_min, 0);
       const int map_x_max = std::min(gx + range.x_max, static_cast<int>(map->info.width) - 1);
       const int map_y_min = std::max(gy + range.y_min, 0);
