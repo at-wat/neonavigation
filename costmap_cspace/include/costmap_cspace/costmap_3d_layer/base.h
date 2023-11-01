@@ -321,14 +321,12 @@ public:
         map_->data[i + yaw * xy_size] = -1;
       }
     }
-    const auto m1 = ros::WallTime::now();
     updateCSpace(
         base_map,
         UpdatedRegion(
             0, 0, 0,
             map_->info.width, map_->info.height, map_->info.angle,
             map_->header.stamp));
-    ROS_WARN("INITAL updateCSpace: %f", (ros::WallTime::now() - m1).toSec());
     for (size_t yaw = 0; yaw < map_->info.angle; yaw++)
     {
       for (unsigned int i = 0; i < xy_size; i++)
@@ -414,9 +412,7 @@ protected:
     {
       if (map_->header.frame_id == map_updated_->header.frame_id)
       {
-        const auto m1 = ros::WallTime::now();
         updateCSpace(map_updated_, region_);
-        ROS_WARN("Update: %f", (ros::WallTime::now() - m1).toSec());
       }
       else
       {
