@@ -287,9 +287,9 @@ protected:
       result.y_max =
           (gy == static_cast<int>(msg->info.height) - 1 || (*(ptr + msg->info.width) >= *ptr)) ? 0 : range_max_;
     };
-    const auto range_getter = (msg->info.resolution == map->info.linear_resolution) ?
-                                  getMaskedRange :
-                                  std::function<void(const int, Rect&)>([](const int, Rect&) {});
+    const auto getRange = (msg->info.resolution == map->info.linear_resolution) ?
+                              getMaskedRange :
+                              std::function<void(const int, Rect&)>([](const int, Rect&) {});
 
     const int ox =
         std::lround((msg->info.origin.position.x - map->info.origin.position.x) / map->info.linear_resolution);
@@ -333,7 +333,7 @@ protected:
           m = 0;
         continue;
       }
-      range_getter(i, range);
+      getRange(i, range);
       const int map_x_min = std::max(gx + range.x_min, 0);
       const int map_x_max = std::min(gx + range.x_max, static_cast<int>(map->info.width) - 1);
       const int map_y_min = std::max(gy + range.y_min, 0);
