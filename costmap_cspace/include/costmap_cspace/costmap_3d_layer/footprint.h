@@ -271,34 +271,26 @@ protected:
     }
   }
 
-  const void getDefaultRange(const nav_msgs::OccupancyGrid::ConstPtr&, const int, Rect&) const
-  {
-    // Do nothing
-  }
-
-  const void getMaskedRange(const nav_msgs::OccupancyGrid::ConstPtr& msg, const int pos, Rect& result) const
-  {
-    const int gx = pos % msg->info.width;
-    const int gy = pos / msg->info.width;
-    const int8_t* const ptr = msg->data.data() + pos;
-    result.x_min = (gx == 0 || (*(ptr - 1) >= *ptr)) ? 0 : -range_max_;
-    result.x_max = (gx == static_cast<int>(msg->info.width) - 1 || (*(ptr + 1) >= *ptr)) ? 0 : range_max_;
-    result.y_min = (gy == 0 || (*(ptr - msg->info.width) >= *ptr)) ? 0 : -range_max_;
-    result.y_max =
-        (gy == static_cast<int>(msg->info.height) - 1 || (*(ptr + msg->info.width) >= *ptr)) ? 0 : range_max_;
-  }
-
   void generateSpecifiedCSpace(
       CSpace3DMsg::Ptr map,
       const nav_msgs::OccupancyGrid::ConstPtr& msg,
       const size_t yaw)
   {
-    const auto range_getter =
-        (msg->info.resolution == map->info.linear_resolution) ?
-            std::bind(&Costmap3dLayerFootprint::getMaskedRange, this, msg, std::placeholders::_1,
-                      std::placeholders::_2) :
-            std::bind(&Costmap3dLayerFootprint::getDefaultRange, this, msg, std::placeholders::_1,
-                      std::placeholders::_2);
+    const auto getMaskedRange = [this, msg](const int pos, Rect& result)
+    {
+      const int gx = pos % msg->info.width;
+      const int gy = pos / msg->info.width;
+      const int8_t* const ptr = msg->data.data() + pos;
+      result.x_min = (gx == 0 || (*(ptr - 1) >= *ptr)) ? 0 : -range_max_;
+      result.x_max = (gx == static_cast<int>(msg->info.width) - 1 || (*(ptr + 1) >= *ptr)) ? 0 : range_max_;
+      result.y_min = (gy == 0 || (*(ptr - msg->info.width) >= *ptr)) ? 0 : -range_max_;
+      result.y_max =
+          (gy == static_cast<int>(msg->info.height) - 1 || (*(ptr + msg->info.width) >= *ptr)) ? 0 : range_max_;
+    };
+    const auto range_getter = (msg->info.resolution == map->info.linear_resolution) ?
+                                  getMaskedRange :
+                                  std::function<void(const int, Rect&)>([](const int, Rect&) {});
+
     const int ox =
         std::lround((msg->info.origin.position.x - map->info.origin.position.x) / map->info.linear_resolution);
     const int oy =
