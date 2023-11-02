@@ -744,7 +744,6 @@ protected:
       map_update_retained_ = msg;
       return;
     }
-    map_update_retained_ = nullptr;
 
     last_costmap_ = now;
 
@@ -824,6 +823,7 @@ protected:
         }
       }
     }
+    map_update_retained_ = nullptr;
     const auto ts_cm_init_end = boost::chrono::high_resolution_clock::now();
     const float ts_cm_init_dur = boost::chrono::duration<float>(ts_cm_init_end - ts_cm_init_start).count();
     ROS_DEBUG("Costmaps updated (%.4f)", ts_cm_init_dur);
