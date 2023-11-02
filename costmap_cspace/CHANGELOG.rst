@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* costmap_3d: avoid unnecessary grid expansions (`#726 <https://github.com/at-wat/neonavigation/issues/726>`_)
+* Contributors: Naotaka Hatao
+
 0.16.0 (2023-09-14)
 -------------------
 * costmap_cspace: add linear_spread_min_cost parameter (`#719 <https://github.com/at-wat/neonavigation/issues/719>`_)

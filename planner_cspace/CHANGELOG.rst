@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_3d: add an option to trigger planning by costmap updates (`#727 <https://github.com/at-wat/neonavigation/issues/727>`_)
+* planner_3d: fix cost calculation bug on in-place turning (`#725 <https://github.com/at-wat/neonavigation/issues/725>`_)
+* Contributors: Naotaka Hatao
+
 0.16.0 (2023-09-14)
 -------------------
 * planner_cspace: start planning from expected robot pose (`#717 <https://github.com/at-wat/neonavigation/issues/717>`_)
