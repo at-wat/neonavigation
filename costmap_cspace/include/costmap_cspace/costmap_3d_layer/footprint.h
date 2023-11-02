@@ -65,6 +65,10 @@ protected:
   bool keep_unknown_;
 
   CSpace3Cache cs_template_;
+  struct Rect
+  {
+    int x_min, x_max, y_min, y_max;
+  };
   int range_max_;
   std::vector<bool> unknown_buf_;
 
@@ -266,17 +270,31 @@ protected:
       }
     }
   }
+
   void generateSpecifiedCSpace(
       CSpace3DMsg::Ptr map,
       const nav_msgs::OccupancyGrid::ConstPtr& msg,
       const size_t yaw)
   {
+    const auto getMaskedRange = [this, msg](const int pos, Rect& result)
+    {
+      const int gx = pos % msg->info.width;
+      const int gy = pos / msg->info.width;
+      const int8_t* const ptr = msg->data.data() + pos;
+      result.x_min = (gx == 0 || (*(ptr - 1) >= *ptr)) ? 0 : -range_max_;
+      result.x_max = (gx == static_cast<int>(msg->info.width) - 1 || (*(ptr + 1) >= *ptr)) ? 0 : range_max_;
+      result.y_min = (gy == 0 || (*(ptr - msg->info.width) >= *ptr)) ? 0 : -range_max_;
+      result.y_max =
+          (gy == static_cast<int>(msg->info.height) - 1 || (*(ptr + msg->info.width) >= *ptr)) ? 0 : range_max_;
+    };
+    const auto getRange = (msg->info.resolution == map->info.linear_resolution) ?
+                              getMaskedRange :
+                              std::function<void(const int, Rect&)>([](const int, Rect&) {});
+
     const int ox =
-        std::lround((msg->info.origin.position.x - map->info.origin.position.x) /
-                    map->info.linear_resolution);
+        std::lround((msg->info.origin.position.x - map->info.origin.position.x) / map->info.linear_resolution);
     const int oy =
-        std::lround((msg->info.origin.position.y - map->info.origin.position.y) /
-                    map->info.linear_resolution);
+        std::lround((msg->info.origin.position.y - map->info.origin.position.y) / map->info.linear_resolution);
     const double resolution_scale = msg->info.resolution / map->info.linear_resolution;
     if (keep_unknown_)
     {
@@ -295,6 +313,7 @@ protected:
         unknown_buf_[i] = msg->data[i] < 0 && map->getCost(gx, gy, yaw) < 0;
       }
     }
+    Rect range = {-range_max_, range_max_, -range_max_, range_max_};
     for (size_t i = 0; i < msg->data.size(); i++)
     {
       const int8_t val = msg->data[i];
@@ -314,11 +333,11 @@ protected:
           m = 0;
         continue;
       }
-
-      const int map_x_min = std::max(gx - range_max_, 0);
-      const int map_x_max = std::min(gx + range_max_, static_cast<int>(map->info.width) - 1);
-      const int map_y_min = std::max(gy - range_max_, 0);
-      const int map_y_max = std::min(gy + range_max_, static_cast<int>(map->info.height) - 1);
+      getRange(i, range);
+      const int map_x_min = std::max(gx + range.x_min, 0);
+      const int map_x_max = std::min(gx + range.x_max, static_cast<int>(map->info.width) - 1);
+      const int map_y_min = std::max(gy + range.y_min, 0);
+      const int map_y_max = std::min(gy + range.y_max, static_cast<int>(map->info.height) - 1);
       for (int map_y = map_y_min; map_y <= map_y_max; ++map_y)
       {
         // Use raw pointers for faster iteration
