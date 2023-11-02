@@ -723,7 +723,7 @@ protected:
     previous_path_ = path;
   }
 
-  void applyCostmapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
+  void applyCostmapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
   {
     const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
     const ros::Time now = ros::Time::now();
@@ -914,7 +914,7 @@ protected:
     no_map_update_timer_ =
         nh_.createTimer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
   }
-  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr msg)
+  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
   {
     if (!has_map_)
       return;
@@ -923,11 +923,6 @@ protected:
     {
       no_map_update_timer_.stop();
       updateStart();
-      if (jump_.detectJump())
-      {
-        bbf_costmap_.clear();
-        // Robot pose jumped.
-      }
       applyCostmapUpdate(msg);
       planPath(last_costmap_);
       if (costmap_watchdog_ > ros::Duration(0))
@@ -1648,6 +1643,10 @@ public:
     {
       if (trigger_plan_by_costmap_update_)
       {
+        if (jump_.detectJump())
+        {
+          bbf_costmap_.clear();
+        }
         ros::spinOnce();
         r.sleep();
       }

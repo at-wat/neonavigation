@@ -193,7 +193,7 @@ protected:
     pub_map_overlay_.publish(map_overlay_);
   }
 
-  double getAveragePathInterval(const ros::Duration costmap_publishing_interval)
+  double getAveragePathInterval(const ros::Duration& costmap_publishing_interval)
   {
     publishMapAndRobot(2.55, 0.45, M_PI);
     ros::Duration(0.3).sleep();
