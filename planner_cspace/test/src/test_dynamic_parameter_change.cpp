@@ -87,6 +87,8 @@ protected:
   void cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
     path_ = msg;
+    ++path_received_count_;
+    last_path_received_time_ = ros::Time::now();
   }
 
   move_base_msgs::MoveBaseGoal CreateGoalInFree()
@@ -191,6 +193,46 @@ protected:
     pub_map_overlay_.publish(map_overlay_);
   }
 
+  double getAveragePathInterval(const ros::Duration& costmap_publishing_interval)
+  {
+    publishMapAndRobot(2.55, 0.45, M_PI);
+    ros::Duration(0.3).sleep();
+    move_base_->sendGoal(CreateGoalInFree());
+    while (ros::ok() && (move_base_->getState() != actionlib::SimpleClientGoalState::ACTIVE))
+    {
+      ros::spinOnce();
+    }
+
+    last_path_received_time_ = ros::Time();
+    publishMapAndRobot(2.55, 0.45, M_PI);
+    ros::Time last_costmap_publishing_time = ros::Time::now();
+    ros::Rate r(100);
+    while (ros::ok() && (last_path_received_time_ == ros::Time()))
+    {
+      if ((ros::Time::now() - last_costmap_publishing_time) > costmap_publishing_interval)
+      {
+        publishMapAndRobot(2.55, 0.45, M_PI);
+        last_costmap_publishing_time = ros::Time::now();
+      };
+      ros::spinOnce();
+      r.sleep();
+    }
+    const ros::Time initial_path_received_time_ = last_path_received_time_;
+    const int prev_path_received_count = path_received_count_;
+    while (ros::ok() && (path_received_count_ < prev_path_received_count + 10))
+    {
+      if ((ros::Time::now() - last_costmap_publishing_time) > costmap_publishing_interval)
+      {
+        publishMapAndRobot(2.55, 0.45, M_PI);
+        last_costmap_publishing_time = ros::Time::now();
+      }
+      ros::spinOnce();
+      r.sleep();
+    }
+    return (last_path_received_time_ - initial_path_received_time_).toSec() /
+           (path_received_count_ - prev_path_received_count);
+  }
+
   tf2_ros::TransformBroadcaster tfb_;
   ros::Subscriber sub_path_;
   nav_msgs::Path::ConstPtr path_;
@@ -199,6 +241,8 @@ protected:
   ros::Publisher pub_odom_;
   nav_msgs::OccupancyGrid map_overlay_;
   planner_cspace::Planner3DConfig default_config_;
+  int path_received_count_;
+  ros::Time last_path_received_time_;
 };
 
 TEST_F(DynamicParameterChangeTest, DisableCurves)
@@ -266,6 +310,33 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   // In the second path planning after cancel, the exptected start pose is same as the goal.
   sendGoalAndWaitForPath();
   EXPECT_TRUE(comparePath(short_path, *path_));
+}
+
+TEST_F(DynamicParameterChangeTest, TriggerPlanByCostmapUpdate)
+{
+  publishMapAndRobot(2.55, 0.45, M_PI);
+  ros::Duration(0.5).sleep();
+  sendGoalAndWaitForPath();
+
+  const ros::Duration costmap_publishing_interval(0.1);
+  // The path planning frequency is 4.0 Hz (Designated by the "freq" paramteer)
+  const double default_interval = getAveragePathInterval(costmap_publishing_interval);
+  EXPECT_NEAR(default_interval, 1.0 / default_config_.freq, (1.0 / default_config_.freq) * 0.1);
+
+  planner_cspace::Planner3DConfig config = default_config_;
+  config.trigger_plan_by_costmap_update = true;
+  config.costmap_watchdog = 0.5;
+  ASSERT_TRUE(planner_3d_client_->setConfiguration(config));
+
+  // The path planning is trigger by the callback of CSpace3DUpdate, so its frequency is same as the frequency of
+  // CSpace3DUpdate (10 Hz).
+  const double interval_triggered_by_costmap = getAveragePathInterval(costmap_publishing_interval);
+  EXPECT_NEAR(interval_triggered_by_costmap, costmap_publishing_interval.toSec(),
+              costmap_publishing_interval.toSec() * 0.1);
+
+  // The path planning is trigger by costmap_watchdog_(0.5 seconds) when CSpace3DUpdate is not published.
+  const double interval_triggered_by_watchdog = getAveragePathInterval(ros::Duration(100));
+  EXPECT_NEAR(interval_triggered_by_watchdog, config.costmap_watchdog, config.costmap_watchdog * 0.1);
 }
 
 int main(int argc, char** argv)
