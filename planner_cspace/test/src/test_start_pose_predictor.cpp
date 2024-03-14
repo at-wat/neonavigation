@@ -108,14 +108,12 @@ protected:
 
   nav_msgs::Path convertToMetricPath(const std::list<GridAstar<3, 2>::Vec>& path_grid) const
   {
-    std::cerr << "convertToMetricPath" << std::endl;
     const auto path_interpolated = motion_cache_.interpolatePath(path_grid);
 
     nav_msgs::Path result_path;
     result_path.header.frame_id = "map";
     for (const auto& pose_grid : path_interpolated)
     {
-      std::cerr << "pose_grid: " << pose_grid[0] << ", " << pose_grid[1] << ", " << pose_grid[2] << std::endl;
       geometry_msgs::PoseStamped pose;
       pose.header.frame_id = "map";
       float x, y, yaw;
@@ -140,8 +138,8 @@ protected:
   StartPosePredictor::Config config_;
   GridAstar<3, 2>::Gridmap<char, 0x40> cm_;
   costmap_cspace_msgs::MapMetaData3D map_info_;
-  std::unordered_map<std::string, std::pair<std::list<StartPosePredictor::Astar::Vec>, nav_msgs::Path>> paths_;
   MotionCache motion_cache_;
+  std::unordered_map<std::string, std::pair<std::list<StartPosePredictor::Astar::Vec>, nav_msgs::Path>> paths_;
 };
 
 TEST_F(StartPosePredictorTester, EdgeCases)
