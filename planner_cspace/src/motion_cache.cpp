@@ -32,6 +32,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <ros/ros.h>
+
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 
@@ -43,7 +45,8 @@ void MotionCache::reset(
     const float linear_resolution,
     const float angular_resolution,
     const int range,
-    const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr)
+    const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr,
+    const float interpolation_interval)
 {
   const int angle = std::lround(M_PI * 2 / angular_resolution);
 
@@ -80,17 +83,17 @@ void MotionCache::reset(
           const float cos_v = cosf(motion[2]);
           const float sin_v = sinf(motion[2]);
 
-          const float inter = 1.0 / d.len();
+          const float inter = interpolation_interval / d.len();
 
           if (std::abs(sin_v) < 0.1)
           {
-            for (float i = 0; i < 1.0; i += inter)
+            for (float i = 0; i < 1.0 - inter / 2; i += inter)
             {
               const float x = diff_val[0] * i;
               const float y = diff_val[1] * i;
 
-              CyclicVecInt<3, 2> pos(
-                  x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
+              CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
+              CyclicVecInt<3, 2> pos(posf[0], posf[1], posf[2]);
               pos.cycleUnsigned(angle);
               if (registered.find(pos) == registered.end())
               {
@@ -99,6 +102,7 @@ void MotionCache::reset(
                   max_range[i] = std::max(max_range[i], std::abs(pos[i]));
                 registered[pos] = true;
               }
+              page.motion_f_.push_back(posf);
             }
             page.distance_ = d.len();
             cache_[syaw][d] = page;
@@ -124,7 +128,7 @@ void MotionCache::reset(
 
           CyclicVecFloat<3, 2> posf_prev(0, 0, 0);
 
-          for (float i = 0; i < 1.0; i += inter)
+          for (float i = 0; i < 1.0 - inter / 2; i += inter)
           {
             const float r = r1 * (1.0 - i) + r2 * i;
             const float cx2 = cx_s * (1.0 - i) + cx * i;
@@ -137,7 +141,7 @@ void MotionCache::reset(
                     (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
                     cyaw / angular_resolution,
                 };
-            const CyclicVecFloat<3, 2> posf(posf_raw[0], posf_raw[1], posf_raw[2]);
+            CyclicVecFloat<3, 2> posf(posf_raw[0], posf_raw[1], posf_raw[2]);
             CyclicVecInt<3, 2> pos(posf_raw[0], posf_raw[1], posf_raw[2]);
             pos.cycleUnsigned(angle);
             if (registered.find(pos) == registered.end())
@@ -145,6 +149,7 @@ void MotionCache::reset(
               page.motion_.push_back(pos);
               registered[pos] = true;
             }
+            page.motion_f_.push_back(posf);
             distf += (posf - posf_prev).len();
             posf_prev = posf;
           }
@@ -174,5 +179,42 @@ void MotionCache::reset(
   }
   max_range_ = max_range;
 }
+
+std::list<CyclicVecFloat<3, 2>> MotionCache::interpolatePath(const std::list<CyclicVecInt<3, 2>>& grid_path) const
+{
+  std::list<CyclicVecFloat<3, 2>> result;
+  if (grid_path.size() < 2)
+  {
+    return result;
+  }
+  auto it_prev = grid_path.begin();
+  for (auto it = std::next(it_prev); it != grid_path.end(); ++it, ++it_prev)
+  {
+    if (((*it_prev)[0] == (*it)[0]) && ((*it_prev)[1] == (*it)[1]))
+    {
+      result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0], (*it_prev)[1], (*it_prev)[2]));
+      continue;
+    }
+
+    const auto motion_it = find(*it_prev, *it);
+    if (motion_it == end((*it)[2]))
+    {
+      ROS_ERROR("Failed to find motion between [%d %d %d] and [%d %d %d]",
+                (*it_prev)[0], (*it_prev)[1], (*it_prev)[2], (*it)[0], (*it)[1], (*it)[2]);
+      result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0], (*it_prev)[1], (*it_prev)[2]));
+    }
+    else
+    {
+      const auto& motion = motion_it->second.getInterpolatedMotion();
+      for (const auto& pos_diff : motion)
+      {
+        result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0] + pos_diff[0], (*it_prev)[1] + pos_diff[1], pos_diff[2]));
+      }
+    }
+  }
+  result.push_back(CyclicVecFloat<3, 2>(grid_path.back()[0], grid_path.back()[1], grid_path.back()[2]));
+  return result;
+}
+
 }  // namespace planner_3d
 }  // namespace planner_cspace

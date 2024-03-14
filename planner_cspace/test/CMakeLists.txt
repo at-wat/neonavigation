@@ -60,16 +60,9 @@ catkin_add_gtest(test_motion_primitive_builder
 )
 target_link_libraries(test_motion_primitive_builder ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-catkin_add_gtest(test_path_interpolator
-  src/test_path_interpolator.cpp
-  ../src/path_interpolator.cpp
-  ../src/rotation_cache.cpp
-)
-target_link_libraries(test_path_interpolator ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
 catkin_add_gtest(test_start_pose_predictor
   src/test_start_pose_predictor.cpp
-  ../src/path_interpolator.cpp
+  ../src/motion_cache.cpp
   ../src/rotation_cache.cpp
   ../src/start_pose_predictor.cpp
 )

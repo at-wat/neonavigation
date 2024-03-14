@@ -36,8 +36,8 @@
 #include <utility>
 
 #include <nav_msgs/Path.h>
-#include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
+#include <planner_cspace/planner_3d/motion_cache.h>
 
 #include <ros/ros.h>
 
@@ -68,7 +68,7 @@ protected:
     map_info_.origin.orientation.w = 1.0;
     map_info_.linear_resolution = 1.0;
     map_info_.angular_resolution = 2 * M_PI / map_info_.angle;
-    interpolator_.reset(map_info_.linear_resolution, 1);
+    motion_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, 10, cm_.getAddressor(), 0.1);
 
     const GridAstar<3, 2>::Vec size3d(
         static_cast<int>(map_info_.width),
@@ -108,12 +108,14 @@ protected:
 
   nav_msgs::Path convertToMetricPath(const std::list<GridAstar<3, 2>::Vec>& path_grid) const
   {
-    const auto path_interpolated = interpolator_.interpolate(path_grid, 0.1, 10);
+    std::cerr << "convertToMetricPath" << std::endl;
+    const auto path_interpolated = motion_cache_.interpolatePath(path_grid);
 
     nav_msgs::Path result_path;
     result_path.header.frame_id = "map";
     for (const auto& pose_grid : path_interpolated)
     {
+      std::cerr << "pose_grid: " << pose_grid[0] << ", " << pose_grid[1] << ", " << pose_grid[2] << std::endl;
       geometry_msgs::PoseStamped pose;
       pose.header.frame_id = "map";
       float x, y, yaw;
@@ -138,8 +140,8 @@ protected:
   StartPosePredictor::Config config_;
   GridAstar<3, 2>::Gridmap<char, 0x40> cm_;
   costmap_cspace_msgs::MapMetaData3D map_info_;
-  PathInterpolator interpolator_;
   std::unordered_map<std::string, std::pair<std::list<StartPosePredictor::Astar::Vec>, nav_msgs::Path>> paths_;
+  MotionCache motion_cache_;
 };
 
 TEST_F(StartPosePredictorTester, EdgeCases)
@@ -231,16 +233,16 @@ TEST_F(StartPosePredictorTester, SwitchBack)
 
   {
     StartPosePredictor::Astar::Vec start_grid;
-    EXPECT_TRUE(predictor_.process(getPose(0.55, 0.0, 0.0), cm_, map_info_, paths_["switch_back"].second, start_grid));
+    EXPECT_TRUE(predictor_.process(getPose(0.65, 0.0, 0.0), cm_, map_info_, paths_["switch_back"].second, start_grid));
     // The robot will reach the switch back within 2.0 seconds, and the start grid is the switch back point.
     EXPECT_EQ(StartPosePredictor::Astar::Vec(8, 6, 1), start_grid);
     const auto preserved_path = predictor_.getPreservedPath();
     // A part of the first forward, the second forward, and the first turn.
-    ASSERT_EQ(preserved_path.poses.size(), 5 + 10 + 13);
+    ASSERT_EQ(preserved_path.poses.size(), 4 + 10 + 13);
     for (size_t i = 0; i < preserved_path.poses.size(); ++i)
     {
       const auto& path_pose = preserved_path.poses[i].pose;
-      const auto& expected_path_pose = paths_["switch_back"].second.poses[i + 6].pose;
+      const auto& expected_path_pose = paths_["switch_back"].second.poses[i + 7].pose;
       EXPECT_NEAR(path_pose.position.x, expected_path_pose.position.x, 1.0e-6);
       EXPECT_NEAR(path_pose.position.y, expected_path_pose.position.y, 1.0e-6);
       EXPECT_NEAR(tf2::getYaw(path_pose.orientation), tf2::getYaw(expected_path_pose.orientation), 1.0e-6);

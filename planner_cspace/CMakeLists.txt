@@ -52,7 +52,6 @@ add_executable(planner_3d
   src/grid_astar_model_3dof.cpp
   src/motion_cache.cpp
   src/motion_primitive_builder.cpp
-  src/path_interpolator.cpp
   src/planner_3d.cpp
   src/distance_map.cpp
   src/rotation_cache.cpp

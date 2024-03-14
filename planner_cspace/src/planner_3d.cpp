@@ -77,7 +77,6 @@
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
 
@@ -151,6 +150,7 @@ protected:
   int tolerance_angle_;
   double tolerance_range_f_;
   double tolerance_angle_f_;
+  double interpolation_interval_;
   int unknown_cost_;
   bool overwrite_cost_;
   bool has_map_;
@@ -365,8 +365,7 @@ protected:
     path.header = map_header_;
     path.header.stamp = ros::Time::now();
 
-    const std::list<Astar::Vecf> path_interpolated =
-        model_->path_interpolator_.interpolate(path_grid, 0.5, 0.0);
+    const std::list<Astar::Vecf> path_interpolated = model_->interpolatePath(path_grid);
     grid_metric_converter::appendGridPath2MetricPath(map_info_, path_interpolated, path);
 
     res.plan.header = map_header_;
@@ -1202,6 +1201,7 @@ public:
     pnh_.param("esc_range", esc_range_f_, 0.25);
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
+    pnh_.param("interpolation_interval", interpolation_interval_, 0.5);
 
     pnh_.param("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
@@ -1300,7 +1300,7 @@ public:
             ec_,
             local_range_,
             cost_estim_cache_.gridmap(), cm_, cm_hyst_, cm_rough_,
-            cc_, range_));
+            cc_, range_, interpolation_interval_));
   }
 
   void cbParameter(const Planner3DConfig& config, const uint32_t /* level */)
@@ -1959,8 +1959,7 @@ protected:
     {
       pub_preserved_path_poses_.publish(start_pose_predictor_.getPreservedPath());
     }
-    const std::list<Astar::Vecf> path_interpolated =
-        model_->path_interpolator_.interpolate(path_grid, 0.5, local_range_);
+    const std::list<Astar::Vecf> path_interpolated = model_->interpolatePath(path_grid);
     path.poses = start_pose_predictor_.getPreservedPath().poses;
     grid_metric_converter::appendGridPath2MetricPath(map_info_, path_interpolated, path);
 
