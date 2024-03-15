@@ -68,7 +68,7 @@ protected:
     map_info_.origin.orientation.w = 1.0;
     map_info_.linear_resolution = 1.0;
     map_info_.angular_resolution = 2 * M_PI / map_info_.angle;
-    motion_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, 10, cm_.getAddressor(), 0.1);
+    motion_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, 4, cm_.getAddressor(), 0.1);
 
     const GridAstar<3, 2>::Vec size3d(
         static_cast<int>(map_info_.width),

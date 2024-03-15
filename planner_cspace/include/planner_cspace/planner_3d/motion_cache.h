@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
 
 #include <memory>
+#include <list>
 #include <unordered_map>
 #include <vector>
 
@@ -49,7 +50,7 @@ public:
     friend class MotionCache;
 
     std::vector<CyclicVecInt<3, 2>> motion_;
-    std::vector<CyclicVecFloat<3, 2>> motion_f_;
+    std::vector<CyclicVecFloat<3, 2>> interpolated_motion_;
     float distance_;
 
   public:
@@ -63,7 +64,7 @@ public:
     }
     const std::vector<CyclicVecFloat<3, 2>>& getInterpolatedMotion() const
     {
-      return motion_f_;
+      return interpolated_motion_;
     }
   };
 
@@ -108,7 +109,8 @@ public:
       const float angular_resolution,
       const int range,
       const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr,
-      const float interpolation_interval);
+      const float interpolation_resolution,
+      const float grid_enumeration_resolution = 0.1);
 
   std::list<CyclicVecFloat<3, 2>> interpolatePath(const std::list<CyclicVecInt<3, 2>>& path_grid) const;
 
