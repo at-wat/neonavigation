@@ -150,7 +150,8 @@ protected:
   int tolerance_angle_;
   double tolerance_range_f_;
   double tolerance_angle_f_;
-  double interpolation_resolution_;
+  double path_interpolation_resolution_;
+  double grid_enumeration_resolution_;
   int unknown_cost_;
   bool overwrite_cost_;
   bool has_map_;
@@ -1201,7 +1202,13 @@ public:
     pnh_.param("esc_range", esc_range_f_, 0.25);
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
-    pnh_.param("interpolation_resolution", interpolation_resolution_, 0.5);
+    pnh_.param("path_interpolation_resolution", path_interpolation_resolution_, 0.5);
+    pnh_.param("grid_enumeration_resolution", grid_enumeration_resolution_, 0.1);
+    if (path_interpolation_resolution_ < grid_enumeration_resolution_)
+    {
+      ROS_ERROR("path_interpolation_resolution must be greater than or equal to grid_enumeration_resolution.");
+      path_interpolation_resolution_ = grid_enumeration_resolution_;
+    }
 
     pnh_.param("sw_wait", sw_wait_, 2.0f);
     pnh_.param("find_best", find_best_, true);
@@ -1300,7 +1307,7 @@ public:
             ec_,
             local_range_,
             cost_estim_cache_.gridmap(), cm_, cm_hyst_, cm_rough_,
-            cc_, range_, interpolation_resolution_));
+            cc_, range_, path_interpolation_resolution_, grid_enumeration_resolution_));
   }
 
   void cbParameter(const Planner3DConfig& config, const uint32_t /* level */)

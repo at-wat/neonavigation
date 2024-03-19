@@ -110,7 +110,8 @@ public:
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
       const CostCoeff& cc,
       const int range,
-      const double interpolation_interval = 1.0);
+      const float path_interpolation_resolution = 0.5,
+      const float grid_enumeration_resolution = 0.1);
   void enableHysteresis(const bool enable);
   void createEuclidCostCache();
   float euclidCost(const Vec& v) const;

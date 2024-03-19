@@ -110,7 +110,7 @@ public:
       const int range,
       const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr,
       const float interpolation_resolution,
-      const float grid_enumeration_resolution = 0.1);
+      const float grid_enumeration_resolution);
 
   std::list<CyclicVecFloat<3, 2>> interpolatePath(const std::list<CyclicVecInt<3, 2>>& path_grid) const;
 

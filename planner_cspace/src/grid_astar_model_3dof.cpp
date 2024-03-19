@@ -57,7 +57,8 @@ GridAstarModel3D::GridAstarModel3D(
     const BlockMemGridmapBase<char, 3, 2>& cm_rough,
     const CostCoeff& cc,
     const int range,
-    const double interpolation_interval)
+    const float path_interpolation_resolution,
+    const float grid_enumeration_resolution)
   : hysteresis_(false)
   , map_info_(map_info)
   , euclid_cost_coef_(euclid_cost_coef)
@@ -84,13 +85,15 @@ GridAstarModel3D::GridAstarModel3D(
       map_info_linear.angular_resolution,
       range_,
       cm_rough_.getAddressor(),
-      interpolation_interval);
+      path_interpolation_resolution,
+      grid_enumeration_resolution);
   motion_cache_.reset(
       map_info_.linear_resolution,
       map_info_.angular_resolution,
       range_,
       cm_.getAddressor(),
-      interpolation_interval);
+      path_interpolation_resolution,
+      grid_enumeration_resolution);
 
   // Make boundary check threshold
   min_boundary_ = motion_cache_.getMaxRange();
