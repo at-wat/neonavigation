@@ -222,8 +222,7 @@ std::list<CyclicVecFloat<3, 2>> MotionCache::interpolatePath(const std::list<Cyc
     }
     else
     {
-      const auto& motion = motion_it->second.getInterpolatedMotion();
-      for (const auto& pos_diff : motion)
+      for (const auto& pos_diff : motion_it->second.getInterpolatedMotion())
       {
         result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0] + pos_diff[0], (*it_prev)[1] + pos_diff[1], pos_diff[2]));
       }
