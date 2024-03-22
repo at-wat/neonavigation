@@ -73,7 +73,6 @@ GridAstarModel3D::GridAstarModel3D(
   , cm_rough_(cm_rough)
   , cc_(cc)
   , range_(range)
-
 {
   rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
 

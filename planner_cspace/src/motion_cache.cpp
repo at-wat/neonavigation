@@ -96,7 +96,7 @@ void MotionCache::reset(
               const float x = diff_val[0] * ratio;
               const float y = diff_val[1] * ratio;
 
-              CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
+              const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
               CyclicVecInt<3, 2> pos(posf[0], posf[1], posf[2]);
               pos.cycleUnsigned(angle);
 
@@ -144,14 +144,10 @@ void MotionCache::reset(
             const float cy2 = cy_s * (1.0 - ratio) + cy * ratio;
             const float cyaw = yaw + ratio * dyaw;
 
-            const float posf_raw[3] =
-                {
-                    (cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
-                    (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
-                    cyaw / angular_resolution,
-                };
-            CyclicVecFloat<3, 2> posf(posf_raw[0], posf_raw[1], posf_raw[2]);
-            CyclicVecInt<3, 2> pos(posf_raw[0], posf_raw[1], posf_raw[2]);
+            const CyclicVecFloat<3, 2> posf((cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
+                                            (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
+                                            cyaw / angular_resolution);
+            CyclicVecInt<3, 2> pos(posf[0], posf[1], posf[2]);
             pos.cycleUnsigned(angle);
             if ((pos != d) && (registered.find(pos) == registered.end()))
             {
