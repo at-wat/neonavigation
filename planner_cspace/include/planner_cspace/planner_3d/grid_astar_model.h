@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H
 
 #include <array>
+#include <list>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -41,7 +42,6 @@
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/grid_astar_model.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
-#include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
 namespace planner_cspace
@@ -78,8 +78,6 @@ public:
   using Vec = CyclicVecInt<3, 2>;
   using Vecf = CyclicVecFloat<3, 2>;
 
-  PathInterpolator path_interpolator_;
-
 protected:
   bool hysteresis_;
   costmap_cspace_msgs::MapMetaData3D map_info_;
@@ -111,7 +109,9 @@ public:
       const BlockMemGridmapBase<char, 3, 2>& cm_hyst,
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
       const CostCoeff& cc,
-      const int range);
+      const int range,
+      const float path_interpolation_resolution = 0.5,
+      const float grid_enumeration_resolution = 0.1);
   void enableHysteresis(const bool enable);
   void createEuclidCostCache();
   float euclidCost(const Vec& v) const;
@@ -125,6 +125,8 @@ public:
       const Vec& p,
       const std::vector<VecWithCost>& ss,
       const Vec& es) const override;
+  std::list<Vecf> interpolatePath(
+      const std::list<Vec>& path) const;
 };
 
 class GridAstarModel2D : public GridAstarModelBase<3, 2>

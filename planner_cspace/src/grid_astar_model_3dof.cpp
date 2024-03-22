@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <limits>
+#include <list>
 #include <utility>
 #include <vector>
 
@@ -40,7 +41,6 @@
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 #include <planner_cspace/planner_3d/motion_primitive_builder.h>
-#include <planner_cspace/planner_3d/path_interpolator.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
 namespace planner_cspace
@@ -56,7 +56,9 @@ GridAstarModel3D::GridAstarModel3D(
     const BlockMemGridmapBase<char, 3, 2>& cm_hyst,
     const BlockMemGridmapBase<char, 3, 2>& cm_rough,
     const CostCoeff& cc,
-    const int range)
+    const int range,
+    const float path_interpolation_resolution,
+    const float grid_enumeration_resolution)
   : hysteresis_(false)
   , map_info_(map_info)
   , euclid_cost_coef_(euclid_cost_coef)
@@ -81,12 +83,16 @@ GridAstarModel3D::GridAstarModel3D(
       map_info_linear.linear_resolution,
       map_info_linear.angular_resolution,
       range_,
-      cm_rough_.getAddressor());
+      cm_rough_.getAddressor(),
+      path_interpolation_resolution,
+      grid_enumeration_resolution);
   motion_cache_.reset(
       map_info_.linear_resolution,
       map_info_.angular_resolution,
       range_,
-      cm_.getAddressor());
+      cm_.getAddressor(),
+      path_interpolation_resolution,
+      grid_enumeration_resolution);
 
   // Make boundary check threshold
   min_boundary_ = motion_cache_.getMaxRange();
@@ -112,7 +118,6 @@ GridAstarModel3D::GridAstarModel3D(
       search_list_rough_.push_back(d);
     }
   }
-  path_interpolator_.reset(map_info_.angular_resolution, range_);
 }
 
 void GridAstarModel3D::enableHysteresis(const bool enable)
@@ -319,6 +324,11 @@ const std::vector<GridAstarModel3D::Vec>& GridAstarModel3D::searchGrids(
   return search_list_rough_;
 }
 
+std::list<GridAstarModel3D::Vecf> GridAstarModel3D::interpolatePath(const std::list<Vec>& grid_path) const
+{
+  return motion_cache_.interpolatePath(grid_path);
+}
+
 float GridAstarModel2D::cost(
     const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
 {
@@ -358,5 +368,6 @@ const std::vector<GridAstarModel3D::Vec>& GridAstarModel2D::searchGrids(
 {
   return base_->search_list_rough_;
 }
+
 }  // namespace planner_3d
 }  // namespace planner_cspace

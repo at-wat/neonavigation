@@ -29,8 +29,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <list>
 #include <unordered_map>
 #include <vector>
+
+#include <ros/ros.h>
 
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
@@ -43,7 +46,9 @@ void MotionCache::reset(
     const float linear_resolution,
     const float angular_resolution,
     const int range,
-    const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr)
+    const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr,
+    const float interpolation_resolution,
+    const float grid_enumeration_resolution)
 {
   const int angle = std::lround(M_PI * 2 / angular_resolution);
 
@@ -80,24 +85,31 @@ void MotionCache::reset(
           const float cos_v = cosf(motion[2]);
           const float sin_v = sinf(motion[2]);
 
-          const float inter = 1.0 / d.len();
-
+          const int total_step = static_cast<int>(std::round(d.len() / grid_enumeration_resolution));
+          const int interpolation_step =
+              std::max(1, static_cast<int>(std::round(interpolation_resolution / grid_enumeration_resolution)));
           if (std::abs(sin_v) < 0.1)
           {
-            for (float i = 0; i < 1.0; i += inter)
+            for (int step = 0; step < total_step; ++step)
             {
-              const float x = diff_val[0] * i;
-              const float y = diff_val[1] * i;
+              const float ratio = step / static_cast<float>(total_step);
+              const float x = diff_val[0] * ratio;
+              const float y = diff_val[1] * ratio;
 
-              CyclicVecInt<3, 2> pos(
-                  x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
+              const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
+              CyclicVecInt<3, 2> pos(posf[0], posf[1], posf[2]);
               pos.cycleUnsigned(angle);
-              if (registered.find(pos) == registered.end())
+
+              if ((pos != d) && (registered.find(pos) == registered.end()))
               {
                 page.motion_.push_back(pos);
                 for (int i = 0; i < 3; ++i)
                   max_range[i] = std::max(max_range[i], std::abs(pos[i]));
                 registered[pos] = true;
+              }
+              if (step % interpolation_step == 0)
+              {
+                page.interpolated_motion_.push_back(posf);
               }
             }
             page.distance_ = d.len();
@@ -124,28 +136,30 @@ void MotionCache::reset(
 
           CyclicVecFloat<3, 2> posf_prev(0, 0, 0);
 
-          for (float i = 0; i < 1.0; i += inter)
+          for (int step = 0; step < total_step; ++step)
           {
-            const float r = r1 * (1.0 - i) + r2 * i;
-            const float cx2 = cx_s * (1.0 - i) + cx * i;
-            const float cy2 = cy_s * (1.0 - i) + cy * i;
-            const float cyaw = yaw + i * dyaw;
+            const float ratio = step / static_cast<float>(total_step);
+            const float r = r1 * (1.0 - ratio) + r2 * ratio;
+            const float cx2 = cx_s * (1.0 - ratio) + cx * ratio;
+            const float cy2 = cy_s * (1.0 - ratio) + cy * ratio;
+            const float cyaw = yaw + ratio * dyaw;
 
-            const float posf_raw[3] =
-                {
-                    (cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
-                    (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
-                    cyaw / angular_resolution,
-                };
-            const CyclicVecFloat<3, 2> posf(posf_raw[0], posf_raw[1], posf_raw[2]);
-            CyclicVecInt<3, 2> pos(posf_raw[0], posf_raw[1], posf_raw[2]);
+            const CyclicVecFloat<3, 2> posf((cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
+                                            (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
+                                            cyaw / angular_resolution);
+            CyclicVecInt<3, 2> pos(posf[0], posf[1], posf[2]);
             pos.cycleUnsigned(angle);
-            if (registered.find(pos) == registered.end())
+            if ((pos != d) && (registered.find(pos) == registered.end()))
             {
               page.motion_.push_back(pos);
               registered[pos] = true;
             }
-            distf += (posf - posf_prev).len();
+            if (step % interpolation_step == 0)
+            {
+              page.interpolated_motion_.push_back(posf);
+            }
+            if (ratio > 0)
+              distf += (posf - posf_prev).len();
             posf_prev = posf;
           }
           distf += (CyclicVecFloat<3, 2>(d) - posf_prev).len();
@@ -174,5 +188,45 @@ void MotionCache::reset(
   }
   max_range_ = max_range;
 }
+
+std::list<CyclicVecFloat<3, 2>> MotionCache::interpolatePath(const std::list<CyclicVecInt<3, 2>>& grid_path) const
+{
+  std::list<CyclicVecFloat<3, 2>> result;
+  if (grid_path.size() < 2)
+  {
+    for (const auto& p : grid_path)
+    {
+      result.push_back(CyclicVecFloat<3, 2>(p[0], p[1], p[2]));
+    }
+    return result;
+  }
+  auto it_prev = grid_path.begin();
+  for (auto it = std::next(it_prev); it != grid_path.end(); ++it, ++it_prev)
+  {
+    if (((*it_prev)[0] == (*it)[0]) && ((*it_prev)[1] == (*it)[1]))
+    {
+      result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0], (*it_prev)[1], (*it_prev)[2]));
+      continue;
+    }
+
+    const auto motion_it = find(*it_prev, *it);
+    if (motion_it == end((*it)[2]))
+    {
+      ROS_ERROR("Failed to find motion between [%d %d %d] and [%d %d %d]",
+                (*it_prev)[0], (*it_prev)[1], (*it_prev)[2], (*it)[0], (*it)[1], (*it)[2]);
+      result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0], (*it_prev)[1], (*it_prev)[2]));
+    }
+    else
+    {
+      for (const auto& pos_diff : motion_it->second.getInterpolatedMotion())
+      {
+        result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0] + pos_diff[0], (*it_prev)[1] + pos_diff[1], pos_diff[2]));
+      }
+    }
+  }
+  result.push_back(CyclicVecFloat<3, 2>(grid_path.back()[0], grid_path.back()[1], grid_path.back()[2]));
+  return result;
+}
+
 }  // namespace planner_3d
 }  // namespace planner_cspace

@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
 
 #include <memory>
+#include <list>
 #include <unordered_map>
 #include <vector>
 
@@ -49,6 +50,7 @@ public:
     friend class MotionCache;
 
     std::vector<CyclicVecInt<3, 2>> motion_;
+    std::vector<CyclicVecFloat<3, 2>> interpolated_motion_;
     float distance_;
 
   public:
@@ -59,6 +61,10 @@ public:
     const std::vector<CyclicVecInt<3, 2>>& getMotion() const
     {
       return motion_;
+    }
+    const std::vector<CyclicVecFloat<3, 2>>& getInterpolatedMotion() const
+    {
+      return interpolated_motion_;
     }
   };
 
@@ -75,6 +81,14 @@ public:
     if (i < 0)
       i += page_size_;
     return cache_[i].find(goal);
+  }
+  inline const typename Cache::const_iterator find(
+      const CyclicVecInt<3, 2>& from,
+      const CyclicVecInt<3, 2>& to) const
+  {
+    const int start_yaw = from[2];
+    const CyclicVecInt<3, 2> goal(to[0] - from[0], to[1] - from[1], to[2]);
+    return find(start_yaw, goal);
   }
   inline const typename Cache::const_iterator end(
       const int start_yaw) const
@@ -94,7 +108,11 @@ public:
       const float linear_resolution,
       const float angular_resolution,
       const int range,
-      const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr);
+      const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr,
+      const float interpolation_resolution,
+      const float grid_enumeration_resolution);
+
+  std::list<CyclicVecFloat<3, 2>> interpolatePath(const std::list<CyclicVecInt<3, 2>>& path_grid) const;
 
 protected:
   std::vector<Cache> cache_;

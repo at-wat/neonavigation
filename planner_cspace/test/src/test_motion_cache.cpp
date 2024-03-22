@@ -51,7 +51,7 @@ TEST(MotionCache, Generate)
   MotionCache cache;
   cache.reset(
       linear_resolution, angular_resolution, range,
-      gm.getAddressor());
+      gm.getAddressor(), 0.5, 0.1);
 
   // Straight motions
   const int xy_yaw_straight[][3] =
