@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.17.1 (2024-03-22)
+-------------------
 * planner_3d: remove duplicated interpolation method (`#733 <https://github.com/at-wat/neonavigation/issues/733>`_)
 * Contributors: Naotaka Hatao
 
