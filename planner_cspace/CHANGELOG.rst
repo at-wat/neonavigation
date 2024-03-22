@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_3d: remove duplicated interpolation method (`#733 <https://github.com/at-wat/neonavigation/issues/733>`_)
+* Contributors: Naotaka Hatao
+
 0.17.0 (2023-11-02)
 -------------------
 * planner_3d: add an option to trigger planning by costmap updates (`#727 <https://github.com/at-wat/neonavigation/issues/727>`_)
