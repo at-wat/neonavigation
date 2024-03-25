@@ -2,6 +2,9 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.17.1 (2024-03-22)
+-------------------
+
 0.17.0 (2023-11-02)
 -------------------
 * costmap_3d: avoid unnecessary grid expansions (`#726 <https://github.com/at-wat/neonavigation/issues/726>`_)
