@@ -69,13 +69,11 @@ public:
     : val_prev_(0)
   {
   }
-  inline float increment(
-      const float v, const float vel, const float acc, const float dt)
+  inline float increment(const float v, const float vel, const float acc, const float dt)
   {
     return set(val_prev_ + v, vel, acc, dt);
   }
-  inline float set(
-      float v, const float vel, const float acc, const float dt)
+  inline float set(float v, const float vel, const float acc, const float dt)
   {
     v = clip(v, vel);
 

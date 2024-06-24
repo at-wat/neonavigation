@@ -29,9 +29,9 @@
 
 #include <cstdlib>
 
-#include <ros/ros.h>
-#include <std_msgs/Bool.h>
-#include <std_srvs/Empty.h>
+#include "rclcpp/rclcpp.hpp"
+#include <std_msgs/msg/bool.hpp>
+#include <std_srvs/srv/empty.hpp>
 
 #include <gtest/gtest.h>
 
@@ -54,26 +54,26 @@ TEST(NeonavigationCompat, CompatMode)
   neonavigation_common::compat::current_level = 3;
   neonavigation_common::compat::default_level = neonavigation_common::compat::supported_level;
 
-  ros::NodeHandle("/").setParam("neonavigation_compatible", 2);
+  rclcpp::Node("/").setParam("neonavigation_compatible", 2);
   ASSERT_NO_THROW(
       {
         neonavigation_common::compat::checkCompatMode();
       });  // NOLINT(whitespace/braces)
 
-  ros::NodeHandle("/").setParam("neonavigation_compatible", 3);
+  rclcpp::Node("/").setParam("neonavigation_compatible", 3);
   ASSERT_NO_THROW(
       {
         neonavigation_common::compat::checkCompatMode();
       });  // NOLINT(whitespace/braces)
 
-  ros::NodeHandle("/").setParam("neonavigation_compatible", 4);
+  rclcpp::Node("/").setParam("neonavigation_compatible", 4);
   ASSERT_THROW(
       {
         neonavigation_common::compat::checkCompatMode();
       },  // NOLINT(whitespace/braces)
       std::runtime_error);
 
-  ros::NodeHandle("/").setParam("neonavigation_compatible", 1);
+  rclcpp::Node("/").setParam("neonavigation_compatible", 1);
   ASSERT_THROW(
       {
         neonavigation_common::compat::checkCompatMode();
@@ -84,22 +84,22 @@ TEST(NeonavigationCompat, CompatMode)
 class NeonavigationCompatCallbacks
 {
 public:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  std_msgs::Bool::ConstPtr msg_;
-  mutable std_msgs::Bool::ConstPtr msg_const_;
+  rclcpp::Node nh_;
+  rclcpp::Node pnh_;
+  std_msgs::msg::Bool::ConstSharedPtr msg_;
+  mutable std_msgs::msg::Bool::ConstSharedPtr msg_const_;
   bool srv_called_;
 
-  void cb(const std_msgs::Bool::ConstPtr& msg)
+  void cb(const std_msgs::msg::Bool::ConstSharedPtr& msg)
   {
     msg_ = msg;
   }
-  void cbConst(const std_msgs::Bool::ConstPtr& msg) const
+  void cbConst(const std_msgs::msg::Bool::ConstSharedPtr& msg) const
   {
     msg_const_ = msg;
   }
 
-  bool cbSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+  bool cbSrv(std_srvs::srv::Empty::Request& req, std_srvs::srv::Empty::Response& res)
   {
     srv_called_ = true;
     return true;
@@ -120,65 +120,65 @@ TEST(NeonavigationCompat, Subscribe)
 
   NeonavigationCompatCallbacks cls;
 
-  ros::Publisher pub_old = cls.pnh_.advertise<std_msgs::Bool>("test_old", 1, true);
-  ros::Publisher pub_new = cls.nh_.advertise<std_msgs::Bool>("test_new", 1, true);
-  std_msgs::Bool msg;
+  auto pub_old = cls.pnh_.advertise<std_msgs::msg::Bool>("test_old", 1, true);
+  auto pub_new = cls.nh_.advertise<std_msgs::msg::Bool>("test_new", 1, true);
+  std_msgs::msg::Bool msg;
   msg.data = false;
   pub_old.publish(msg);
   msg.data = true;
   pub_new.publish(msg);
 
   {
-    ros::NodeHandle("/").setParam("neonavigation_compatible", 2);
+    rclcpp::Node("/").setParam("neonavigation_compatible", 2);
     ros::Subscriber sub = neonavigation_common::compat::subscribe(
         cls.nh_, "test_new",
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cb, &cls);
-    ros::Duration(0.1).sleep();
-    ros::spinOnce();
+    rclcpp::Duration(0.1).sleep();
+    rclcpp::spin_some(node);
     ASSERT_TRUE(static_cast<bool>(cls.msg_));
     ASSERT_EQ(false, static_cast<bool>(cls.msg_->data));
   }
 
   {
-    ros::NodeHandle("/").setParam("neonavigation_compatible", 3);
+    rclcpp::Node("/").setParam("neonavigation_compatible", 3);
     cls.msg_ = nullptr;
     ros::Subscriber sub = neonavigation_common::compat::subscribe(
         cls.nh_, "test_new",
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cb, &cls);
-    ros::Duration(0.1).sleep();
-    ros::spinOnce();
+    rclcpp::Duration(0.1).sleep();
+    rclcpp::spin_some(node);
     ASSERT_TRUE(static_cast<bool>(cls.msg_));
     ASSERT_EQ(true, static_cast<bool>(cls.msg_->data));
   }
 
   {
-    ros::NodeHandle("/").setParam("neonavigation_compatible", 2);
+    rclcpp::Node("/").setParam("neonavigation_compatible", 2);
     cls.msg_ = nullptr;
     ros::Subscriber sub = neonavigation_common::compat::subscribe(
         cls.nh_, "test_new",
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cbConst, &cls);
-    ros::Duration(0.1).sleep();
-    ros::spinOnce();
+    rclcpp::Duration(0.1).sleep();
+    rclcpp::spin_some(node);
     ASSERT_TRUE(static_cast<bool>(cls.msg_const_));
     ASSERT_EQ(false, static_cast<bool>(cls.msg_const_->data));
   }
 
   {
-    ros::NodeHandle("/").setParam("neonavigation_compatible", 3);
+    rclcpp::Node("/").setParam("neonavigation_compatible", 3);
     cls.msg_ = nullptr;
     ros::Subscriber sub = neonavigation_common::compat::subscribe(
         cls.nh_, "test_new",
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cbConst, &cls);
-    ros::Duration(0.1).sleep();
-    ros::spinOnce();
+    rclcpp::Duration(0.1).sleep();
+    rclcpp::spin_some(node);
     ASSERT_TRUE(static_cast<bool>(cls.msg_const_));
     ASSERT_EQ(true, static_cast<bool>(cls.msg_const_->data));
   }
@@ -191,33 +191,33 @@ TEST(NeonavigationCompat, AdvertiseService)
   neonavigation_common::compat::default_level = neonavigation_common::compat::supported_level;
 
   NeonavigationCompatCallbacks cls;
-  ros::ServiceClient cli_new = cls.nh_.serviceClient<std_srvs::Empty>("srv_new");
-  ros::ServiceClient cli_old = cls.pnh_.serviceClient<std_srvs::Empty>("srv_old");
+  ros::ServiceClient cli_new = cls.nh_.serviceClient<std_srvs::srv::Empty>("srv_new");
+  ros::ServiceClient cli_old = cls.pnh_.serviceClient<std_srvs::srv::Empty>("srv_old");
 
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
   {
-    ros::NodeHandle("/").setParam("neonavigation_compatible", 2);
+    rclcpp::Node("/").setParam("neonavigation_compatible", 2);
 
     ros::ServiceServer srv = neonavigation_common::compat::advertiseService(
         cls.nh_, "srv_new",
         cls.pnh_, "srv_old",
         &NeonavigationCompatCallbacks::cbSrv, &cls);
-    ros::Duration(0.1).sleep();
-    std_srvs::Empty empty;
+    rclcpp::Duration(0.1).sleep();
+    std_srvs::srv::Empty empty;
     ASSERT_TRUE(cli_old.call(empty.request, empty.response));
   }
 
   {
-    ros::NodeHandle("/").setParam("neonavigation_compatible", 3);
+    rclcpp::Node("/").setParam("neonavigation_compatible", 3);
 
     ros::ServiceServer srv = neonavigation_common::compat::advertiseService(
         cls.nh_, "srv_new",
         cls.pnh_, "srv_old",
         &NeonavigationCompatCallbacks::cbSrv, &cls);
-    ros::Duration(0.1).sleep();
-    std_srvs::Empty empty;
+    rclcpp::Duration(0.1).sleep();
+    std_srvs::srv::Empty empty;
     ASSERT_TRUE(cli_new.call(empty.request, empty.response));
   }
 
@@ -227,7 +227,8 @@ TEST(NeonavigationCompat, AdvertiseService)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_compat");
+  rclcpp::init(argc, argv);
+  auto node = rclcpp::Node::make_shared("test_compat");
 
   return RUN_ALL_TESTS();
 }

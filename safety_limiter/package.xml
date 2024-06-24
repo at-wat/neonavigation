@@ -8,16 +8,16 @@
   <license>BSD</license>
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
-
-  <depend>roscpp</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
   <test_depend>nav_msgs</test_depend>
   <test_depend>tf2_geometry_msgs</test_depend>
-  <test_depend>roslint</test_depend>
-  <test_depend>rostest</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>launch_testing_ament_cmake</test_depend>
 
   <depend>diagnostic_updater</depend>
-  <depend>dynamic_reconfigure</depend>
   <depend>geometry_msgs</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
@@ -25,13 +25,16 @@
   <depend>std_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_sensor_msgs</depend>
-
   <depend>neonavigation_common</depend>
   <depend>safety_limiter_msgs</depend>
 
   <depend>eigen</depend>
-  <depend>xmlrpcpp</depend>
+  <depend>nav2_costmap_2d</depend>
+  <depend>rclcpp</depend>
 
   <build_depend>libpcl-all-dev</build_depend>
   <exec_depend>libpcl-all</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
