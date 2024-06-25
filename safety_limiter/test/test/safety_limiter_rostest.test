@@ -9,8 +9,8 @@
     <rosparam param="footprint">[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]</rosparam>
     <param name="allow_empty_cloud" value="false" />
     <param name="watchdog_interval" value="0.2" />
-    <param name="max_linear_vel" value="15"/>
-    <param name="max_angular_vel" value="25"/>
+    <param name="max_linear_vel" value="1.5"/>
+    <param name="max_angular_vel" value="2.5"/>
     <param name="cloud_timeout" value="0.2" />
     <param name="freq" value="15.0" />
     <param name="dt" value="0.01" />
