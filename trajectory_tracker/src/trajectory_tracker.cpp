@@ -354,7 +354,6 @@ void TrackerNode::cbTimer()
   try
   {
     tf2::Stamped<tf2::Transform> transform;
-    // tf2::fromMsg(tfbuf_.lookupTransform(frame_robot_, frame_odom_, tf2::TimePointZero), transform);
     tf2::fromMsg(tfbuf_.lookupTransform(frame_robot_, frame_odom_, rclcpp::Time(0)), transform);
     control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / hz_);
   }
@@ -509,7 +508,6 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(const tf2::Stamped<tf
   try
   {
     tf2::Stamped<tf2::Transform> odom_to_path;
-    //    tf2::fromMsg(tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, tf2::TimePointZero), odom_to_path);
     tf2::fromMsg(tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, rclcpp::Time(0)), odom_to_path);
 
     transform *= odom_to_path;

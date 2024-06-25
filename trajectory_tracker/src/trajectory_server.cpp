@@ -39,15 +39,15 @@
 #include <fstream>
 #include <string>
 
-#include "rclcpp/rclcpp.hpp"
+#include <ros/ros.h>
 
-#include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/Twist.h>
 #include <interactive_markers/interactive_marker_server.h>
-#include <nav_msgs/msg/path.hpp>
+#include <nav_msgs/Path.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <trajectory_tracker_msgs/srv/change_path.hpp>
-#include <trajectory_tracker_msgs/msg/trajectory_server_status.hpp>
-#include <visualization_msgs/msg/interactive_marker_update.hpp>
+#include <trajectory_tracker_msgs/ChangePath.h>
+#include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
+#include <visualization_msgs/InteractiveMarkerUpdate.h>
 
 #include <trajectory_tracker/filter.h>
 
@@ -61,16 +61,16 @@ public:
   void spin();
 
 private:
-  rclcpp::Node nh_;
-  rclcpp::Node pnh_;
+  ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   ros::Publisher pub_path_;
   ros::Publisher pub_status_;
   ros::ServiceServer srv_change_path_;
   interactive_markers::InteractiveMarkerServer srv_im_fb_;
 
-  nav_msgs::msg::Path path_;
+  nav_msgs::Path path_;
   std::string topic_path_;
-  trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
+  trajectory_tracker_msgs::ChangePath::Request req_path_;
   double hz_;
   boost::shared_array<uint8_t> buffer_;
   int serial_size_;
@@ -79,10 +79,10 @@ private:
 
   bool loadFile();
   void loadPath();
-  bool change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
-              trajectory_tracker_msgs::srv::ChangePath::Response& res);
+  bool change(trajectory_tracker_msgs::ChangePath::Request& req,
+              trajectory_tracker_msgs::ChangePath::Response& res);
   void processFeedback(
-      const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr& feedback);
+      const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
   void updateIM();
   enum
   {
@@ -105,10 +105,10 @@ ServerNode::ServerNode()
   pnh_.param("hz", hz_, 5.0);
   pnh_.param("filter_step", filter_step_, 0.0);
 
-  pub_path_ = neonavigation_common::compat::advertise<nav_msgs::msg::Path>(
+  pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
       nh_, "path",
       pnh_, topic_path_, 2, true);
-  pub_status_ = pnh_.advertise<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("status", 2);
+  pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryServerStatus>("status", 2);
   srv_change_path_ = neonavigation_common::compat::advertiseService(
       nh_, "change_path",
       pnh_, "ChangePath", &ServerNode::change, this);
@@ -136,19 +136,19 @@ bool ServerNode::loadFile()
 }
 
 void ServerNode::processFeedback(
-    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr& feedback)
+    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   int id = std::atoi(feedback->marker_name.c_str());
   switch (feedback->event_type)
   {
-    case visualization_msgs::msg::InteractiveMarkerFeedback::POSE_UPDATE:
+    case visualization_msgs::InteractiveMarkerFeedback::POSE_UPDATE:
       path_.poses[id].pose = feedback->pose;
       break;
-    case visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP:
-      path_.header.stamp = rclcpp::Time::now();
+    case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP:
+      path_.header.stamp = ros::Time::now();
       pub_path_.publish(path_);
       break;
-    case visualization_msgs::msg::InteractiveMarkerFeedback::MENU_SELECT:
+    case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT:
       switch (feedback->menu_entry_id)
       {
         case MENU_DELETE:
@@ -166,7 +166,7 @@ void ServerNode::processFeedback(
 
 void ServerNode::updateIM()
 {
-  visualization_msgs::msg::InteractiveMarkerUpdate viz;
+  visualization_msgs::InteractiveMarkerUpdate viz;
   viz.type = viz.KEEP_ALIVE;
   viz.seq_num = update_num_++;
   viz.server_id = "Path";
@@ -174,10 +174,10 @@ void ServerNode::updateIM()
   int i = 0;
   for (auto& p : path_.poses)
   {
-    visualization_msgs::msg::InteractiveMarker mark;
-    visualization_msgs::msg::Marker marker;
-    visualization_msgs::msg::InteractiveMarkerControl ctl;
-    visualization_msgs::msg::MenuEntry menu;
+    visualization_msgs::InteractiveMarker mark;
+    visualization_msgs::Marker marker;
+    visualization_msgs::InteractiveMarkerControl ctl;
+    visualization_msgs::MenuEntry menu;
     mark.header = path_.header;
     mark.pose = p.pose;
     mark.scale = 1.0;
@@ -232,8 +232,8 @@ void ServerNode::updateIM()
   srv_im_fb_.applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
-                        trajectory_tracker_msgs::srv::ChangePath::Response& res)
+bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request& req,
+                        trajectory_tracker_msgs::ChangePath::Response& res)
 {
   req_path_ = req;
   res.success = false;
@@ -243,7 +243,7 @@ bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
     res.success = true;
     ros::serialization::IStream stream(buffer_.get(), serial_size_);
     ros::serialization::deserialize(stream, path_);
-    path_.header.stamp = rclcpp::Time::now();
+    path_.header.stamp = ros::Time::now();
     if (filter_step_ > 0)
     {
       std::cout << filter_step_ << std::endl;
@@ -277,24 +277,23 @@ bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
 
 void ServerNode::spin()
 {
-  rclcpp::Rate loop_rate(hz_);
-  trajectory_tracker_msgs::msg::TrajectoryServerStatus status;
+  ros::Rate loop_rate(hz_);
+  trajectory_tracker_msgs::TrajectoryServerStatus status;
 
-  while (rclcpp::ok())
+  while (ros::ok())
   {
     status.header = path_.header;
     status.filename = req_path_.filename;
     status.id = req_path_.id;
     pub_status_.publish(status);
-    rclcpp::spin_some(node);
+    ros::spinOnce();
     loop_rate.sleep();
   }
 }
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("trajectory_server");
+  ros::init(argc, argv, "trajectory_server");
 
   ServerNode serv;
   serv.spin();

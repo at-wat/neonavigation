@@ -39,10 +39,10 @@
 #include <fstream>
 #include <string>
 
-#include "rclcpp/rclcpp.hpp"
+#include <ros/ros.h>
 
-#include <geometry_msgs/msg/twist.hpp>
-#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/Twist.h>
+#include <nav_msgs/Path.h>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -54,14 +54,14 @@ public:
   void save();
 
 private:
-  rclcpp::Node nh_;
-  rclcpp::Node pnh_;
+  ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   ros::Subscriber sub_path_;
 
   std::string topic_path_;
   std::string filename_;
   bool saved_;
-  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr& msg);
+  void cbPath(const nav_msgs::Path::ConstPtr& msg);
 };
 
 SaverNode::SaverNode()
@@ -81,7 +81,7 @@ SaverNode::~SaverNode()
 {
 }
 
-void SaverNode::cbPath(const nav_msgs::msg::Path::ConstSharedPtr& msg)
+void SaverNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
 {
   if (saved_)
     return;
@@ -89,12 +89,12 @@ void SaverNode::cbPath(const nav_msgs::msg::Path::ConstSharedPtr& msg)
 
   if (!ofs)
   {
-    RCLCPP_ERROR(rclcpp::get_logger("TrajectoryTracker"), "Failed to open %s", filename_.c_str());
+    ROS_ERROR("Failed to open %s", filename_.c_str());
     return;
   }
 
   uint32_t serial_size = ros::serialization::serializationLength(*msg);
-  RCLCPP_INFO(rclcpp::get_logger("TrajectoryTracker"), "Size: %d\n", (int)serial_size);
+  ROS_INFO("Size: %d\n", (int)serial_size);
   boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
 
   ros::serialization::OStream stream(buffer.get(), serial_size);
@@ -107,23 +107,22 @@ void SaverNode::cbPath(const nav_msgs::msg::Path::ConstSharedPtr& msg)
 
 void SaverNode::save()
 {
-  rclcpp::Rate loop_rate(5);
-  RCLCPP_INFO(rclcpp::get_logger("TrajectoryTracker"), "Waiting for the path");
+  ros::Rate loop_rate(5);
+  ROS_INFO("Waiting for the path");
 
-  while (rclcpp::ok())
+  while (ros::ok())
   {
-    rclcpp::spin_some(node);
+    ros::spinOnce();
     loop_rate.sleep();
     if (saved_)
       break;
   }
-  RCLCPP_INFO(rclcpp::get_logger("TrajectoryTracker"), "Path saved");
+  ROS_INFO("Path saved");
 }
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("trajectory_saver");
+  ros::init(argc, argv, "trajectory_saver");
 
   SaverNode rec;
   rec.save();
