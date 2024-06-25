@@ -36,10 +36,10 @@
 
 #include <gtest/gtest.h>
 
-#include <nav_msgs/Path.h>
+#include <nav_msgs/msg/path.hpp>
 #include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/path2d.h>
-#include <trajectory_tracker_msgs/PathWithVelocity.h>
+#include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
 
 namespace
 {
@@ -247,7 +247,7 @@ TEST(Path2D, FindNearestWithDistance)
 
 TEST(Path2D, Conversions)
 {
-  nav_msgs::Path path_msg_org;
+  nav_msgs::msg::Path path_msg_org;
   path_msg_org.poses.resize(8);
   path_msg_org.poses[0].pose.position.x = 0.0;
   path_msg_org.poses[0].pose.position.y = 0.0;
@@ -295,9 +295,9 @@ TEST(Path2D, Conversions)
     EXPECT_TRUE(std::isnan(path[i].velocity_));
   }
 
-  nav_msgs::Path path_msg;
+  nav_msgs::msg::Path path_msg;
   path_msg.header.frame_id = "map";
-  path_msg.header.stamp = ros::Time(123.456);
+  path_msg.header.stamp = rclcpp::Time(123.456);
   path.toMsg(path_msg);
   ASSERT_EQ(path_msg.poses.size(), 6);
   for (size_t i = 0; i < path.size(); ++i)
@@ -309,7 +309,7 @@ TEST(Path2D, Conversions)
     EXPECT_EQ(path_msg.poses[i].header.stamp, path_msg.header.stamp);
   }
 
-  trajectory_tracker_msgs::PathWithVelocity path_with_vel_msg_org;
+  trajectory_tracker_msgs::msg::PathWithVelocity path_with_vel_msg_org;
   path_with_vel_msg_org.poses.resize(path_msg_org.poses.size());
   for (size_t i = 0; i < path_msg_org.poses.size(); ++i)
   {
@@ -333,9 +333,9 @@ TEST(Path2D, Conversions)
     EXPECT_NEAR(path_with_vel[i].velocity_, org_index * 0.1, 1.0e-6) << "i: " << i << " org: " << org_index;
   }
 
-  trajectory_tracker_msgs::PathWithVelocity path_with_vel_msg;
+  trajectory_tracker_msgs::msg::PathWithVelocity path_with_vel_msg;
   path_with_vel_msg.header.frame_id = "map";
-  path_with_vel_msg.header.stamp = ros::Time(123.456);
+  path_with_vel_msg.header.stamp = rclcpp::Time(123.456);
   path_with_vel.toMsg(path_with_vel_msg);
   ASSERT_EQ(path_with_vel_msg.poses.size(), 6);
   for (size_t i = 0; i < path_with_vel.size(); ++i)
