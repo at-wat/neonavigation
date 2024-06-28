@@ -50,6 +50,7 @@
 #include <safety_limiter_msgs/msg/safety_limiter_status.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <tf2_ros/transform_listener.h>
@@ -64,6 +65,8 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.hpp>
+
+#include <laser_geometry/laser_geometry.hpp>
 
 namespace safety_limiter
 {
@@ -202,6 +205,7 @@ protected:
   rclcpp::Publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>::SharedPtr pub_status_;
   rclcpp::SubscriptionBase::SharedPtr sub_twist_;
   std::vector<rclcpp::SubscriptionBase::SharedPtr> sub_clouds_;
+  std::vector<rclcpp::SubscriptionBase::SharedPtr> sub_scans_;
   rclcpp::SubscriptionBase::SharedPtr sub_disable_;
   rclcpp::SubscriptionBase::SharedPtr sub_watchdog_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
@@ -227,7 +231,7 @@ protected:
   double r_lim_;
   double max_values_[2];
   double z_range_[2];
-  float footprint_radius_;
+  double footprint_radius_;
   double downsample_grid_;
   std::string fixed_frame_id_;
   std::string base_frame_id_;
@@ -251,6 +255,7 @@ protected:
   std::shared_ptr<diagnostic_updater::Updater> diag_updater_;
 
   polygon footprint_p;
+  laser_geometry::LaserProjection projector_;
 
 public:
   explicit SafetyLimiterNode(const std::string& node_name = "safety_limiter")
@@ -291,8 +296,9 @@ public:
     declare_dynamic_parameter("base_frame", &base_frame_id_, std::string("base_link"));
     declare_dynamic_parameter("fixed_frame", &fixed_frame_id_, std::string("odom"));
     declare_dynamic_parameter("watchdog_interval", &watchdog_interval_d_, 0.0);
+    declare_dynamic_parameter("footprint_radius", &footprint_radius_, 0.0);
     declare_dynamic_parameter("footprint", &footprint_str_, std::string());
-    if (footprint_str_.empty())
+    if (footprint_str_.empty() && footprint_radius_ == 0.0)
     {
       RCLCPP_FATAL(get_logger(), "Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified");
@@ -323,6 +329,21 @@ public:
             "cloud" + std::to_string(i), 1, std::bind(&SafetyLimiterNode::cbCloud, this, std::placeholders::_1)));
       }
     }
+    const int num_input_lasers = declare_parameter("num_input_laser", 1);
+    if (num_input_lasers == 1)
+    {
+      sub_scans_.push_back(create_subscription<sensor_msgs::msg::LaserScan>(
+          "scan", 1, std::bind(&SafetyLimiterNode::cbScan, this, std::placeholders::_1)));
+    }
+    else
+    {
+      for (int i = 0; i < num_input_lasers; ++i)
+      {
+        sub_scans_.push_back(create_subscription<sensor_msgs::msg::LaserScan>(
+            "scan" + std::to_string(i), 1, std::bind(&SafetyLimiterNode::cbScan, this, std::placeholders::_1)));
+      }
+    }
+
     diag_updater_ = std::make_shared<diagnostic_updater::Updater>(this);
     diag_updater_->setHardwareID("none");
     diag_updater_->add("Collision", this, &SafetyLimiterNode::diagnoseCollision);
@@ -334,7 +355,14 @@ protected:
   void onDynamicParameterUpdated(const std::vector<rclcpp::Parameter>&) final
   {
     std::vector<geometry_msgs::msg::Point> footprint;
-    nav2_costmap_2d::makeFootprintFromString(footprint_str_, footprint);
+    if (footprint_str_.empty())
+    {
+      footprint = nav2_costmap_2d::makeFootprintFromRadius(footprint_radius_);
+    }
+    else
+    {
+      nav2_costmap_2d::makeFootprintFromString(footprint_str_, footprint);
+    }
     footprint_p.v.clear();
     footprint_radius_ = 0;
     for (const auto& p : footprint)
@@ -349,7 +377,9 @@ protected:
         footprint_radius_ = dist;
     }
     footprint_p.v.push_back(footprint_p.v.front());
+
     hold_ = rclcpp::Duration::from_seconds(std::max(hold_d_, 1.0 / hz_));
+    tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
     {
       auto t = vel_[i] / acc_[i];
@@ -360,6 +390,7 @@ protected:
     tmax_ += std::max(d_margin_ / vel_[0], yaw_margin_ / vel_[1]);
     r_lim_ = 1.0;
 
+    RCLCPP_WARN(get_logger(), "hz: %f, tmax_: %f", hz_, tmax_);
     watchdog_timer_ = rclcpp::create_timer(this, get_clock(), std::chrono::duration<double>(watchdog_interval_d_),
                                            std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     predict_timer_ = rclcpp::create_timer(this, get_clock(), std::chrono::duration<double>(1.0 / hz_),
@@ -383,11 +414,11 @@ protected:
   }
   void cbPredictTimer()
   {
-    if (!has_twist_)
+    if (!has_twist_ || !has_cloud_)
+    {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "safety_limiter: no twist or cloud");
       return;
-    if (!has_cloud_)
-      return;
-
+    }
     if (now() - last_cloud_stamp_ > rclcpp::Duration::from_seconds(timeout_))
     {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "safety_limiter: PointCloud timed-out");
@@ -669,6 +700,13 @@ protected:
         r_lim_ = 1.0;
       }
     }
+  }
+
+  void cbScan(const sensor_msgs::msg::LaserScan& msg)
+  {
+    sensor_msgs::msg::PointCloud2 cloud_msg;
+    projector_.projectLaser(msg, cloud_msg);
+    cbCloud(cloud_msg);
   }
 
   void cbCloud(const sensor_msgs::msg::PointCloud2& msg)
