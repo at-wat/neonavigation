@@ -73,128 +73,20 @@
 #include <trajectory_tracker/path2d.h>
 #include <trajectory_tracker/basic_control.h>
 
+#include <trajectory_tracker/tracker_node.hpp>
+
 namespace trajectory_tracker
 {
-class TrackerNode : public neonavigation_common::NeonavigationNode
-{
-public:
-  explicit TrackerNode(const std::string& name);
-  ~TrackerNode();
 
-private:
-  std::string topic_path_;
-  std::string topic_cmd_vel_;
-  std::string frame_robot_;
-  std::string frame_odom_;
-  double hz_;
-  double look_forward_;
-  double curv_forward_;
-  double k_[3];
-  double gain_at_vel_;
-  double d_lim_;
-  double d_stop_;
-  double vel_[2];
-  double acc_[2];
-  double acc_toc_[2];
-  double acc_toc_factor_;
-  double angacc_toc_factor_;
-  trajectory_tracker::VelAccLimitter v_lim_;
-  trajectory_tracker::VelAccLimitter w_lim_;
-  double rotate_ang_;
-  double goal_tolerance_dist_;
-  double goal_tolerance_ang_;
-  double stop_tolerance_dist_;
-  double stop_tolerance_ang_;
-  double no_pos_cntl_dist_;
-  double min_track_path_;
-  int64_t path_step_;
-  int64_t path_step_done_;
-  bool allow_backward_;
-  bool limit_vel_by_avel_;
-  bool check_old_path_;
-  double epsilon_;
-  double max_dt_;
-  bool use_time_optimal_control_;
-  double time_optimal_control_future_gain_;
-  double k_ang_rotation_;
-  double k_avel_rotation_;
-  double goal_tolerance_lin_vel_;
-  double goal_tolerance_ang_vel_;
-
-  rclcpp::SubscriptionBase::SharedPtr sub_path_;
-  rclcpp::SubscriptionBase::SharedPtr sub_path_velocity_;
-  rclcpp::SubscriptionBase::SharedPtr sub_speed_;
-  rclcpp::SubscriptionBase::SharedPtr sub_odom_;
-  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_vel_;
-  rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr pub_status_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_tracking_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
-  double odom_timeout_sec_;
-
-  trajectory_tracker::Path2D path_;
-  std_msgs::msg::Header path_header_;
-  bool is_path_updated_;
-
-  bool use_odom_;
-  bool predict_odom_;
-  rclcpp::Time prev_odom_stamp_;
-
-  struct TrackingResult
-  {
-    explicit TrackingResult(const int s)
-      : status(s)
-      , distance_remains(0.0)
-      , angle_remains(0.0)
-      , distance_remains_raw(0.0)
-      , angle_remains_raw(0.0)
-      , turning_in_place(false)
-      , signed_local_distance(0.0)
-      , distance_from_target(0.0)
-      , target_linear_vel(0.0)
-      , tracking_point_x(0.0)
-      , tracking_point_y(0.0)
-      , tracking_point_curv(0.0)
-      , path_step_done(0)
-    {
-    }
-
-    int status;  // same as trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::status
-    double distance_remains;
-    double angle_remains;
-    double distance_remains_raw;  // remained distance without prediction
-    double angle_remains_raw;
-    bool turning_in_place;
-    double signed_local_distance;
-    double distance_from_target;
-    double target_linear_vel;
-    double tracking_point_x;
-    double tracking_point_y;
-    double tracking_point_curv;
-    int path_step_done;
-  };
-
-  void onDynamicParameterUpdated(const std::vector<rclcpp::Parameter>&) final;
-
-  template <typename MSG_TYPE>
-  void cbPath(const MSG_TYPE&);
-  void cbSpeed(const std_msgs::msg::Float32&);
-  void cbOdometry(const nav_msgs::msg::Odometry&);
-
-  void cbTimer();
-  void cbOdomTimeout();
-  void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
-  TrackingResult getTrackingResult(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double,
-                                   const double) const;
-};
-
-TrackerNode::TrackerNode(const std::string& name = "trajectory_tracker")
-  : neonavigation_common::NeonavigationNode(name, rclcpp::NodeOptions())
+TrackerNode::TrackerNode(const std::string& name, const rclcpp::NodeOptions& options)
+  : neonavigation_common::NeonavigationNode(name, options)
   , tfbuf_(get_clock())
   , tfl_(tfbuf_)
   , is_path_updated_(false)
+{
+}
+
+void TrackerNode::initialize()
 {
   declare_dynamic_parameter("look_forward", &look_forward_, 0.5);
   declare_dynamic_parameter("curv_forward", &curv_forward_, 0.5);
@@ -231,41 +123,54 @@ TrackerNode::TrackerNode(const std::string& name = "trajectory_tracker")
   declare_dynamic_parameter("frame_robot", &frame_robot_, std::string("base_link"));
   declare_dynamic_parameter("frame_odom", &frame_odom_, std::string("odom"));
   declare_dynamic_parameter("hz", &hz_, 50.0);
-  declare_dynamic_parameter("use_odom", &use_odom_, false);
   declare_dynamic_parameter("predict_odom", &predict_odom_, true);
   declare_dynamic_parameter("max_dt", &max_dt_, 0.1);
   declare_dynamic_parameter("odom_timeout_sec", &odom_timeout_sec_, 0.1);
   onDynamicParameterUpdated({});
 
-  sub_path_ = create_subscription<nav_msgs::msg::Path>(
-      "path", 2, std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, std::placeholders::_1));
-  sub_path_velocity_ = create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
-      "path_velocity", 2,
-      std::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, std::placeholders::_1));
+  if (declare_parameter("use_action_server", false))
+  {
+    RCLCPP_WARN(get_logger(), "Action server is enabled.");
+    action_server_ =
+        std::make_unique<ActionServer>(shared_from_this(), "follow_path", std::bind(&TrackerNode::computeControl, this),
+                                       nullptr, std::chrono::milliseconds(500), false);
+    RCLCPP_WARN(get_logger(), "Action server done.");
+
+    action_server_->activate();
+    sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
+        "odom", 10, std::bind(&TrackerNode::cbOdometry, this, std::placeholders::_1));
+  }
+  else
+  {
+    sub_path_ = create_subscription<nav_msgs::msg::Path>(
+        "path", 2, std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, std::placeholders::_1));
+    sub_path_velocity_ = create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
+        "path_velocity", 2,
+        std::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, std::placeholders::_1));
+    if (declare_parameter("use_odom", false))
+    {
+      sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
+          "odom", 10, std::bind(&TrackerNode::cbOdometry, this, std::placeholders::_1));
+    }
+    else
+    {
+      timer_ = rclcpp::create_timer(this, get_clock(), std::chrono::duration<double>(1.0 / hz_),
+                                    std::bind(&TrackerNode::cbTimer, this));
+    }
+  }
   sub_speed_ = create_subscription<std_msgs::msg::Float32>(
       "speed", 20, std::bind(&TrackerNode::cbSpeed, this, std::placeholders::_1));
 
   pub_vel_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
   pub_status_ = create_publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>("~/status", 10);
   pub_tracking_ = create_publisher<geometry_msgs::msg::PoseStamped>("~/tracking", 10);
-  if (use_odom_)
-  {
-    sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
-        "odom", 10, std::bind(&TrackerNode::cbOdometry, this, std::placeholders::_1));
-  }
-  else
-  {
-    timer_ = rclcpp::create_timer(this, get_clock(), std::chrono::duration<double>(1.0 / hz_),
-                                  std::bind(&TrackerNode::cbTimer, this));
-  }
 }
 
 TrackerNode::~TrackerNode()
 {
-  geometry_msgs::msg::Twist cmd_vel;
-  cmd_vel.linear.x = 0;
-  cmd_vel.angular.z = 0;
-  pub_vel_->publish(cmd_vel);
+  if (action_server_)
+    action_server_->deactivate();
+  publishZeroVelocity();
 }
 
 void TrackerNode::onDynamicParameterUpdated(const std::vector<rclcpp::Parameter>&)
@@ -282,6 +187,7 @@ void TrackerNode::cbSpeed(const std_msgs::msg::Float32& msg)
 template <typename MSG_TYPE>
 void TrackerNode::cbPath(const MSG_TYPE& msg)
 {
+  std::lock_guard<std::recursive_mutex> lock(action_server_mutex_);
   path_header_ = msg.header;
   is_path_updated_ = true;
   path_step_done_ = 0;
@@ -313,11 +219,16 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry& odom)
   }
   if (odom_timeout_sec_ != 0.0)
   {
+    if (odom_timeout_timer_)
+    {
+      odom_timeout_timer_->cancel();
+    }
     odom_timeout_timer_ = rclcpp::create_timer(this, get_clock(), std::chrono::duration<double>(odom_timeout_sec_),
                                                std::bind(&TrackerNode::cbOdomTimeout, this));
   }
 
-  if (prev_odom_stamp_.nanoseconds() != 0L)
+  std::lock_guard<std::recursive_mutex> lock(action_server_mutex_);
+  if ((prev_odom_stamp_.nanoseconds() != 0L) && (!action_server_ || (action_server_->is_running())))
   {
     const rclcpp::Time odom_stamp(odom.header.stamp);
     const double dt = std::min(max_dt_, (odom_stamp - prev_odom_stamp_).seconds());
@@ -373,7 +284,8 @@ void TrackerNode::cbTimer()
 
 void TrackerNode::cbOdomTimeout()
 {
-  RCLCPP_WARN_STREAM(get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_.nanoseconds());
+  std::lock_guard<std::recursive_mutex> lock(action_server_mutex_);
+  RCLCPP_WARN_STREAM(get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_.seconds());
   v_lim_.clear();
   w_lim_.clear();
   geometry_msgs::msg::Twist cmd_vel;
@@ -390,6 +302,7 @@ void TrackerNode::cbOdomTimeout()
   pub_status_->publish(status);
 
   // One shot timer
+  odom_timeout_timer_->cancel();
   odom_timeout_timer_.reset();
 }
 
@@ -490,6 +403,7 @@ void TrackerNode::control(const tf2::Stamped<tf2::Transform>& robot_to_odom, con
   status.distance_remains = tracking_result.distance_remains;
   status.angle_remains = tracking_result.angle_remains;
   pub_status_->publish(status);
+  latest_status_ = status;
 }
 
 TrackerNode::TrackingResult TrackerNode::getTrackingResult(const tf2::Stamped<tf2::Transform>& robot_to_odom,
@@ -508,7 +422,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(const tf2::Stamped<tf
   try
   {
     tf2::Stamped<tf2::Transform> odom_to_path;
-    tf2::fromMsg(tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, rclcpp::Time(0)), odom_to_path);
+    tf2::fromMsg(tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, tf2::TimePointZero), odom_to_path);
 
     transform *= odom_to_path;
     transform_delay = tf2::durationToSec(tf2_ros::fromRclcpp(now()) - transform.stamp_);
@@ -678,12 +592,105 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(const tf2::Stamped<tf
 
   return result;
 }
-}  // namespace trajectory_tracker
 
-int main(int argc, char** argv)
+void TrackerNode::publishZeroVelocity()
 {
-  rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<trajectory_tracker::TrackerNode>("trajectory_tracker"));
-  rclcpp::shutdown();
-  return 0;
+  std::lock_guard<std::recursive_mutex> lock(action_server_mutex_);
+  geometry_msgs::msg::Twist cmd_vel;
+  cmd_vel.linear.x = 0;
+  cmd_vel.angular.z = 0;
+  pub_vel_->publish(cmd_vel);
 }
+
+void TrackerNode::resetLatestStatus()
+{
+  std::lock_guard<std::recursive_mutex> lock(action_server_mutex_);
+  latest_status_.status = trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::NO_PATH;
+  latest_status_.distance_remains = 0.0;
+  latest_status_.angle_remains = 0.0;
+  latest_status_.path_header = std_msgs::msg::Header();
+}
+
+static std::string to_string(const trajectory_tracker_msgs::msg::TrajectoryTrackerStatus status)
+{
+  switch (status.status)
+  {
+    case trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::NO_PATH:
+      return "NO_PATH";
+    case trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FAR_FROM_PATH:
+      return "FAR_FROM_PATH";
+    case trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING:
+      return "FOLLOWING";
+    case trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL:
+      return "GOAL";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+void TrackerNode::computeControl()
+{
+  RCLCPP_INFO(get_logger(), "Received a goal, begin computing control effort.");
+
+  try
+  {
+    resetLatestStatus();
+    cbPath(action_server_->get_current_goal()->path);
+
+    rclcpp::WallRate loop_rate(hz_);
+    while (rclcpp::ok())
+    {
+      if (action_server_ == nullptr || !action_server_->is_server_active())
+      {
+        RCLCPP_DEBUG(get_logger(), "Action server unavailable or inactive. Stopping.");
+        return;
+      }
+
+      if (action_server_->is_cancel_requested())
+      {
+        RCLCPP_INFO(get_logger(), "Goal was canceled. Stopping the robot.");
+        action_server_->terminate_all();
+        publishZeroVelocity();
+        return;
+      }
+
+      if (action_server_->is_preempt_requested())
+      {
+        RCLCPP_INFO(get_logger(), "Passing new path to controller.");
+        auto goal = action_server_->accept_pending_goal();
+        cbPath(goal->path);
+      }
+
+      {
+        std::lock_guard<std::recursive_mutex> lock(action_server_mutex_);
+        if (latest_status_.status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
+        {
+          RCLCPP_INFO(get_logger(), "Reached the goal!");
+          break;
+        }
+        else
+        {
+          RCLCPP_DEBUG(get_logger(), "Status: %s, remaining distance: %0.3f, remaining angle: %0.3f",
+                       to_string(latest_status_).c_str(), latest_status_.distance_remains,
+                       latest_status_.angle_remains);
+        }
+      }
+      loop_rate.sleep();
+    }
+  }
+  catch (std::exception& e)
+  {
+    RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    publishZeroVelocity();
+    std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
+    action_server_->terminate_current(result);
+    return;
+  }
+
+  RCLCPP_INFO(get_logger(), "Controller succeeded, setting result");
+
+  publishZeroVelocity();
+  action_server_->succeeded_current();
+}
+
+}  // namespace trajectory_tracker

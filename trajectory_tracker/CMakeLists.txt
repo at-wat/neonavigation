@@ -9,7 +9,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include ${Eigen_INCLUDE_DIRS})
-ament_auto_add_executable(trajectory_tracker src/trajectory_tracker.cpp)
+ament_auto_add_library(trajectory_tracker_core SHARED
+  src/tracker_node.cpp)
+ament_auto_add_executable(trajectory_tracker src/trajectory_tracker_main.cpp)
+
 # ament_auto_add_executable(trajectory_recorder src/trajectory_recorder.cpp)
 # ament_auto_add_executable(trajectory_saver src/trajectory_saver.cpp)
 # ament_auto_add_executable(trajectory_server src/trajectory_server.cpp)
