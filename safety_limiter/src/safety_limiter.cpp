@@ -329,7 +329,7 @@ public:
             "cloud" + std::to_string(i), 1, std::bind(&SafetyLimiterNode::cbCloud, this, std::placeholders::_1)));
       }
     }
-    const int num_input_lasers = declare_parameter("num_input_laser", 1);
+    const int num_input_lasers = declare_parameter("num_input_lasers", 1);
     if (num_input_lasers == 1)
     {
       sub_scans_.push_back(create_subscription<sensor_msgs::msg::LaserScan>(
@@ -443,7 +443,8 @@ protected:
     {
       hold_off_ = now + hold_;
     }
-    RCLCPP_DEBUG(get_logger(), "safety_limiter: r_lim = %0.3f, hold_off = %0.3f", r_lim_, hold_off_.seconds());
+    RCLCPP_DEBUG(get_logger(), "safety_limiter: r_lim = %0.3f, r_lim_current = %0.3f, hold_off = %0.3f", r_lim_,
+                 r_lim_current, hold_off_.seconds());
     cloud_clear_ = true;
     diag_updater_->force_update();
   }
@@ -789,7 +790,7 @@ protected:
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<safety_limiter::SafetyLimiterNode>("trajectory_tracker"));
+  rclcpp::spin(std::make_shared<safety_limiter::SafetyLimiterNode>("safety_limiter"));
   rclcpp::shutdown();
   return 0;
 }
