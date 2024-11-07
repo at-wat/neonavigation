@@ -1,35 +1,21 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.5)
 project(neonavigation_common)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-set(CATKIN_DEPENDS
-  roscpp
-)
-
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
-catkin_package(
-  INCLUDE_DIRS include
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
-)
-
-
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(include)
+ament_auto_add_library(neonavigation_common SHARED
+  src/neonavigation_node.cpp)
 
-
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
-  find_package(std_msgs REQUIRED)
-  find_package(std_srvs REQUIRED)
-  add_subdirectory(test)
-
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
+if(BUILD_TESTING)
+    set(ament_cmake_copyright_FOUND TRUE)
+    set(ament_cmake_uncrustify_FOUND TRUE)
+    set(ament_cmake_cpplint_FOUND TRUE)
+    ament_auto_find_test_dependencies()
+    ament_lint_auto_find_test_dependencies()
 endif()
 
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)
+ament_auto_package()
