@@ -259,7 +259,7 @@ float GridAstarModel3D::cost(
     }
 
     {
-      int sum = 0, sum_hyst = 0;
+      int sum = 0, sum_turn = 0, sum_hyst = 0;
       Vec d_index(d[0], d[1], next[2]);
       d_index.cycleUnsigned(map_info_.angle);
 
@@ -274,6 +274,10 @@ float GridAstarModel3D::cost(
         const auto c = cm_[pos];
         if (c > 99)
           return -1;
+        if (c >= cc_.turn_penalty_cost_threshold_)
+        {
+          sum_turn += c;
+        }
         sum += c;
 
         if (hysteresis_)
@@ -281,7 +285,7 @@ float GridAstarModel3D::cost(
       }
       const float distf = cache_page->second.getDistance();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
-      cost += sum * map_info_.angular_resolution * std::abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * num);
+      cost += sum_turn * map_info_.angular_resolution * std::abs(d[2]) * cc_.weight_costmap_turn_ / (100.0 * num);
       cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
     }
   }
