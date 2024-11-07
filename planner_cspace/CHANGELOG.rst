@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_3d: apply turn_penalty_cost_threshold in curve path (`#739 <https://github.com/at-wat/neonavigation/issues/739>`_)
+* Contributors: Naotaka Hatao
+
 0.17.1 (2024-03-22)
 -------------------
 * planner_3d: remove duplicated interpolation method (`#733 <https://github.com/at-wat/neonavigation/issues/733>`_)
