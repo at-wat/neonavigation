@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.17.2 (2024-11-07)
+-------------------
 * planner_3d: apply turn_penalty_cost_threshold in curve path (`#739 <https://github.com/at-wat/neonavigation/issues/739>`_)
 * Contributors: Naotaka Hatao
 
