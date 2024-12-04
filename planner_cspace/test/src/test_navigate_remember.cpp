@@ -293,7 +293,6 @@ TEST_F(Navigate, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navagation success." << std::endl;
-      dumpRobotTrajectory();
       ros::Duration(2.0).sleep();
       return;
     }
