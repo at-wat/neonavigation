@@ -97,6 +97,13 @@ add_rostest(test/navigation_rostest.test
   DEPENDENCIES test_navigate
 )
 
+add_rostest_gtest(test_navigate_remember
+  test/navigation_remember_rostest.test
+  src/test_navigate_remember.cpp
+)
+target_link_libraries(test_navigate_remember ${catkin_LIBRARIES})
+add_dependencies(test_navigate_remember planner_3d patrol)
+
 add_rostest(test/navigation_compat_rostest.test
   DEPENDENCIES test_navigate
 )
