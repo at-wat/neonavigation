@@ -851,12 +851,15 @@ protected:
 
     if (remember_updates_)
     {
+      const auto ts = boost::chrono::high_resolution_clock::now();
       bbf_costmap_.remember(
           &cm_updates_, s,
           remember_hit_odds_, remember_miss_odds_,
           hist_ignore_range_, hist_ignore_range_max_);
       publishRememberedMap();
       bbf_costmap_.updateCostmap();
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Remembered costmap updated (%0.4f sec.)", dur);
     }
     if (!has_goal_)
       return;
