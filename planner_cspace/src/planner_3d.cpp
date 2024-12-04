@@ -858,6 +858,7 @@ protected:
           hist_ignore_range_, hist_ignore_range_max_);
       publishRememberedMap();
       bbf_costmap_.updateCostmap();
+      const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
       ROS_DEBUG("Remembered costmap updated (%0.4f sec.)", dur);
     }
