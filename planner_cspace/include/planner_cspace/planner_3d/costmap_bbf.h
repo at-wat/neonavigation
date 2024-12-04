@@ -49,6 +49,8 @@ private:
   BlockMemGridmap<bbf::BinaryBayesFilter, 2, 2, 0x20> cm_hist_bbf_;
   BlockMemGridmap<char, 2, 2, 0x80> cm_hist_;
   Vec size_;
+  VecInternal updated_min_;
+  VecInternal updated_max_;
 
 public:
   inline CostmapBBF()
@@ -60,11 +62,14 @@ public:
     size_ = size;
     cm_hist_bbf_.reset(VecInternal(size[0], size[1]));
     cm_hist_.reset(VecInternal(size[0], size[1]));
+    clear();
   }
   inline void clear()
   {
     cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
     cm_hist_.clear(0);
+    updated_min_ = VecInternal(0, 0);
+    updated_max_ = VecInternal(size_[0] - 1, size_[1] - 1);
   }
   inline char getCost(const Vec& p) const
   {
