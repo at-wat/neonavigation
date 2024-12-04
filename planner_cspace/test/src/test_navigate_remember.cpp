@@ -241,7 +241,7 @@ protected:
   }
 };
 
-TEST_F(Navigate, Navigate)
+TEST_F(NavigateWithRememberUpdates, Navigate)
 {
   ros::spinOnce();
   ros::Duration(0.2).sleep();
