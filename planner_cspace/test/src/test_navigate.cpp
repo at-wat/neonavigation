@@ -45,26 +45,9 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <gtest/gtest.h>
+#include <planner_cspace/planner_status.h>
 
-namespace planner_cspace_msgs
-{
-std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
-{
-  if (!msg)
-  {
-    os << "nullptr";
-  }
-  else
-  {
-    os << std::endl
-       << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
-       << "  status: " << static_cast<int>(msg->status) << std::endl
-       << "  error: " << static_cast<int>(msg->error);
-  }
-  return os;
-}
-}  // namespace planner_cspace_msgs
+#include <gtest/gtest.h>
 
 class Navigate : public ::testing::Test
 {

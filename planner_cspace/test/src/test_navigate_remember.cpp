@@ -45,28 +45,11 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <planner_cspace/planner_status.h>
+
 #include <gtest/gtest.h>
 
-namespace planner_cspace_msgs
-{
-std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
-{
-  if (!msg)
-  {
-    os << "nullptr";
-  }
-  else
-  {
-    os << std::endl
-       << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
-       << "  status: " << static_cast<int>(msg->status) << std::endl
-       << "  error: " << static_cast<int>(msg->error);
-  }
-  return os;
-}
-}  // namespace planner_cspace_msgs
-
-class Navigate : public ::testing::Test
+class NavigateWithRememberUpdates : public ::testing::Test
 {
 protected:
   ros::NodeHandle nh_;
@@ -84,13 +67,13 @@ protected:
   std::vector<tf2::Stamped<tf2::Transform>> traj_;
   std::string test_scope_;
 
-  Navigate()
+  NavigateWithRememberUpdates()
     : tfl_(tfbuf_)
   {
-    sub_costmap_ = nh_.subscribe("costmap", 1, &Navigate::cbCostmap, this);
+    sub_costmap_ = nh_.subscribe("costmap", 1, &NavigateWithRememberUpdates::cbCostmap, this);
     sub_status_ = nh_.subscribe(
-        "/planner_3d/status", 10, &Navigate::cbStatus, this);
-    sub_path_ = nh_.subscribe("path", 1, &Navigate::cbPath, this);
+        "/planner_3d/status", 10, &NavigateWithRememberUpdates::cbStatus, this);
+    sub_path_ = nh_.subscribe("path", 1, &NavigateWithRememberUpdates::cbPath, this);
     srv_forget_ =
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
