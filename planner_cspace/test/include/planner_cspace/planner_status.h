@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, the neonavigation authors
+ * Copyright (c) 2024, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,64 +27,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
-#define PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
+#ifndef PLANNER_CSPACE_PLANNER_STATUS_H
+#define PLANNER_CSPACE_PLANNER_STATUS_H
 
-#include <functional>
+#include <ostream>
+#include <planner_cspace_msgs/PlannerStatus.h>
 
-#include <planner_cspace/bbf.h>
-#include <planner_cspace/blockmem_gridmap.h>
-
-namespace planner_cspace
+namespace planner_cspace_msgs
 {
-namespace planner_3d
+std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
 {
-class CostmapBBF
-{
-public:
-  using Vec = CyclicVecInt<3, 2>;
-
-private:
-  using VecInternal = CyclicVecInt<2, 2>;
-  BlockMemGridmap<bbf::BinaryBayesFilter, 2, 2, 0x20> cm_hist_bbf_;
-  BlockMemGridmap<char, 2, 2, 0x80> cm_hist_;
-  Vec size_;
-  VecInternal updated_min_;
-  VecInternal updated_max_;
-
-public:
-  inline CostmapBBF()
-    : size_(0, 0, 0)
+  if (!msg)
   {
+    os << "nullptr";
   }
-  inline void reset(const Vec& size)
+  else
   {
-    size_ = size;
-    cm_hist_bbf_.reset(VecInternal(size[0], size[1]));
-    cm_hist_.reset(VecInternal(size[0], size[1]));
-    clear();
+    os << std::endl
+       << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
+       << "  status: " << static_cast<int>(msg->status) << std::endl
+       << "  error: " << static_cast<int>(msg->error);
   }
-  inline void clear()
-  {
-    cm_hist_bbf_.clear(bbf::BinaryBayesFilter(bbf::MIN_ODDS));
-    cm_hist_.clear(0);
-    updated_min_ = VecInternal(0, 0);
-    updated_max_ = VecInternal(size_[0] - 1, size_[1] - 1);
-  }
-  inline char getCost(const Vec& p) const
-  {
-    return cm_hist_[VecInternal(p[0], p[1])];
-  }
+  return os;
+}
+}  // namespace planner_cspace_msgs
 
-  void remember(
-      const BlockMemGridmapBase<char, 3, 2>* const costmap,
-      const Vec& center,
-      const float remember_hit_odds, const float remember_miss_odds,
-      const int range_min, const int range_max);
-  void updateCostmap();
-  void forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb);
-};
-}  // namespace planner_3d
-}  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
+#endif  // PLANNER_CSPACE_PLANNER_STATUS_H

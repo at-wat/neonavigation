@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
 #include <cmath>
 
 #include <planner_cspace/bbf.h>
@@ -39,14 +40,15 @@ namespace planner_3d
 {
 void CostmapBBF::updateCostmap()
 {
-  cm_hist_.clear(0);
-  for (VecInternal p(0, 0); p[1] < size_[1]; p[1]++)
+  for (VecInternal p = updated_min_; p[1] <= updated_max_[1]; p[1]++)
   {
-    for (p[0] = 0; p[0] < size_[0]; p[0]++)
+    for (p[0] = updated_min_[0]; p[0] <= updated_max_[0]; p[0]++)
     {
       cm_hist_[p] = std::lround(cm_hist_bbf_[p].getNormalizedProbability() * 100.0);
     }
   }
+  updated_min_ = VecInternal(size_[0], size_[1]);
+  updated_max_ = VecInternal(-1, -1);
 }
 void CostmapBBF::remember(
     const BlockMemGridmapBase<char, 3, 2>* costmap,
@@ -54,6 +56,13 @@ void CostmapBBF::remember(
     const float remember_hit_odds, const float remember_miss_odds,
     const int range_min, const int range_max)
 {
+  updated_min_ = VecInternal(
+      std::min(updated_min_[0], std::max(0, center[0] - range_max)),
+      std::min(updated_min_[1], std::max(0, center[1] - range_max)));
+  updated_max_ = VecInternal(
+      std::max(updated_max_[0], std::min(size_[0] - 1, center[0] + range_max)),
+      std::max(updated_max_[1], std::min(size_[1] - 1, center[1] + range_max)));
+
   const size_t width = size_[0];
   const size_t height = size_[1];
   const int range_min_sq = range_min * range_min;
