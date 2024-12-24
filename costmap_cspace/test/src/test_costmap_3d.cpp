@@ -698,7 +698,9 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     }
     else
     {
-      EXPECT_FALSE(static_cast<bool>(updated)) << test_name;
+      ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
+      EXPECT_EQ(0, updated->width) << test_name;
+      EXPECT_EQ(0, updated->height) << test_name;
     }
 
     // Second pass has only local updates
@@ -716,7 +718,9 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     }
     else
     {
-      EXPECT_FALSE(static_cast<bool>(updated)) << test_name;
+      ASSERT_TRUE(static_cast<bool>(updated)) << test_name;
+      EXPECT_EQ(0, updated->width) << test_name;
+      EXPECT_EQ(0, updated->height) << test_name;
     }
   }
 }

@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -120,17 +120,18 @@ protected:
     region_prev_ = region;
     region_ = UpdatedRegion();
 
-    if (region.width_ == 0 || region.height_ == 0)
-    {
-      return nullptr;
-    }
-
     update_msg->x = region_merged.x_;
     update_msg->y = region_merged.y_;
     update_msg->width = region_merged.width_;
     update_msg->height = region_merged.height_;
     update_msg->yaw = region_merged.yaw_;
     update_msg->angle = region_merged.angle_;
+
+    if (update_msg->width_ * update_msg->height_ == 0)
+    {
+      return update_msg;
+    }
+
     update_msg->data.resize(update_msg->width * update_msg->height * update_msg->angle);
     if ((update_msg->x == 0) && (update_msg->y == 0) && (update_msg->yaw == 0) &&
         (update_msg->width == map_->info.width) && (update_msg->height == map_->info.height) &&
