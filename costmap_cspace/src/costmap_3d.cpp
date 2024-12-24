@@ -117,9 +117,11 @@ protected:
     {
       publishDebug(*map);
       pub_costmap_update_.publish(*update);
-      if (update->width * update->height == 0)
+      if (update->width * update->height * update->angle == 0)
       {
-        ROS_WARN_THROTTLE(5, "Updated region of the costmap is empty. The position may be out-of-boundary, or input map is wrong.");
+        ROS_WARN_THROTTLE(
+            5, "Updated region of the costmap is empty. "
+               "The position may be out-of-boundary, or input map is wrong.");
       }
     }
     else

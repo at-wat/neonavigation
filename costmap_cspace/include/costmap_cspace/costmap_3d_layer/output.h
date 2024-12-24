@@ -127,8 +127,9 @@ protected:
     update_msg->yaw = region_merged.yaw_;
     update_msg->angle = region_merged.angle_;
 
-    if (update_msg->width_ * update_msg->height_ == 0)
+    if (region.width_ == 0 || region.height_ == 0)
     {
+      update_msg->width = update_msg->height = 0;
       return update_msg;
     }
 
