@@ -175,6 +175,18 @@ TEST_F(Planner3DMapSize, OutOfRangeAll)
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
+TEST_F(Planner3DMapSize, ZeroSizeUpdate)
+{
+  const ros::Time now = ros::Time::now();
+  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  ros::Duration(0.1).sleep();
+  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 1, 1, 0, 0, 0, 0));
+  ros::Duration(0.5).sleep();
+  ros::spinOnce();
+  cnt_status_ = 0;
+  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+}
+
 TEST_F(Planner3DMapSize, IllOrderedUpdate)
 {
   const ros::Time now = ros::Time::now();
