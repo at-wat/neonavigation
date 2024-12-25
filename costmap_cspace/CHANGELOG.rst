@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* costmap_cspace: publish empty costmap_update on out-of-bound (`#743 <https://github.com/at-wat/neonavigation/issues/743>`_)
+* Contributors: Atsushi Watanabe
+
 0.17.2 (2024-11-07)
 -------------------
 
