@@ -33,9 +33,11 @@
 #include <ros/ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <nav_msgs/Path.h>
 #include <actionlib/client/simple_action_client.h>
+
 #include <move_base_msgs/MoveBaseAction.h>
+#include <nav_msgs/Path.h>
+#include <planner_cspace_msgs/PlannerStatus.h>
 
 #include <gtest/gtest.h>
 
@@ -47,7 +49,9 @@ protected:
 
   ros::NodeHandle nh_;
   tf2_ros::TransformBroadcaster tfb_;
+  ros::Subscriber sub_status_;
   ros::Subscriber sub_path_;
+  planner_cspace_msgs::PlannerStatus::ConstPtr status_;
   nav_msgs::Path::ConstPtr path_;
   ActionClientPtr move_base_;
 
@@ -74,6 +78,7 @@ protected:
   }
   virtual void SetUp()
   {
+    sub_status_ = nh_.subscribe("/planner_3d/status", 100, &NavigateBoundary::cbStatus, this);
     sub_path_ = nh_.subscribe("path", 1, &NavigateBoundary::cbPath, this);
 
     publishTransform(1.0, 0.6);
@@ -92,6 +97,10 @@ protected:
   {
     path_ = msg;
   }
+  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  {
+    status_ = msg;
+  }
 };
 
 TEST_F(NavigateBoundary, StartPositionScan)
@@ -104,15 +113,18 @@ TEST_F(NavigateBoundary, StartPositionScan)
       publishTransform(x, y);
 
       path_ = nullptr;
+      status_ = nullptr;
       for (int i = 0; i < 100; ++i)
       {
         ros::Duration(0.05).sleep();
         ros::spinOnce();
-        if (path_)
+        if (path_ && status_)
           break;
       }
       // Planner must publish at least empty path if alive.
       ASSERT_TRUE(static_cast<bool>(path_));
+      // Planner status must be published even if robot if outside of the map.
+      ASSERT_TRUE(static_cast<bool>(status_));
     }
   }
 }
