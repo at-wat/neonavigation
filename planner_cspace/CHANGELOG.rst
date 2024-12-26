@@ -2,6 +2,13 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.17.3 (2024-12-25)
+-------------------
+* planner_cspace: add costmap_cspace integration test for out-of-bound position (`#746 <https://github.com/at-wat/neonavigation/issues/746>`_)
+* costmap_cspace: publish empty costmap_update on out-of-bound (`#743 <https://github.com/at-wat/neonavigation/issues/743>`_)
+* planner_cspace: reduce remember_updates calculation cost (`#742 <https://github.com/at-wat/neonavigation/issues/742>`_)
+* Contributors: Atsushi Watanabe
+
 0.17.2 (2024-11-07)
 -------------------
 * planner_3d: apply turn_penalty_cost_threshold in curve path (`#739 <https://github.com/at-wat/neonavigation/issues/739>`_)
