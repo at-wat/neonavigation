@@ -30,7 +30,7 @@
 #ifndef NEONAVIGATION_COMMON_COMPATIBILITY_H
 #define NEONAVIGATION_COMMON_COMPATIBILITY_H
 
-#include <ros/ros.h>
+#include "rclcpp/rclcpp.hpp"
 
 #include <string>
 
@@ -57,7 +57,7 @@ STATIC_ASSERT(supported_level <= default_level && default_level <= current_level
 int getCompat()
 {
   int compat(default_level);
-  ros::NodeHandle("/").param("neonavigation_compatible", compat, compat);
+  rclcpp::Node("/").param("neonavigation_compatible", compat, compat);
 
   return compat;
 }
@@ -90,7 +90,7 @@ void checkCompatMode()
         ros::this_node::getName().c_str(), current_level);
   }
 }
-std::string getSimplifiedNamespace(ros::NodeHandle& nh)
+std::string getSimplifiedNamespace(rclcpp::Node& nh)
 {
   if (nh.getUnresolvedNamespace() == ros::this_node::getName())
     return std::string("~/");
@@ -100,9 +100,9 @@ std::string getSimplifiedNamespace(ros::NodeHandle& nh)
 }
 template <class M>
 ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+    rclcpp::Node& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     void (*fp)(M),
@@ -110,7 +110,7 @@ ros::Subscriber subscribe(
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(rclcpp::get_logger("NeonavigationCommon"), 
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -125,9 +125,9 @@ ros::Subscriber subscribe(
 }
 template <class M, class T>
 ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+    rclcpp::Node& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     void (T::*fp)(M) const,
@@ -136,7 +136,7 @@ ros::Subscriber subscribe(
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(rclcpp::get_logger("NeonavigationCommon"), 
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -151,9 +151,9 @@ ros::Subscriber subscribe(
 }
 template <class M, class T>
 ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+    rclcpp::Node& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     void (T::*fp)(M),
@@ -162,7 +162,7 @@ ros::Subscriber subscribe(
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(rclcpp::get_logger("NeonavigationCommon"), 
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -177,18 +177,18 @@ ros::Subscriber subscribe(
 }
 template <class M>
 ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+    rclcpp::Node& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
-    const boost::function<void(const boost::shared_ptr<M const>&)>& callback,
+    const std::function<void(const std::shared_ptr<M const>&)>& callback,
     const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
     const ros::TransportHints& transport_hints = ros::TransportHints())
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(rclcpp::get_logger("NeonavigationCommon"), 
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -203,16 +203,16 @@ ros::Subscriber subscribe(
 }
 template <class M>
 ros::Publisher advertise(
-    ros::NodeHandle& nh_new,
+    rclcpp::Node& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     bool latch = false)
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(rclcpp::get_logger("NeonavigationCommon"), 
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -227,16 +227,16 @@ ros::Publisher advertise(
 }
 template <class T, class MReq, class MRes>
 ros::ServiceServer advertiseService(
-    ros::NodeHandle& nh_new,
+    rclcpp::Node& nh_new,
     const std::string& service_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node& nh_old,
     const std::string& service_old,
     bool (T::*srv_func)(MReq&, MRes&),
     T* obj)
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(rclcpp::get_logger("NeonavigationCommon"), 
         "Use %s (%s%s) service instead of %s (%s%s)",
         nh_new.resolveName(service_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), service_new.c_str(),
@@ -252,14 +252,14 @@ ros::ServiceServer advertiseService(
 
 template <typename T>
 void deprecatedParam(
-    const ros::NodeHandle& nh,
+    const rclcpp::Node& nh,
     const std::string& key,
     T& param,
     const T& default_value)
 {
   if (nh.hasParam(key))
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(rclcpp::get_logger("NeonavigationCommon"), 
         "Use of the parameter %s is deprecated. Don't use this.",
         nh.resolveName(key, false).c_str());
   }

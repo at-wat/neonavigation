@@ -41,16 +41,16 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = now();
+  while (rclcpp::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    ASSERT_LT(now() - start, rclcpp::Duration::from_seconds(10.0));
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(get_node_base_interface());
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   const double frame_rate = getCmdVelFrameRate();
@@ -58,7 +58,7 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(get_node_base_interface());
   }
   ASSERT_NEAR(yaw_, 0.0, 1e-2);
   ASSERT_NEAR(pos_[0], 0.5, 1e-2);
@@ -78,36 +78,36 @@ TEST_F(TrajectoryTrackerTest, Timeout)
   poses.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
+  rclcpp::Rate rate(50);
   for (int i = 0; i < 50; ++i)
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(get_node_base_interface());
   }
   // Wait until odometry timeout
-  ros::Duration(0.2).sleep();
-  ros::spinOnce();
+  get_clock()->sleep_for(rclcpp::Duration::from_seconds(0.2));
+  rclcpp::spin_some(get_node_base_interface());
 
   ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);
   ASSERT_FLOAT_EQ(cmd_vel_->angular.z, 0.0);
   ASSERT_GT(pos_[0], 0.0);
   ASSERT_LT(pos_[0], 2.0);
-  ASSERT_EQ(status_->status, trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
+  ASSERT_EQ(status_->status, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::NO_PATH);
 
-  while (ros::ok())
+  while (rclcpp::ok())
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(get_node_base_interface());
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   for (int i = 0; i < 25; ++i)
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(get_node_base_interface());
   }
   ASSERT_NEAR(yaw_, 0.0, 1e-2);
   ASSERT_NEAR(pos_[0], 2.0, 1e-2);
@@ -118,7 +118,8 @@ TEST_F(TrajectoryTrackerTest, Timeout)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_trajectory_tracker_frame_rate");
+  rclcpp::init(argc, argv);
+  auto node = rclcpp::Node::make_shared("test_trajectory_tracker_frame_rate");
 
   return RUN_ALL_TESTS();
 }
