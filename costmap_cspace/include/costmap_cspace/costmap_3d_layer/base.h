@@ -402,6 +402,7 @@ protected:
   bool updateChainEntry(const UpdatedRegion& region, bool output = true)
   {
     region_.merge(region);
+    region_.normalize(map_->info.width, map_->info.height);
 
     auto region_prev_now = region_;
     region_prev_now.merge(region_prev_);
