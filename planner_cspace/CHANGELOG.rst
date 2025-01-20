@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.17.4 (2025-01-20)
+-------------------
+
 0.17.3 (2024-12-25)
 -------------------
 * planner_cspace: add costmap_cspace integration test for out-of-bound position (`#746 <https://github.com/at-wat/neonavigation/issues/746>`_)
