@@ -2,6 +2,11 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* costmap_cspace: prevent map update region out-of-bound (`#748 <https://github.com/at-wat/neonavigation/issues/748>`_)
+* Contributors: Atsushi Watanabe
+
 0.17.3 (2024-12-25)
 -------------------
 * costmap_cspace: publish empty costmap_update on out-of-bound (`#743 <https://github.com/at-wat/neonavigation/issues/743>`_)
