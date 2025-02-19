@@ -90,7 +90,7 @@ protected:
   const BlockMemGridmapBase<char, 3, 2>& cm_;
   const BlockMemGridmapBase<char, 3, 2>& cm_hyst_;
   const BlockMemGridmapBase<char, 3, 2>& cm_rough_;
-  const CostCoeff& cc_;
+  CostCoeff cc_;
   int range_;
   RotationCache rot_cache_;
   MotionCache motion_cache_;
@@ -112,6 +112,9 @@ public:
       const int range,
       const float path_interpolation_resolution = 0.5,
       const float grid_enumeration_resolution = 0.1);
+  void updateCostParameters(
+      const Vecf& euclid_cost_coef,
+      const CostCoeff& cc);
   void enableHysteresis(const bool enable);
   void createEuclidCostCache();
   float euclidCost(const Vec& v) const;

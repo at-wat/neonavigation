@@ -120,6 +120,16 @@ GridAstarModel3D::GridAstarModel3D(
   }
 }
 
+void GridAstarModel3D::updateCostParameters(
+    const Vecf& euclid_cost_coef,
+    const CostCoeff& cc)
+{
+  euclid_cost_coef_ = euclid_cost_coef;
+  cc_ = cc;
+  createEuclidCostCache();
+  motion_primitives_ = MotionPrimitiveBuilder::build(map_info_, cc_, range_);
+}
+
 void GridAstarModel3D::enableHysteresis(const bool enable)
 {
   hysteresis_ = enable;
