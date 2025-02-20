@@ -114,7 +114,9 @@ public:
       const float grid_enumeration_resolution = 0.1);
   void updateCostParameters(
       const Vecf& euclid_cost_coef,
-      const CostCoeff& cc);
+      const CostCoeff& cc,
+      const int local_range);
+
   void enableHysteresis(const bool enable);
   void createEuclidCostCache();
   float euclidCost(const Vec& v) const;

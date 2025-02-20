@@ -1294,7 +1294,6 @@ public:
   void resetGridAstarModel(const bool force_reset)
   {
     const int previous_range = range_;
-    const int previous_local_range = local_range_;
     range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
     hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
     hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
@@ -1307,7 +1306,7 @@ public:
     goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
     cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
-    const bool reset_required = force_reset || (previous_range != range_) || (previous_local_range != local_range_);
+    const bool reset_required = force_reset || (previous_range != range_);
     if (reset_required)
     {
       model_.reset(
@@ -1320,7 +1319,7 @@ public:
     }
     else
     {
-      model_->updateCostParameters(ec_, cc_);
+      model_->updateCostParameters(ec_, cc_, local_range_);
     }
   }
 
