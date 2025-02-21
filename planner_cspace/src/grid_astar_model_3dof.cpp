@@ -103,9 +103,7 @@ GridAstarModel3D::GridAstarModel3D(
       min_boundary_;
   ROS_INFO("x:%d, y:%d grids around the boundary is ignored on path search", min_boundary_[0], min_boundary_[1]);
 
-  createEuclidCostCache();
-
-  motion_primitives_ = MotionPrimitiveBuilder::build(map_info_, cc_, range_);
+  updateCostParameters(euclid_cost_coef_, cc_, local_range_);
   search_list_rough_.clear();
   Vec d;
   for (d[0] = -range_; d[0] <= range_; d[0]++)
@@ -118,6 +116,18 @@ GridAstarModel3D::GridAstarModel3D(
       search_list_rough_.push_back(d);
     }
   }
+}
+
+void GridAstarModel3D::updateCostParameters(
+    const Vecf& euclid_cost_coef,
+    const CostCoeff& cc,
+    const int local_range)
+{
+  euclid_cost_coef_ = euclid_cost_coef;
+  cc_ = cc;
+  local_range_ = local_range;
+  createEuclidCostCache();
+  motion_primitives_ = MotionPrimitiveBuilder::build(map_info_, cc_, range_);
 }
 
 void GridAstarModel3D::enableHysteresis(const bool enable)

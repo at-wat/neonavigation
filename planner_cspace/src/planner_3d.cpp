@@ -964,7 +964,7 @@ protected:
         map_info_.angular_resolution != msg->info.angular_resolution)
     {
       map_info_ = msg->info;
-      resetGridAstarModel();
+      resetGridAstarModel(true);
       ROS_DEBUG("Search model updated");
     }
     else
@@ -1291,8 +1291,9 @@ public:
     parameter_server_.setCallback(boost::bind(&Planner3dNode::cbParameter, this, _1, _2));
   }
 
-  void resetGridAstarModel()
+  void resetGridAstarModel(const bool force_reset)
   {
+    const int previous_range = range_;
     range_ = static_cast<int>(search_range_ / map_info_.linear_resolution);
     hist_ignore_range_ = std::lround(hist_ignore_range_f_ / map_info_.linear_resolution);
     hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
@@ -1305,13 +1306,21 @@ public:
     goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
     cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
-    model_.reset(
-        new GridAstarModel3D(
-            map_info_,
-            ec_,
-            local_range_,
-            cost_estim_cache_.gridmap(), cm_, cm_hyst_, cm_rough_,
-            cc_, range_, path_interpolation_resolution_, grid_enumeration_resolution_));
+    const bool reset_required = force_reset || (previous_range != range_);
+    if (reset_required)
+    {
+      model_.reset(
+          new GridAstarModel3D(
+              map_info_,
+              ec_,
+              local_range_,
+              cost_estim_cache_.gridmap(), cm_, cm_hyst_, cm_rough_,
+              cc_, range_, path_interpolation_resolution_, grid_enumeration_resolution_));
+    }
+    else
+    {
+      model_->updateCostParameters(ec_, cc_, local_range_);
+    }
   }
 
   void cbParameter(const Planner3DConfig& config, const uint32_t /* level */)
@@ -1371,7 +1380,7 @@ public:
 
     if (map_info_.linear_resolution != 0.0 && map_info_.angular_resolution != 0.0)
     {
-      resetGridAstarModel();
+      resetGridAstarModel(false);
       const Astar::Vec size2d(static_cast<int>(map_info_.width), static_cast<int>(map_info_.height), 1);
       const DistanceMap::Params dmp =
           {
