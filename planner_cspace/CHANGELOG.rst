@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.17.5 (2025-02-21)
+-------------------
+* planner_cspace: reconstuct GridAstarModel3D only when necessary (`#751 <https://github.com/at-wat/neonavigation/issues/751>`_)
+* Contributors: Naotaka Hatao
+
 0.17.4 (2025-01-20)
 -------------------
 
