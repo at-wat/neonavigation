@@ -54,7 +54,16 @@ public:
         new dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>("/planner_3d/"));
     sub_path_ = node_.subscribe("path", 1, &DynamicParameterChangeTest::cbPath, this);
     pub_map_overlay_ = node_.advertise<nav_msgs::OccupancyGrid>("map_overlay", 1, true);
-    pub_odom_ = node_.advertise<nav_msgs::Odometry>("odom", 1, true);
+    pub_odom_ = node_.advertise<nav_msgs::Odometry>("odom", 1, true);  // not actually used
+
+    const ros::Time deadline = ros::Time::now() + ros::Duration(2);
+    while (sub_path_.getNumPublishers() < 1 || pub_map_overlay_.getNumSubscribers() < 1)
+    {
+      ros::Duration(0.1).sleep();
+      ASSERT_TRUE(ros::ok());
+      ASSERT_LT(ros::Time::now(), deadline);
+    }
+    ros::Duration(0.5).sleep();  // wait some more time to ensure tf topic connection
 
     map_overlay_.header.frame_id = "map";
     map_overlay_.info.resolution = 0.1;
@@ -81,6 +90,10 @@ public:
     default_config_.max_vel = 0.3;
     default_config_.max_ang_vel = 1.0;
     ASSERT_TRUE(planner_3d_client_->setConfiguration(default_config_));
+  }
+  void TearDown() final
+  {
+    move_base_->cancelAllGoals();
   }
 
 protected:
@@ -154,19 +167,23 @@ protected:
 
   void sendGoalAndWaitForPath()
   {
+    move_base_->sendGoal(CreateGoalInFree());
+
+    ros::spinOnce();  // Flush message buffer
     path_ = nullptr;
+
     const ros::Time start_time = ros::Time::now();
     ros::Time deadline = start_time + ros::Duration(1.0);
-    move_base_->sendGoal(CreateGoalInFree());
     while (ros::ok())
     {
+      ros::Duration(0.1).sleep();
+      ros::spinOnce();
       if (path_ && (path_->header.stamp > start_time) && (path_->poses.size() > 0))
       {
         break;
       }
       ASSERT_LT(ros::Time::now(), deadline)
-          << "Faile to plan:" << move_base_->getState().toString() << statusString();
-      ros::spinOnce();
+          << "Failed to plan:" << move_base_->getState().toString() << statusString();
     }
   }
 
