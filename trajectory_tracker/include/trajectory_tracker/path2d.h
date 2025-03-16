@@ -37,15 +37,15 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <geometry_msgs/Pose.h>
-#include <nav_msgs/Path.h>
+#include <geometry_msgs/msg/pose.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <tf2/utils.h>
-#include <trajectory_tracker_msgs/PathWithVelocity.h>
+#include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
 
 #include <trajectory_tracker/average.h>
 #include <trajectory_tracker/eigen_line.h>
 
-#include <ros/ros.h>
+#include "rclcpp/rclcpp.hpp"
 
 namespace trajectory_tracker
 {
@@ -68,19 +68,19 @@ public:
     , velocity_(velocity)
   {
   }
-  inline Pose2D(const geometry_msgs::Pose& pose, float velocity)
+  inline Pose2D(const geometry_msgs::msg::Pose& pose, float velocity)
     : pos_(Eigen::Vector2d(pose.position.x, pose.position.y))
     , yaw_(tf2::getYaw(pose.orientation))
     , velocity_(velocity)
   {
   }
-  inline explicit Pose2D(const geometry_msgs::PoseStamped& pose)
+  inline explicit Pose2D(const geometry_msgs::msg::PoseStamped& pose)
     : pos_(Eigen::Vector2d(pose.pose.position.x, pose.pose.position.y))
     , yaw_(tf2::getYaw(pose.pose.orientation))
     , velocity_(std::numeric_limits<float>::quiet_NaN())
   {
   }
-  inline explicit Pose2D(const trajectory_tracker_msgs::PoseStampedWithVelocity& pose)
+  inline explicit Pose2D(const trajectory_tracker_msgs::msg::PoseStampedWithVelocity& pose)
     : pos_(Eigen::Vector2d(pose.pose.position.x, pose.pose.position.y))
     , yaw_(tf2::getYaw(pose.pose.orientation))
     , velocity_(pose.linear_velocity.x)
@@ -101,13 +101,13 @@ public:
     while (yaw_ > 2 * M_PI)
       yaw_ -= 2 * M_PI;
   }
-  void toMsg(geometry_msgs::PoseStamped& pose) const
+  void toMsg(geometry_msgs::msg::PoseStamped& pose) const
   {
     pose.pose.position.x = pos_.x();
     pose.pose.position.y = pos_.y();
     pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw_));
   }
-  void toMsg(trajectory_tracker_msgs::PoseStampedWithVelocity& pose) const
+  void toMsg(trajectory_tracker_msgs::msg::PoseStampedWithVelocity& pose) const
   {
     pose.pose.position.x = pos_.x();
     pose.pose.position.y = pos_.y();
@@ -131,12 +131,8 @@ public:
       l += ((*this)[i - 1].pos_ - (*this)[i].pos_).norm();
     return l;
   }
-  inline ConstIterator findLocalGoal(
-      const ConstIterator& begin,
-      const ConstIterator& end,
-      const bool allow_switch_back,
-      const bool allow_in_place_turn = true,
-      const double epsilon = 1e-6) const
+  inline ConstIterator findLocalGoal(const ConstIterator& begin, const ConstIterator& end, const bool allow_switch_back,
+                                     const bool allow_in_place_turn = true, const double epsilon = 1e-6) const
   {
     float sign_vel_prev = 0;
     ConstIterator it_prev = begin;
@@ -168,21 +164,15 @@ public:
     }
     return end;
   }
-  inline ConstIterator findNearest(
-      const ConstIterator& begin,
-      const ConstIterator& end,
-      const Eigen::Vector2d& target,
-      const float max_search_range = 0,
-      const float epsilon = 1e-6) const
+  inline ConstIterator findNearest(const ConstIterator& begin, const ConstIterator& end, const Eigen::Vector2d& target,
+                                   const float max_search_range = 0, const float epsilon = 1e-6) const
   {
     return findNearestWithDistance(begin, end, target, max_search_range, epsilon).first;
   }
-  inline std::pair<ConstIterator, double> findNearestWithDistance(
-      const ConstIterator& begin,
-      const ConstIterator& end,
-      const Eigen::Vector2d& target,
-      const float max_search_range = 0,
-      const float epsilon = 1e-6) const
+  inline std::pair<ConstIterator, double> findNearestWithDistance(const ConstIterator& begin, const ConstIterator& end,
+                                                                  const Eigen::Vector2d& target,
+                                                                  const float max_search_range = 0,
+                                                                  const float epsilon = 1e-6) const
   {
     if (begin == end)
     {
@@ -204,8 +194,7 @@ public:
       if (max_search_range > 0 && distance_path_search > max_search_range)
         break;
 
-      const float d =
-          trajectory_tracker::lineStripDistanceSigned(it_prev->pos_, it->pos_, target);
+      const float d = trajectory_tracker::lineStripDistanceSigned(it_prev->pos_, it->pos_, target);
 
       // Use earlier point if the robot is same distance from two line strip
       // to avoid chattering.
@@ -223,11 +212,8 @@ public:
     }
     return std::make_pair(it_nearest, min_dist);
   }
-  inline double remainedDistance(
-      const ConstIterator& begin,
-      const ConstIterator& nearest,
-      const ConstIterator& end,
-      const Eigen::Vector2d& target_on_line) const
+  inline double remainedDistance(const ConstIterator& begin, const ConstIterator& nearest, const ConstIterator& end,
+                                 const Eigen::Vector2d& target_on_line) const
   {
     double remain = (nearest->pos_ - target_on_line).norm();
     if (nearest + 1 >= end)
@@ -257,11 +243,8 @@ public:
     }
     return remain;
   }
-  inline float getCurvature(
-      const ConstIterator& begin,
-      const ConstIterator& end,
-      const Eigen::Vector2d& target_on_line,
-      const float max_search_range) const
+  inline float getCurvature(const ConstIterator& begin, const ConstIterator& end, const Eigen::Vector2d& target_on_line,
+                            const float max_search_range) const
   {
     if (end - begin <= 1)
     {
@@ -282,9 +265,8 @@ public:
       }
       const float cos_v = std::cos(rel.yaw_);
       const float r1 = rel.pos_.y() + rel.pos_.x() * cos_v / sin_v;
-      const float r2 = std::copysign(
-          std::sqrt(std::pow(rel.pos_.x(), 2) + std::pow(rel.pos_.x() * cos_v / sin_v, 2)),
-          rel.pos_.x() * sin_v);
+      const float r2 = std::copysign(std::sqrt(std::pow(rel.pos_.x(), 2) + std::pow(rel.pos_.x() * cos_v / sin_v, 2)),
+                                     rel.pos_.x() * sin_v);
       return 1.0f / ((r1 + r2) / 2);
     }
     const float max_search_range_sq = max_search_range * max_search_range;
@@ -301,7 +283,7 @@ public:
     }
     return curv;
   }
-  // PATH_TYPE should be trajectory_tracker_msgs::PathWithVelocity or nav_msgs::Path
+  // PATH_TYPE should be trajectory_tracker_msgs::msg::PathWithVelocity or nav_msgs::msg::Path
   template <typename PATH_TYPE>
   inline void fromMsg(const PATH_TYPE& path, const double in_place_turn_eps = 1.0e-6)
   {
@@ -327,8 +309,7 @@ public:
       }
       else
       {
-        in_place_turn_end = trajectory_tracker::Pose2D(
-            back().pos_, next.yaw_, next.velocity_);
+        in_place_turn_end = trajectory_tracker::Pose2D(back().pos_, next.yaw_, next.velocity_);
         in_place_turning = true;
       }
     }
@@ -337,7 +318,7 @@ public:
       push_back(in_place_turn_end);
     }
   }
-  // PATH_TYPE should be trajectory_tracker_msgs::PathWithVelocity or nav_msgs::Path
+  // PATH_TYPE should be trajectory_tracker_msgs::msg::PathWithVelocity or nav_msgs::msg::Path
   template <typename PATH_TYPE>
   inline void toMsg(PATH_TYPE& path) const
   {
@@ -350,12 +331,10 @@ public:
     }
   }
 
-  inline std::vector<ConstIterator> enumerateLocalGoals(
-      const ConstIterator& begin,
-      const ConstIterator& end,
-      const bool allow_switch_back,
-      const bool allow_in_place_turn = true,
-      const double epsilon = 1e-6) const
+  inline std::vector<ConstIterator> enumerateLocalGoals(const ConstIterator& begin, const ConstIterator& end,
+                                                        const bool allow_switch_back,
+                                                        const bool allow_in_place_turn = true,
+                                                        const double epsilon = 1e-6) const
   {
     ConstIterator it_search_begin = begin;
     std::vector<ConstIterator> results;
@@ -371,12 +350,9 @@ public:
     return results;
   }
 
-  inline std::vector<double> getEstimatedTimeOfArrivals(
-      const ConstIterator& begin,
-      const ConstIterator& end,
-      const double linear_speed,
-      const double angular_speed,
-      const double initial_eta_sec = 0.0) const
+  inline std::vector<double> getEstimatedTimeOfArrivals(const ConstIterator& begin, const ConstIterator& end,
+                                                        const double linear_speed, const double angular_speed,
+                                                        const double initial_eta_sec = 0.0) const
   {
     if (begin == end)
     {

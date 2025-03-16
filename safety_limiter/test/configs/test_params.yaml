@@ -1,0 +1,18 @@
+safety_limiter:
+  ros__parameters:
+    footprint: "[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]"
+    allow_empty_cloud: false
+    watchdog_interval: 0.2
+    max_linear_vel: 1.5
+    max_angular_vel: 2.5
+    cloud_timeout: 0.2
+    freq: 15.0
+    dt: 0.01
+    lin_acc: 1.0
+    lin_vel: 2.0
+    ang_acc: 1.57
+    ang_vel: 3.14
+    d_margin: 0.0
+    yaw_margin: 0.0
+    z_range_min: -100.0
+    z_range_max: 100.0

@@ -27,11 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#include "rclcpp/rclcpp.hpp"
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <nav_msgs/Path.h>
-#include <std_srvs/Empty.h>
+#include <nav_msgs/msg/path.hpp>
+#include <std_srvs/srv/empty.hpp>
 
 #include <algorithm>
 #include <string>
@@ -40,17 +40,17 @@
 
 TEST(TrajectoryRecorder, TfToPath)
 {
-  ros::NodeHandle nh("");
+  rclcpp::Node nh("");
 
-  nav_msgs::Path::ConstPtr path;
+  nav_msgs::msg::Path::ConstSharedPtr path;
   int received_count = 0;
-  const boost::function<void(const nav_msgs::Path::ConstPtr&)> cb_path =
-      [&path, &received_count](const nav_msgs::Path::ConstPtr& msg) -> void
+  const std::function<void(const nav_msgs::msg::Path::ConstSharedPtr&)> cb_path =
+      [&path, &received_count](const nav_msgs::msg::Path::ConstSharedPtr& msg) -> void
   {
     ++received_count;
     path = msg;
   };
-  ros::Subscriber sub_path = nh.subscribe("path", 1, cb_path);
+  auto sub_path = nh.subscribe("path", 1, cb_path);
   tf2_ros::TransformBroadcaster tfb;
 
   const tf2::Transform points[] =
@@ -62,20 +62,20 @@ TEST(TrajectoryRecorder, TfToPath)
       };
   const size_t len = sizeof(points) / sizeof(tf2::Transform);
 
-  ros::Duration(1.0).sleep();
+  rclcpp::Duration(1.0).sleep();
   for (auto& p : points)
   {
     for (size_t i = 0; i < 3; ++i)
     {
-      geometry_msgs::TransformStamped trans =
+      geometry_msgs::msg::TransformStamped trans =
           tf2::toMsg(tf2::Stamped<tf2::Transform>(
-              p, ros::Time::now() + ros::Duration(0.1), "map"));
+              p, rclcpp::Time::now() + rclcpp::Duration(0.1), "map"));
       trans.child_frame_id = "base_link";
       tfb.sendTransform(trans);
-      ros::Duration(0.1).sleep();
+      rclcpp::Duration(0.1).sleep();
     }
   }
-  ros::spinOnce();
+  rclcpp::spin_some(node);
   ASSERT_TRUE(static_cast<bool>(path));
   ASSERT_EQ(received_count, 1);
 
@@ -91,14 +91,14 @@ TEST(TrajectoryRecorder, TfToPath)
     ASSERT_EQ(path->poses[i].pose.orientation.w, points[i].getRotation().w());
   }
 
-  ros::ServiceClient client = nh.serviceClient<std_srvs::Empty>("/trajectory_recorder/clear_path");
-  std_srvs::Empty empty;
+  ros::ServiceClient client = nh.serviceClient<std_srvs::srv::Empty>("/trajectory_recorder/clear_path");
+  std_srvs::srv::Empty empty;
   ASSERT_TRUE(client.call(empty));
 
   while (received_count != 2)
   {
-    ros::spinOnce();
-    ros::Duration(0.1).sleep();
+    rclcpp::spin_some(node);
+    rclcpp::Duration(0.1).sleep();
   }
   ASSERT_EQ(static_cast<int>(path->poses.size()), 1);
   ASSERT_EQ(path->poses.back().pose.position.x, points[len - 1].getOrigin().x());
@@ -113,7 +113,8 @@ TEST(TrajectoryRecorder, TfToPath)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_trajectory_recorder");
+  rclcpp::init(argc, argv);
+  auto node = rclcpp::Node::make_shared("test_trajectory_recorder");
 
   return RUN_ALL_TESTS();
 }
