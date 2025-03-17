@@ -51,6 +51,7 @@
 #include <rosgraph_msgs/Clock.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2/utils.h>
 
 #include <trajectory_tracker/TrajectoryTrackerConfig.h>
 #include <trajectory_tracker_msgs/PathWithVelocity.h>
@@ -85,6 +86,15 @@ protected:
   using ParamType = trajectory_tracker::TrajectoryTrackerConfig;
   std::unique_ptr<dynamic_reconfigure::Client<ParamType>> dynamic_reconfigure_client_;
 
+  double getYaw() const
+  {
+    return tf2::getYaw(pose_.getRotation());
+  }
+  Eigen::Vector2d getPos() const
+  {
+    return Eigen::Vector2d(pose_.getOrigin().getX(), pose_.getOrigin().getY());
+  }
+
 private:
   void cbStatus(const trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr& msg)
   {
@@ -97,16 +107,17 @@ private:
       cmd_vel_time_ = now;
     const float dt = std::min((now - cmd_vel_time_).toSec(), 0.1);
 
-    yaw_ += msg->angular.z * dt;
-    pos_ += Eigen::Vector2d(std::cos(yaw_), std::sin(yaw_)) * msg->linear.x * dt;
+    const double yaw_diff = msg->angular.z * dt;
+    const tf2::Transform pose_diff(tf2::Quaternion(tf2::Vector3(0, 0, 1), msg->angular.z * dt),
+                                   tf2::Vector3(msg->linear.x * dt, 0, 0));
+    pose_ *= pose_diff;
     cmd_vel_time_ = now;
     cmd_vel_ = msg;
     ++cmd_vel_count_;
   }
 
 public:
-  Eigen::Vector2d pos_;
-  double yaw_;
+  tf2::Transform pose_;
   trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr status_;
   geometry_msgs::Twist::ConstPtr cmd_vel_;
   ros::Duration delay_;
@@ -141,7 +152,7 @@ public:
         break;
     }
   }
-  void initState(const Eigen::Vector2d& pos, const float yaw)
+  void initState(const tf2::Transform& pose)
   {
     // Wait trajectory_tracker node
     ros::Rate rate(10);
@@ -153,8 +164,7 @@ public:
       path.header.stamp = ros::Time::now();
       pub_path_.publish(path);
 
-      yaw_ = yaw;
-      pos_ = pos;
+      pose_ = pose;
       publishTransform();
 
       rate.sleep();
@@ -167,6 +177,11 @@ public:
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
     ros::Duration(0.5).sleep();
+  }
+  void initState(const Eigen::Vector2d& pos, const float yaw)
+  {
+    initState(tf2::Transform(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw),
+                             tf2::Vector3(pos.x(), pos.y(), 0)));
   }
   void waitUntilStart(const std::function<void()> func = nullptr)
   {
@@ -244,19 +259,12 @@ public:
   void publishTransform()
   {
     const ros::Time now = ros::Time::now();
-    const Eigen::Quaterniond q(Eigen::AngleAxisd(yaw_, Eigen::Vector3d(0, 0, 1)));
 
     nav_msgs::Odometry odom;
     odom.header.frame_id = "odom";
     odom.header.stamp = now;
     odom.child_frame_id = "base_link";
-    odom.pose.pose.position.x = pos_[0];
-    odom.pose.pose.position.y = pos_[1];
-    odom.pose.pose.position.z = 0.0;
-    odom.pose.pose.orientation.x = q.x();
-    odom.pose.pose.orientation.y = q.y();
-    odom.pose.pose.orientation.z = q.z();
-    odom.pose.pose.orientation.w = q.w();
+    tf2::toMsg(pose_, odom.pose.pose);
     if (cmd_vel_)
     {
       odom.twist.twist.linear = cmd_vel_->linear;
