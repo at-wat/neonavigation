@@ -106,8 +106,6 @@ private:
     if (cmd_vel_time_ == ros::Time(0))
       cmd_vel_time_ = now;
     const float dt = std::min((now - cmd_vel_time_).toSec(), 0.1);
-
-    const double yaw_diff = msg->angular.z * dt;
     const tf2::Transform pose_diff(tf2::Quaternion(tf2::Vector3(0, 0, 1), msg->angular.z * dt),
                                    tf2::Vector3(msg->linear.x * dt, 0, 0));
     pose_ *= pose_diff;
