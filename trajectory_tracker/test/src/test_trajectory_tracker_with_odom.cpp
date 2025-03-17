@@ -60,9 +60,9 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
     rate.sleep();
     ros::spinOnce();
   }
-  ASSERT_NEAR(yaw_, 0.0, 1e-2);
-  ASSERT_NEAR(pos_[0], 0.5, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+  ASSERT_NEAR(getYaw(), 0.0, 1e-2);
+  ASSERT_NEAR(getPos()[0], 0.5, 1e-2);
+  ASSERT_NEAR(getPos()[1], 0.0, 1e-2);
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
   // Parameter "hz" is set to 30.0, but the actual frame rate is around 50.0 as it is syncronized with the odometry.
   ASSERT_NEAR(50.0, frame_rate, 10.0);
@@ -91,8 +91,8 @@ TEST_F(TrajectoryTrackerTest, Timeout)
 
   ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);
   ASSERT_FLOAT_EQ(cmd_vel_->angular.z, 0.0);
-  ASSERT_GT(pos_[0], 0.0);
-  ASSERT_LT(pos_[0], 2.0);
+  ASSERT_GT(getPos()[0], 0.0);
+  ASSERT_LT(getPos()[0], 2.0);
   ASSERT_EQ(status_->status, trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
 
   while (ros::ok())
@@ -109,9 +109,9 @@ TEST_F(TrajectoryTrackerTest, Timeout)
     rate.sleep();
     ros::spinOnce();
   }
-  ASSERT_NEAR(yaw_, 0.0, 1e-2);
-  ASSERT_NEAR(pos_[0], 2.0, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+  ASSERT_NEAR(getYaw(), 0.0, 1e-2);
+  ASSERT_NEAR(getPos()[0], 2.0, 1e-2);
+  ASSERT_NEAR(getPos()[1], 0.0, 1e-2);
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
