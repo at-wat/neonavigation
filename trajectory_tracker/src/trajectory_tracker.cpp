@@ -349,11 +349,8 @@ void TrackerNode::cbOdometry(const nav_msgs::Odometry::ConstPtr& odom)
 
     tf2::Transform odom_to_robot;
     tf2::fromMsg(odom_compensated.pose.pose, odom_to_robot);
-    const tf2::Stamped<tf2::Transform> robot_to_odom(
-        odom_to_robot.inverse(),
-        odom->header.stamp, odom->header.frame_id);
-
-    control(robot_to_odom, prediction_offset, odom->twist.twist.linear.x, odom->twist.twist.angular.z, dt);
+    const tf2::Stamped<tf2::Transform> odom_to_robot_stamped(odom_to_robot, odom->header.stamp, odom->header.frame_id);
+    control(odom_to_robot_stamped, prediction_offset, odom->twist.twist.linear.x, odom->twist.twist.angular.z, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
 }
@@ -364,7 +361,7 @@ void TrackerNode::cbTimer(const ros::TimerEvent& event)
   {
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(frame_robot_, frame_odom_, ros::Time(0)), transform);
+        tfbuf_.lookupTransform(frame_odom_, frame_robot_, ros::Time(0)), transform);
     control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / hz_);
   }
   catch (tf2::TransformException& e)
@@ -411,7 +408,7 @@ void TrackerNode::spin()
 }
 
 void TrackerNode::control(
-    const tf2::Stamped<tf2::Transform>& robot_to_odom,
+    const tf2::Stamped<tf2::Transform>& odom_to_robot,
     const Eigen::Vector3d& prediction_offset,
     const double odom_linear_vel,
     const double odom_angular_vel,
@@ -424,12 +421,12 @@ void TrackerNode::control(
   {
     // Call getTrackingResult to update path_step_done_.
     const TrackingResult initial_tracking_result =
-        getTrackingResult(robot_to_odom, prediction_offset, odom_linear_vel, odom_angular_vel);
+        getTrackingResult(odom_to_robot, prediction_offset, odom_linear_vel, odom_angular_vel);
     path_step_done_ = initial_tracking_result.path_step_done;
     is_path_updated_ = false;
   }
   const TrackingResult tracking_result =
-      getTrackingResult(robot_to_odom, prediction_offset, odom_linear_vel, odom_angular_vel);
+      getTrackingResult(odom_to_robot, prediction_offset, odom_linear_vel, odom_angular_vel);
   switch (tracking_result.status)
   {
     case trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH:
@@ -516,7 +513,7 @@ void TrackerNode::control(
 }
 
 TrackerNode::TrackingResult TrackerNode::getTrackingResult(
-    const tf2::Stamped<tf2::Transform>& robot_to_odom, const Eigen::Vector3d& prediction_offset,
+    const tf2::Stamped<tf2::Transform>& odom_to_robot, const Eigen::Vector3d& prediction_offset,
     const double odom_linear_vel, const double odom_angular_vel) const
 {
   if (path_header_.frame_id.size() == 0 || path_.size() == 0)
@@ -526,31 +523,30 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   // Transform
   trajectory_tracker::Path2D lpath;
   double transform_delay = 0;
-  tf2::Stamped<tf2::Transform> transform = robot_to_odom;
   try
   {
-    tf2::Stamped<tf2::Transform> odom_to_path;
+    tf2::Stamped<tf2::Transform> path_to_odom;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(frame_odom_, path_header_.frame_id, ros::Time(0)), odom_to_path);
-    transform *= odom_to_path;
-    transform_delay = (ros::Time::now() - transform.stamp_).toSec();
+        tfbuf_.lookupTransform(path_header_.frame_id, frame_odom_, ros::Time(0)), path_to_odom);
+    const tf2::Transform path_to_robot = path_to_odom * odom_to_robot;
+    transform_delay = (ros::Time::now() - path_to_odom.stamp_).toSec();
     if (std::abs(transform_delay) > 0.1 && check_old_path_)
     {
       ROS_ERROR_THROTTLE(
           1.0, "Timestamp of the transform is too old %f %f",
-          ros::Time::now().toSec(), transform.stamp_.toSec());
+          ros::Time::now().toSec(), path_to_odom.stamp_.toSec());
     }
-
-    const float trans_yaw = tf2::getYaw(transform.getRotation());
-    const Eigen::Transform<double, 2, Eigen::TransformTraits::AffineCompact> trans =
+    const float robot_yaw = tf2::getYaw(path_to_robot.getRotation());
+    const Eigen::Transform<double, 2, Eigen::TransformTraits::AffineCompact> path_to_robot_2d =
         Eigen::Translation2d(
-            Eigen::Vector2d(transform.getOrigin().x(), transform.getOrigin().y())) *
-        Eigen::Rotation2Dd(trans_yaw);
+            Eigen::Vector2d(path_to_robot.getOrigin().x(), path_to_robot.getOrigin().y())) *
+        Eigen::Rotation2Dd(robot_yaw);
+    const auto robot_to_path_2d = path_to_robot_2d.inverse();
 
     for (size_t i = 0; i < path_.size(); i += path_step_)
       lpath.push_back(
           trajectory_tracker::Pose2D(
-              trans * path_[i].pos_, trans_yaw + path_[i].yaw_, path_[i].velocity_));
+              robot_to_path_2d * path_[i].pos_, -robot_yaw + path_[i].yaw_, path_[i].velocity_));
   }
   catch (tf2::TransformException& e)
   {
