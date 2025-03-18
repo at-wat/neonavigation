@@ -33,8 +33,6 @@
 
 #include <trajectory_tracker_test.h>
 
-#include <angles/angles.h>
-
 TEST_F(TrajectoryTrackerTest, StraightStop)
 {
   initState(Eigen::Vector2d(0, 0), 0);
@@ -413,7 +411,8 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
           }
 
           // Check multiple times to assert overshoot.
-          const double angle_diff = std::abs(angles::shortest_angular_distance(getYaw(), init_yaw + angles.back()));
+          const double angle_diff = pose_.getRotation().angleShortestPath(
+              tf2::Quaternion(tf2::Vector3(0, 0, 1), init_yaw + angles.back()));
           ASSERT_LT(angle_diff, error_ang_)
               << "[overshoot after goal (" << j << ")] "
               << condition_name.str();
