@@ -2,6 +2,11 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planner_cspace: fix flaky dynamic reconfigure test (`#756 <https://github.com/at-wat/neonavigation/issues/756>`_)
+* Contributors: Atsushi Watanabe
+
 0.17.5 (2025-02-21)
 -------------------
 * planner_cspace: reconstuct GridAstarModel3D only when necessary (`#751 <https://github.com/at-wat/neonavigation/issues/751>`_)
