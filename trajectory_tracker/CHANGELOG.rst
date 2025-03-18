@@ -2,6 +2,11 @@
 Changelog for package trajectory_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.17.6 (2025-03-18)
+-------------------
+* trajectory_tracker: fix the method for projecting paths onto 2D (`#759 <https://github.com/at-wat/neonavigation/issues/759>`_)
+* Contributors: Naotaka Hatao
+
 0.17.5 (2025-02-21)
 -------------------
 
