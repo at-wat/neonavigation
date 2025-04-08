@@ -87,7 +87,7 @@ public:
 
   DistanceMap(
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
-      const CostmapBBF& bbf_costmap);
+      const CostmapBBF::ConstPtr bbf_costmap);
 
   void setParams(const CostCoeff& cc, const int num_cost_estim_task);
 
@@ -126,7 +126,7 @@ protected:
   CostCoeff cc_;
   int num_cost_estim_task_;
   const BlockMemGridmapBase<char, 3, 2>& cm_rough_;
-  const CostmapBBF& bbf_costmap_;
+  const CostmapBBF::ConstPtr bbf_costmap_;
 
   std::vector<SearchDiffs> search_diffs_;
   DebugData debug_data_;

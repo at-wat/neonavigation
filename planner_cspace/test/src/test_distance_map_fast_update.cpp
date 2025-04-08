@@ -61,13 +61,14 @@ protected:
   const float tolerance_ = 0.4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF bbf_costmap_;
+  CostmapBBF::Ptr bbf_costmap_;
 
   DistanceMap dm_full_;
   DistanceMap dm_fast_;
 
   DistanceMapTest()
     : ec_(0.5f, 0.5f, 0.2f)
+    , bbf_costmap_(new CostmapBBFImpl())
     , dm_full_(cm_rough_, bbf_costmap_)
     , dm_fast_(cm_rough_, bbf_costmap_)
   {
@@ -103,12 +104,12 @@ protected:
     cm.reset(size3d);
     cm_hyst.reset(size3d);
     cm_rough_.reset(size2d);
-    bbf_costmap_.reset(size2d);
+    bbf_costmap_->reset(size2d);
 
     cm.clear(0);
     cm_hyst.clear(0);
     cm_rough_.clear(0);
-    bbf_costmap_.clear();
+    bbf_costmap_->clear();
 
     const DistanceMap::Params dmp =
         {

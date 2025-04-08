@@ -65,7 +65,7 @@ protected:
   const float tolerance_ = 0.4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF bbf_costmap_;
+  CostmapBBF::Ptr bbf_costmap_;
 
   DistanceMap dm_;
 
@@ -73,6 +73,7 @@ protected:
     : s_(2, 2, 0)
     , e_(8, 8, 0)
     , ec_(0.5f, 0.5f, 0.2f)
+    , bbf_costmap_(new CostmapBBFImpl())
     , dm_(cm_rough_, bbf_costmap_)
   {
     const int range = 4;
@@ -106,12 +107,12 @@ protected:
     cm.reset(size3d);
     cm_hyst.reset(size3d);
     cm_rough_.reset(size2d);
-    bbf_costmap_.reset(size2d);
+    bbf_costmap_->reset(size2d);
 
     cm.clear(0);
     cm_hyst.clear(0);
     cm_rough_.clear(0);
-    bbf_costmap_.clear();
+    bbf_costmap_->clear();
 
     const DistanceMap::Params dmp =
         {
@@ -320,12 +321,13 @@ protected:
   const int search_range_ = 4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF bbf_costmap_;
+  CostmapBBF::Ptr bbf_costmap_;
 
   DistanceMap dm_;
 
   DistanceMapTestLongMap()
     : ec_(0.5f, 0.5f, 0.2f)
+    , bbf_costmap_(new CostmapBBFImpl())
     , dm_(cm_rough_, bbf_costmap_)
   {
     costmap_cspace_msgs::MapMetaData3D map_info;
@@ -356,11 +358,11 @@ protected:
     cm.reset(size3d);
     cm_hyst.reset(size3d);
     cm_rough_.reset(size2d);
-    bbf_costmap_.reset(size2d);
+    bbf_costmap_->reset(size2d);
     cm.clear(0);
     cm_hyst.clear(0);
     cm_rough_.clear(0);
-    bbf_costmap_.clear();
+    bbf_costmap_->clear();
 
     const DistanceMap::Params dmp =
         {

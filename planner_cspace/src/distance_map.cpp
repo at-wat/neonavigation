@@ -135,7 +135,7 @@ void DistanceMap::fillCostmap(
                 break;
               }
               sum += c;
-              sum_hist += bbf_costmap_.getCost(pos);
+              sum_hist += bbf_costmap_->getCost(pos);
             }
             if (collision)
             {
@@ -182,7 +182,7 @@ void DistanceMap::fillCostmap(
 
 DistanceMap::DistanceMap(
     const BlockMemGridmapBase<char, 3, 2>& cm_rough,
-    const CostmapBBF& bbf_costmap)
+    const CostmapBBF::ConstPtr bbf_costmap)
   : cm_rough_(cm_rough)
   , bbf_costmap_(bbf_costmap)
 {

@@ -11,6 +11,7 @@ target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 catkin_add_gtest(test_distance_map
   src/test_distance_map.cpp
+  ../src/costmap_bbf.cpp
   ../src/distance_map.cpp
   ../src/grid_astar_model_3dof.cpp
   ../src/motion_cache.cpp
@@ -21,6 +22,7 @@ target_link_libraries(test_distance_map ${catkin_LIBRARIES} ${Boost_LIBRARIES} $
 
 catkin_add_gtest(test_distance_map_fast_update
   src/test_distance_map_fast_update.cpp
+  ../src/costmap_bbf.cpp
   ../src/distance_map.cpp
   ../src/grid_astar_model_3dof.cpp
   ../src/motion_cache.cpp

@@ -126,8 +126,9 @@ protected:
   Astar::Gridmap<char, 0x80> cm_rough_base_;
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<char, 0x80> cm_updates_;
-  CostmapBBF bbf_costmap_;
+  CostmapBBF::Ptr bbf_costmap_;
   DistanceMap cost_estim_cache_;
+  DistanceMap cost_estim_cache_static_;
 
   GridAstarModel3D::Ptr model_;
 
@@ -176,6 +177,7 @@ protected:
   int num_cost_estim_task_;
   bool keep_a_part_of_previous_path_;
   bool trigger_plan_by_costmap_update_;
+  bool enable_crowd_mode_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -231,7 +233,7 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-      bbf_costmap_.clear();
+      bbf_costmap_->clear();
 
     return true;
   }
@@ -683,7 +685,7 @@ protected:
         remembered_map.data[p[0] + p[1] * map_info_.width] =
             (bbf.getProbability() - bbf::MIN_PROBABILITY) * 100 / (bbf::MAX_PROBABILITY - bbf::MIN_PROBABILITY);
       };
-      bbf_costmap_.forEach(generate_pointcloud);
+      bbf_costmap_->forEach(generate_pointcloud);
       pub_remembered_map_.publish(remembered_map);
     }
   }
@@ -852,12 +854,12 @@ protected:
     if (remember_updates_)
     {
       const auto ts = boost::chrono::high_resolution_clock::now();
-      bbf_costmap_.remember(
+      bbf_costmap_->remember(
           &cm_updates_, s,
           remember_hit_odds_, remember_miss_odds_,
           hist_ignore_range_, hist_ignore_range_max_);
       publishRememberedMap();
-      bbf_costmap_.updateCostmap();
+      bbf_costmap_->updateCostmap();
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
       ROS_DEBUG("Remembered costmap updated (%0.4f sec.)", dur);
@@ -997,10 +999,14 @@ protected:
             .size = size2d,
             .resolution = map_info_.linear_resolution,
         };
+    if (enable_crowd_mode_)
+    {
+      cost_estim_cache_static_.init(model_, dmp);
+    }
     cost_estim_cache_.init(model_, dmp);
     cm_rough_.reset(size2d);
     cm_updates_.reset(size2d);
-    bbf_costmap_.reset(size2d);
+    bbf_costmap_->reset(size2d);
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1034,7 +1040,7 @@ protected:
 
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
-    bbf_costmap_.clear();
+    bbf_costmap_->clear();
 
     prev_map_update_x_min_ = map_info_.width;
     prev_map_update_x_max_ = 0;
@@ -1109,7 +1115,9 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
     , parameter_server_(pnh_)
+    , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
+    , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
@@ -1230,6 +1238,7 @@ public:
     pnh_.param("force_goal_orientation", force_goal_orientation_, true);
 
     pnh_.param("temporary_escape", temporary_escape_, true);
+    pnh_.param("enable_crowd_mode", enable_crowd_mode_, false);
 
     pnh_.param("fast_map_update", fast_map_update_, false);
     if (fast_map_update_)
@@ -1438,7 +1447,7 @@ public:
 
         if (jump_.detectJump())
         {
-          bbf_costmap_.clear();
+          bbf_costmap_->clear();
           // Robot pose jumped.
           return;
         }
@@ -1665,7 +1674,7 @@ public:
       {
         if (jump_.detectJump())
         {
-          bbf_costmap_.clear();
+          bbf_costmap_->clear();
         }
         ros::spinOnce();
         r.sleep();
