@@ -1922,26 +1922,9 @@ protected:
     if (initial_2dof_cost == std::numeric_limits<float>::max() || cm_[end_grid] >= 100)
     {
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-      start_pose_predictor_.clear();
       ROS_WARN("Goal unreachable.");
-      if (!escaping_ && temporary_escape_)
-      {
-        end_grid = start_grid;
-        if (searchAvailablePos(cm_, end_grid, esc_range_, esc_angle_, 50, esc_range_ / 2))
-        {
-          escaping_ = true;
-          ROS_INFO("Temporary goal (%d, %d, %d)",
-                   end_grid[0], end_grid[1], end_grid[2]);
-          float x, y, yaw;
-          grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
-          goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-          goal_.pose.position.x = x;
-          goal_.pose.position.y = y;
-
-          createCostEstimCache();
-          return false;
-        }
-      }
+      start_pose_predictor_.clear();
+      triggerTemporaryEscape(start_grid);
       return false;
     }
 
@@ -2092,6 +2075,38 @@ protected:
     }
 
     return true;
+  }
+
+  void triggerTemporaryEscape(const Astar::Vec& start_grid)
+  {
+    if (escaping_ || !temporary_escape_)
+    {
+      return;
+    }
+
+    Astar::Vec end_grid = start_grid;
+
+    if (!enable_crowd_mode_)
+    {
+      // Just find available (not occupied) pose
+      if (searchAvailablePos(cm_, end_grid, esc_range_, esc_angle_, 50, esc_range_ / 2))
+      {
+        escaping_ = true;
+        ROS_INFO("Temporary goal (%d, %d, %d)",
+                 end_grid[0], end_grid[1], end_grid[2]);
+        float x, y, yaw;
+        grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
+        goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+        goal_.pose.position.x = x;
+        goal_.pose.position.y = y;
+
+        createCostEstimCache();
+      }
+      return;
+    }
+
+    // Find available pos with minumum cost on static distance map
+    // TODO(at-wat): implementing
   }
 
   int getSwitchIndex(const nav_msgs::Path& path) const
