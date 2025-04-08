@@ -580,19 +580,40 @@ protected:
         goal_ = goal_raw_;
         break;
     }
-    const auto ts = boost::chrono::high_resolution_clock::now();
-    cost_estim_cache_.create(s, e);
-    const auto tnow = boost::chrono::high_resolution_clock::now();
-    const float dur = boost::chrono::duration<float>(tnow - ts).count();
-    ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)", dur);
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_init_dur",
-        dur,
-        "second"));
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_update_dur",
-        0.0,
-        "second"));
+
+    {
+      const auto ts = boost::chrono::high_resolution_clock::now();
+      cost_estim_cache_.create(s, e);
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)", dur);
+
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_init_dur",
+          dur,
+          "second"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_update_dur",
+          0.0,
+          "second"));
+    }
+    if (enable_crowd_mode_)
+    {
+      const auto ts = boost::chrono::high_resolution_clock::now();
+      cost_estim_cache_static_.create(s, e);
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Cost estimation cache for static map generated (%0.4f sec.)", dur);
+
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_static_init_dur",
+          dur,
+          "second"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_static_update_dur",
+          0.0,
+          "second"));
+    }
 
     publishDebug();
 
@@ -886,13 +907,56 @@ protected:
       return;
     }
 
-    const auto ts = boost::chrono::high_resolution_clock::now();
-    cost_estim_cache_.update(
-        s, e,
-        DistanceMap::Rect(
-            Astar::Vec(search_range_x_min, search_range_y_min, 0),
-            Astar::Vec(search_range_x_max, search_range_y_max, 0)));
-    const auto tnow = boost::chrono::high_resolution_clock::now();
+    if (enable_crowd_mode_)
+    {
+      const auto ts = boost::chrono::high_resolution_clock::now();
+      cost_estim_cache_static_.update(
+          s, e,
+          DistanceMap::Rect(
+              Astar::Vec(1, 1, 1),
+              Astar::Vec(0, 0, 0)));  // No update
+    }
+
+    {
+      const auto ts = boost::chrono::high_resolution_clock::now();
+      cost_estim_cache_.update(
+          s, e,
+          DistanceMap::Rect(
+              Astar::Vec(search_range_x_min, search_range_y_min, 0),
+              Astar::Vec(search_range_x_max, search_range_y_max, 0)));
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)", dur);
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_update_dur",
+          dur,
+          "second"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_init_dur",
+          0.0,
+          "second"));
+    }
+    if (enable_crowd_mode_)
+    {
+      const auto ts = boost::chrono::high_resolution_clock::now();
+      cost_estim_cache_static_.update(
+          s, e,
+          DistanceMap::Rect(
+              Astar::Vec(1, 1, 0),
+              Astar::Vec(0, 0, 0)));  // No updated region
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Cost estimation cache for static map updated (%0.4f sec.)", dur);
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_static_update_dur",
+          dur,
+          "second"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_static_init_dur",
+          0.0,
+          "second"));
+    }
+
     const DistanceMap::DebugData dm_debug = cost_estim_cache_.getDebugData();
     if (dm_debug.has_negative_cost)
     {
@@ -900,16 +964,6 @@ protected:
     }
     ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu",
               dm_debug.search_queue_size, dm_debug.search_queue_cap);
-    const float dur = boost::chrono::duration<float>(tnow - ts).count();
-    ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)", dur);
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_update_dur",
-        dur,
-        "second"));
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_init_dur",
-        0.0,
-        "second"));
     publishDebug();
     return;
   }
@@ -999,11 +1053,11 @@ protected:
             .size = size2d,
             .resolution = map_info_.linear_resolution,
         };
+    cost_estim_cache_.init(model_, dmp);
     if (enable_crowd_mode_)
     {
       cost_estim_cache_static_.init(model_, dmp);
     }
-    cost_estim_cache_.init(model_, dmp);
     cm_rough_.reset(size2d);
     cm_updates_.reset(size2d);
     bbf_costmap_->reset(size2d);
@@ -1277,6 +1331,7 @@ public:
     as_.setSearchTaskNum(num_task);
     pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
     cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
+    cost_estim_cache_static_.setParams(cc_, num_cost_estim_task_);
 
     pnh_.param("retain_last_error_status", retain_last_error_status_, true);
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -1382,6 +1437,7 @@ public:
     sw_wait_ = config.sw_wait;
 
     cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
+    cost_estim_cache_static_.setParams(cc_, num_cost_estim_task_);
     ec_ = Astar::Vecf(
         1.0f / cc_.max_vel_,
         1.0f / cc_.max_vel_,
@@ -1401,6 +1457,10 @@ public:
               .resolution = map_info_.linear_resolution,
           };
       cost_estim_cache_.init(model_, dmp);
+      if (enable_crowd_mode_)
+      {
+        cost_estim_cache_static_.init(model_, dmp);
+      }
     }
 
     keep_a_part_of_previous_path_ = config.keep_a_part_of_previous_path;
