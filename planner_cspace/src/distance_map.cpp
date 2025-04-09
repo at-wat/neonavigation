@@ -185,6 +185,7 @@ DistanceMap::DistanceMap(
     const CostmapBBF::ConstPtr bbf_costmap)
   : cm_rough_(cm_rough)
   , bbf_costmap_(bbf_costmap)
+  , goal_(-1, -1, -1)
 {
 }
 
@@ -248,6 +249,13 @@ void DistanceMap::update(
     const Astar::Vec& s, const Astar::Vec& e,
     const Rect& rect)
 {
+  const Astar::Vec e_rough(e[0], e[1], 0);
+  const Astar::Vec s_rough(s[0], s[1], 0);
+  if (e_rough != goal_)
+  {
+    create(s, e);
+    return;
+  }
   Astar::Vec p_cost_min;
   float cost_min = std::numeric_limits<float>::max();
   for (Astar::Vec p(0, rect.min[1], 0); p[1] <= rect.max[1]; p[1]++)
@@ -269,9 +277,6 @@ void DistanceMap::update(
   }
   pq_open_.clear();
   pq_erase_.clear();
-
-  const Astar::Vec e_rough(e[0], e[1], 0);
-  const Astar::Vec s_rough(s[0], s[1], 0);
 
   if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {
@@ -350,6 +355,7 @@ void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
 {
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
+  goal_ = e_rough;
 
   if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {

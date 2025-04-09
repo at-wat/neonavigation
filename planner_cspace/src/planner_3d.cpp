@@ -593,7 +593,7 @@ protected:
       metrics_.data.push_back(neonavigation_metrics_msgs::metric(
           "distance_map_update_dur", 0.0, "second"));
     }
-    if (enable_crowd_mode_)
+    if (enable_crowd_mode_ && !escaping_)
     {
       const auto ts = boost::chrono::high_resolution_clock::now();
       cost_estim_cache_static_.create(s, e);
@@ -914,7 +914,7 @@ protected:
       metrics_.data.push_back(neonavigation_metrics_msgs::metric(
           "distance_map_init_dur", 0.0, "second"));
     }
-    if (enable_crowd_mode_)
+    if (enable_crowd_mode_ && !escaping_)
     {
       const auto ts = boost::chrono::high_resolution_clock::now();
       // Update without region.

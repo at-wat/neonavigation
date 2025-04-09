@@ -135,6 +135,8 @@ protected:
   reservable_priority_queue<Astar::PriorityVec> pq_erase_;
   std::vector<bool> edges_buf_;
 
+  Astar::Vec goal_;
+
   void fillCostmap(
       reservable_priority_queue<Astar::PriorityVec>& open,
       const Astar::Vec& s_rough);
