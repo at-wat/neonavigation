@@ -192,6 +192,7 @@ protected:
   geometry_msgs::PoseStamped start_;
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseStamped goal_raw_;
+  geometry_msgs::PoseStamped goal_original_;
   Astar::Vecf ec_;
   double goal_tolerance_lin_f_;
   double goal_tolerance_ang_f_;
@@ -411,7 +412,7 @@ protected:
       return false;
     }
 
-    goal_raw_ = goal_ = msg;
+    goal_original_ = goal_raw_ = goal_ = msg;
 
     const double len2 =
         goal_.pose.orientation.x * goal_.pose.orientation.x +
@@ -1891,7 +1892,7 @@ protected:
       case StartPoseStatus::FINISHING:
         if (escaping_)
         {
-          goal_ = goal_raw_;
+          goal_ = goal_raw_ = goal_original_;
           escaping_ = false;
           createCostEstimCache();
           ROS_INFO("Escaped");
@@ -2096,9 +2097,10 @@ protected:
                  end_grid[0], end_grid[1], end_grid[2]);
         float x, y, yaw;
         grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
-        goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-        goal_.pose.position.x = x;
-        goal_.pose.position.y = y;
+        goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+        goal_raw_.pose.position.x = x;
+        goal_raw_.pose.position.y = y;
+        goal_ = goal_raw_;
 
         createCostEstimCache();
       }
