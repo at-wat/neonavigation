@@ -280,6 +280,17 @@ protected:
     }
   }
 
+  Astar::Vec metric2Grid(const geometry_msgs::Pose& pose) const
+  {
+    Astar::Vec grid;
+    grid_metric_converter::metric2Grid(
+        map_info_, grid[0], grid[1], grid[2],
+        pose.position.x, pose.position.y,
+        tf2::getYaw(pose.orientation));
+    grid.cycleUnsigned(map_info_.angle);
+    return grid;
+  }
+
   bool cbMakePlan(nav_msgs::GetPlan::Request& req,
                   nav_msgs::GetPlan::Response& res)
   {
@@ -515,17 +526,8 @@ protected:
     cost_estim_cache_created_ = false;
     is_start_occupied_ = false;
 
-    Astar::Vec s, e;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        start_.pose.position.x, start_.pose.position.y,
-        tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(map_info_.angle);
-    grid_metric_converter::metric2Grid(
-        map_info_, e[0], e[1], e[2],
-        goal_raw_.pose.position.x, goal_raw_.pose.position.y,
-        tf2::getYaw(goal_raw_.pose.orientation));
-    e.cycleUnsigned(map_info_.angle);
+    Astar::Vec s = metric2Grid(start_.pose);
+    Astar::Vec e = metric2Grid(goal_raw_.pose);
     if (goal_changed)
     {
       ROS_INFO("New goal received. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
@@ -567,11 +569,7 @@ protected:
         ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)", x, y, yaw, e[0], e[1], e[2]);
         break;
       default:
-        Astar::Vec e_prev;
-        grid_metric_converter::metric2Grid(
-            map_info_, e_prev[0], e_prev[1], e_prev[2],
-            goal_.pose.position.x, goal_.pose.position.y,
-            tf2::getYaw(goal_.pose.orientation));
+        const Astar::Vec e_prev = metric2Grid(goal_.pose);
         if (e[0] != e_prev[0] || e[1] != e_prev[1] || e[2] != e_prev[2])
         {
           ROS_INFO("Goal reverted. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
@@ -858,12 +856,7 @@ protected:
     if (!has_start_)
       return;
 
-    Astar::Vec s;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        start_.pose.position.x, start_.pose.position.y,
-        tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(map_info_.angle);
+    const Astar::Vec s = metric2Grid(start_.pose);
 
     if (remember_updates_)
     {
@@ -887,12 +880,7 @@ protected:
       return;
     }
 
-    Astar::Vec e;
-    grid_metric_converter::metric2Grid(
-        map_info_, e[0], e[1], e[2],
-        goal_.pose.position.x, goal_.pose.position.y,
-        tf2::getYaw(goal_.pose.orientation));
-    e.cycleUnsigned(map_info_.angle);
+    const Astar::Vec e = metric2Grid(goal_.pose);
 
     if (cm_[e] == 100)
     {
@@ -1459,15 +1447,6 @@ public:
     no_map_update_timer_.stop();
   }
 
-  GridAstarModel3D::Vec pathPose2Grid(const geometry_msgs::PoseStamped& pose) const
-  {
-    GridAstarModel3D::Vec grid_vec;
-    grid_metric_converter::metric2Grid(map_info_, grid_vec[0], grid_vec[1], grid_vec[2],
-                                       pose.pose.position.x, pose.pose.position.y, tf2::getYaw(pose.pose.orientation));
-    grid_vec.cycleUnsigned(map_info_.angle);
-    return grid_vec;
-  }
-
   void waitUntil(const ros::Time& next_replan_time)
   {
     while (ros::ok())
@@ -1491,7 +1470,7 @@ public:
         {
           for (const auto& path_pose : previous_path_.poses)
           {
-            if (cm_[pathPose2Grid(path_pose)] == 100)
+            if (cm_[metric2Grid(path_pose.pose)] == 100)
             {
               // Obstacle on the path.
               return;
