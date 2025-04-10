@@ -592,10 +592,10 @@ protected:
       metrics_.data.push_back(neonavigation_metrics_msgs::metric(
           "distance_map_update_dur", 0.0, "second"));
     }
-    if (enable_crowd_mode_ && !escaping_)
+    if (enable_crowd_mode_)
     {
       const auto ts = boost::chrono::high_resolution_clock::now();
-      cost_estim_cache_static_.create(s, e);
+      cost_estim_cache_static_.create(s, metric2Grid(goal_original_.pose));
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
       ROS_DEBUG("Cost estimation cache for static map generated (%0.4f sec.)", dur);
@@ -903,13 +903,13 @@ protected:
       metrics_.data.push_back(neonavigation_metrics_msgs::metric(
           "distance_map_init_dur", 0.0, "second"));
     }
-    if (enable_crowd_mode_ && !escaping_)
+    if (enable_crowd_mode_)
     {
       const auto ts = boost::chrono::high_resolution_clock::now();
       // Update without region.
       // Distance map will expand distance map using edges_buf if needed.
       cost_estim_cache_static_.update(
-          s, e,
+          s, metric2Grid(goal_original_.pose),
           DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(0, 0, 0)));
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
