@@ -511,6 +511,7 @@ protected:
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
+
   bool createCostEstimCache(const bool goal_changed = true)
   {
     if (!has_goal_)
@@ -1904,7 +1905,10 @@ protected:
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable.");
       start_pose_predictor_.clear();
-      triggerTemporaryEscape(start_grid);
+      if (!escaping_ && temporary_escape_)
+      {
+        updateTemporaryEscapeGoal(start_grid);
+      }
       return false;
     }
 
@@ -2057,37 +2061,82 @@ protected:
     return true;
   }
 
-  void triggerTemporaryEscape(const Astar::Vec& start_grid)
+  void updateTemporaryEscapeGoal(const Astar::Vec& start_grid)
   {
-    if (escaping_ || !temporary_escape_)
-    {
-      return;
-    }
-
     Astar::Vec end_grid = start_grid;
 
     if (!enable_crowd_mode_)
     {
       // Just find available (not occupied) pose
-      if (searchAvailablePos(cm_, end_grid, esc_range_, esc_angle_, 50, esc_range_ / 2))
+      if (!searchAvailablePos(cm_, end_grid, esc_range_, esc_angle_, 50, esc_range_ / 2))
       {
-        escaping_ = true;
-        ROS_INFO("Temporary goal (%d, %d, %d)",
-                 end_grid[0], end_grid[1], end_grid[2]);
-        float x, y, yaw;
-        grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
-        goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-        goal_raw_.pose.position.x = x;
-        goal_raw_.pose.position.y = y;
-        goal_ = goal_raw_;
-
-        createCostEstimCache();
+        ROS_WARN("No valid temporary escape goal");
+        return;
       }
+      escaping_ = true;
+      ROS_INFO("Temporary goal (%d, %d, %d)",
+               end_grid[0], end_grid[1], end_grid[2]);
+      float x, y, yaw;
+      grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
+      goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      goal_raw_.pose.position.x = x;
+      goal_raw_.pose.position.y = y;
+      goal_ = goal_raw_;
+
+      createCostEstimCache();
       return;
     }
 
     // Find available pos with minumum cost on static distance map
-    // TODO(at-wat): implementing
+    {
+      float cost_min = std::numeric_limits<float>::max();
+      Astar::Vec te_out;
+      Astar::Vec d;
+      for (d[2] = -esc_angle_; d[2] <= esc_angle_; d[2]++)
+      {
+        for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
+        {
+          if (d[0] == 0 && d[1] == 0)
+            continue;
+          if (d.sqlen() > esc_range_ * esc_range_)
+            continue;
+
+          Astar::Vec te(start_grid[0] + d[0], start_grid[1] + d[1], 0);
+          if ((unsigned int)te[0] >= (unsigned int)map_info_.width ||
+              (unsigned int)te[1] >= (unsigned int)map_info_.height)
+            continue;
+          te.cycleUnsigned(map_info_.angle);
+          if (!cm_.validate(te, range_))
+            continue;
+
+          if (cm_rough_[te] >= 50)
+            continue;
+          const auto cost = cost_estim_cache_static_[te];
+          if (cost < cost_min)
+          {
+            cost_min = cost;
+            te_out = te;
+          }
+        }
+      }
+      if (cost_min == std::numeric_limits<float>::max())
+      {
+        ROS_WARN("No valid temporary escape goal");
+        return;
+      }
+      // TODO(at-wat): distance map gradient as yaw
+      escaping_ = true;
+      ROS_INFO("Temporary goal (%d, %d, %d)",
+               te_out[0], te_out[1], te_out[2]);
+      float x, y, yaw;
+      grid_metric_converter::grid2Metric(map_info_, te_out[0], te_out[1], te_out[2], x, y, yaw);
+      goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+      goal_raw_.pose.position.x = x;
+      goal_raw_.pose.position.y = y;
+      goal_ = goal_raw_;
+
+      createCostEstimCache();
+    }
   }
 
   int getSwitchIndex(const nav_msgs::Path& path) const
