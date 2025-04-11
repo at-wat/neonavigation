@@ -290,6 +290,25 @@ protected:
     grid.cycleUnsigned(map_info_.angle);
     return grid;
   }
+  geometry_msgs::Pose grid2MetricPose(const Astar::Vec& grid) const
+  {
+    float x, y, yaw;
+    grid_metric_converter::grid2Metric(map_info_, grid[0], grid[1], grid[2], x, y, yaw);
+    geometry_msgs::Pose pose;
+    pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+    pose.position.x = x;
+    pose.position.y = y;
+    return pose;
+  }
+  geometry_msgs::Point32 grid2MetricPoint(const Astar::Vec& grid) const
+  {
+    float x, y, yaw;
+    grid_metric_converter::grid2Metric(map_info_, grid[0], grid[1], grid[2], x, y, yaw);
+    geometry_msgs::Point32 point;
+    point.x = x;
+    point.y = y;
+    return point;
+  }
 
   bool cbMakePlan(nav_msgs::GetPlan::Request& req,
                   nav_msgs::GetPlan::Response& res)
@@ -562,12 +581,10 @@ protected:
         ++cnt_stuck_;
         return true;
       case DiscretePoseStatus::RELOCATED:
-        float x, y, yaw;
-        grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
-        goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-        goal_.pose.position.x = x;
-        goal_.pose.position.y = y;
-        ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)", x, y, yaw, e[0], e[1], e[2]);
+        goal_.pose = grid2MetricPose(e);
+        ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
+                 goal_.pose.position.x, goal_.pose.position.y, tf2::getYaw(goal_.pose.orientation),
+                 e[0], e[1], e[2]);
         break;
       default:
         const Astar::Vec e_prev = metric2Grid(goal_.pose);
@@ -638,16 +655,14 @@ protected:
         for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
         {
           p[2] = 0;
-          float x, y, yaw;
-          grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-          geometry_msgs::Point32 point;
-          point.x = x;
-          point.y = y;
-          if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
+          const float cost = cost_estim_cache_[p];
+          if (cost == std::numeric_limits<float>::max())
             continue;
-          point.z = cost_estim_cache_[p] / 500;
+
+          geometry_msgs::Point32 point = grid2MetricPoint(p);
+          point.z = cost / 500;
           distance_map.points.push_back(point);
-          distance_map.channels[0].values.push_back(cost_estim_cache_[p] * k_dist);
+          distance_map.channels[0].values.push_back(cost * k_dist);
         }
       }
       pub_distance_map_.publish(distance_map);
@@ -1717,16 +1732,9 @@ protected:
   {
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
-    float x, y, yaw;
-    grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
-    p.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-    p.pose.position.x = x;
-    p.pose.position.y = y;
+    p.pose = grid2MetricPose(end_grid);
     pub_end_.publish(p);
-    grid_metric_converter::grid2Metric(map_info_, start_grid[0], start_grid[1], start_grid[2], x, y, yaw);
-    p.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-    p.pose.position.x = x;
-    p.pose.position.y = y;
+    p.pose = grid2MetricPose(start_grid);
     pub_start_.publish(p);
   }
 
@@ -1975,14 +1983,7 @@ protected:
     poses.header = path.header;
     for (const auto& p : path_grid)
     {
-      geometry_msgs::Pose pose;
-      float x, y, yaw;
-      grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-      pose.position.x = x;
-      pose.position.y = y;
-      pose.orientation =
-          tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-      poses.poses.push_back(pose);
+      poses.poses.push_back(grid2MetricPose(p));
     }
     pub_path_poses_.publish(poses);
     if (!start_pose_predictor_.getPreservedPath().poses.empty())
@@ -2074,11 +2075,7 @@ protected:
       }
       escaping_ = true;
       ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
-      float x, y, yaw;
-      grid_metric_converter::grid2Metric(map_info_, te[0], te[1], te[2], x, y, yaw);
-      goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-      goal_raw_.pose.position.x = x;
-      goal_raw_.pose.position.y = y;
+      goal_raw_.pose = grid2MetricPose(te);
       goal_ = goal_raw_;
 
       createCostEstimCache();
@@ -2156,11 +2153,8 @@ protected:
       escaping_ = true;
       ROS_INFO("Temporary goal (%d, %d, %d)",
                te_out[0], te_out[1], static_cast<int>(yaw / map_info_.angular_resolution));
-      float x, y, yaw_dummy;
-      grid_metric_converter::grid2Metric(map_info_, te_out[0], te_out[1], te_out[2], x, y, yaw_dummy);
+      goal_raw_.pose = grid2MetricPose(te_out);
       goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-      goal_raw_.pose.position.x = x;
-      goal_raw_.pose.position.y = y;
       goal_ = goal_raw_;
 
       createCostEstimCache();
