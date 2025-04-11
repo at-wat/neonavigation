@@ -7,7 +7,7 @@
   <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)" />
   <param name="neonavigation_compatible" value="1" />
 
-  <test test-name="test_navigate" pkg="planner_cspace" type="test_navigate" time-limit="200.0">
+  <test test-name="test_navigate_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)_$(arg enable_crowd_mode)" pkg="planner_cspace" type="test_navigate" time-limit="260.0">
     <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
   </test>
 

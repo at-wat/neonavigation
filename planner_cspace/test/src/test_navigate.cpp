@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -52,6 +53,7 @@
 class Navigate : public ::testing::Test
 {
 protected:
+  ros::NodeHandle pnh_;
   ros::NodeHandle nh_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
@@ -75,7 +77,8 @@ protected:
   std::string test_scope_;
 
   Navigate()
-    : tfl_(tfbuf_)
+    : pnh_("~")
+    , tfl_(tfbuf_)
     , local_map_apply_cnt_(0)
   {
     sub_map_ = nh_.subscribe("map_global", 1, &Navigate::cbMap, this);
@@ -621,6 +624,85 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
     }
   }
   waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::PlannerStatus::GOING_WELL);
+}
+
+TEST_F(Navigate, RobotIsInCrowd)
+{
+  if (!pnh_.param("enable_crowd_mode", false))
+  {
+    GTEST_SKIP() << "enable_crowd_mode is not set";
+  }
+
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.9;
+  path.poses[0].pose.position.y = 2.8;
+  path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
+  pub_patrol_nodes_.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(10);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
+  while (ros::ok())
+  {
+    pubMapLocal();
+    ros::spinOnce();
+    wait.sleep();
+
+    const ros::Time now = ros::Time::now();
+
+    if (now > deadline)
+    {
+      dumpRobotTrajectory();
+      FAIL()
+          << test_scope_ << "Navigation timeout." << std::endl
+          << "now: " << now << std::endl
+          << "status: " << planner_status_;
+      break;
+    }
+
+    tf2::Stamped<tf2::Transform> trans;
+    try
+    {
+      trans = lookupRobotTrans(now);
+    }
+    catch (tf2::TransformException& e)
+    {
+      std::cerr << test_scope_ << e.what() << std::endl;
+      continue;
+    }
+
+    const auto goal_rel = trans.inverse() * goal;
+    if (goal_rel.getOrigin().length() < 0.2 &&
+        std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
+    {
+      std::cerr << test_scope_ << "Navigation success." << std::endl;
+      ros::Duration(2.0).sleep();
+      return;
+    }
+
+    const size_t rx = trans.getOrigin().x() / map_->info.resolution;
+    const size_t ry = trans.getOrigin().y() / map_->info.resolution;
+    const size_t data_size = map_local_->data.size();
+    map_local_->data.clear();
+    map_local_->data.resize(data_size, 0);
+    const int bs = 6;
+    for (int i = -bs; i <= bs; ++i)
+    {
+      map_local_->data[std::min((rx + i) + (ry - bs) * map_local_->info.width, data_size - 1)] = 100;
+      map_local_->data[std::min((rx + i) + (ry + bs) * map_local_->info.width, data_size - 1)] = 100;
+      map_local_->data[std::min((rx - bs) + (ry + i) * map_local_->info.width, data_size - 1)] = 100;
+      map_local_->data[std::min((rx + bs) + (ry + i) * map_local_->info.width, data_size - 1)] = 100;
+    }
+  }
 }
 
 int main(int argc, char** argv)
