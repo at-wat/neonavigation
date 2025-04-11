@@ -36,6 +36,7 @@
     <param name="antialias_start" value="$(arg antialias_start)" />
     <param name="fast_map_update" value="$(arg fast_map_update)" />
     <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
+    <param name="temporary_escape" value="$(arg enable_crowd_mode)" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
     <param name="max_vel" value="0.1" />
