@@ -2063,21 +2063,19 @@ protected:
 
   void updateTemporaryEscapeGoal(const Astar::Vec& start_grid)
   {
-    Astar::Vec end_grid = start_grid;
-
     if (!enable_crowd_mode_)
     {
       // Just find available (not occupied) pose
-      if (!searchAvailablePos(cm_, end_grid, esc_range_, esc_angle_, 50, esc_range_ / 2))
+      Astar::Vec te;
+      if (!searchAvailablePos(cm_, te, esc_range_, esc_angle_, 50, esc_range_ / 2))
       {
         ROS_WARN("No valid temporary escape goal");
         return;
       }
       escaping_ = true;
-      ROS_INFO("Temporary goal (%d, %d, %d)",
-               end_grid[0], end_grid[1], end_grid[2]);
+      ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
       float x, y, yaw;
-      grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
+      grid_metric_converter::grid2Metric(map_info_, te[0], te[1], te[2], x, y, yaw);
       goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
       goal_raw_.pose.position.x = x;
       goal_raw_.pose.position.y = y;
@@ -2095,11 +2093,7 @@ protected:
       {
         for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
         {
-          if (d[0] == 0 && d[1] == 0)
-          {
-            continue;
-          }
-          if (d.sqlen() > esc_range_ * esc_range_)
+          if (d[0] == 0 && d[1] == 0 || d.sqlen() > esc_range_ * esc_range_)
           {
             continue;
           }
@@ -2111,12 +2105,7 @@ protected:
             continue;
           }
           te.cycleUnsigned(map_info_.angle);
-          if (!cm_rough_.validate(te, range_))
-          {
-            continue;
-          }
-
-          if (cm_rough_[te] >= 50)
+          if (!cm_rough_.validate(te, range_) || cm_rough_[te] >= 50)
           {
             continue;
           }
