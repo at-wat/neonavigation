@@ -2090,7 +2090,7 @@ protected:
       {
         for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
         {
-          if (d[0] == 0 && d[1] == 0 || d.sqlen() > esc_range_ * esc_range_)
+          if ((d[0] == 0 && d[1] == 0) || d.sqlen() > esc_range_ * esc_range_)
           {
             continue;
           }
