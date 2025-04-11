@@ -3,10 +3,13 @@
   <arg name="antialias_start" default="false" />
   <arg name="fast_map_update" default="false" />
   <arg name="with_tolerance" default="false" />
+  <arg name="enable_crowd_mode" default="false" />
   <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)" />
   <param name="neonavigation_compatible" value="1" />
 
-  <test test-name="test_navigate" pkg="planner_cspace" type="test_navigate" time-limit="200.0" />
+  <test test-name="test_navigate" pkg="planner_cspace" type="test_navigate" time-limit="200.0">
+    <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
+  </test>
 
   <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
     <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
@@ -32,6 +35,7 @@
     <param name="sw_wait" value="0.2" />
     <param name="antialias_start" value="$(arg antialias_start)" />
     <param name="fast_map_update" value="$(arg fast_map_update)" />
+    <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
     <param name="max_vel" value="0.1" />

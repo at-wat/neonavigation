@@ -99,6 +99,11 @@ add_rostest(test/navigation_rostest.test
   DEPENDENCIES test_navigate
 )
 
+add_rostest(test/navigation_rostest.test
+  ARGS enable_crowd_mode:=true
+  DEPENDENCIES test_navigate
+)
+
 add_rostest_gtest(test_navigate_remember
   test/navigation_remember_rostest.test
   src/test_navigate_remember.cpp
