@@ -641,8 +641,8 @@ TEST_F(Navigate, RobotIsInCrowd)
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
-  path.poses[0].pose.position.x = 1.9;
-  path.poses[0].pose.position.y = 2.8;
+  path.poses[0].pose.position.x = 1.6;
+  path.poses[0].pose.position.y = 2.2;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
   pub_patrol_nodes_.publish(path);
 
