@@ -577,8 +577,19 @@ protected:
         ROS_ERROR("Given goal is not on the map.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
+        if (escaping_)
+        {
+          ROS_WARN("Oops! Temporary goal is in Rock! Reverting the temporary goal.");
+          goal_raw_ = goal_ = goal_original_;
+          escaping_ = false;
+          return true;
+        }
         ROS_WARN("Oops! Goal is in Rock!");
         ++cnt_stuck_;
+        if (!escaping_ && temporary_escape_ && enable_crowd_mode_)
+        {
+          updateTemporaryEscapeGoal(s);
+        }
         return true;
       case DiscretePoseStatus::RELOCATED:
         goal_.pose = grid2MetricPose(e);
