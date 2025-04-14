@@ -141,6 +141,21 @@ Visualization Manager:
       Topic: /move_base_simple/goal
       Unreliable: false
       Value: true
+    - Alpha: 0.5
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz/Pose
+      Color: 0; 25; 255
+      Enabled: true
+      Head Length: 0.10000000149011612
+      Head Radius: 0.05000000074505806
+      Name: Pose
+      Shaft Length: 0.10000000149011612
+      Shaft Radius: 0.019999999552965164
+      Shape: Arrow
+      Topic: /planner_3d/current_goal
+      Unreliable: false
+      Value: true
     - Alpha: 0.800000011920929
       Class: rviz/Map
       Color Scheme: map

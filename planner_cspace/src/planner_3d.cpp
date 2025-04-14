@@ -107,6 +107,7 @@ protected:
   ros::Publisher pub_remembered_map_;
   ros::Publisher pub_start_;
   ros::Publisher pub_end_;
+  ros::Publisher pub_goal_;
   ros::Publisher pub_status_;
   ros::Publisher pub_metrics_;
   ros::ServiceServer srs_forget_;
@@ -1178,6 +1179,7 @@ public:
         pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
     pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
+    pub_goal_ = pnh_.advertise<geometry_msgs::PoseStamped>("current_goal", 1, true);
     pub_status_ = pnh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
     pub_metrics_ = pnh_.advertise<neonavigation_metrics_msgs::Metrics>("metrics", 1, false);
     srs_forget_ = neonavigation_common::compat::advertiseService(
@@ -1687,6 +1689,7 @@ public:
         status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
       publishEmptyPath();
     }
+    publishCurrentGoal();
     status_.header.stamp = now;
     pub_status_.publish(status_);
     diag_updater_.force_update();
@@ -1752,6 +1755,13 @@ protected:
     pub_end_.publish(p);
     p.pose = grid2MetricPose(start_grid);
     pub_start_.publish(p);
+  }
+
+  void publishCurrentGoal()
+  {
+    geometry_msgs::PoseStamped p(goal_);
+    p.header = map_header_;
+    pub_goal_.publish(p);
   }
 
   bool isPathFinishing(const Astar::Vec& start_grid, const Astar::Vec& end_grid) const
