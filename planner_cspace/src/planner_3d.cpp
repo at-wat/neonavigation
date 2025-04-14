@@ -1939,7 +1939,7 @@ protected:
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
       ROS_WARN("Goal unreachable.");
       start_pose_predictor_.clear();
-      if (!escaping_ && temporary_escape_)
+      if (temporary_escape_)
       {
         updateTemporaryEscapeGoal(start_grid);
       }
