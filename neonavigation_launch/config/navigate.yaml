@@ -34,6 +34,7 @@ planner_3d:
   hist_ignore_range_max: 1.5
   esc_range: 1.0
   esc_range_min: 0.5
+  keep_a_part_of_previous_path: true
 spur:
   hz: 30.0
   k_dist: 16.0
