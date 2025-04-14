@@ -202,6 +202,10 @@ protected:
   double goal_tolerance_ang_finish_;
   int goal_tolerance_lin_;
   int goal_tolerance_ang_;
+  double temporary_escape_tolerance_lin_f_;
+  double temporary_escape_tolerance_ang_f_;
+  int temporary_escape_tolerance_lin_;
+  int temporary_escape_tolerance_ang_;
 
   planner_cspace_msgs::PlannerStatus status_;
   neonavigation_metrics_msgs::Metrics metrics_;
@@ -1244,6 +1248,8 @@ public:
     pnh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
     pnh_.param("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
     pnh_.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
+    pnh_.param("temporary_escape_tolerance_lin", temporary_escape_tolerance_lin_f_, 0.1);
+    pnh_.param("temporary_escape_tolerance_ang", temporary_escape_tolerance_ang_f_, 1.57);
 
     pnh_.param("unknown_cost", unknown_cost_, 100);
     pnh_.param("overwrite_cost", overwrite_cost_, false);
@@ -1364,6 +1370,8 @@ public:
     tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
     goal_tolerance_lin_ = std::lround(goal_tolerance_lin_f_ / map_info_.linear_resolution);
     goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
+    temporary_escape_tolerance_lin_ = std::lround(temporary_escape_tolerance_lin_f_ / map_info_.linear_resolution);
+    temporary_escape_tolerance_ang_ = std::lround(temporary_escape_tolerance_ang_f_ / map_info_.angular_resolution);
     cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const bool reset_required = force_reset || (previous_range != range_);
@@ -1411,6 +1419,8 @@ public:
     goal_tolerance_lin_f_ = config.goal_tolerance_lin;
     goal_tolerance_ang_f_ = config.goal_tolerance_ang;
     goal_tolerance_ang_finish_ = config.goal_tolerance_ang_finish;
+    temporary_escape_tolerance_lin_f_ = config.temporary_escape_tolerance_lin;
+    temporary_escape_tolerance_ang_f_ = config.temporary_escape_tolerance_ang;
 
     overwrite_cost_ = config.overwrite_cost;
     hist_ignore_range_f_ = config.hist_ignore_range;
@@ -1767,7 +1777,12 @@ protected:
   bool isPathFinishing(const Astar::Vec& start_grid, const Astar::Vec& end_grid) const
   {
     int g_tolerance_lin, g_tolerance_ang;
-    if (act_tolerant_->isActive())
+    if (escaping_)
+    {
+      g_tolerance_lin = temporary_escape_tolerance_lin_;
+      g_tolerance_ang = temporary_escape_tolerance_ang_;
+    }
+    else if (act_tolerant_->isActive())
     {
       g_tolerance_lin = std::lround(goal_tolerant_->goal_tolerance_lin / map_info_.linear_resolution);
       g_tolerance_ang = std::lround(goal_tolerant_->goal_tolerance_ang / map_info_.angular_resolution);
