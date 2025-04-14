@@ -145,8 +145,10 @@ protected:
   double local_range_f_;
   double longcut_range_f_;
   int esc_range_;
+  int esc_range_min_;
   int esc_angle_;
   double esc_range_f_;
+  double esc_range_min_ratio_;
   int tolerance_range_;
   int tolerance_angle_;
   double tolerance_range_f_;
@@ -1256,6 +1258,7 @@ public:
     pnh_.param("local_range", local_range_f_, 2.5);
     pnh_.param("longcut_range", longcut_range_f_, 0.0);
     pnh_.param("esc_range", esc_range_f_, 0.25);
+    pnh_.param("esc_range_min_ratio", esc_range_min_ratio_, 0.5);
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
     pnh_.param("path_interpolation_resolution", path_interpolation_resolution_, 0.5);
@@ -1353,6 +1356,7 @@ public:
     hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
     local_range_ = std::lround(local_range_f_ / map_info_.linear_resolution);
     esc_range_ = std::lround(esc_range_f_ / map_info_.linear_resolution);
+    esc_range_min_ = std::lround(esc_range_f_ * esc_range_min_ratio_ / map_info_.linear_resolution);
     esc_angle_ = map_info_.angle / 8;
     tolerance_range_ = std::lround(tolerance_range_f_ / map_info_.linear_resolution);
     tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
@@ -1417,6 +1421,7 @@ public:
     local_range_f_ = config.local_range;
     longcut_range_f_ = config.longcut_range;
     esc_range_f_ = config.esc_range;
+    esc_range_min_ratio_ = config.esc_range_min_ratio;
     tolerance_range_f_ = config.tolerance_range;
     tolerance_angle_f_ = config.tolerance_angle;
     find_best_ = config.find_best;
@@ -2079,7 +2084,7 @@ protected:
     {
       // Just find available (not occupied) pose
       Astar::Vec te;
-      if (!searchAvailablePos(cm_, te, esc_range_, esc_angle_, 50, esc_range_ / 2))
+      if (!searchAvailablePos(cm_, te, esc_range_, esc_angle_, 50, esc_range_min_))
       {
         ROS_WARN("No valid temporary escape goal");
         return;
@@ -2097,11 +2102,14 @@ protected:
     {
       float cost_min = std::numeric_limits<float>::max();
       Astar::Vec te_out;
+      const int esc_range_sq = esc_range_ * esc_range_;
+      const int esc_range_min_sq = esc_range_min_ * esc_range_min_;
       for (Astar::Vec d(0, -esc_range_, 0); d[1] <= esc_range_; d[1]++)
       {
         for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
         {
-          if ((d[0] == 0 && d[1] == 0) || d.sqlen() > esc_range_ * esc_range_)
+          const int sqlen = d.sqlen();
+          if ((d[0] == 0 && d[1] == 0) || sqlen > esc_range_sq || sqlen < esc_range_min_sq)
           {
             continue;
           }
