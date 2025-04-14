@@ -2130,12 +2130,51 @@ protected:
           {
             continue;
           }
-          te.cycleUnsigned(map_info_.angle);
           if (!cm_rough_.validate(te, range_) || cm_rough_[te] >= 50)
           {
             continue;
           }
           const auto cost = cost_estim_cache_static_[te];
+          if (cost >= cost_min)
+          {
+            continue;
+          }
+
+          // Calculate distance map gradient
+          float grad[2] = {0, 0};
+          for (Astar::Vec d(0, -1, 0); d[1] <= 1; d[1]++)
+          {
+            for (d[0] = -1; d[0] <= 1; d[0]++)
+            {
+              if (d[0] == 0 && d[1] == 0)
+              {
+                continue;
+              }
+
+              const auto p = te_out + d;
+              const auto cost2 = cost_estim_cache_static_[p];
+              if (cost2 == std::numeric_limits<float>::max())
+              {
+                continue;
+              }
+              const float cost_diff = cost2 - cost;
+              grad[0] += -cost_diff * d[0];
+              grad[1] += -cost_diff * d[1];
+            }
+          }
+          if (grad[0] == 0 && grad[1] == 0)
+          {
+            continue;
+          }
+          const float yaw = std::atan2(grad[1], grad[0]);
+          te[2] = static_cast<int>(yaw / map_info_.angular_resolution);
+
+          te.cycleUnsigned(map_info_.angle);
+          if (cm_[te] >= 50)
+          {
+            continue;
+          }
+
           if (cost < cost_min)
           {
             cost_min = cost;
@@ -2149,41 +2188,10 @@ protected:
         return;
       }
 
-      // Calculate distance map gradient
-      float grad[2] = {0, 0};
-      for (Astar::Vec d(0, -1, 0); d[1] <= 1; d[1]++)
-      {
-        for (d[0] = -1; d[0] <= 1; d[0]++)
-        {
-          if (d[0] == 0 && d[1] == 0)
-          {
-            continue;
-          }
-
-          const auto p = te_out + d;
-          const auto cost = cost_estim_cache_static_[p];
-          if (cost == std::numeric_limits<float>::max())
-          {
-            continue;
-          }
-          const float cost_diff = cost - cost_min;
-          grad[0] += -cost_diff * d[0];
-          grad[1] += -cost_diff * d[1];
-        }
-      }
-      if (grad[0] == 0 && grad[1] == 0)
-      {
-        // Must not reach here since non-zero grid of distance map must be continued from the goal
-        ROS_ERROR("Failed to calculate distance map gradient");
-        return;
-      }
-      const float yaw = std::atan2(grad[1], grad[0]);
-
       escaping_ = true;
       ROS_INFO("Temporary goal (%d, %d, %d)",
-               te_out[0], te_out[1], static_cast<int>(yaw / map_info_.angular_resolution));
+               te_out[0], te_out[1], te_out[2]);
       goal_raw_.pose = grid2MetricPose(te_out);
-      goal_raw_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
       goal_ = goal_raw_;
 
       createCostEstimCache();
