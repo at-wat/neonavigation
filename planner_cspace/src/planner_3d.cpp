@@ -2166,7 +2166,7 @@ protected:
                 continue;
               }
 
-              const auto p = te_out + d;
+              const auto p = te + d;
               const auto cost2 = cost_estim_cache_static_[p];
               if (cost2 == std::numeric_limits<float>::max())
               {
