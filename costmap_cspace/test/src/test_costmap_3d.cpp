@@ -1119,7 +1119,7 @@ TEST(Costmap3dLayerOutput, LinearSpreadMinCost)
   }
 }
 
-TEST(Costmap3dLayerOutput, BaseMapSizeChange)
+TEST(Costmap3dLayerOutput, OutOfBoundUpdateOnBaseMapSizeChange)
 {
   costmap_cspace::Costmap3d cms(4);
   auto root = cms.addRootLayer<costmap_cspace::Costmap3dLayerPlain>();
