@@ -119,6 +119,8 @@ protected:
 
     UpdatedRegion region_merged = region;
     region_merged.merge(region_prev_);
+    region_merged.normalize(map_->info.width, map_->info.height);
+
     region_prev_ = region;
     region_ = UpdatedRegion();
 
