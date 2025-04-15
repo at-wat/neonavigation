@@ -27,6 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef NDEBUG
+// Force assertion to check out-of-bound access
+#undef NDEBUG
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -1112,6 +1117,37 @@ TEST(Costmap3dLayerOutput, LinearSpreadMinCost)
       }
     }
   }
+}
+
+TEST(Costmap3dLayerOutput, BaseMapSizeChange)
+{
+  costmap_cspace::Costmap3d cms(4);
+  auto root = cms.addRootLayer<costmap_cspace::Costmap3dLayerPlain>();
+  auto cm = cms.addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
+
+  // Generate sample map
+  nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
+
+  map->info.width = 50;
+  map->info.height = 50;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height);
+
+  // Apply large map
+  root->setBaseMap(map);
+
+  // Update out-of-bound of the small map
+  cm->processMapOverlay(map, true);
+
+  map->info.width = 7;
+  map->info.height = 7;
+  map->info.resolution = 1.0;
+  map->info.origin.orientation.w = 1.0;
+  map->data.resize(map->info.width * map->info.height);
+
+  // Apply small map
+  root->setBaseMap(map);
 }
 
 int main(int argc, char** argv)
