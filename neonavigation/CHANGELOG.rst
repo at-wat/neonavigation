@@ -2,6 +2,9 @@
 Changelog for package neonavigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.17.6 (2025-03-18)
 -------------------
 

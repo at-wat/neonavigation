@@ -2,6 +2,9 @@
 Changelog for package joystick_interrupt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.17.6 (2025-03-18)
 -------------------
 

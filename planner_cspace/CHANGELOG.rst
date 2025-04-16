@@ -2,6 +2,9 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.17.6 (2025-03-18)
 -------------------
 * planner_cspace: fix flaky dynamic reconfigure test (`#756 <https://github.com/at-wat/neonavigation/issues/756>`_)

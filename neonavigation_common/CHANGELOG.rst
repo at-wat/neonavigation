@@ -2,6 +2,9 @@
 Changelog for package neonavigation_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.17.6 (2025-03-18)
 -------------------
 
