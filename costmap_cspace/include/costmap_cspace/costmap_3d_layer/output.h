@@ -32,6 +32,8 @@
 
 #include <memory>
 
+#include <ros/ros.h>
+
 #include <costmap_cspace_msgs/CSpace3D.h>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
 #include <geometry_msgs/PolygonStamped.h>
@@ -117,6 +119,8 @@ protected:
 
     UpdatedRegion region_merged = region;
     region_merged.merge(region_prev_);
+    region_merged.normalize(map_->info.width, map_->info.height);
+
     region_prev_ = region;
     region_ = UpdatedRegion();
 
@@ -126,6 +130,11 @@ protected:
     update_msg->height = region_merged.height_;
     update_msg->yaw = region_merged.yaw_;
     update_msg->angle = region_merged.angle_;
+
+    ROS_ASSERT(
+        (update_msg->x + update_msg->width) *
+            (update_msg->y + update_msg->height) <=
+        map_->info.width * map_->info.height);
 
     if (region.width_ == 0 || region.height_ == 0)
     {
