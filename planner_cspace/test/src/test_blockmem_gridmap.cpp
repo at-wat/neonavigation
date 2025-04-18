@@ -27,6 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef NDEBUG
+// Enable assertion to check out-of-bound access
+#undef NDEBUG
+#endif
+
 #include <cstddef>
 #include <limits>
 
