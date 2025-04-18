@@ -19,13 +19,11 @@ costmap_3d:
       overlay_mode: max
       linear_expand: 0.08
       linear_spread: 0.0
-      keep_unknown: true
     - name: overlay1
       type: Costmap3dLayerFootprint
       overlay_mode: max
       linear_expand: 0.15
       linear_spread: 0.3
-      keep_unknown: true
 planner_3d:
   num_threads: 2
   freq: 2.0
@@ -34,6 +32,10 @@ planner_3d:
   remember_updates: true
   hist_ignore_range: 0.0
   hist_ignore_range_max: 1.5
+  esc_range: 1.0
+  esc_range_min: 0.5
+  temporary_escape_tolerance_lin: 0.2
+  keep_a_part_of_previous_path: true
 spur:
   hz: 30.0
   k_dist: 16.0

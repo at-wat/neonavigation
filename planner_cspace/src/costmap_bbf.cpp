@@ -38,7 +38,7 @@ namespace planner_cspace
 {
 namespace planner_3d
 {
-void CostmapBBF::updateCostmap()
+void CostmapBBFImpl::updateCostmap()
 {
   for (VecInternal p = updated_min_; p[1] <= updated_max_[1]; p[1]++)
   {
@@ -50,7 +50,7 @@ void CostmapBBF::updateCostmap()
   updated_min_ = VecInternal(size_[0], size_[1]);
   updated_max_ = VecInternal(-1, -1);
 }
-void CostmapBBF::remember(
+void CostmapBBFImpl::remember(
     const BlockMemGridmapBase<char, 3, 2>* costmap,
     const Vec& center,
     const float remember_hit_odds, const float remember_miss_odds,
@@ -99,7 +99,7 @@ void CostmapBBF::remember(
     }
   }
 }
-void CostmapBBF::forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb)
+void CostmapBBFImpl::forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb)
 {
   for (Vec p(0, 0, 0); p[1] < size_[1]; p[1]++)
   {

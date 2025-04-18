@@ -1,10 +1,12 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="use_path_with_velocity" default="true" />
+  <arg name="simulate_surrounded" default="false" />
   <arg name="vel" default="0.5" />
 
   <include file="$(find neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="true" />
+    <arg name="enable_crowd_mode" value="$(arg simulate_surrounded)" />
     <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
     <arg name="use_path_with_velocity" value="true" />
     <arg name="vel" value="$(arg vel)" />
@@ -20,6 +22,7 @@
     <param name="hz" value="1.5" />
     <param name="round_local_map" value="true" />
     <param name="simulate_occlusion" value="true" />
+    <param name="simulate_surrounded" value="$(arg simulate_surrounded)" />
   </node>
 
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" />
