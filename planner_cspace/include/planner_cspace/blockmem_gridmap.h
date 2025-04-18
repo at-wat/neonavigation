@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
 
 #include <bitset>
+#include <cassert>
 #include <limits>
 #include <memory>
 
@@ -144,6 +145,8 @@ public:
       const BlockMemGridmapBase<T, DIM, NONCYCLIC>& base, const CyclicVecInt<DIM, NONCYCLIC>& min,
       const CyclicVecInt<DIM, NONCYCLIC>& max)
   {
+    assert(DIM == 3);  // copy_partially is available only for DIM=3
+
     CyclicVecInt<DIM, NONCYCLIC> p = min;
     for (p[0] = min[0]; p[0] <= max[0]; ++p[0])
     {
@@ -162,6 +165,8 @@ public:
       const CyclicVecInt<DIM, NONCYCLIC>& src_min,
       const CyclicVecInt<DIM, NONCYCLIC>& src_max)
   {
+    assert(DIM == 3);  // copy_partially is available only for DIM=3
+
     CyclicVecInt<DIM, NONCYCLIC> p = src_min;
     const CyclicVecInt<DIM, NONCYCLIC> offset = dst_min - src_min;
     for (p[0] = src_min[0]; p[0] <= src_max[0]; ++p[0])
@@ -171,7 +176,6 @@ public:
         for (p[2] = src_min[2]; p[2] <= src_max[2]; ++p[2])
         {
           CyclicVecInt<DIM, NONCYCLIC> p_out = p + offset;
-          p_out.cycleUnsigned(size_[2]);
           (*this)[p_out] = src[p];
         }
       }
