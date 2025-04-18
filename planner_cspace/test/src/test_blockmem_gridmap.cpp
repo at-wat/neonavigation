@@ -168,6 +168,55 @@ TEST(BlockmemGridmap, ClearAndCopyPartially)
   }
 }
 
+TEST(BlockmemGridmap, CopyPartiallyWithOffset)
+{
+  const CyclicVecInt<3, 3> src_size(17, 8, 3);
+  BlockMemGridmap<char, 3, 3, 0x20> gm_src;
+  gm_src.reset(src_size);
+  for (CyclicVecInt<3, 3> p(0, 0, 0); p[0] < src_size[0]; ++p[0])
+  {
+    for (p[1] = 0; p[1] < src_size[1]; ++p[1])
+    {
+      for (p[2] = 0; p[2] < src_size[2]; ++p[2])
+      {
+        gm_src[p] = p[0] * src_size[1] * src_size[2] + p[1] * src_size[2] + p[2];
+      }
+    }
+  }
+
+  const CyclicVecInt<3, 3> dst_size(6, 5, 3);
+  BlockMemGridmap<char, 3, 3, 0x20> gm_dst;
+  gm_dst.reset(dst_size);
+
+  const CyclicVecInt<3, 3> src_min(5, 3, 0);
+  const CyclicVecInt<3, 3> src_max(8, 5, 2);
+  const CyclicVecInt<3, 3> dst_min(1, 0, 0);
+  const CyclicVecInt<3, 3> dst_max(4, 2, 2);
+
+  gm_dst.clear(-1);
+  gm_dst.copy_partially(dst_min, gm_src, src_min, src_max);
+
+  for (CyclicVecInt<3, 3> p(0, 0, 0); p[0] < dst_size[0]; ++p[0])
+  {
+    for (p[1] = 0; p[1] < dst_size[1]; ++p[1])
+    {
+      for (p[2] = 0; p[2] < dst_size[2]; ++p[2])
+      {
+        if ((dst_min[0] <= p[0]) && (p[0] <= dst_max[0]) &&
+            (dst_min[1] <= p[1]) && (p[1] <= dst_max[1]) &&
+            (dst_min[2] <= p[2]) && (p[2] <= dst_max[2]))
+        {
+          ASSERT_EQ(gm_dst[p], gm_src[p - dst_min + src_min]);
+        }
+        else
+        {
+          ASSERT_EQ(gm_dst[p], -1);
+        }
+      }
+    }
+  }
+}
+
 TEST(BlockmemGridmap, WriteRead)
 {
   BlockMemGridmap<float, 3, 3, 0x20> gm;
