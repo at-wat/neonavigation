@@ -2125,6 +2125,34 @@ protected:
 
     // Find available pos with minumum cost on static distance map
     {
+      const Astar::Vec s(start_grid[0], start_grid[1], 0);
+      if (!cm_.validate(s, esc_range_))
+      {
+        ROS_ERROR("Crowd escape is disabled on the edge of the world.");
+        return;
+      }
+
+      const int local_width = esc_range_ * 2 + 1;
+      const Astar::Vec local_origin = s - Astar::Vec(esc_range_, esc_range_, 0);
+      const Astar::Vec local_size(local_width, local_width, 1);
+
+      Astar::Gridmap<char, 0x80> cm_local;
+      cm_local.reset(local_size);
+      cm_local.copy_partially(
+          Astar::Vec(0, 0, 0), cm_rough_, local_origin, local_origin + local_size);
+      DistanceMap arrivable_map(cm_local, CostmapBBF::Ptr(new CostmapBBFNoOp()));
+      const DistanceMap::Params dmp =
+          {
+              .euclid_cost = ec_,
+              .range = esc_range_,
+              .local_range = 0,
+              .longcut_range = esc_range_,
+              .size = local_size,
+              .resolution = map_info_.linear_resolution,
+          };
+      arrivable_map.init(model_, dmp);
+      arrivable_map.create(s, s);
+
       float cost_min = std::numeric_limits<float>::max();
       Astar::Vec te_out;
       const int esc_range_sq = esc_range_ * esc_range_;
@@ -2151,6 +2179,12 @@ protected:
           }
           const auto cost = cost_estim_cache_static_[te];
           if (cost >= cost_min)
+          {
+            continue;
+          }
+
+          // Check arrivability
+          if (arrivable_map[te - local_origin] == std::numeric_limits<float>::max())
           {
             continue;
           }

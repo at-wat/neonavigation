@@ -74,6 +74,7 @@ public:
     int local_range;
     int longcut_range;
     Astar::Vec size;
+    Astar::Vec offset;
     float resolution;
   };
 

@@ -156,6 +156,27 @@ public:
       }
     }
   }
+  void copy_partially(
+      const CyclicVecInt<DIM, NONCYCLIC>& dst_min,
+      const BlockMemGridmapBase<T, DIM, NONCYCLIC>& src,
+      const CyclicVecInt<DIM, NONCYCLIC>& src_min,
+      const CyclicVecInt<DIM, NONCYCLIC>& src_max)
+  {
+    CyclicVecInt<DIM, NONCYCLIC> p = src_min;
+    const CyclicVecInt<DIM, NONCYCLIC> offset = dst_min - src_min;
+    for (p[0] = src_min[0]; p[0] <= src_max[0]; ++p[0])
+    {
+      for (p[1] = src_min[1]; p[1] <= src_max[1]; ++p[1])
+      {
+        for (p[2] = src_min[2]; p[2] <= src_max[2]; ++p[2])
+        {
+          CyclicVecInt<DIM, NONCYCLIC> p_out = p + offset;
+          p_out.cycleUnsigned(size_[2]);
+          (*this)[p_out] = src[p];
+        }
+      }
+    }
+  }
   void clear_positive(const T zero)
   {
     for (size_t i = 0; i < ser_size_; i++)
