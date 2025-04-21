@@ -2135,23 +2135,27 @@ protected:
       const int local_width = esc_range_ * 2 + 1;
       const Astar::Vec local_origin = s - Astar::Vec(esc_range_, esc_range_, 0);
       const Astar::Vec local_size(local_width, local_width, 1);
-
-      Astar::Gridmap<char, 0x80> cm_local;
-      cm_local.reset(local_size);
-      cm_local.copy_partially(
-          Astar::Vec(0, 0, 0), cm_rough_, local_origin, local_origin + local_size);
-      DistanceMap arrivable_map(cm_local, CostmapBBF::Ptr(new CostmapBBFNoOp()));
+      const Astar::Vec local_center(esc_range_, esc_range_, 0);
       const DistanceMap::Params dmp =
           {
               .euclid_cost = ec_,
-              .range = esc_range_,
+              .range = 0,
               .local_range = 0,
               .longcut_range = esc_range_,
               .size = local_size,
               .resolution = map_info_.linear_resolution,
           };
+
+      Astar::Gridmap<char, 0x80> cm_local_esc;
+      cm_local_esc.reset(local_size);
+
+      DistanceMap arrivable_map(cm_local_esc, CostmapBBF::Ptr(new CostmapBBFNoOp()));
+      arrivable_map.setParams(cc_, num_cost_estim_task_);
       arrivable_map.init(model_, dmp);
-      arrivable_map.create(s, s);
+
+      cm_local_esc.copy_partially(
+          Astar::Vec(0, 0, 0), cm_rough_, local_origin, local_origin + local_size);
+      arrivable_map.create(local_center, local_center);
 
       float cost_min = std::numeric_limits<float>::max();
       Astar::Vec te_out;
