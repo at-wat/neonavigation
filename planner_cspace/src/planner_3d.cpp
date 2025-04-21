@@ -98,6 +98,7 @@ protected:
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_update_;
   ros::Subscriber sub_goal_;
+  ros::Subscriber sub_temporary_escape_trigger_;
   ros::Publisher pub_path_;
   ros::Publisher pub_path_velocity_;
   ros::Publisher pub_path_poses_;
@@ -111,7 +112,6 @@ protected:
   ros::Publisher pub_status_;
   ros::Publisher pub_metrics_;
   ros::ServiceServer srs_forget_;
-  ros::ServiceServer srs_temporary_escape_;
   ros::ServiceServer srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
@@ -248,11 +248,9 @@ protected:
 
     return true;
   }
-  bool cbTemporaryEscape(std_srvs::EmptyRequest& req,
-                         std_srvs::EmptyResponse& res)
+  void cbTemporaryEscape(const std_msgs::Empty::ConstPtr&)
   {
     updateTemporaryEscapeGoal(metric2Grid(start_.pose));
-    return true;
   }
   enum class DiscretePoseStatus
   {
@@ -1186,6 +1184,8 @@ public:
     sub_goal_ = neonavigation_common::compat::subscribe(
         nh_, "move_base_simple/goal",
         pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
+    sub_temporary_escape_trigger_ = pnh_.subscribe(
+        "temporary_escape", 1, &Planner3dNode::cbTemporaryEscape, this);
     pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
     pub_goal_ = pnh_.advertise<geometry_msgs::PoseStamped>("current_goal", 1, true);
@@ -1195,7 +1195,6 @@ public:
         nh_, "forget_planning_cost",
         pnh_, "forget", &Planner3dNode::cbForget, this);
     srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
-    srs_temporary_escape_ = pnh_.advertiseService("temporary_escape", &Planner3dNode::cbTemporaryEscape, this);
 
     // Debug outputs
     pub_distance_map_ = pnh_.advertise<sensor_msgs::PointCloud>("distance_map", 1, true);
