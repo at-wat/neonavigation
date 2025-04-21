@@ -221,7 +221,7 @@ public:
     }
     ser_size_ = block_ser_size_ * block_num_;
 
-    if (ser_capacity_ < ser_size_)
+    if (ser_size_ < ser_capacity_ / 2 || ser_capacity_ < ser_size_)
     {
       ser_capacity_ = ser_size_;
       c_.reset(new T[ser_size_]);
