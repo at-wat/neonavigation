@@ -167,8 +167,8 @@ private:
         const size_t addr_large = y * large_map_->info.width + x;
         const float r_sq = std::pow(lx - half_width, 2) + std::pow(ly - half_width, 2);
         if (simulate_surrounded_ &&
-            r_sq <= std::pow(half_width + 1, 2) &&
-            std::pow(half_width - 1, 2) <= r_sq)
+            r_sq <= std::pow(half_width, 2) &&
+            std::pow(half_width - 2, 2) <= r_sq)
         {
           map.data[addr] = 100;
         }
