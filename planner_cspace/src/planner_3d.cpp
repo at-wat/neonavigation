@@ -111,6 +111,7 @@ protected:
   ros::Publisher pub_status_;
   ros::Publisher pub_metrics_;
   ros::ServiceServer srs_forget_;
+  ros::ServiceServer srs_temporary_escape_;
   ros::ServiceServer srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
@@ -245,6 +246,12 @@ protected:
     if (has_map_)
       bbf_costmap_->clear();
 
+    return true;
+  }
+  bool cbTemporaryEscape(std_srvs::EmptyRequest& req,
+                         std_srvs::EmptyResponse& res)
+  {
+    updateTemporaryEscapeGoal(metric2Grid(start_.pose));
     return true;
   }
   enum class DiscretePoseStatus
@@ -1193,6 +1200,7 @@ public:
         nh_, "forget_planning_cost",
         pnh_, "forget", &Planner3dNode::cbForget, this);
     srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
+    srs_temporary_escape_ = pnh_.advertiseService("temporary_escape", &Planner3dNode::cbTemporaryEscape, this);
 
     // Debug outputs
     pub_distance_map_ = pnh_.advertise<sensor_msgs::PointCloud>("distance_map", 1, true);
@@ -2108,6 +2116,12 @@ protected:
 
   void updateTemporaryEscapeGoal(const Astar::Vec& start_grid)
   {
+    if (!has_map_ || !has_goal_ || !has_start_ || !cost_estim_cache_created_)
+    {
+      ROS_WARN("Not ready to update temporary escape goal");
+      return;
+    }
+
     if (!enable_crowd_mode_)
     {
       // Just find available (not occupied) pose
