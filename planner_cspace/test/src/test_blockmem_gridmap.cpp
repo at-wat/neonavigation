@@ -62,31 +62,34 @@ TEST(BlockmemGridmap, ResetClear)
 {
   BlockMemGridmap<float, 3, 3, 0x20> gm;
 
-  for (int s = 4; s <= 6; s += 2)
+  for (int i : = 0; i < 2; i++)
   {
-    gm.reset(CyclicVecInt<3, 3>(s, s, s));
-    gm.clear(0.0);
-
-    CyclicVecInt<3, 3> i;
-    for (i[0] = 0; i[0] < s; ++i[0])
+    for (int s = 4; s <= 6; s += 2)
     {
-      for (i[1] = 0; i[1] < s; ++i[1])
+      gm.reset(CyclicVecInt<3, 3>(s, s, s));
+      gm.clear(0.0);
+
+      CyclicVecInt<3, 3> i;
+      for (i[0] = 0; i[0] < s; ++i[0])
       {
-        for (i[2] = 0; i[2] < s; ++i[2])
+        for (i[1] = 0; i[1] < s; ++i[1])
         {
-          ASSERT_EQ(gm[i], 0.0);
+          for (i[2] = 0; i[2] < s; ++i[2])
+          {
+            ASSERT_EQ(gm[i], 0.0);
+          }
         }
       }
-    }
 
-    gm.clear(3.0);
-    for (i[0] = 0; i[0] < s; ++i[0])
-    {
-      for (i[1] = 0; i[1] < s; ++i[1])
+      gm.clear(3.0);
+      for (i[0] = 0; i[0] < s; ++i[0])
       {
-        for (i[2] = 0; i[2] < s; ++i[2])
+        for (i[1] = 0; i[1] < s; ++i[1])
         {
-          ASSERT_EQ(gm[i], 3.0);
+          for (i[2] = 0; i[2] < s; ++i[2])
+          {
+            ASSERT_EQ(gm[i], 3.0);
+          }
         }
       }
     }
