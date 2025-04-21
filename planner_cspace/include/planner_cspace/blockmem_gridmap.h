@@ -81,6 +81,7 @@ protected:
   CyclicVecInt<DIM, NONCYCLIC> size_;
   CyclicVecInt<DIM, NONCYCLIC> block_size_;
   size_t ser_size_;
+  size_t ser_capacity_;
   size_t block_ser_size_;
   size_t block_num_;
   T dummy_;
@@ -220,7 +221,11 @@ public:
     }
     ser_size_ = block_ser_size_ * block_num_;
 
-    c_.reset(new T[ser_size_]);
+    if (ser_capacity_ < ser_size_)
+    {
+      ser_capacity_ = ser_size_;
+      c_.reset(new T[ser_size_]);
+    }
     size_ = size;
   }
   explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC>& size_)
@@ -229,7 +234,8 @@ public:
     reset(size_);
   }
   BlockMemGridmap()
-    : dummy_(std::numeric_limits<T>::max())
+    : ser_capacity_(0)
+    , dummy_(std::numeric_limits<T>::max())
   {
   }
   T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
