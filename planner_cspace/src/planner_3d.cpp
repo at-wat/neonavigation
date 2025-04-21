@@ -345,13 +345,8 @@ protected:
       return false;
     }
 
-    Astar::Vec s, e;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        req.start.pose.position.x, req.start.pose.position.y, tf2::getYaw(req.start.pose.orientation));
-    grid_metric_converter::metric2Grid(
-        map_info_, e[0], e[1], e[2],
-        req.goal.pose.position.x, req.goal.pose.position.y, tf2::getYaw(req.goal.pose.orientation));
+    Astar::Vec s = metric2Grid(req.start.pose);
+    Astar::Vec e = metric2Grid(req.goal.pose);
     ROS_INFO("Path plan from (%d, %d) to (%d, %d)", s[0], s[1], e[0], e[1]);
 
     const int tolerance_range = std::lround(req.tolerance / map_info_.linear_resolution);
@@ -1768,7 +1763,7 @@ public:
   }
 
 protected:
-  void publishStartAndGoalMarkers(const Astar::Vec& start_grid, Astar::Vec& end_grid)
+  void publishStartAndGoalMarkers(const Astar::Vec& start_grid, const Astar::Vec& end_grid)
   {
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
@@ -1827,11 +1822,7 @@ protected:
     Astar::Vec start_grid(static_cast<int>(std::floor(sf[0])), static_cast<int>(std::floor(sf[1])), std::lround(sf[2]));
     start_grid.cycleUnsigned(map_info_.angle);
 
-    Astar::Vec end_grid;
-    grid_metric_converter::metric2Grid(
-        map_info_, end_grid[0], end_grid[1], end_grid[2],
-        end_metric.position.x, end_metric.position.y, tf2::getYaw(end_metric.orientation));
-    end_grid.cycleUnsigned(map_info_.angle);
+    const Astar::Vec end_grid = metric2Grid(end_metric);
 
     if (!cm_.validate(start_grid, range_))
     {
@@ -1911,16 +1902,8 @@ protected:
   bool makePlan(const geometry_msgs::Pose& start_metric, const geometry_msgs::Pose& end_metric,
                 nav_msgs::Path& path, bool hyst)
   {
-    Astar::Vec start_grid;
-    grid_metric_converter::metric2Grid(
-        map_info_, start_grid[0], start_grid[1], start_grid[2],
-        start_metric.position.x, start_metric.position.y, tf2::getYaw(start_metric.orientation));
-    start_grid.cycleUnsigned(map_info_.angle);
-    Astar::Vec end_grid;
-    grid_metric_converter::metric2Grid(
-        map_info_, end_grid[0], end_grid[1], end_grid[2],
-        end_metric.position.x, end_metric.position.y, tf2::getYaw(end_metric.orientation));
-    end_grid.cycleUnsigned(map_info_.angle);
+    const Astar::Vec start_grid = metric2Grid(start_metric);
+    const Astar::Vec end_grid = metric2Grid(end_metric);
     publishStartAndGoalMarkers(start_grid, end_grid);
 
     std::vector<Astar::VecWithCost> starts;
