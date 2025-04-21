@@ -127,9 +127,11 @@ protected:
   Astar::Gridmap<char, 0x80> cm_rough_base_;
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<char, 0x80> cm_updates_;
+  Astar::Gridmap<char, 0x80> cm_local_esc_;
   CostmapBBF::Ptr bbf_costmap_;
   DistanceMap cost_estim_cache_;
   DistanceMap cost_estim_cache_static_;
+  DistanceMap arrivable_map_;
 
   GridAstarModel3D::Ptr model_;
 
@@ -1169,6 +1171,7 @@ public:
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
+    , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
@@ -2132,6 +2135,7 @@ protected:
         return;
       }
 
+      // Construct arraivability map
       const int local_width = esc_range_ * 2 + 1;
       const Astar::Vec local_origin = s - Astar::Vec(esc_range_, esc_range_, 0);
       const Astar::Vec local_size(local_width, local_width, 1);
@@ -2146,17 +2150,14 @@ protected:
               .resolution = map_info_.linear_resolution,
           };
 
-      Astar::Gridmap<char, 0x80> cm_local_esc;
-      cm_local_esc.reset(local_size);
-
-      DistanceMap arrivable_map(cm_local_esc, CostmapBBF::Ptr(new CostmapBBFNoOp()));
-      arrivable_map.setParams(cc_, num_cost_estim_task_);
-      arrivable_map.init(model_, dmp);
-
-      cm_local_esc.copy_partially(
+      cm_local_esc_.reset(local_size);
+      arrivable_map_.setParams(cc_, num_cost_estim_task_);
+      arrivable_map_.init(model_, dmp);
+      cm_local_esc_.copy_partially(
           Astar::Vec(0, 0, 0), cm_rough_, local_origin, local_origin + local_size);
-      arrivable_map.create(local_center, local_center);
+      arrivable_map_.create(local_center, local_center);
 
+      // Find temporary goal
       float cost_min = std::numeric_limits<float>::max();
       Astar::Vec te_out;
       const int esc_range_sq = esc_range_ * esc_range_;
@@ -2188,7 +2189,7 @@ protected:
           }
 
           // Check arrivability
-          if (arrivable_map[te - local_origin] == std::numeric_limits<float>::max())
+          if (arrivable_map_[te - local_origin] == std::numeric_limits<float>::max())
           {
             continue;
           }
