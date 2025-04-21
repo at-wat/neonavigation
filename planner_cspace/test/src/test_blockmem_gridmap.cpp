@@ -62,7 +62,7 @@ TEST(BlockmemGridmap, ResetClear)
 {
   BlockMemGridmap<float, 3, 3, 0x20> gm;
 
-  for (int i : = 0; i < 2; i++)
+  for (int i = 0; i < 2; i++)
   {
     for (int s = 4; s <= 6; s += 2)
     {
