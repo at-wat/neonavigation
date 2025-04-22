@@ -333,11 +333,6 @@ void DistanceMap::update(
     }
   }
 
-  if (pq_open_.size() == 0)
-  {
-    pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
-  }
-
   int pos = 0;
   for (const auto& edge : edges_buf_)
   {
@@ -348,6 +343,11 @@ void DistanceMap::update(
       pq_open_.emplace(p, p, v);
     }
     ++pos;
+  }
+
+  if (pq_open_.size() == 0)
+  {
+    pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
   }
 
   fillCostmap(pq_open_, s_rough);
