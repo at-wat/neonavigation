@@ -116,7 +116,7 @@ void DistanceMap::fillCostmap(
 
           const float gnext = g_[next];
 
-          if (gnext < g_[p] + cost)
+          if (gnext <= g_[p] + cost)
           {
             // Skip as this search task has no chance to find better way.
             continue;
