@@ -204,8 +204,8 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
     pq_erase_.reserve((p.size[0] + p.size[1]) * 2);
 
     g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
-    g_.clear(0);
   }
+  g_.clear(0);
   p_ = p;
   search_diffs_.clear();
 
