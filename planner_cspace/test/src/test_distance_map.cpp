@@ -498,6 +498,87 @@ TEST_F(DistanceMapTestLongMap, BlockedAndRecovered)
     return;
   }
 }
+
+TEST_F(DistanceMapTestLongMap, StartMoveWithoutMapUpdate)
+{
+  const Astar::Vec e(1, 1, 0);
+
+  const float tolerance = 0.4;
+
+  const int range_overshoot = range_ + local_range_ + longcut_range_ + search_range_;
+
+  const auto validate = [this, e, tolerance, range_overshoot](const Astar::Vec& s)
+  {
+    for (int y = 0; y < h_; y++)
+    {
+      for (int x = 0; x < w_; x++)
+      {
+        const Astar::Vec p(x, y, 0);
+        const float cost = dm_[p];
+        const float d = (p - e).norm();
+        const float d_from_start = (p - s).norm();
+        if (x < s[0] || d_from_start <= range_overshoot)
+        {
+          ASSERT_NEAR(ec_[0] * d, cost, tolerance) << xyStr(x, y);
+        }
+        else if (d_from_start > range_overshoot)
+        {
+          ASSERT_EQ(std::numeric_limits<float>::max(), cost) << xyStr(x, y);
+        }
+      }
+    }
+  };
+
+  {
+    const Astar::Vec s(2, 1, 0);
+    dm_.create(s, e);
+    SCOPED_TRACE("After create");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
+  }
+  {
+    const Astar::Vec s(2, 1, 0);
+    dm_.update(
+        s, e,
+        DistanceMap::Rect(
+            Vec3(1, 1, 1), Vec3(0, 0, 0)));
+    SCOPED_TRACE("After update 1");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
+  }
+  {
+    const Astar::Vec s(5, 1, 0);
+    dm_.update(
+        s, e,
+        DistanceMap::Rect(
+            Vec3(1, 1, 1), Vec3(0, 0, 0)));
+    SCOPED_TRACE("After update 2");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
+  }
+  {
+    const Astar::Vec s(7, 1, 0);
+    dm_.update(
+        s, e,
+        DistanceMap::Rect(
+            Vec3(1, 1, 1), Vec3(0, 0, 0)));
+    SCOPED_TRACE("After update 3");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
+  }
+}
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
