@@ -251,7 +251,6 @@ void DistanceMap::update(
     const Astar::Vec& s, const Astar::Vec& e,
     const Rect& rect)
 {
-  std::cerr << "DistanceMap::update" << std::endl;
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
   if (e_rough != goal_)
@@ -275,7 +274,6 @@ void DistanceMap::update(
   if (cost_min == 0.0)
   {
     // Goal is in the updated area
-    std::cerr << " Goal is in the updated area" << std::endl;
     create(s, e);
     return;
   }
@@ -298,7 +296,6 @@ void DistanceMap::update(
     pq_erase_.emplace(0.0, 0.0, s_rough);
   }
 
-  int erase_cnt = 0;
   while (true)
   {
     if (pq_erase_.size() < 1)
@@ -306,7 +303,6 @@ void DistanceMap::update(
     const Astar::PriorityVec center(pq_erase_.top());
     const Astar::Vec p = center.v_;
     pq_erase_.pop();
-    erase_cnt++;
 
     if (g_[p] == std::numeric_limits<float>::max())
       continue;
@@ -336,7 +332,6 @@ void DistanceMap::update(
       }
     }
   }
-  std::cerr << " erase " << erase_cnt << std::endl;
 
   int pos = 0;
   for (const auto& edge : edges_buf_)
@@ -355,13 +350,11 @@ void DistanceMap::update(
     pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
   }
 
-  std::cerr << " search start " << pq_open_.size() << std::endl;
   fillCostmap(pq_open_, s_rough);
 }
 
 void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
 {
-  std::cerr << "DistanceMap::create" << std::endl;
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
   goal_ = e_rough;
