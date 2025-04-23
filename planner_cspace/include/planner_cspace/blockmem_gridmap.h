@@ -176,8 +176,7 @@ public:
       {
         for (p[2] = src_min[2]; p[2] <= src_max[2]; ++p[2])
         {
-          CyclicVecInt<DIM, NONCYCLIC> p_out = p + offset;
-          (*this)[p_out] = src[p];
+          (*this)[p + offset] = src[p];
         }
       }
     }
