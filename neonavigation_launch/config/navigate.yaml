@@ -19,11 +19,13 @@ costmap_3d:
       overlay_mode: max
       linear_expand: 0.08
       linear_spread: 0.0
+      keep_unknown: true
     - name: overlay1
       type: Costmap3dLayerFootprint
       overlay_mode: max
       linear_expand: 0.15
       linear_spread: 0.3
+      keep_unknown: true
 planner_3d:
   num_threads: 2
   freq: 2.0
