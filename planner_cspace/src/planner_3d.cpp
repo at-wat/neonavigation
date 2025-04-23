@@ -2302,6 +2302,11 @@ int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "planner_3d");
 
+  if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+  {
+    ros::console::notifyLoggerLevelsChanged();
+  }
+
   planner_cspace::planner_3d::Planner3dNode node;
   node.spin();
 
