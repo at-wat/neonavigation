@@ -2069,7 +2069,7 @@ protected:
 
   void updateTemporaryEscapeGoal(const Astar::Vec& start_grid)
   {
-    if (!has_map_ || !has_goal_ || !has_start_ || !cost_estim_cache_created_)
+    if (!has_map_ || !has_goal_ || !has_start_)
     {
       ROS_WARN("Not ready to update temporary escape goal");
       return;
