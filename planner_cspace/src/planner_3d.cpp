@@ -2101,13 +2101,14 @@ protected:
         ROS_ERROR("Crowd escape is disabled on the edge of the world.");
         return;
       }
+      const Astar::Vec g_orig = metric2Grid(goal_original_.pose);
 
       {
         const auto ts = boost::chrono::high_resolution_clock::now();
         // Update without region.
         // Distance map will expand distance map using edges_buf if needed.
         cost_estim_cache_static_.update(
-            s, metric2Grid(goal_original_.pose),
+            s, g_orig,
             DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(0, 0, 0)));
         const auto tnow = boost::chrono::high_resolution_clock::now();
         const float dur = boost::chrono::duration<float>(tnow - ts).count();
@@ -2175,6 +2176,15 @@ protected:
           if (arrivable_map_[te - local_origin] == std::numeric_limits<float>::max())
           {
             continue;
+          }
+
+          if (te[0] == g_orig[0] && te[1] == g_orig[1] && cm_[g_orig] < 100)
+          {
+            // Original goal is in the temporary escape range and reachable
+            goal_ = goal_raw_ = goal_original_;
+            escaping_ = false;
+            createCostEstimCache();
+            return;
           }
 
           // Calculate distance map gradient
