@@ -732,23 +732,22 @@ TEST_F(Navigate, ForceTemporaryEscape)
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
+  ros::Rate wait(2);
   const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  ros::Time last_trigger;
-  const ros::Duration trigger_interval(1);
   while (ros::ok())
   {
+    const size_t data_size = map_local_->data.size();
+    map_local_->data.clear();
+    map_local_->data.resize(data_size, 0);
     pubMapLocal();
+
+    std_msgs::Empty msg;
+    pub_trigger.publish(msg);
+
     ros::spinOnce();
     wait.sleep();
 
     const ros::Time now = ros::Time::now();
-    if (last_trigger + trigger_interval < now)
-    {
-      last_trigger = now;
-      std_msgs::Empty msg;
-      pub_trigger.publish(msg);
-    }
 
     if (now > deadline)
     {
@@ -780,10 +779,6 @@ TEST_F(Navigate, ForceTemporaryEscape)
       ros::Duration(2.0).sleep();
       return;
     }
-
-    const size_t data_size = map_local_->data.size();
-    map_local_->data.clear();
-    map_local_->data.resize(data_size, 0);
   }
 }
 
