@@ -2181,6 +2181,7 @@ protected:
           if (te[0] == g_orig[0] && te[1] == g_orig[1] && cm_[g_orig] < 100)
           {
             // Original goal is in the temporary escape range and reachable
+            ROS_INFO("Original goal is reachable. Back to the original goal.");
             goal_ = goal_raw_ = goal_original_;
             escaping_ = false;
             createCostEstimCache();
