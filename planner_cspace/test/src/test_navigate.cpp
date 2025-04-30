@@ -735,7 +735,7 @@ TEST_F(Navigate, ForceTemporaryEscape)
   ros::Rate wait(10);
   const ros::Time deadline = ros::Time::now() + ros::Duration(60);
   ros::Time last_trigger;
-  const ros::Duration trigger_interval(2);
+  const ros::Duration trigger_interval(1);
   while (ros::ok())
   {
     pubMapLocal();
@@ -745,6 +745,7 @@ TEST_F(Navigate, ForceTemporaryEscape)
     const ros::Time now = ros::Time::now();
     if (last_trigger + trigger_interval < now)
     {
+      last_trigger = now;
       std_msgs::Empty msg;
       pub_trigger.publish(msg);
     }
@@ -779,6 +780,10 @@ TEST_F(Navigate, ForceTemporaryEscape)
       ros::Duration(2.0).sleep();
       return;
     }
+
+    const size_t data_size = map_local_->data.size();
+    map_local_->data.clear();
+    map_local_->data.resize(data_size, 0);
   }
 }
 
