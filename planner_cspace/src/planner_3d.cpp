@@ -250,7 +250,7 @@ protected:
   }
   void cbTemporaryEscape(const std_msgs::Empty::ConstPtr&)
   {
-    updateTemporaryEscapeGoal(metric2Grid(start_.pose));
+    updateTemporaryEscapeGoal(metric2Grid(start_.pose), false);
   }
   enum class DiscretePoseStatus
   {
@@ -2067,11 +2067,14 @@ protected:
     return true;
   }
 
-  void updateTemporaryEscapeGoal(const Astar::Vec& start_grid)
+  void updateTemporaryEscapeGoal(const Astar::Vec& start_grid, const bool log_on_unready = true)
   {
     if (!has_map_ || !has_goal_ || !has_start_)
     {
-      ROS_WARN("Not ready to update temporary escape goal");
+      if (log_on_unready)
+      {
+        ROS_WARN("Not ready to update temporary escape goal");
+      }
       return;
     }
 
