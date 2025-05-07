@@ -44,6 +44,7 @@
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
+#include <trajectory_tracker_msgs/PathWithVelocity.h>
 
 #include <planner_cspace/planner_status.h>
 
@@ -60,11 +61,13 @@ protected:
   planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
   nav_msgs::Path::ConstPtr path_;
+  trajectory_tracker_msgs::PathWithVelocity::ConstPtr path_vel_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_local_;
   ros::Subscriber sub_costmap_;
   ros::Subscriber sub_status_;
   ros::Subscriber sub_path_;
+  ros::Subscriber sub_path_vel_;
   ros::ServiceClient srv_forget_;
   ros::Publisher pub_map_;
   ros::Publisher pub_map_local_;
@@ -84,6 +87,7 @@ protected:
     sub_status_ = nh_.subscribe(
         "/planner_3d/status", 10, &Navigate::cbStatus, this);
     sub_path_ = nh_.subscribe("path", 1, &Navigate::cbPath, this);
+    sub_path_vel_ = nh_.subscribe("path_velocity", 1, &Navigate::cbPathVel, this);
     srv_forget_ =
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
@@ -113,6 +117,7 @@ protected:
           << "sub_costmap:" << sub_costmap_.getNumPublishers() << " "
           << "sub_status:" << sub_status_.getNumPublishers() << " "
           << "sub_path:" << sub_path_.getNumPublishers() << " "
+          << "sub_path_vel:" << sub_path_vel_.getNumPublishers() << " "
           << "pub_map:" << pub_map_.getNumSubscribers() << " "
           << "pub_map_local:" << pub_map_local_.getNumSubscribers() << " "
           << "pub_initial_pose:" << pub_initial_pose_.getNumSubscribers() << " "
@@ -121,7 +126,7 @@ protected:
           sub_map_local_.getNumPublishers() > 0 &&
           sub_costmap_.getNumPublishers() > 0 &&
           sub_status_.getNumPublishers() > 0 &&
-          sub_path_.getNumPublishers() > 0 &&
+          (sub_path_.getNumPublishers() > 0 || sub_path_vel_.getNumPublishers() > 0) &&
           pub_map_.getNumSubscribers() > 0 &&
           pub_map_local_.getNumSubscribers() > 0 &&
           pub_initial_pose_.getNumSubscribers() > 0 &&
@@ -212,6 +217,24 @@ protected:
             << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
       }
       path_ = msg;
+    }
+  }
+  void cbPathVel(const trajectory_tracker_msgs::PathWithVelocity::ConstPtr& msg)
+  {
+    if (!path_vel_ || path_vel_->poses.size() != msg->poses.size())
+    {
+      if (msg->poses.size() == 0)
+      {
+        std::cerr << test_scope_ << msg->header.stamp << " PathWithVelocity updated. (empty)" << std::endl;
+      }
+      else
+      {
+        std::cerr
+            << test_scope_ << msg->header.stamp << " PathWithVelocity updated." << std::endl
+            << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
+            << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
+      }
+      path_vel_ = msg;
     }
   }
   void pubMapLocal()
