@@ -120,8 +120,6 @@ protected:
           << "sub_map_local:" << sub_map_local_.getNumPublishers() << " "
           << "sub_costmap:" << sub_costmap_.getNumPublishers() << " "
           << "sub_status:" << sub_status_.getNumPublishers() << " "
-          << "sub_path:" << sub_path_.getNumPublishers() << " "
-          << "sub_path_vel:" << sub_path_vel_.getNumPublishers() << " "
           << "pub_map:" << pub_map_.getNumSubscribers() << " "
           << "pub_map_local:" << pub_map_local_.getNumSubscribers() << " "
           << "pub_initial_pose:" << pub_initial_pose_.getNumSubscribers() << " "
@@ -130,7 +128,6 @@ protected:
           sub_map_local_.getNumPublishers() > 0 &&
           sub_costmap_.getNumPublishers() > 0 &&
           sub_status_.getNumPublishers() > 0 &&
-          (sub_path_.getNumPublishers() > 0 || sub_path_vel_.getNumPublishers() > 0) &&
           pub_map_.getNumSubscribers() > 0 &&
           pub_map_local_.getNumSubscribers() > 0 &&
           pub_initial_pose_.getNumSubscribers() > 0 &&
@@ -169,6 +166,13 @@ protected:
     pub_map_.publish(map_);
     std::cerr << test_scope_ << ros::Time::now() << " Map applied." << std::endl;
 
+    while (ros::ok() && !map_local_)
+    {
+      ros::spinOnce();
+      rate.sleep();
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial local map timeout";
+    }
+
     while (ros::ok() && !costmap_)
     {
       ros::spinOnce();
@@ -194,6 +198,10 @@ protected:
   }
   void cbMapLocal(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
+    if (map_local_)
+    {
+      return;
+    }
     map_local_.reset(new nav_msgs::OccupancyGrid(*msg));
     std::cerr << test_scope_ << msg->header.stamp << " Local map received." << std::endl;
   }
@@ -243,11 +251,22 @@ protected:
   }
   void pubMapLocal()
   {
-    if (map_local_)
+    if (!map_local_)
     {
-      pub_map_local_.publish(map_local_);
-      if ((local_map_apply_cnt_++) % 30 == 0)
-        std::cerr << test_scope_ << " Local map applied." << std::endl;
+      return;
+    }
+    pub_map_local_.publish(map_local_);
+    if ((local_map_apply_cnt_++) % 30 == 0)
+    {
+      int num_occupied = 0;
+      for (const auto& c : map_local_->data)
+      {
+        if (c == 100)
+        {
+          num_occupied++;
+        }
+      }
+      std::cerr << test_scope_ << " Local map applied. occupied:" << num_occupied << std::endl;
     }
   }
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
