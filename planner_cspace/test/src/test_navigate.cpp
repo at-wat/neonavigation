@@ -110,7 +110,17 @@ protected:
     while (ros::ok())
     {
       rate.sleep();
-      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initialization timeout";
+      ASSERT_LT(ros::Time::now(), deadline)
+          << test_scope_ << "Initialization timeout: "
+          << "sub_map:" << sub_map_.getNumPublishers() << " "
+          << "sub_map_local" << sub_map_local_.getNumPublishers() << " "
+          << "sub_costmap" << sub_costmap_.getNumPublishers() << " "
+          << "sub_status" << sub_status_.getNumPublishers() << " "
+          << "sub_path" << sub_path_.getNumPublishers() << " "
+          << "pub_map" << pub_map_.getNumSubscribers() << " "
+          << "pub_map_local" << pub_map_local_.getNumSubscribers() << " "
+          << "pub_initial_pose" << pub_initial_pose_.getNumSubscribers() << " "
+          << "pub_patrol_nodes" << pub_patrol_nodes_.getNumSubscribers() << " ";
       if (sub_map_.getNumPublishers() > 0 &&
           sub_map_local_.getNumPublishers() > 0 &&
           sub_costmap_.getNumPublishers() > 0 &&
