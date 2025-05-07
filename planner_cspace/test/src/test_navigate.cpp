@@ -225,11 +225,22 @@ protected:
   }
   void pubMapLocal()
   {
-    if (map_local_)
+    if (!map_local_)
     {
-      pub_map_local_.publish(map_local_);
-      if ((local_map_apply_cnt_++) % 30 == 0)
-        std::cerr << test_scope_ << " Local map applied." << std::endl;
+      return;
+    }
+    pub_map_local_.publish(map_local_);
+    if ((local_map_apply_cnt_++) % 30 == 0)
+    {
+      int num_occupied = 0;
+      for (const auto& c : map_local_->data)
+      {
+        if (c == 100)
+        {
+          num_occupied++;
+        }
+      }
+      std::cerr << test_scope_ << " Local map applied. occupied:" << num_occupied << std::endl;
     }
   }
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
