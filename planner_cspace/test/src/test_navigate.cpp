@@ -96,7 +96,9 @@ protected:
 
   virtual void SetUp()
   {
-    test_scope_ = "[" + std::to_string(getpid()) + "] ";
+    test_scope_ =
+        "[" + std::to_string(getpid()) + "/" +
+        ::testing::UnitTest::GetInstance()->current_test_info()->name() + "] ";
 
     ros::Rate rate(10.0);
 
