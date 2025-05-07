@@ -557,6 +557,11 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
 
 TEST_F(Navigate, GoalIsInRockRecovered)
 {
+  if (pnh_.param("enable_crowd_mode", false))
+  {
+    GTEST_SKIP() << "enable_crowd_mode is set";
+  }
+
   ros::spinOnce();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
