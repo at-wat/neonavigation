@@ -158,6 +158,13 @@ protected:
     pub_map_.publish(map_);
     std::cerr << test_scope_ << ros::Time::now() << " Map applied." << std::endl;
 
+    while (ros::ok() && !map_local_)
+    {
+      ros::spinOnce();
+      rate.sleep();
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial local map timeout";
+    }
+
     while (ros::ok() && !costmap_)
     {
       ros::spinOnce();
@@ -183,6 +190,10 @@ protected:
   }
   void cbMapLocal(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
+    if (map_local_)
+    {
+      return;
+    }
     map_local_.reset(new nav_msgs::OccupancyGrid(*msg));
     std::cerr << test_scope_ << msg->header.stamp << " Local map received." << std::endl;
   }
