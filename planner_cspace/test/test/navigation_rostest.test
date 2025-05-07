@@ -41,7 +41,7 @@
 
     <param name="curv_forward" value="0.1" />
     <param name="look_forward" value="0.0" />
-    <param name="k_dist" value="4.5" />
+    <param name="k_dist" value="5.5" />
     <param name="k_ang" value="3.0" />
     <param name="k_avel" value="4.0" />
 
