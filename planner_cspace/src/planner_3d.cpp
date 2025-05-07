@@ -168,6 +168,7 @@ protected:
   double grid_enumeration_resolution_;
   int unknown_cost_;
   bool overwrite_cost_;
+  int relocation_acceptable_cost_;
   bool has_map_;
   bool has_goal_;
   bool has_start_;
@@ -493,8 +494,12 @@ protected:
 
   template <class T>
   bool searchAvailablePos(const T& cm, Astar::Vec& s, const int xy_range, const int angle_range,
-                          const int cost_acceptable = 50, const int min_xy_range = 0) const
+                          int cost_acceptable = -1, const int min_xy_range = 0) const
   {
+    if (cost_acceptable == -1)
+    {
+      cost_acceptable = relocation_acceptable_cost_;
+    }
     ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
 
     float range_min = std::numeric_limits<float>::max();
@@ -1236,6 +1241,7 @@ public:
 
     pnh_.param("unknown_cost", unknown_cost_, 100);
     pnh_.param("overwrite_cost", overwrite_cost_, false);
+    pnh_.param("relocation_acceptable_cost", relocation_acceptable_cost_, 50);
 
     pnh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
     pnh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
@@ -1406,6 +1412,7 @@ public:
     temporary_escape_tolerance_ang_f_ = config.temporary_escape_tolerance_ang;
 
     overwrite_cost_ = config.overwrite_cost;
+    relocation_acceptable_cost_ = config.relocation_acceptable_cost;
     hist_ignore_range_f_ = config.hist_ignore_range;
     hist_ignore_range_max_f_ = config.hist_ignore_range_max;
 
@@ -2089,7 +2096,7 @@ protected:
     {
       // Just find available (not occupied) pose
       Astar::Vec te;
-      if (!searchAvailablePos(cm_, te, esc_range_, esc_angle_, 50, esc_range_min_))
+      if (!searchAvailablePos(cm_, te, esc_range_, esc_angle_, relocation_acceptable_cost_, esc_range_min_))
       {
         ROS_WARN("No valid temporary escape goal");
         return;
@@ -2173,7 +2180,7 @@ protected:
           {
             continue;
           }
-          if (!cm_rough_.validate(te, range_) || cm_rough_[te] >= 50)
+          if (!cm_rough_.validate(te, range_) || cm_rough_[te] >= relocation_acceptable_cost_)
           {
             continue;
           }
@@ -2229,7 +2236,7 @@ protected:
           te[2] = static_cast<int>(yaw / map_info_.angular_resolution);
 
           te.cycleUnsigned(map_info_.angle);
-          if (cm_[te] >= 50)
+          if (cm_[te] >= relocation_acceptable_cost_)
           {
             continue;
           }
