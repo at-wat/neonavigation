@@ -38,6 +38,7 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <nav_msgs/Path.h>
 #include <planner_cspace_msgs/PlannerStatus.h>
+#include <std_msgs/Empty.h>
 
 #include <gtest/gtest.h>
 
@@ -117,6 +118,37 @@ TEST_F(NavigateBoundary, StartPositionScan)
       for (int i = 0; i < 100; ++i)
       {
         ros::Duration(0.05).sleep();
+        ros::spinOnce();
+        if (path_ && status_)
+          break;
+      }
+      // Planner must publish at least empty path if alive.
+      ASSERT_TRUE(static_cast<bool>(path_));
+      // Planner status must be published even if robot if outside of the map.
+      ASSERT_TRUE(static_cast<bool>(status_));
+    }
+  }
+}
+
+TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
+{
+  ros::Publisher pub_trigger = nh_.advertise<std_msgs::Empty>("/planner_3d/temporary_escape", 1);
+
+  // map width/height is 32px * 0.1m = 3.2m
+  for (double x = -10; x < 13; x += 2.0)
+  {
+    for (double y = -10; y < 13; y += 2.0)
+    {
+      publishTransform(x, y);
+
+      path_ = nullptr;
+      status_ = nullptr;
+      for (int i = 0; i < 10; ++i)
+      {
+        std_msgs::Empty msg;
+        pub_trigger.publish(msg);
+
+        ros::Duration(0.2).sleep();
         ros::spinOnce();
         if (path_ && status_)
           break;
