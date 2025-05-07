@@ -102,8 +102,27 @@ protected:
   {
     test_scope_ = "[" + std::to_string(getpid()) + "] ";
 
-    srv_forget_.waitForExistence(ros::Duration(10.0));
     ros::Rate rate(10.0);
+
+    const ros::Time deadline = ros::Time::now() + ros::Duration(15.0);
+    while (ros::ok())
+    {
+      rate.sleep();
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initialization timeout";
+      if (sub_map_.getNumPublishers() > 0 &&
+          sub_map_local_.getNumPublishers() > 0 &&
+          sub_costmap_.getNumPublishers() > 0 &&
+          sub_status_.getNumPublishers() > 0 &&
+          sub_path_.getNumPublishers() > 0 &&
+          pub_map_.getNumSubscribers() > 0 &&
+          pub_map_local_.getNumSubscribers() > 0 &&
+          pub_initial_pose_.getNumSubscribers() > 0 &&
+          pub_patrol_nodes_.getNumSubscribers() > 0)
+      {
+        break;
+      }
+    }
+    ASSERT_TRUE(srv_forget_.waitForExistence(ros::Duration(10.0)));
 
     geometry_msgs::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
@@ -112,17 +131,12 @@ protected:
     pose.pose.pose.orientation.z = 1.0;
     pub_initial_pose_.publish(pose);
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(15);
-
     while (ros::ok())
     {
       ros::spinOnce();
       rate.sleep();
       const ros::Time now = ros::Time::now();
-      if (now > deadline)
-      {
-        FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
-      }
+      ASSERT_LT(now, deadline) << test_scope_ << "Initial transform timeout";
       if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
       {
         break;
@@ -133,11 +147,7 @@ protected:
     {
       ros::spinOnce();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
-      if (now > deadline)
-      {
-        FAIL() << test_scope_ << now << " SetUp: map timeout" << std::endl;
-      }
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial map timeout";
     }
     pub_map_.publish(map_);
     std::cerr << test_scope_ << ros::Time::now() << " Map applied." << std::endl;
@@ -146,11 +156,7 @@ protected:
     {
       ros::spinOnce();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
-      if (now > deadline)
-      {
-        FAIL() << test_scope_ << now << " SetUp: costmap timeout" << std::endl;
-      }
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial costmap timeout";
     }
 
     std_srvs::EmptyRequest req;
