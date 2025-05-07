@@ -51,10 +51,16 @@ public:
   virtual void copy_partially(
       const BlockMemGridmapBase<T, DIM, NONCYCLIC>& base, const CyclicVecInt<DIM, NONCYCLIC>& min,
       const CyclicVecInt<DIM, NONCYCLIC>& max) = 0;
+  virtual void copy_partially(
+      const CyclicVecInt<DIM, NONCYCLIC>& dst_min,
+      const BlockMemGridmapBase<T, DIM, NONCYCLIC>& src,
+      const CyclicVecInt<DIM, NONCYCLIC>& src_min,
+      const CyclicVecInt<DIM, NONCYCLIC>& src_max) = 0;
   virtual void reset(const CyclicVecInt<DIM, NONCYCLIC>& size) = 0;
   virtual T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) = 0;
   virtual const T operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) const = 0;
   virtual std::function<void(CyclicVecInt<DIM, NONCYCLIC>, size_t&, size_t&)> getAddressor() const = 0;
+  virtual bool validate(const CyclicVecInt<DIM, NONCYCLIC>& pos, const int tolerance = 0) const = 0;
 };
 
 template <class T, int DIM, int NONCYCLIC, int BLOCK_WIDTH = 0x20, bool ENABLE_VALIDATION = false>
@@ -112,15 +118,15 @@ public:
         this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
   }
-  const CyclicVecInt<DIM, NONCYCLIC>& size() const
+  const CyclicVecInt<DIM, NONCYCLIC>& size() const override
   {
     return size_;
   }
-  size_t ser_size() const
+  size_t ser_size() const override
   {
     return ser_size_;
   }
-  void clear(const T zero)
+  void clear(const T zero) override
   {
     for (size_t i = 0; i < ser_size_; i++)
     {
@@ -128,7 +134,7 @@ public:
     }
   }
   void clear_partially(
-      const T zero, const CyclicVecInt<DIM, NONCYCLIC>& min, const CyclicVecInt<DIM, NONCYCLIC>& max)
+      const T zero, const CyclicVecInt<DIM, NONCYCLIC>& min, const CyclicVecInt<DIM, NONCYCLIC>& max) override
   {
     CyclicVecInt<DIM, NONCYCLIC> p = min;
     for (p[0] = min[0]; p[0] <= max[0]; ++p[0])
@@ -137,6 +143,7 @@ public:
       {
         for (p[2] = min[2]; p[2] <= max[2]; ++p[2])
         {
+          assert(validate(p));
           (*this)[p] = zero;
         }
       }
@@ -144,7 +151,7 @@ public:
   }
   void copy_partially(
       const BlockMemGridmapBase<T, DIM, NONCYCLIC>& base, const CyclicVecInt<DIM, NONCYCLIC>& min,
-      const CyclicVecInt<DIM, NONCYCLIC>& max)
+      const CyclicVecInt<DIM, NONCYCLIC>& max) override
   {
     assert(DIM == 3);  // copy_partially is available only for DIM=3
 
@@ -155,6 +162,7 @@ public:
       {
         for (p[2] = min[2]; p[2] <= max[2]; ++p[2])
         {
+          assert(validate(p));
           (*this)[p] = base[p];
         }
       }
@@ -164,32 +172,27 @@ public:
       const CyclicVecInt<DIM, NONCYCLIC>& dst_min,
       const BlockMemGridmapBase<T, DIM, NONCYCLIC>& src,
       const CyclicVecInt<DIM, NONCYCLIC>& src_min,
-      const CyclicVecInt<DIM, NONCYCLIC>& src_max)
+      const CyclicVecInt<DIM, NONCYCLIC>& src_max) override
   {
     assert(DIM == 3);  // copy_partially is available only for DIM=3
 
     CyclicVecInt<DIM, NONCYCLIC> p = src_min;
     const CyclicVecInt<DIM, NONCYCLIC> offset = dst_min - src_min;
+
     for (p[0] = src_min[0]; p[0] <= src_max[0]; ++p[0])
     {
       for (p[1] = src_min[1]; p[1] <= src_max[1]; ++p[1])
       {
         for (p[2] = src_min[2]; p[2] <= src_max[2]; ++p[2])
         {
+          assert(src.validate(p));
+          assert(validate(p + offset));
           (*this)[p + offset] = src[p];
         }
       }
     }
   }
-  void clear_positive(const T zero)
-  {
-    for (size_t i = 0; i < ser_size_; i++)
-    {
-      if (c_[i] >= 0)
-        c_[i] = zero;
-    }
-  }
-  void reset(const CyclicVecInt<DIM, NONCYCLIC>& size)
+  void reset(const CyclicVecInt<DIM, NONCYCLIC>& size) override
   {
     CyclicVecInt<DIM, NONCYCLIC> size_tmp = size;
 
@@ -237,7 +240,7 @@ public:
     , dummy_(std::numeric_limits<T>::max())
   {
   }
-  T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos)
+  T& operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) override
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
@@ -249,7 +252,7 @@ public:
     }
     return c_[a];
   }
-  const T operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) const
+  const T operator[](const CyclicVecInt<DIM, NONCYCLIC>& pos) const override
   {
     size_t baddr, addr;
     block_addr(pos, baddr, addr);
@@ -261,7 +264,7 @@ public:
     }
     return c_[a];
   }
-  bool validate(const CyclicVecInt<DIM, NONCYCLIC>& pos, const int tolerance = 0) const
+  bool validate(const CyclicVecInt<DIM, NONCYCLIC>& pos, const int tolerance = 0) const override
   {
     for (int i = 0; i < NONCYCLIC; i++)
     {
@@ -274,6 +277,15 @@ public:
         return false;
     }
     return true;
+  }
+
+  void clear_positive(const T zero)
+  {
+    for (size_t i = 0; i < ser_size_; i++)
+    {
+      if (c_[i] >= 0)
+        c_[i] = zero;
+    }
   }
   const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH, ENABLE_VALIDATION>& operator=(
       const BlockMemGridmap<T, DIM, NONCYCLIC, BLOCK_WIDTH, ENABLE_VALIDATION>& gm)
