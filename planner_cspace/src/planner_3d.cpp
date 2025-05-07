@@ -2132,7 +2132,8 @@ protected:
       // Construct arraivability map
       const int local_width = esc_range_ * 2 + 1;
       const Astar::Vec local_origin = s - Astar::Vec(esc_range_, esc_range_, 0);
-      const Astar::Vec local_size(local_width, local_width, 1);
+      const Astar::Vec local_range(local_width, local_width, 0);
+      const Astar::Vec local_size(local_width + 1, local_width + 1, 1);
       const Astar::Vec local_center(esc_range_, esc_range_, 0);
       const DistanceMap::Params dmp =
           {
@@ -2148,7 +2149,7 @@ protected:
       arrivable_map_.setParams(cc_, num_cost_estim_task_);
       arrivable_map_.init(model_, dmp);
       cm_local_esc_.copy_partially(
-          Astar::Vec(0, 0, 0), cm_rough_, local_origin, local_origin + local_size);
+          Astar::Vec(0, 0, 0), cm_rough_, local_origin, local_origin + local_range);
       arrivable_map_.create(local_center, local_center);
 
       // Find temporary goal
