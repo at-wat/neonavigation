@@ -65,7 +65,7 @@ protected:
   const float tolerance_ = 0.4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF bbf_costmap_;
+  CostmapBBF::Ptr bbf_costmap_;
 
   DistanceMap dm_;
 
@@ -73,6 +73,7 @@ protected:
     : s_(2, 2, 0)
     , e_(8, 8, 0)
     , ec_(0.5f, 0.5f, 0.2f)
+    , bbf_costmap_(new CostmapBBFImpl())
     , dm_(cm_rough_, bbf_costmap_)
   {
     const int range = 4;
@@ -106,12 +107,12 @@ protected:
     cm.reset(size3d);
     cm_hyst.reset(size3d);
     cm_rough_.reset(size2d);
-    bbf_costmap_.reset(size2d);
+    bbf_costmap_->reset(size2d);
 
     cm.clear(0);
     cm_hyst.clear(0);
     cm_rough_.clear(0);
-    bbf_costmap_.clear();
+    bbf_costmap_->clear();
 
     const DistanceMap::Params dmp =
         {
@@ -320,12 +321,13 @@ protected:
   const int search_range_ = 4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF bbf_costmap_;
+  CostmapBBF::Ptr bbf_costmap_;
 
   DistanceMap dm_;
 
   DistanceMapTestLongMap()
     : ec_(0.5f, 0.5f, 0.2f)
+    , bbf_costmap_(new CostmapBBFImpl())
     , dm_(cm_rough_, bbf_costmap_)
   {
     costmap_cspace_msgs::MapMetaData3D map_info;
@@ -356,11 +358,11 @@ protected:
     cm.reset(size3d);
     cm_hyst.reset(size3d);
     cm_rough_.reset(size2d);
-    bbf_costmap_.reset(size2d);
+    bbf_costmap_->reset(size2d);
     cm.clear(0);
     cm_hyst.clear(0);
     cm_rough_.clear(0);
-    bbf_costmap_.clear();
+    bbf_costmap_->clear();
 
     const DistanceMap::Params dmp =
         {
@@ -494,6 +496,87 @@ TEST_F(DistanceMapTestLongMap, BlockedAndRecovered)
   {
     debugOutput(dm_, cm_rough_, s, e);
     return;
+  }
+}
+
+TEST_F(DistanceMapTestLongMap, StartMoveWithoutMapUpdate)
+{
+  const Astar::Vec e(1, 1, 0);
+
+  const float tolerance = 0.4;
+
+  const int range_overshoot = range_ + local_range_ + longcut_range_ + search_range_;
+
+  const auto validate = [this, e, tolerance, range_overshoot](const Astar::Vec& s)
+  {
+    for (int y = 0; y < h_; y++)
+    {
+      for (int x = 0; x < w_; x++)
+      {
+        const Astar::Vec p(x, y, 0);
+        const float cost = dm_[p];
+        const float d = (p - e).norm();
+        const float d_from_start = (p - s).norm();
+        if (x < s[0] || d_from_start <= range_overshoot)
+        {
+          ASSERT_NEAR(ec_[0] * d, cost, tolerance) << xyStr(x, y);
+        }
+        else if (d_from_start > range_overshoot)
+        {
+          ASSERT_EQ(std::numeric_limits<float>::max(), cost) << xyStr(x, y);
+        }
+      }
+    }
+  };
+
+  {
+    const Astar::Vec s(2, 1, 0);
+    dm_.create(s, e);
+    SCOPED_TRACE("After create");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
+  }
+  {
+    const Astar::Vec s(2, 1, 0);
+    dm_.update(
+        s, e,
+        DistanceMap::Rect(
+            Vec3(1, 1, 1), Vec3(0, 0, 0)));
+    SCOPED_TRACE("After update 1");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
+  }
+  {
+    const Astar::Vec s(5, 1, 0);
+    dm_.update(
+        s, e,
+        DistanceMap::Rect(
+            Vec3(1, 1, 1), Vec3(0, 0, 0)));
+    SCOPED_TRACE("After update 2");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
+  }
+  {
+    const Astar::Vec s(7, 1, 0);
+    dm_.update(
+        s, e,
+        DistanceMap::Rect(
+            Vec3(1, 1, 1), Vec3(0, 0, 0)));
+    SCOPED_TRACE("After update 3");
+    validate(s);
+    if (::testing::Test::HasFatalFailure())
+    {
+      debugOutput(dm_, cm_rough_, s, e);
+    }
   }
 }
 }  // namespace planner_3d

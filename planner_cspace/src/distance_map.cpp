@@ -116,7 +116,7 @@ void DistanceMap::fillCostmap(
 
           const float gnext = g_[next];
 
-          if (gnext < g_[p] + cost)
+          if (gnext <= g_[p] + cost)
           {
             // Skip as this search task has no chance to find better way.
             continue;
@@ -135,7 +135,7 @@ void DistanceMap::fillCostmap(
                 break;
               }
               sum += c;
-              sum_hist += bbf_costmap_.getCost(pos);
+              sum_hist += bbf_costmap_->getCost(pos);
             }
             if (collision)
             {
@@ -182,9 +182,10 @@ void DistanceMap::fillCostmap(
 
 DistanceMap::DistanceMap(
     const BlockMemGridmapBase<char, 3, 2>& cm_rough,
-    const CostmapBBF& bbf_costmap)
+    const CostmapBBF::ConstPtr bbf_costmap)
   : cm_rough_(cm_rough)
   , bbf_costmap_(bbf_costmap)
+  , goal_(-1, -1, -1)
 {
 }
 
@@ -203,8 +204,10 @@ void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
     pq_erase_.reserve((p.size[0] + p.size[1]) * 2);
 
     g_.reset(Astar::Vec(p.size[0], p.size[1], 1));
-    g_.clear(0);
   }
+  g_.clear(0);
+
+  goal_ = Astar::Vec(-1, -1, -1);
   p_ = p;
   search_diffs_.clear();
 
@@ -248,6 +251,13 @@ void DistanceMap::update(
     const Astar::Vec& s, const Astar::Vec& e,
     const Rect& rect)
 {
+  const Astar::Vec e_rough(e[0], e[1], 0);
+  const Astar::Vec s_rough(s[0], s[1], 0);
+  if (e_rough != goal_)
+  {
+    create(s, e);
+    return;
+  }
   Astar::Vec p_cost_min;
   float cost_min = std::numeric_limits<float>::max();
   for (Astar::Vec p(0, rect.min[1], 0); p[1] <= rect.max[1]; p[1]++)
@@ -269,9 +279,6 @@ void DistanceMap::update(
   }
   pq_open_.clear();
   pq_erase_.clear();
-
-  const Astar::Vec e_rough(e[0], e[1], 0);
-  const Astar::Vec s_rough(s[0], s[1], 0);
 
   if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {
@@ -326,11 +333,6 @@ void DistanceMap::update(
     }
   }
 
-  if (pq_open_.size() == 0)
-  {
-    pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
-  }
-
   int pos = 0;
   for (const auto& edge : edges_buf_)
   {
@@ -343,6 +345,11 @@ void DistanceMap::update(
     ++pos;
   }
 
+  if (pq_open_.size() == 0)
+  {
+    pq_open_.emplace(-p_.euclid_cost[0] * 0.5, -p_.euclid_cost[0] * 0.5, e_rough);
+  }
+
   fillCostmap(pq_open_, s_rough);
 }
 
@@ -350,6 +357,7 @@ void DistanceMap::create(const Astar::Vec& s, const Astar::Vec& e)
 {
   const Astar::Vec e_rough(e[0], e[1], 0);
   const Astar::Vec s_rough(s[0], s[1], 0);
+  goal_ = e_rough;
 
   if (s_rough.isExceeded(cm_rough_.size()) || e_rough.isExceeded(cm_rough_.size()))
   {
