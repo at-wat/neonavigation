@@ -626,6 +626,16 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
+  for (int x = 11; x <= 15; ++x)
+  {
+    for (int y = 23; y <= 25; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 100;
+    }
+  }
+  pubMapLocal();
+
   nav_msgs::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
@@ -635,14 +645,6 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   path.poses[0].pose.orientation.w = 1.0;
   pub_patrol_nodes_.publish(path);
 
-  for (int x = 12; x <= 14; ++x)
-  {
-    for (int y = 24; y <= 26; ++y)
-    {
-      const int pos = x + y * map_local_->info.width;
-      map_local_->data[pos] = 100;
-    }
-  }
   waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
 
   for (int x = 12; x <= 14; ++x)
@@ -662,6 +664,16 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
+  for (int x = 23; x <= 26; ++x)
+  {
+    for (int y = 4; y <= 6; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 100;
+    }
+  }
+  pubMapLocal();
+
   nav_msgs::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
@@ -671,14 +683,6 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   path.poses[0].pose.orientation.w = 1.0;
   pub_patrol_nodes_.publish(path);
 
-  for (int x = 23; x <= 26; ++x)
-  {
-    for (int y = 4; y <= 6; ++y)
-    {
-      const int pos = x + y * map_local_->info.width;
-      map_local_->data[pos] = 100;
-    }
-  }
   waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::IN_ROCK);
 
   for (int x = 23; x <= 26; ++x)
