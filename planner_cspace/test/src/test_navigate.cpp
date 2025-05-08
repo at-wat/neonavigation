@@ -266,7 +266,7 @@ protected:
           num_occupied++;
         }
       }
-      std::cerr << test_scope_ << " Local map applied. occupied:" << num_occupied << std::endl;
+      std::cerr << test_scope_ << " Local map applied. occupied grids:" << num_occupied << std::endl;
     }
   }
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
