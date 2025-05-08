@@ -96,10 +96,39 @@ protected:
 
   virtual void SetUp()
   {
-    test_scope_ = "[" + std::to_string(getpid()) + "] ";
+    test_scope_ =
+        "[" + std::to_string(getpid()) + "/" +
+        ::testing::UnitTest::GetInstance()->current_test_info()->name() + "] ";
 
-    srv_forget_.waitForExistence(ros::Duration(10.0));
     ros::Rate rate(10.0);
+
+    const ros::Time deadline = ros::Time::now() + ros::Duration(15.0);
+    while (ros::ok())
+    {
+      rate.sleep();
+      ASSERT_LT(ros::Time::now(), deadline)
+          << test_scope_ << "Initialization timeout: "
+          << "sub_map:" << sub_map_.getNumPublishers() << " "
+          << "sub_map_local:" << sub_map_local_.getNumPublishers() << " "
+          << "sub_costmap:" << sub_costmap_.getNumPublishers() << " "
+          << "sub_status:" << sub_status_.getNumPublishers() << " "
+          << "pub_map:" << pub_map_.getNumSubscribers() << " "
+          << "pub_map_local:" << pub_map_local_.getNumSubscribers() << " "
+          << "pub_initial_pose:" << pub_initial_pose_.getNumSubscribers() << " "
+          << "pub_patrol_nodes:" << pub_patrol_nodes_.getNumSubscribers() << " ";
+      if (sub_map_.getNumPublishers() > 0 &&
+          sub_map_local_.getNumPublishers() > 0 &&
+          sub_costmap_.getNumPublishers() > 0 &&
+          sub_status_.getNumPublishers() > 0 &&
+          pub_map_.getNumSubscribers() > 0 &&
+          pub_map_local_.getNumSubscribers() > 0 &&
+          pub_initial_pose_.getNumSubscribers() > 0 &&
+          pub_patrol_nodes_.getNumSubscribers() > 0)
+      {
+        break;
+      }
+    }
+    ASSERT_TRUE(srv_forget_.waitForExistence(ros::Duration(10.0)));
 
     geometry_msgs::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
@@ -108,17 +137,12 @@ protected:
     pose.pose.pose.orientation.z = 1.0;
     pub_initial_pose_.publish(pose);
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(15);
-
     while (ros::ok())
     {
       ros::spinOnce();
       rate.sleep();
       const ros::Time now = ros::Time::now();
-      if (now > deadline)
-      {
-        FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
-      }
+      ASSERT_LT(now, deadline) << test_scope_ << "Initial transform timeout";
       if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
       {
         break;
@@ -129,24 +153,23 @@ protected:
     {
       ros::spinOnce();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
-      if (now > deadline)
-      {
-        FAIL() << test_scope_ << now << " SetUp: map timeout" << std::endl;
-      }
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial map timeout";
     }
     pub_map_.publish(map_);
     std::cerr << test_scope_ << ros::Time::now() << " Map applied." << std::endl;
+
+    while (ros::ok() && !map_local_)
+    {
+      ros::spinOnce();
+      rate.sleep();
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial local map timeout";
+    }
 
     while (ros::ok() && !costmap_)
     {
       ros::spinOnce();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
-      if (now > deadline)
-      {
-        FAIL() << test_scope_ << now << " SetUp: costmap timeout" << std::endl;
-      }
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial costmap timeout";
     }
 
     std_srvs::EmptyRequest req;
@@ -167,6 +190,10 @@ protected:
   }
   void cbMapLocal(const nav_msgs::OccupancyGrid::ConstPtr& msg)
   {
+    if (map_local_)
+    {
+      return;
+    }
     map_local_.reset(new nav_msgs::OccupancyGrid(*msg));
     std::cerr << test_scope_ << msg->header.stamp << " Local map received." << std::endl;
   }
@@ -198,11 +225,22 @@ protected:
   }
   void pubMapLocal()
   {
-    if (map_local_)
+    if (!map_local_)
     {
-      pub_map_local_.publish(map_local_);
-      if ((local_map_apply_cnt_++) % 30 == 0)
-        std::cerr << test_scope_ << " Local map applied." << std::endl;
+      return;
+    }
+    pub_map_local_.publish(map_local_);
+    if ((local_map_apply_cnt_++) % 30 == 0)
+    {
+      int num_occupied = 0;
+      for (const auto& c : map_local_->data)
+      {
+        if (c == 100)
+        {
+          num_occupied++;
+        }
+      }
+      std::cerr << test_scope_ << " Local map applied. occupied grids:" << num_occupied << std::endl;
     }
   }
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
@@ -557,6 +595,16 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
+  for (int x = 10; x <= 16; ++x)
+  {
+    for (int y = 22; y <= 26; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 100;
+    }
+  }
+  pubMapLocal();
+
   nav_msgs::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
@@ -566,19 +614,12 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   path.poses[0].pose.orientation.w = 1.0;
   pub_patrol_nodes_.publish(path);
 
-  for (int x = 12; x <= 14; ++x)
-  {
-    for (int y = 24; y <= 26; ++y)
-    {
-      const int pos = x + y * map_local_->info.width;
-      map_local_->data[pos] = 100;
-    }
-  }
   waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+  ASSERT_FALSE(::testing::Test::HasFailure());
 
-  for (int x = 12; x <= 14; ++x)
+  for (int x = 10; x <= 16; ++x)
   {
-    for (int y = 24; y <= 26; ++y)
+    for (int y = 22; y <= 26; ++y)
     {
       const int pos = x + y * map_local_->info.width;
       map_local_->data[pos] = 0;
@@ -593,6 +634,16 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
+  for (int x = 21; x <= 28; ++x)
+  {
+    for (int y = 2; y <= 8; ++y)
+    {
+      const int pos = x + y * map_local_->info.width;
+      map_local_->data[pos] = 100;
+    }
+  }
+  pubMapLocal();
+
   nav_msgs::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
@@ -602,19 +653,12 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   path.poses[0].pose.orientation.w = 1.0;
   pub_patrol_nodes_.publish(path);
 
-  for (int x = 23; x <= 26; ++x)
-  {
-    for (int y = 4; y <= 6; ++y)
-    {
-      const int pos = x + y * map_local_->info.width;
-      map_local_->data[pos] = 100;
-    }
-  }
   waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::IN_ROCK);
+  ASSERT_FALSE(::testing::Test::HasFailure());
 
-  for (int x = 23; x <= 26; ++x)
+  for (int x = 21; x <= 28; ++x)
   {
-    for (int y = 4; y <= 6; ++y)
+    for (int y = 2; y <= 8; ++y)
     {
       const int pos = x + y * map_local_->info.width;
       map_local_->data[pos] = 0;
