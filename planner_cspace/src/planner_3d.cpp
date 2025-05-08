@@ -2091,6 +2091,11 @@ protected:
       }
       return;
     }
+    if (is_path_switchback_)
+    {
+      ROS_INFO("Skipping temporary goal update during switch back");
+      return;
+    }
 
     if (!enable_crowd_mode_)
     {
