@@ -626,9 +626,9 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
-  for (int x = 11; x <= 15; ++x)
+  for (int x = 10; x <= 16; ++x)
   {
-    for (int y = 23; y <= 25; ++y)
+    for (int y = 22; y <= 26; ++y)
     {
       const int pos = x + y * map_local_->info.width;
       map_local_->data[pos] = 100;
@@ -646,10 +646,11 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   pub_patrol_nodes_.publish(path);
 
   waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+  ASSERT_FALSE(::testing::Test::HasFailure());
 
-  for (int x = 12; x <= 14; ++x)
+  for (int x = 10; x <= 16; ++x)
   {
-    for (int y = 24; y <= 26; ++y)
+    for (int y = 22; y <= 26; ++y)
     {
       const int pos = x + y * map_local_->info.width;
       map_local_->data[pos] = 0;
@@ -664,9 +665,9 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
-  for (int x = 23; x <= 26; ++x)
+  for (int x = 21; x <= 28; ++x)
   {
-    for (int y = 4; y <= 6; ++y)
+    for (int y = 2; y <= 8; ++y)
     {
       const int pos = x + y * map_local_->info.width;
       map_local_->data[pos] = 100;
@@ -684,10 +685,11 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   pub_patrol_nodes_.publish(path);
 
   waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::IN_ROCK);
+  ASSERT_FALSE(::testing::Test::HasFailure());
 
-  for (int x = 23; x <= 26; ++x)
+  for (int x = 21; x <= 28; ++x)
   {
-    for (int y = 4; y <= 6; ++y)
+    for (int y = 2; y <= 8; ++y)
     {
       const int pos = x + y * map_local_->info.width;
       map_local_->data[pos] = 0;
