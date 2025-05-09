@@ -726,12 +726,12 @@ protected:
   {
     ros::Time now = ros::Time::now();
 
-    twist_ = *msg;
+    twist_ = limitCentrifugalAcceleration(*msg);
     has_twist_ = true;
 
     if (now - last_disable_cmd_ < ros::Duration(disable_timeout_))
     {
-      pub_twist_.publish(limitMaxVelocities(limitCentrifugalAcceleration(twist_)));
+      pub_twist_.publish(limitMaxVelocities(twist_));
     }
     else if (!has_cloud_ || watchdog_stop_)
     {
@@ -740,7 +740,7 @@ protected:
     }
     else
     {
-      geometry_msgs::Twist cmd_vel = limitMaxVelocities(limit(limitCentrifugalAcceleration(twist_)));
+      geometry_msgs::Twist cmd_vel = limitMaxVelocities(limit(twist_));
       pub_twist_.publish(cmd_vel);
 
       if (now > hold_off_)
