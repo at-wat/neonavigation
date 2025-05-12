@@ -258,6 +258,11 @@ protected:
   }
   void cbTemporaryEscape(const std_msgs::Empty::ConstPtr&)
   {
+    if (!has_map_)
+    {
+      // metric2Grid requires map_info_
+      return;
+    }
     updateTemporaryEscapeGoal(metric2Grid(start_.pose), false);
   }
   enum class DiscretePoseStatus
