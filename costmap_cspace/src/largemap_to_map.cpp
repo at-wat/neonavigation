@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -59,6 +59,7 @@ private:
   int width_;
   bool round_local_map_;
   bool simulate_occlusion_;
+  bool simulate_surrounded_;
   std::map<size_t, std::vector<size_t>> occlusion_table_;
 
 public:
@@ -78,6 +79,7 @@ public:
     pnh_.param("width", width_, 30);
     pnh_.param("round_local_map", round_local_map_, false);
     pnh_.param("simulate_occlusion", simulate_occlusion_, false);
+    pnh_.param("simulate_surrounded", simulate_surrounded_, false);
 
     for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
     {
@@ -163,8 +165,14 @@ private:
         const int ly = y - gy;
         const size_t addr = ly * width_ + lx;
         const size_t addr_large = y * large_map_->info.width + x;
-        if (round_local_map_ &&
-            std::pow(lx - half_width, 2) + std::pow(ly - half_width, 2) > std::pow(half_width, 2))
+        const float r_sq = std::pow(lx - half_width, 2) + std::pow(ly - half_width, 2);
+        if (simulate_surrounded_ &&
+            r_sq <= std::pow(half_width, 2) &&
+            std::pow(half_width - 2, 2) <= r_sq)
+        {
+          map.data[addr] = 100;
+        }
+        else if (round_local_map_ && r_sq > std::pow(half_width, 2))
         {
           map.data[addr] = -1;
         }
