@@ -2,6 +2,13 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Ignore temporary escape trigger if map is not received (`#770 <https://github.com/at-wat/neonavigation/issues/770>`_)
+* planner_cspace: crowd escape mode (`#763 <https://github.com/at-wat/neonavigation/issues/763>`_)
+* planner_cspace: fix flaky navigation tests (`#768 <https://github.com/at-wat/neonavigation/issues/768>`_)
+* Contributors: Atsushi Watanabe
+
 0.17.7 (2025-04-16)
 -------------------
 
