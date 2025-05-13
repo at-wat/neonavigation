@@ -2,8 +2,8 @@
 Changelog for package neonavigation_launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.18.0 (2025-05-13)
+-------------------
 * planner_cspace: crowd escape mode (`#763 <https://github.com/at-wat/neonavigation/issues/763>`_)
 * Contributors: Atsushi Watanabe
 
