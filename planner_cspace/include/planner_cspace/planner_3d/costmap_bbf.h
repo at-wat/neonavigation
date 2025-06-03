@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
 
 #include <functional>
+#include <memory>
 
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/blockmem_gridmap.h>
@@ -43,7 +44,23 @@ class CostmapBBF
 {
 public:
   using Vec = CyclicVecInt<3, 2>;
+  using Ptr = std::shared_ptr<CostmapBBF>;
+  using ConstPtr = std::shared_ptr<const CostmapBBF>;
 
+  virtual void reset(const Vec& size) = 0;
+  virtual void clear() = 0;
+  virtual char getCost(const Vec& p) const = 0;
+  virtual void remember(
+      const BlockMemGridmapBase<char, 3, 2>* const costmap,
+      const Vec& center,
+      const float remember_hit_odds, const float remember_miss_odds,
+      const int range_min, const int range_max) = 0;
+  virtual void updateCostmap() = 0;
+  virtual void forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb) = 0;
+};
+
+class CostmapBBFImpl : public CostmapBBF
+{
 private:
   using VecInternal = CyclicVecInt<2, 2>;
   BlockMemGridmap<bbf::BinaryBayesFilter, 2, 2, 0x20> cm_hist_bbf_;
@@ -53,7 +70,7 @@ private:
   VecInternal updated_max_;
 
 public:
-  inline CostmapBBF()
+  inline CostmapBBFImpl()
     : size_(0, 0, 0)
   {
   }
@@ -84,6 +101,35 @@ public:
   void updateCostmap();
   void forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb);
 };
+
+class CostmapBBFNoOp : public CostmapBBF
+{
+public:
+  inline void reset(const Vec& size)
+  {
+  }
+  inline void clear()
+  {
+  }
+  inline char getCost(const Vec& p) const
+  {
+    return 0;
+  }
+  inline void remember(
+      const BlockMemGridmapBase<char, 3, 2>* const costmap,
+      const Vec& center,
+      const float remember_hit_odds, const float remember_miss_odds,
+      const int range_min, const int range_max)
+  {
+  }
+  inline void updateCostmap()
+  {
+  }
+  inline void forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb)
+  {
+  }
+};
+
 }  // namespace planner_3d
 }  // namespace planner_cspace
 

@@ -1,5 +1,20 @@
 include_directories(include)
 
+# planner_3d node with assertion
+add_executable(planner_3d_debug
+  ../src/costmap_bbf.cpp
+  ../src/grid_astar_model_3dof.cpp
+  ../src/motion_cache.cpp
+  ../src/motion_primitive_builder.cpp
+  ../src/planner_3d.cpp
+  ../src/distance_map.cpp
+  ../src/rotation_cache.cpp
+  ../src/start_pose_predictor.cpp
+)
+target_compile_definitions(planner_3d_debug PUBLIC DEBUG)
+target_link_libraries(planner_3d_debug ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+add_dependencies(planner_3d_debug ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
+
 catkin_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
@@ -11,6 +26,7 @@ target_link_libraries(test_cyclic_vec ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 catkin_add_gtest(test_distance_map
   src/test_distance_map.cpp
+  ../src/costmap_bbf.cpp
   ../src/distance_map.cpp
   ../src/grid_astar_model_3dof.cpp
   ../src/motion_cache.cpp
@@ -21,6 +37,7 @@ target_link_libraries(test_distance_map ${catkin_LIBRARIES} ${Boost_LIBRARIES} $
 
 catkin_add_gtest(test_distance_map_fast_update
   src/test_distance_map_fast_update.cpp
+  ../src/costmap_bbf.cpp
   ../src/distance_map.cpp
   ../src/grid_astar_model_3dof.cpp
   ../src/motion_cache.cpp
@@ -97,6 +114,11 @@ add_rostest(test/navigation_rostest.test
   DEPENDENCIES test_navigate
 )
 
+add_rostest(test/navigation_rostest.test
+  ARGS enable_crowd_mode:=true
+  DEPENDENCIES test_navigate
+)
+
 add_rostest_gtest(test_navigate_remember
   test/navigation_remember_rostest.test
   src/test_navigate_remember.cpp
@@ -113,7 +135,7 @@ add_rostest_gtest(test_navigate_boundary
   src/test_navigate_boundary.cpp
 )
 target_link_libraries(test_navigate_boundary ${catkin_LIBRARIES})
-add_dependencies(test_navigate_boundary planner_3d)
+add_dependencies(test_navigate_boundary planner_3d_debug)
 
 add_rostest_gtest(test_abort
   test/abort_rostest.test

@@ -3,7 +3,7 @@
   <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
   <param name="neonavigation_compatible" value="1" />
 
-  <test test-name="test_navigate_boundary" pkg="planner_cspace" type="test_navigate_boundary" time-limit="30.0" />
+  <test test-name="test_navigate_boundary" pkg="planner_cspace" type="test_navigate_boundary" time-limit="45.0" />
 
   <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
     <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
@@ -19,11 +19,12 @@
       overlay_mode: max
     </rosparam>
   </node>
-  <node pkg="planner_cspace" type="planner_3d" name="planner_3d">
+  <node pkg="planner_cspace" type="planner_3d_debug" name="planner_3d">
     <rosparam>
       freq: 10.0
       local_range: 0.2
       antialias_start: true
+      enable_crowd_mode: true
     </rosparam>
   </node>
   <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"

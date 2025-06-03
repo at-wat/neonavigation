@@ -4,6 +4,7 @@
   <arg name="use_map_server" default="true" />
   <arg name="use_safety_limiter" default="false" />
   <arg name="use_path_with_velocity" default="true" />
+  <arg name="enable_crowd_mode" default="false" />
   <arg name="simulate" default="false" />
   <arg name="sim_robot_x" default="0.0" />
   <arg name="sim_robot_y" default="0.0" />
@@ -31,6 +32,7 @@
 
   <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="$(arg output_info)">
     <param name="use_path_with_velocity" value="$(arg use_path_with_velocity)" />
+    <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
   </node>
 
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
