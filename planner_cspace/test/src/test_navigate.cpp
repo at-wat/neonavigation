@@ -752,6 +752,8 @@ TEST_F(Navigate, RobotIsInCrowd)
       continue;
     }
 
+    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::GOING_WELL);
+
     const auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2 &&
@@ -840,6 +842,8 @@ TEST_F(Navigate, ForceTemporaryEscape)
       std::cerr << test_scope_ << e.what() << std::endl;
       continue;
     }
+
+    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::GOING_WELL);
 
     const auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
