@@ -1,13 +1,13 @@
 # neonavigation meta-package
 
-![Build Status](https://github.com/at-wat/neonavigation/workflows/build/badge.svg)
+[![Build Status](https://github.com/at-wat/neonavigation/actions/workflows/test.yaml/badge.svg)](https://github.com/at-wat/neonavigation/actions/workflows/test.yaml)
 [![Codecov](https://codecov.io/gh/at-wat/neonavigation/branch/master/graph/badge.svg)](https://codecov.io/gh/at-wat/neonavigation)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 ROS meta-package for autonomous vehicle navigation.
 
 > [!NOTE]  
-> After official ROS 1 EOL, this package will be released to [Alpine ROS](https://www.seqsense.org/alpine-ros).
+> After official ROS 1 EOL, this package is released to [Alpine ROS](https://www.seqsense.org/alpine-ros).
 
 ## Important notices
 
