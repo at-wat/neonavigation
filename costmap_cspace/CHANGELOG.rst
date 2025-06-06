@@ -2,6 +2,9 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.18.1 (2025-06-06)
+-------------------
+
 0.18.0 (2025-05-13)
 -------------------
 * planner_cspace: crowd escape mode (`#763 <https://github.com/at-wat/neonavigation/issues/763>`_)

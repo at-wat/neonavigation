@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.18.1 (2025-06-06)
+-------------------
+* planner_cspace: fix crowd escape to use original goal if reachable (`#779 <https://github.com/at-wat/neonavigation/issues/779>`_)
+* planner_cspace: fix error status during crowd escape (`#776 <https://github.com/at-wat/neonavigation/issues/776>`_)
+* Contributors: Atsushi Watanabe
+
 0.18.0 (2025-05-13)
 -------------------
 * Ignore temporary escape trigger if map is not received (`#770 <https://github.com/at-wat/neonavigation/issues/770>`_)
