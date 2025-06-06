@@ -2202,11 +2202,6 @@ protected:
           {
             continue;
           }
-          const auto cost = cost_estim_cache_static_[te];
-          if (cost >= cost_min)
-          {
-            continue;
-          }
 
           // Check arrivability
           if (arrivable_map_[te - local_origin] == std::numeric_limits<float>::max())
@@ -2222,6 +2217,12 @@ protected:
             escaping_ = false;
             createCostEstimCache();
             return;
+          }
+
+          const auto cost = cost_estim_cache_static_[te];
+          if (cost >= cost_min)
+          {
+            continue;
           }
 
           // Calculate distance map gradient
