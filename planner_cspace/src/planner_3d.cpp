@@ -2198,7 +2198,7 @@ protected:
           {
             continue;
           }
-          if (!cm_rough_.validate(te, range_) || cm_rough_[te] >= relocation_acceptable_cost_)
+          if (!cm_rough_.validate(te, range_))
           {
             continue;
           }
@@ -2217,6 +2217,11 @@ protected:
             escaping_ = false;
             createCostEstimCache();
             return;
+          }
+
+          if (cm_rough_[te] >= relocation_acceptable_cost_)
+          {
+            continue;
           }
 
           const auto cost = cost_estim_cache_static_[te];
