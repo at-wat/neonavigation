@@ -1628,6 +1628,7 @@ public:
       }
       else
       {
+        bool tried_escape = escaping_;
         bool skip_path_planning = false;
         if (escaping_)
         {
@@ -1684,6 +1685,13 @@ public:
             is_path_switchback_ = (sw_index >= 0);
             if (is_path_switchback_)
               sw_pos_ = path.poses[sw_index];
+          }
+          if ((escaping_ || tried_escape) && enable_crowd_mode_ &&
+              status_.error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND)
+          {
+            // Ignore PATH_NOT_FOUND during temporary escape with crowd mode as the robot continue moving forward.
+            // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
+            status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
           }
         }
       }

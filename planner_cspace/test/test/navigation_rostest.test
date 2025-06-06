@@ -4,7 +4,7 @@
   <arg name="fast_map_update" default="false" />
   <arg name="with_tolerance" default="false" />
   <arg name="enable_crowd_mode" default="false" />
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)" />
+  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)_$(arg enable_crowd_mode)" />
   <param name="neonavigation_compatible" value="1" />
 
   <test test-name="test_navigate_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)_$(arg enable_crowd_mode)" pkg="planner_cspace" type="test_navigate" time-limit="260.0">
