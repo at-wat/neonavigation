@@ -2198,12 +2198,7 @@ protected:
           {
             continue;
           }
-          if (!cm_rough_.validate(te, range_) || cm_rough_[te] >= relocation_acceptable_cost_)
-          {
-            continue;
-          }
-          const auto cost = cost_estim_cache_static_[te];
-          if (cost >= cost_min)
+          if (!cm_rough_.validate(te, range_))
           {
             continue;
           }
@@ -2222,6 +2217,17 @@ protected:
             escaping_ = false;
             createCostEstimCache();
             return;
+          }
+
+          if (cm_rough_[te] >= relocation_acceptable_cost_)
+          {
+            continue;
+          }
+
+          const auto cost = cost_estim_cache_static_[te];
+          if (cost >= cost_min)
+          {
+            continue;
           }
 
           // Calculate distance map gradient
