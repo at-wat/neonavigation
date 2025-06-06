@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.18.1 (2025-06-06)
+-------------------
 * planner_cspace: fix error status during crowd escape (`#776 <https://github.com/at-wat/neonavigation/issues/776>`_)
 * Contributors: Atsushi Watanabe
 
