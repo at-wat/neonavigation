@@ -61,11 +61,10 @@ TEST_F(SafetyLimiterTest, SafetyLimitCentrifugalAccel)
     if (cmd_vel_)
     {
       received = true;
-      const double current_speed = std::hypot(cmd_vel_->linear.x, cmd_vel_->linear.y);
-      ASSERT_NEAR(cmd_vel_->linear.x, std::sqrt(0.1), 1e-2)
+      ASSERT_NEAR(cmd_vel_->linear.x, std::sqrt(0.4), 1e-2)
           << " Raw: " << vel << " i: " << i
           << " Limited: " << cmd_vel_->linear.x;
-      ASSERT_NEAR(current_speed, std::sqrt(0.4), 1e-2)
+      ASSERT_NEAR(cmd_vel_->angular.z, std::sqrt(0.1), 1e-2)
           << " Raw: " << ang_vel << " i: " << i
           << " Limited: " << cmd_vel_->angular.z;
     }
