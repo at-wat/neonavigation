@@ -609,9 +609,10 @@ protected:
   {
     auto out = in;
     const double in_linear_vel = std::hypot(in.linear.x, in.linear.y);
-    if (max_values_[2] > 0 && std::abs(out_linear_vel * out.angular.z) > max_values_[2])
+    const double in_centrifugal_acc = std::abs(in_linear_vel * in.angular.z);
+    if (max_centrifugal_acc_ > 0 && in_centrifugal_acc > max_centrifugal_acc_)
     {
-      const double limit_factor = std::sqrt(max_values_[2] / std::abs(out_linear_vel * out.angular.z));
+      const double limit_factor = std::sqrt(max_centrifugal_acc_ / in_centrifugal_acc);
       out.linear.x *= limit_factor;
       out.linear.y *= limit_factor;
       out.angular.z *= limit_factor;
