@@ -132,7 +132,8 @@ protected:
   double yaw_margin_;
   double yaw_escape_;
   double r_lim_;
-  double max_values_[3];
+  double max_values_[2];
+  double max_centrifugal_acc_;
   double z_range_[2];
   float footprint_radius_;
   double downsample_grid_;
@@ -211,7 +212,7 @@ public:
     watchdog_interval_ = ros::Duration(watchdog_interval_d);
     pnh_.param("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
     pnh_.param("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
-    pnh_.param("max_centrifugal_acc", max_values_[2], std::numeric_limits<double>::infinity());
+    pnh_.param("max_centrifugal_acc", max_centrifugal_acc_, std::numeric_limits<double>::infinity());
 
     parameter_server_.reset(
         new dynamic_reconfigure::Server<SafetyLimiterConfig>(parameter_server_mutex_, pnh_));
@@ -330,7 +331,7 @@ protected:
     acc_[1] = config.ang_acc;
     max_values_[0] = config.max_linear_vel;
     max_values_[1] = config.max_angular_vel;
-    max_values_[2] = config.max_centrifugal_acc;
+    max_centrifugal_acc_ = config.max_centrifugal_acc;
     z_range_[0] = config.z_range_min;
     z_range_[1] = config.z_range_max;
     dt_ = config.dt;
