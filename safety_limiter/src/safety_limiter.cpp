@@ -608,7 +608,7 @@ protected:
   limitCentrifugalAcceleration(const geometry_msgs::Twist& in)
   {
     auto out = in;
-    const double out_linear_vel = std::hypot(out.linear.x, out.linear.y);
+    const double in_linear_vel = std::hypot(in.linear.x, in.linear.y);
     if (max_values_[2] > 0 && std::abs(out_linear_vel * out.angular.z) > max_values_[2])
     {
       const double limit_factor = std::sqrt(max_values_[2] / std::abs(out_linear_vel * out.angular.z));
