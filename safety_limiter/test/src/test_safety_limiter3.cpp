@@ -49,6 +49,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitCentrifugalAccel)
   const double vel = 0.8;
   const double ang_vel = 0.4;
 
+  // Skip initial state
+  for (int i = 0; i < 10 && ros::ok(); ++i)
+  {
+    publishEmptyPointPointcloud2("base_link", ros::Time::now());
+    publishWatchdogReset();
+    publishTwist(0.0, 0.0);
+    broadcastTF("odom", "base_link", 0.0, 0.0);
+    wait.sleep();
+    ros::spinOnce();
+  }
+
   for (int i = 0; i < 10 && ros::ok(); ++i)
   {
     publishEmptyPointPointcloud2("base_link", ros::Time::now());
