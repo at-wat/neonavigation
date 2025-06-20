@@ -133,6 +133,7 @@ protected:
   double yaw_escape_;
   double r_lim_;
   double max_values_[2];
+  double max_centrifugal_acc_;
   double z_range_[2];
   float footprint_radius_;
   double downsample_grid_;
@@ -211,6 +212,7 @@ public:
     watchdog_interval_ = ros::Duration(watchdog_interval_d);
     pnh_.param("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
     pnh_.param("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
+    pnh_.param("max_centrifugal_acc", max_centrifugal_acc_, std::numeric_limits<double>::infinity());
 
     parameter_server_.reset(
         new dynamic_reconfigure::Server<SafetyLimiterConfig>(parameter_server_mutex_, pnh_));
@@ -329,6 +331,7 @@ protected:
     acc_[1] = config.ang_acc;
     max_values_[0] = config.max_linear_vel;
     max_values_[1] = config.max_angular_vel;
+    max_centrifugal_acc_ = config.max_centrifugal_acc;
     z_range_[0] = config.z_range_min;
     z_range_[1] = config.z_range_max;
     dt_ = config.dt;
@@ -602,6 +605,22 @@ protected:
     return out;
   }
 
+  geometry_msgs::Twist
+  limitCentrifugalAcceleration(const geometry_msgs::Twist& in)
+  {
+    auto out = in;
+    const double in_linear_vel = std::hypot(in.linear.x, in.linear.y);
+    const double in_centrifugal_acc = std::abs(in_linear_vel * in.angular.z);
+    if (max_centrifugal_acc_ > 0 && in_centrifugal_acc > max_centrifugal_acc_)
+    {
+      const double limit_factor = std::sqrt(max_centrifugal_acc_ / in_centrifugal_acc);
+      out.linear.x *= limit_factor;
+      out.linear.y *= limit_factor;
+      out.angular.z *= limit_factor;
+    }
+    return out;
+  }
+
   class vec
   {
   public:
@@ -711,7 +730,7 @@ protected:
   {
     ros::Time now = ros::Time::now();
 
-    twist_ = *msg;
+    twist_ = limitCentrifugalAcceleration(*msg);
     has_twist_ = true;
 
     if (now - last_disable_cmd_ < ros::Duration(disable_timeout_))
