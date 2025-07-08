@@ -102,7 +102,7 @@ protected:
     pub_patrol_nodes_ = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
   }
 
-  virtual void SetUp()
+  void SetUp() override
   {
     test_scope_ =
         "[" + std::to_string(getpid()) + "/" +
@@ -185,6 +185,12 @@ protected:
     srv_forget_.call(req, res);
 
     ros::Duration(1.0).sleep();
+  }
+  void TearDown() override
+  {
+    // Clear goal
+    nav_msgs::Path path;
+    pub_patrol_nodes_.publish(path);
   }
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
