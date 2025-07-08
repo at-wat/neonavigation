@@ -27,12 +27,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_DISCRETE_POSE_STATUS_H
-#define PLANNER_CSPACE_PLANNER_3D_DISCRETE_POSE_STATUS_H
+#ifndef PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
+#define PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
 
+namespace planner_cspace
+{
 namespace planner_3d
 {
-
 enum class DiscretePoseStatus
 {
   OK,
@@ -47,6 +48,7 @@ enum class StartPoseStatus
   FINISHING,
   NORMAL,
 };
-
 }  // namespace planner_3d
-#endif  // PLANNER_CSPACE_PLANNER_3D_DISCRETE_POSE_STATUS_H
+}  // namespace planner_cspace
+
+#endif  // PLANNER_CSPACE_PLANNER_3DPOSE_STATUS_H
