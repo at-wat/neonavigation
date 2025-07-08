@@ -842,7 +842,7 @@ TEST_F(Navigate, RobotIsInCrowdAndStuck)
     if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND && !unreachable)
     {
       unreachable = true;
-      check_until = now + ros::Duration(3);  // Check another 3 seconds that state is not changed
+      check_until = now + ros::Duration(2);  // Check another 2 seconds that state is not changed
     }
     if (unreachable)
     {
@@ -914,7 +914,7 @@ TEST_F(Navigate, RobotIsInCrowdAndGoalIsInRock)
     if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND && !unreachable)
     {
       unreachable = true;
-      check_until = now + ros::Duration(3);  // Check another 3 seconds that state is not changed
+      check_until = now + ros::Duration(2);  // Check another 2 seconds that state is not changed
     }
     if (unreachable)
     {
