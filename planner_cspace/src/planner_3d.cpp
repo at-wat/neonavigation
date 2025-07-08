@@ -1626,11 +1626,7 @@ public:
       {
         bool tried_escape = escaping_;
         bool skip_path_planning = false;
-        if (escaping_)
-        {
-          status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-        }
-        else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
+        if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
         {
           status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
           status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -1682,12 +1678,11 @@ public:
             if (is_path_switchback_)
               sw_pos_ = path.poses[sw_index];
           }
-          if ((escaping_ || tried_escape) && enable_crowd_mode_ &&
-              status_.error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND)
+          if (escaping_ || tried_escape)
           {
-            // Ignore PATH_NOT_FOUND during temporary escape with crowd mode as the robot continue moving forward.
+            // Planner status is obtained by escape_reason_ during temporary escape.
             // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
-            status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+            status_.error = temporaryEscapeReason2PlannerErrorStatus(escape_reason_);
           }
         }
       }

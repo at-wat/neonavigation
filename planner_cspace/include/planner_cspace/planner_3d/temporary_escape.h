@@ -30,6 +30,8 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_TEMPORARY_ESCAPE_H
 #define PLANNER_CSPACE_PLANNER_3D_TEMPORARY_ESCAPE_H
 
+#include <planner_cspace_msgs/PlannerStatus.h>
+
 namespace planner_cspace
 {
 namespace planner_3d
@@ -40,6 +42,21 @@ enum class TemporaryEscapeReason
   UNREACHABLE,
   GOAL_IS_IN_ROCK,
 };
+
+uint8_t temporaryEscapeReason2PlannerErrorStatus(const TemporaryEscapeReason r)
+{
+  switch (r)
+  {
+    case TemporaryEscapeReason::FORCED:
+      return planner_cspace_msgs::PlannerStatus::GOING_WELL;
+    case TemporaryEscapeReason::UNREACHABLE:
+      return planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+    case TemporaryEscapeReason::GOAL_IS_IN_ROCK:
+      return planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+    default:
+      return planner_cspace_msgs::PlannerStatus::INTERNAL_ERROR;
+  }
+}
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
