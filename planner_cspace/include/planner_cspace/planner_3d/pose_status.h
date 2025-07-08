@@ -51,4 +51,4 @@ enum class StartPoseStatus
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_PLANNER_3DPOSE_STATUS_H
+#endif  // PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
