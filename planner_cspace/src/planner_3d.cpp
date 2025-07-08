@@ -449,7 +449,6 @@ protected:
     has_goal_ = false;
     escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
-    status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
   }
 
   bool setGoal(const geometry_msgs::PoseStamped& msg)
@@ -479,7 +478,6 @@ protected:
         return false;
       }
       status_.status = planner_cspace_msgs::PlannerStatus::DOING;
-      status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
       status_.header.stamp = ros::Time::now();
       pub_status_.publish(status_);
       diag_updater_.update();
@@ -1693,7 +1691,9 @@ public:
     else if (!has_goal_)
     {
       if (!retain_last_error_status_)
+      {
         status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+      }
       publishEmptyPath();
     }
     publishCurrentGoal();
