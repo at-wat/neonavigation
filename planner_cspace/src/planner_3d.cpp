@@ -2267,7 +2267,7 @@ protected:
 
       escaping_ = true;
       escape_status_ =
-          cost_min < cost_estim_cache_static_[start_grid] ?
+          cost_min < cost_estim_cache_static_[s] ?
               TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT :
               TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
 
