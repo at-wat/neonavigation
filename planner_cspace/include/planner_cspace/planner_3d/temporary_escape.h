@@ -43,6 +43,11 @@ enum class TemporaryEscapeStatus
   ESCAPING_WITHOUT_IMPROVEMENT,
 };
 
+bool isEscaping(const TemporaryEscapeStatus r)
+{
+  return r != TemporaryEscapeStatus::NOT_ESCAPING;
+}
+
 uint8_t temporaryEscapeStatus2PlannerErrorStatus(const TemporaryEscapeStatus r)
 {
   switch (r)

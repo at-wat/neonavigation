@@ -232,7 +232,6 @@ protected:
 
   bool force_goal_orientation_;
 
-  bool escaping_;
   TemporaryEscapeStatus escape_status_;
 
   int cnt_stuck_;
@@ -469,7 +468,7 @@ protected:
         goal_.pose.orientation.w * goal_.pose.orientation.w;
     if (std::abs(len2 - 1.0) < 0.1)
     {
-      escaping_ = false;
+      escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
       has_goal_ = true;
       cnt_stuck_ = 0;
       if (!createCostEstimCache())
@@ -599,16 +598,16 @@ protected:
         ROS_ERROR("Given goal is not on the map.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
-        if (escaping_)
+        if (isEscaping(escape_status_))
         {
           ROS_WARN("Oops! Temporary goal is in Rock! Reverting the temporary goal.");
           goal_raw_ = goal_ = goal_original_;
-          escaping_ = false;
+          escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
           return true;
         }
         ROS_WARN("Oops! Goal is in Rock!");
         ++cnt_stuck_;
-        if (!escaping_ && temporary_escape_ && enable_crowd_mode_)
+        if (temporary_escape_ && enable_crowd_mode_)
         {
           updateTemporaryEscapeGoal(s);
         }
@@ -1332,7 +1331,7 @@ public:
     has_start_ = false;
     cost_estim_cache_created_ = false;
 
-    escaping_ = false;
+    escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     cnt_stuck_ = 0;
     is_path_switchback_ = false;
 
@@ -1624,7 +1623,7 @@ public:
       }
       else
       {
-        bool tried_escape = escaping_;
+        bool tried_escape = isEscaping(escape_status_);
         bool skip_path_planning = false;
         if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
         {
@@ -1678,7 +1677,7 @@ public:
             if (is_path_switchback_)
               sw_pos_ = path.poses[sw_index];
           }
-          if (escaping_ || tried_escape)
+          if (isEscaping(escape_status_) || tried_escape)
           {
             // Planner status is obtained by escape_status_ during temporary escape.
             // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
@@ -1771,7 +1770,7 @@ protected:
   bool isPathFinishing(const Astar::Vec& start_grid, const Astar::Vec& end_grid) const
   {
     int g_tolerance_lin, g_tolerance_ang;
-    if (escaping_)
+    if (isEscaping(escape_status_))
     {
       g_tolerance_lin = temporary_escape_tolerance_lin_;
       g_tolerance_ang = temporary_escape_tolerance_ang_;
@@ -1895,10 +1894,10 @@ protected:
         status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
         return false;
       case StartPoseStatus::FINISHING:
-        if (escaping_)
+        if (isEscaping(escape_status_))
         {
           goal_ = goal_raw_ = goal_original_;
-          escaping_ = false;
+          escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
           createCostEstimCache();
           ROS_INFO("Escaped");
           return true;
@@ -2104,7 +2103,6 @@ protected:
         ROS_WARN("No valid temporary escape goal");
         return;
       }
-      escaping_ = true;
       escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
       ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
       goal_raw_.pose = grid2MetricPose(te);
@@ -2200,7 +2198,6 @@ protected:
             // Original goal is in the temporary escape range and reachable
             ROS_INFO("Original goal is reachable. Back to the original goal.");
             goal_ = goal_raw_ = goal_original_;
-            escaping_ = false;
             escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
             createCostEstimCache();
             return;
@@ -2265,7 +2262,6 @@ protected:
         return;
       }
 
-      escaping_ = true;
       escape_status_ =
           cost_min < cost_estim_cache_static_[s] ?
               TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT :
