@@ -36,22 +36,21 @@ namespace planner_cspace
 {
 namespace planner_3d
 {
-enum class TemporaryEscapeReason
+enum class TemporaryEscapeStatus
 {
-  FORCED,
-  UNREACHABLE,
-  GOAL_IS_IN_ROCK,
+  NOT_ESCAPING,
+  ESCAPING_WITH_IMPROVEMENT,
+  ESCAPING_WITHOUT_IMPROVEMENT,
 };
 
-uint8_t temporaryEscapeReason2PlannerErrorStatus(const TemporaryEscapeReason r)
+uint8_t temporaryEscapeStatus2PlannerErrorStatus(const TemporaryEscapeStatus r)
 {
   switch (r)
   {
-    case TemporaryEscapeReason::FORCED:
+    case TemporaryEscapeStatus::NOT_ESCAPING:
+    case TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT:
       return planner_cspace_msgs::PlannerStatus::GOING_WELL;
-    case TemporaryEscapeReason::UNREACHABLE:
-      return planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-    case TemporaryEscapeReason::GOAL_IS_IN_ROCK:
+    case TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT:
       return planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
     default:
       return planner_cspace_msgs::PlannerStatus::INTERNAL_ERROR;

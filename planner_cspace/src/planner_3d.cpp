@@ -233,7 +233,7 @@ protected:
   bool force_goal_orientation_;
 
   bool escaping_;
-  TemporaryEscapeReason escape_reason_;
+  TemporaryEscapeStatus escape_status_;
 
   int cnt_stuck_;
   bool is_start_occupied_;
@@ -266,7 +266,7 @@ protected:
       // metric2Grid requires map_info_
       return;
     }
-    updateTemporaryEscapeGoal(metric2Grid(start_.pose), TemporaryEscapeReason::FORCED, false);
+    updateTemporaryEscapeGoal(metric2Grid(start_.pose), false);
   }
   template <class T>
   DiscretePoseStatus relocateDiscretePoseIfNeededImpl(const T& cm,
@@ -610,7 +610,7 @@ protected:
         ++cnt_stuck_;
         if (!escaping_ && temporary_escape_ && enable_crowd_mode_)
         {
-          updateTemporaryEscapeGoal(s, TemporaryEscapeReason::GOAL_IS_IN_ROCK);
+          updateTemporaryEscapeGoal(s);
         }
         return true;
       case DiscretePoseStatus::RELOCATED:
@@ -1680,9 +1680,9 @@ public:
           }
           if (escaping_ || tried_escape)
           {
-            // Planner status is obtained by escape_reason_ during temporary escape.
+            // Planner status is obtained by escape_status_ during temporary escape.
             // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
-            status_.error = temporaryEscapeReason2PlannerErrorStatus(escape_reason_);
+            status_.error = temporaryEscapeStatus2PlannerErrorStatus(escape_status_);
           }
         }
       }
@@ -1932,7 +1932,7 @@ protected:
       start_pose_predictor_.clear();
       if (temporary_escape_)
       {
-        updateTemporaryEscapeGoal(start_grid, TemporaryEscapeReason::UNREACHABLE);
+        updateTemporaryEscapeGoal(start_grid);
       }
       return false;
     }
@@ -2079,8 +2079,7 @@ protected:
     return true;
   }
 
-  void updateTemporaryEscapeGoal(
-      const Astar::Vec& start_grid, const TemporaryEscapeReason reason, const bool log_on_unready = true)
+  void updateTemporaryEscapeGoal(const Astar::Vec& start_grid, const bool log_on_unready = true)
   {
     if (!has_map_ || !has_goal_ || !has_start_)
     {
@@ -2106,7 +2105,7 @@ protected:
         return;
       }
       escaping_ = true;
-      escape_reason_ = reason;
+      escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
       ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
       goal_raw_.pose = grid2MetricPose(te);
       goal_ = goal_raw_;
@@ -2202,7 +2201,7 @@ protected:
             ROS_INFO("Original goal is reachable. Back to the original goal.");
             goal_ = goal_raw_ = goal_original_;
             escaping_ = false;
-            escape_reason_ = reason;
+            escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
             createCostEstimCache();
             return;
           }
@@ -2267,7 +2266,11 @@ protected:
       }
 
       escaping_ = true;
-      escape_reason_ = reason;
+      escape_status_ =
+          cost_min < cost_estim_cache_static_[start_grid] ?
+              TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT :
+              TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+
       ROS_INFO("Temporary goal (%d, %d, %d)",
                te_out[0], te_out[1], te_out[2]);
       goal_raw_.pose = grid2MetricPose(te_out);
