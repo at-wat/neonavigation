@@ -1623,7 +1623,7 @@ public:
       }
       else
       {
-        bool tried_escape = isEscaping(escape_status_);
+        TemporaryEscapeStatus previous_escape_status = escape_status_;
         bool skip_path_planning = false;
         if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
         {
@@ -1677,11 +1677,12 @@ public:
             if (is_path_switchback_)
               sw_pos_ = path.poses[sw_index];
           }
-          if (isEscaping(escape_status_) || tried_escape)
+          if (isEscaping(escape_status_) || isEscaping(previous_escape_status))
           {
             // Planner status is obtained by escape_status_ during temporary escape.
             // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
-            status_.error = temporaryEscapeStatus2PlannerErrorStatus(escape_status_);
+            status_.error = temporaryEscapeStatus2PlannerErrorStatus(
+                escape_status_ | previous_escape_status);
           }
         }
       }
@@ -2266,6 +2267,12 @@ protected:
           cost_min < cost_estim_cache_static_[s] ?
               TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT :
               TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+      if (isPathFinishing(start_grid, te_out))
+      {
+        // This temporary goal is too close and
+        // it will be immediately goes escaped state
+        escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+      }
 
       ROS_INFO("Temporary goal (%d, %d, %d)",
                te_out[0], te_out[1], te_out[2]);

@@ -61,6 +61,12 @@ uint8_t temporaryEscapeStatus2PlannerErrorStatus(const TemporaryEscapeStatus r)
       return planner_cspace_msgs::PlannerStatus::INTERNAL_ERROR;
   }
 }
+
+TemporaryEscapeStatus operator|(const TemporaryEscapeStatus& a, const TemporaryEscapeStatus& b)
+{
+  // Return worst one
+  return a > b ? a : b;
+}
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
