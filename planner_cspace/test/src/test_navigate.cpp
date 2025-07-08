@@ -191,6 +191,7 @@ protected:
     // Clear goal
     nav_msgs::Path path;
     pub_patrol_nodes_.publish(path);
+    ros::Duration(2.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
@@ -398,7 +399,6 @@ TEST_F(Navigate, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
 
@@ -479,7 +479,6 @@ TEST_F(Navigate, NavigateWithLocalMap)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navagation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
 
@@ -767,7 +766,6 @@ TEST_F(Navigate, RobotIsInCrowd)
         planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
 
@@ -998,7 +996,6 @@ TEST_F(Navigate, ForceTemporaryEscape)
         planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
   }
