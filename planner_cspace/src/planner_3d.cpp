@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2023, the neonavigation authors
+ * Copyright (c) 2014-2025, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -84,6 +84,7 @@
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
+#include <planner_cspace/planner_3d/pose_status.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
 
@@ -265,13 +266,6 @@ protected:
     }
     updateTemporaryEscapeGoal(metric2Grid(start_.pose), false);
   }
-  enum class DiscretePoseStatus
-  {
-    OK,
-    RELOCATED,
-    IN_ROCK,
-    OUT_OF_MAP,
-  };
   template <class T>
   DiscretePoseStatus relocateDiscretePoseIfNeededImpl(const T& cm,
                                                       const int tolerance_range,
@@ -1800,12 +1794,6 @@ protected:
     return (remain.sqlen() <= g_tolerance_lin * g_tolerance_lin && std::abs(remain[2]) <= g_tolerance_ang);
   }
 
-  enum class StartPoseStatus
-  {
-    START_OCCUPIED,
-    FINISHING,
-    NORMAL,
-  };
   StartPoseStatus buildStartPoses(const geometry_msgs::Pose& start_metric, const geometry_msgs::Pose& end_metric,
                                   std::vector<Astar::VecWithCost>& result_start_poses)
   {
