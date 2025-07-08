@@ -87,6 +87,7 @@
 #include <planner_cspace/planner_3d/pose_status.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
+#include <planner_cspace/planner_3d/temporary_escape.h>
 
 namespace planner_cspace
 {
@@ -232,6 +233,7 @@ protected:
   bool force_goal_orientation_;
 
   bool escaping_;
+  TemporaryEscapeReason escape_reason_;
 
   int cnt_stuck_;
   bool is_start_occupied_;
@@ -264,7 +266,7 @@ protected:
       // metric2Grid requires map_info_
       return;
     }
-    updateTemporaryEscapeGoal(metric2Grid(start_.pose), false);
+    updateTemporaryEscapeGoal(metric2Grid(start_.pose), TemporaryEscapeReason::FORCED, false);
   }
   template <class T>
   DiscretePoseStatus relocateDiscretePoseIfNeededImpl(const T& cm,
@@ -608,7 +610,7 @@ protected:
         ++cnt_stuck_;
         if (!escaping_ && temporary_escape_ && enable_crowd_mode_)
         {
-          updateTemporaryEscapeGoal(s);
+          updateTemporaryEscapeGoal(s, TemporaryEscapeReason::GOAL_IS_IN_ROCK);
         }
         return true;
       case DiscretePoseStatus::RELOCATED:
@@ -1935,7 +1937,7 @@ protected:
       start_pose_predictor_.clear();
       if (temporary_escape_)
       {
-        updateTemporaryEscapeGoal(start_grid);
+        updateTemporaryEscapeGoal(start_grid, TemporaryEscapeReason::UNREACHABLE);
       }
       return false;
     }
@@ -2082,7 +2084,8 @@ protected:
     return true;
   }
 
-  void updateTemporaryEscapeGoal(const Astar::Vec& start_grid, const bool log_on_unready = true)
+  void updateTemporaryEscapeGoal(
+      const Astar::Vec& start_grid, const TemporaryEscapeReason reason, const bool log_on_unready = true)
   {
     if (!has_map_ || !has_goal_ || !has_start_)
     {
@@ -2108,6 +2111,7 @@ protected:
         return;
       }
       escaping_ = true;
+      escape_reason_ = reason;
       ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
       goal_raw_.pose = grid2MetricPose(te);
       goal_ = goal_raw_;
@@ -2203,6 +2207,7 @@ protected:
             ROS_INFO("Original goal is reachable. Back to the original goal.");
             goal_ = goal_raw_ = goal_original_;
             escaping_ = false;
+            escape_reason_ = reason;
             createCostEstimCache();
             return;
           }
@@ -2267,6 +2272,7 @@ protected:
       }
 
       escaping_ = true;
+      escape_reason_ = reason;
       ROS_INFO("Temporary goal (%d, %d, %d)",
                te_out[0], te_out[1], te_out[2]);
       goal_raw_.pose = grid2MetricPose(te_out);
