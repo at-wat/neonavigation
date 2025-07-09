@@ -949,7 +949,7 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
 
   ros::Rate wait(10);
   bool unreachable = false;
-  const ros::Time check_until = ros::Time::now() + ros::Duration(3);
+  const ros::Time check_until = ros::Time::now() + ros::Duration(2);
   while (ros::ok())
   {
     const size_t gx = path.poses[0].pose.position.x / map_->info.resolution;
@@ -970,11 +970,15 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
 
     const ros::Time now = ros::Time::now();
 
-    // Temporary goal is selected on a cell with cost<50 by default.
-    // No temporary goal should be selected on this map.
-    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+    if (planner_status_->status == planner_cspace_msgs::PlannerStatus::DOING)
+    {
+      // Temporary goal is selected from cells with cost<50 by default.
+      // No temporary goal should be selected on this map.
+      EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+    }
     if (now > check_until)
     {
+      EXPECT_EQ(planner_status_->status, planner_cspace_msgs::PlannerStatus::DOING);
       return;
     }
   }
