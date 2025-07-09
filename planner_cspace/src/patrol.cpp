@@ -60,6 +60,17 @@ protected:
 
   void cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
+    if (path_.poses.size() > 0)
+    {
+      if (with_tolerance_)
+      {
+        act_cli_tolerant_->cancelAllGoals();
+      }
+      else
+      {
+        act_cli_->cancelAllGoals();
+      }
+    }
     path_ = *msg;
     pos_ = 0;
   }
