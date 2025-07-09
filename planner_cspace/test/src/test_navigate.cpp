@@ -757,10 +757,9 @@ TEST_F(Navigate, RobotIsInCrowd)
       continue;
     }
 
-    const auto goal_rel = trans.inverse() * goal;
-
     EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::GOING_WELL);
 
+    const auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2 &&
         planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)

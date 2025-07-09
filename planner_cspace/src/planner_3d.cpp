@@ -1680,10 +1680,9 @@ public:
           }
           if (isEscaping(escape_status_) || isEscaping(previous_escape_status))
           {
-            // Planner status is obtained by escape_status_ during temporary escape.
+            // Planner error status is obtained by escape_status_ during temporary escape.
             // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
-            status_.error = temporaryEscapeStatus2PlannerErrorStatus(
-                escape_status_ | previous_escape_status);
+            status_.error = temporaryEscapeStatus2PlannerErrorStatus(escape_status_ | previous_escape_status);
           }
         }
       }
@@ -1691,9 +1690,7 @@ public:
     else if (!has_goal_)
     {
       if (!retain_last_error_status_)
-      {
         status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
-      }
       publishEmptyPath();
     }
     publishCurrentGoal();
@@ -2272,8 +2269,7 @@ protected:
               TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
       if (isPathFinishing(start_grid, te_out))
       {
-        // This temporary goal is too close and
-        // it will be immediately goes escaped state
+        // This temporary goal is too close and it will be immediately goes escaped state
         escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
       }
 
