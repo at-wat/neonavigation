@@ -703,7 +703,7 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::PlannerStatus::GOING_WELL);
 }
 
-TEST_F(Navigate, RobotIsInCrowd)
+TEST_F(Navigate, CrowdEscapeOnSurrounded)
 {
   if (!pnh_.param("enable_crowd_mode", false))
   {
@@ -784,7 +784,7 @@ TEST_F(Navigate, RobotIsInCrowd)
   }
 }
 
-TEST_F(Navigate, RobotIsInCrowdAndStuck)
+TEST_F(Navigate, CrowdEscapeOnPathNotFound)
 {
   if (!pnh_.param("enable_crowd_mode", false))
   {
@@ -852,7 +852,7 @@ TEST_F(Navigate, RobotIsInCrowdAndStuck)
   }
 }
 
-TEST_F(Navigate, RobotIsInCrowdAndGoalIsInRock)
+TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
 {
   if (!pnh_.param("enable_crowd_mode", false))
   {
@@ -917,6 +917,62 @@ TEST_F(Navigate, RobotIsInCrowdAndGoalIsInRock)
     {
       EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
     }
+    if (now > check_until)
+    {
+      return;
+    }
+  }
+}
+
+TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
+{
+  if (!pnh_.param("enable_crowd_mode", false))
+  {
+    GTEST_SKIP() << "enable_crowd_mode is not set";
+  }
+
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.5;
+  path.poses[0].pose.position.y = 0.45;
+  path.poses[0].pose.orientation.z = 1.0;
+  pub_patrol_nodes_.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(10);
+  bool unreachable = false;
+  const ros::Time check_until = ros::Time::now() + ros::Duration(3);
+  while (ros::ok())
+  {
+    const size_t gx = path.poses[0].pose.position.x / map_->info.resolution;
+    const size_t gy = path.poses[0].pose.position.y / map_->info.resolution;
+    map_local_->data.clear();
+    map_local_->data.resize(map_local_->info.width * map_local_->info.height, 60);
+    for (int x = gx - 2; x <= gx + 2; ++x)
+    {
+      for (int y = gy - 2; y <= gy + 2; ++y)
+      {
+        map_local_->data[x + y * map_local_->info.width] = 100;
+      }
+    }
+    pubMapLocal();
+
+    ros::spinOnce();
+    wait.sleep();
+
+    const ros::Time now = ros::Time::now();
+
+    // Temporary goal is selected on a cell with cost<50 by default.
+    // No temporary goal should be selected on this map.
+    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
     if (now > check_until)
     {
       return;
