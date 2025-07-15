@@ -102,7 +102,7 @@ protected:
     pub_patrol_nodes_ = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
   }
 
-  virtual void SetUp()
+  void SetUp() override
   {
     test_scope_ =
         "[" + std::to_string(getpid()) + "/" +
@@ -185,6 +185,13 @@ protected:
     srv_forget_.call(req, res);
 
     ros::Duration(1.0).sleep();
+  }
+  void TearDown() override
+  {
+    // Clear goal
+    nav_msgs::Path path;
+    pub_patrol_nodes_.publish(path);
+    ros::Duration(2.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
@@ -392,7 +399,6 @@ TEST_F(Navigate, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
 
@@ -473,7 +479,6 @@ TEST_F(Navigate, NavigateWithLocalMap)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navagation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
 
@@ -698,7 +703,7 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::PlannerStatus::GOING_WELL);
 }
 
-TEST_F(Navigate, RobotIsInCrowd)
+TEST_F(Navigate, CrowdEscapeOnSurrounded)
 {
   if (!pnh_.param("enable_crowd_mode", false))
   {
@@ -760,7 +765,6 @@ TEST_F(Navigate, RobotIsInCrowd)
         planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
 
@@ -776,6 +780,211 @@ TEST_F(Navigate, RobotIsInCrowd)
       map_local_->data[std::min((rx + i) + (ry + bs) * map_local_->info.width, data_size - 1)] = 100;
       map_local_->data[std::min((rx - bs) + (ry + i) * map_local_->info.width, data_size - 1)] = 100;
       map_local_->data[std::min((rx + bs) + (ry + i) * map_local_->info.width, data_size - 1)] = 100;
+    }
+  }
+}
+
+TEST_F(Navigate, CrowdEscapeOnPathNotFound)
+{
+  if (!pnh_.param("enable_crowd_mode", false))
+  {
+    GTEST_SKIP() << "enable_crowd_mode is not set";
+  }
+
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.6;
+  path.poses[0].pose.position.y = 2.2;
+  path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
+  pub_patrol_nodes_.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(10);
+  bool unreachable = false;
+  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
+  ros::Time check_until = deadline;
+  while (ros::ok())
+  {
+    const size_t data_size = map_local_->data.size();
+    for (int x = 0; x < map_local_->info.width; ++x)
+    {
+      const size_t y = 1.1 / map_->info.resolution;
+      map_local_->data[x + y * map_local_->info.width] = 100;
+    }
+    pubMapLocal();
+
+    ros::spinOnce();
+    wait.sleep();
+
+    const ros::Time now = ros::Time::now();
+
+    if (now > deadline)
+    {
+      dumpRobotTrajectory();
+      FAIL()
+          << test_scope_ << "Navigation timeout." << std::endl
+          << "now: " << now << std::endl
+          << "status: " << planner_status_;
+      break;
+    }
+
+    if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND && !unreachable)
+    {
+      unreachable = true;
+      check_until = now + ros::Duration(2);  // Check another 2 seconds that state is not changed
+    }
+    if (unreachable)
+    {
+      EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+    }
+    if (now > check_until)
+    {
+      return;
+    }
+  }
+}
+
+TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
+{
+  if (!pnh_.param("enable_crowd_mode", false))
+  {
+    GTEST_SKIP() << "enable_crowd_mode is not set";
+  }
+
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.5;
+  path.poses[0].pose.position.y = 0.45;
+  path.poses[0].pose.orientation.z = 1.0;
+  pub_patrol_nodes_.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(10);
+  bool unreachable = false;
+  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
+  ros::Time check_until = deadline;
+  while (ros::ok())
+  {
+    const size_t data_size = map_local_->data.size();
+    const size_t gx = path.poses[0].pose.position.x / map_->info.resolution;
+    const size_t gy = path.poses[0].pose.position.y / map_->info.resolution;
+    for (int x = gx - 2; x <= gx + 2; ++x)
+    {
+      for (int y = gy - 2; y <= gy + 2; ++y)
+      {
+        map_local_->data[x + y * map_local_->info.width] = 100;
+      }
+    }
+    pubMapLocal();
+
+    ros::spinOnce();
+    wait.sleep();
+
+    const ros::Time now = ros::Time::now();
+
+    if (now > deadline)
+    {
+      dumpRobotTrajectory();
+      FAIL()
+          << test_scope_ << "Navigation timeout." << std::endl
+          << "now: " << now << std::endl
+          << "status: " << planner_status_;
+      break;
+    }
+
+    if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND && !unreachable)
+    {
+      unreachable = true;
+      check_until = now + ros::Duration(2);  // Check another 2 seconds that state is not changed
+    }
+    if (unreachable)
+    {
+      EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+    }
+    if (now > check_until)
+    {
+      return;
+    }
+  }
+}
+
+TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
+{
+  if (!pnh_.param("enable_crowd_mode", false))
+  {
+    GTEST_SKIP() << "enable_crowd_mode is not set";
+  }
+
+  ros::spinOnce();
+  ASSERT_TRUE(static_cast<bool>(map_));
+  ASSERT_TRUE(static_cast<bool>(map_local_));
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.5;
+  path.poses[0].pose.position.y = 0.45;
+  path.poses[0].pose.orientation.z = 1.0;
+  pub_patrol_nodes_.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(10);
+  bool unreachable = false;
+  const ros::Time check_until = ros::Time::now() + ros::Duration(2);
+  int cnt_planning = 0;
+  while (ros::ok())
+  {
+    const size_t gx = path.poses[0].pose.position.x / map_->info.resolution;
+    const size_t gy = path.poses[0].pose.position.y / map_->info.resolution;
+    map_local_->data.clear();
+    map_local_->data.resize(map_local_->info.width * map_local_->info.height, 60);
+    for (int x = gx - 2; x <= gx + 2; ++x)
+    {
+      for (int y = gy - 2; y <= gy + 2; ++y)
+      {
+        map_local_->data[x + y * map_local_->info.width] = 100;
+      }
+    }
+    pubMapLocal();
+
+    ros::spinOnce();
+    wait.sleep();
+
+    const ros::Time now = ros::Time::now();
+
+    if (planner_status_->status == planner_cspace_msgs::PlannerStatus::DOING)
+    {
+      if (cnt_planning > 1)
+      {
+        // Temporary goal is selected from cells with cost<50 by default.
+        // No temporary goal should be selected on this map.
+        EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+      }
+      cnt_planning++;
+    }
+    if (now > check_until)
+    {
+      EXPECT_GT(cnt_planning, 2);
+      return;
     }
   }
 }
@@ -851,7 +1060,6 @@ TEST_F(Navigate, ForceTemporaryEscape)
         planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
-      ros::Duration(2.0).sleep();
       return;
     }
   }

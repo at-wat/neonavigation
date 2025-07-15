@@ -87,6 +87,7 @@
 #include <planner_cspace/planner_3d/pose_status.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
+#include <planner_cspace/planner_3d/temporary_escape.h>
 
 namespace planner_cspace
 {
@@ -231,7 +232,7 @@ protected:
 
   bool force_goal_orientation_;
 
-  bool escaping_;
+  TemporaryEscapeStatus escape_status_;
 
   int cnt_stuck_;
   bool is_start_occupied_;
@@ -446,6 +447,7 @@ protected:
       act_tolerant_->setPreempted(planner_cspace_msgs::MoveWithToleranceResult(), "Preempted.");
 
     has_goal_ = false;
+    escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
   }
 
@@ -467,7 +469,7 @@ protected:
         goal_.pose.orientation.w * goal_.pose.orientation.w;
     if (std::abs(len2 - 1.0) < 0.1)
     {
-      escaping_ = false;
+      escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
       has_goal_ = true;
       cnt_stuck_ = 0;
       if (!createCostEstimCache())
@@ -597,16 +599,16 @@ protected:
         ROS_ERROR("Given goal is not on the map.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
-        if (escaping_)
+        if (isEscaping(escape_status_))
         {
           ROS_WARN("Oops! Temporary goal is in Rock! Reverting the temporary goal.");
           goal_raw_ = goal_ = goal_original_;
-          escaping_ = false;
+          escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
           return true;
         }
         ROS_WARN("Oops! Goal is in Rock!");
         ++cnt_stuck_;
-        if (!escaping_ && temporary_escape_ && enable_crowd_mode_)
+        if (temporary_escape_ && enable_crowd_mode_)
         {
           updateTemporaryEscapeGoal(s);
         }
@@ -1330,7 +1332,7 @@ public:
     has_start_ = false;
     cost_estim_cache_created_ = false;
 
-    escaping_ = false;
+    escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     cnt_stuck_ = 0;
     is_path_switchback_ = false;
 
@@ -1622,13 +1624,9 @@ public:
       }
       else
       {
-        bool tried_escape = escaping_;
+        TemporaryEscapeStatus previous_escape_status = escape_status_;
         bool skip_path_planning = false;
-        if (escaping_)
-        {
-          status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-        }
-        else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
+        if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
         {
           status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
           status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -1680,12 +1678,11 @@ public:
             if (is_path_switchback_)
               sw_pos_ = path.poses[sw_index];
           }
-          if ((escaping_ || tried_escape) && enable_crowd_mode_ &&
-              status_.error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND)
+          if (isEscaping(escape_status_) || isEscaping(previous_escape_status))
           {
-            // Ignore PATH_NOT_FOUND during temporary escape with crowd mode as the robot continue moving forward.
+            // Planner error status is obtained by escape_status_ during temporary escape.
             // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
-            status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+            status_.error = temporaryEscapeStatus2PlannerErrorStatus(escape_status_ | previous_escape_status);
           }
         }
       }
@@ -1774,7 +1771,7 @@ protected:
   bool isPathFinishing(const Astar::Vec& start_grid, const Astar::Vec& end_grid) const
   {
     int g_tolerance_lin, g_tolerance_ang;
-    if (escaping_)
+    if (isEscaping(escape_status_))
     {
       g_tolerance_lin = temporary_escape_tolerance_lin_;
       g_tolerance_ang = temporary_escape_tolerance_ang_;
@@ -1898,10 +1895,10 @@ protected:
         status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
         return false;
       case StartPoseStatus::FINISHING:
-        if (escaping_)
+        if (isEscaping(escape_status_))
         {
           goal_ = goal_raw_ = goal_original_;
-          escaping_ = false;
+          escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
           createCostEstimCache();
           ROS_INFO("Escaped");
           return true;
@@ -2107,7 +2104,7 @@ protected:
         ROS_WARN("No valid temporary escape goal");
         return;
       }
-      escaping_ = true;
+      escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
       ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
       goal_raw_.pose = grid2MetricPose(te);
       goal_ = goal_raw_;
@@ -2202,7 +2199,7 @@ protected:
             // Original goal is in the temporary escape range and reachable
             ROS_INFO("Original goal is reachable. Back to the original goal.");
             goal_ = goal_raw_ = goal_original_;
-            escaping_ = false;
+            escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
             createCostEstimCache();
             return;
           }
@@ -2266,7 +2263,16 @@ protected:
         return;
       }
 
-      escaping_ = true;
+      escape_status_ =
+          cost_min < cost_estim_cache_static_[s] ?
+              TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT :
+              TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+      if (isPathFinishing(start_grid, te_out))
+      {
+        // This temporary goal is too close and it will be immediately goes escaped state
+        escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+      }
+
       ROS_INFO("Temporary goal (%d, %d, %d)",
                te_out[0], te_out[1], te_out[2]);
       goal_raw_.pose = grid2MetricPose(te_out);
