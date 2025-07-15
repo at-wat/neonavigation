@@ -60,7 +60,7 @@ protected:
 
   void cbPath(const nav_msgs::Path::ConstPtr& msg)
   {
-    if (path_.poses.size() > 0)
+    if (msg->poses.size() > 0)
     {
       if (with_tolerance_)
       {
