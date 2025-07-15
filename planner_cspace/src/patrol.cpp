@@ -62,6 +62,7 @@ protected:
   {
     if (path_.poses.size() > 0)
     {
+      // Cancel previous patrol if stored
       if (with_tolerance_)
       {
         act_cli_tolerant_->cancelAllGoals();
