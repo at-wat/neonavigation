@@ -2,6 +2,12 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.18.2 (2025-07-16)
+-------------------
+* planner_cspace: output corresponding error status during temporary escape (`#783 <https://github.com/at-wat/neonavigation/issues/783>`_)
+* planner_cspace: split pose status enum definition to header (`#782 <https://github.com/at-wat/neonavigation/issues/782>`_)
+* Contributors: Atsushi Watanabe
+
 0.18.1 (2025-06-06)
 -------------------
 * planner_cspace: fix crowd escape to use original goal if reachable (`#779 <https://github.com/at-wat/neonavigation/issues/779>`_)
