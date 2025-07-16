@@ -2,6 +2,12 @@
 Changelog for package safety_limiter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Revert "safety_limiter: add centrifugal acceleration limit (`#774 <https://github.com/at-wat/neonavigation/issues/774>`_)" (`#784 <https://github.com/at-wat/neonavigation/issues/784>`_)
+* safety_limiter: add centrifugal acceleration limit (`#774 <https://github.com/at-wat/neonavigation/issues/774>`_)
+* Contributors: Atsushi Watanabe, nabeya11
+
 0.18.1 (2025-06-06)
 -------------------
 
