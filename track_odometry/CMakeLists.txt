@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.1...3.26)
 project(track_odometry)
 
 set(CATKIN_DEPENDS
