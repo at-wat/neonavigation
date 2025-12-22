@@ -2178,8 +2178,8 @@ protected:
         for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
         {
           const int sqlen = d.sqlen();
-          // esc_range_min_sq should be checked after original goal arrivability check
-          if ((d[0] == 0 && d[1] == 0) || sqlen > esc_range_sq)
+          // Too close escaping range should be checked after original goal arrivability check
+          if (sqlen > esc_range_sq)
           {
             continue;
           }
@@ -2211,7 +2211,7 @@ protected:
             return;
           }
 
-          if (sqlen < esc_range_min_sq)
+          if ((d[0] == 0 && d[1] == 0) || sqlen < esc_range_min_sq)
           {
             continue;
           }
