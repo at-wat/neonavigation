@@ -2095,6 +2095,12 @@ protected:
       return;
     }
 
+    if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
+    {
+      ROS_INFO("Planner was finishing but temporary escape is triggered. Clearing finishing state.");
+      status_.status = planner_cspace_msgs::PlannerStatus::DOING;
+    }
+
     if (!enable_crowd_mode_)
     {
       // Just find available (not occupied) pose
