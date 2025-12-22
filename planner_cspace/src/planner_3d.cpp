@@ -2095,12 +2095,6 @@ protected:
       return;
     }
 
-    if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
-    {
-      ROS_INFO("Planner was finishing but temporary escape is triggered. Clearing finishing state.");
-      status_.status = planner_cspace_msgs::PlannerStatus::DOING;
-    }
-
     if (!enable_crowd_mode_)
     {
       // Just find available (not occupied) pose
@@ -2114,6 +2108,12 @@ protected:
       ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
       goal_raw_.pose = grid2MetricPose(te);
       goal_ = goal_raw_;
+
+      if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
+      {
+        ROS_INFO("Planner was finishing but temporary escape is triggered. Clearing finishing state.");
+        status_.status = planner_cspace_msgs::PlannerStatus::DOING;
+      }
 
       createCostEstimCache();
       return;
@@ -2283,6 +2283,12 @@ protected:
                te_out[0], te_out[1], te_out[2]);
       goal_raw_.pose = grid2MetricPose(te_out);
       goal_ = goal_raw_;
+
+      if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
+      {
+        ROS_INFO("Planner was finishing but temporary escape is triggered. Clearing finishing state.");
+        status_.status = planner_cspace_msgs::PlannerStatus::DOING;
+      }
 
       createCostEstimCache();
     }
