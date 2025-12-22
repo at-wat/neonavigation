@@ -2178,7 +2178,8 @@ protected:
         for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
         {
           const int sqlen = d.sqlen();
-          if ((d[0] == 0 && d[1] == 0) || sqlen > esc_range_sq || sqlen < esc_range_min_sq)
+          // esc_range_min_sq should be checked after original goal arrivability check
+          if ((d[0] == 0 && d[1] == 0) || sqlen > esc_range_sq)
           {
             continue;
           }
@@ -2210,6 +2211,10 @@ protected:
             return;
           }
 
+          if (sqlen < esc_range_min_sq)
+          {
+            continue;
+          }
           if (cm_rough_[te] >= relocation_acceptable_cost_)
           {
             continue;
