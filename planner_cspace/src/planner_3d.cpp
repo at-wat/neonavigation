@@ -2109,6 +2109,12 @@ protected:
       goal_raw_.pose = grid2MetricPose(te);
       goal_ = goal_raw_;
 
+      if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
+      {
+        ROS_INFO("Planner was finishing but temporary escape is triggered. Clearing finishing state.");
+        status_.status = planner_cspace_msgs::PlannerStatus::DOING;
+      }
+
       createCostEstimCache();
       return;
     }
@@ -2172,7 +2178,8 @@ protected:
         for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
         {
           const int sqlen = d.sqlen();
-          if ((d[0] == 0 && d[1] == 0) || sqlen > esc_range_sq || sqlen < esc_range_min_sq)
+          // Too close escaping range should be checked after original goal arrivability check
+          if (sqlen > esc_range_sq)
           {
             continue;
           }
@@ -2204,6 +2211,10 @@ protected:
             return;
           }
 
+          if ((d[0] == 0 && d[1] == 0) || sqlen < esc_range_min_sq)
+          {
+            continue;
+          }
           if (cm_rough_[te] >= relocation_acceptable_cost_)
           {
             continue;
@@ -2277,6 +2288,12 @@ protected:
                te_out[0], te_out[1], te_out[2]);
       goal_raw_.pose = grid2MetricPose(te_out);
       goal_ = goal_raw_;
+
+      if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
+      {
+        ROS_INFO("Planner was finishing but temporary escape is triggered. Clearing finishing state.");
+        status_.status = planner_cspace_msgs::PlannerStatus::DOING;
+      }
 
       createCostEstimCache();
     }
