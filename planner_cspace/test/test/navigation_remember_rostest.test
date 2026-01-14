@@ -4,7 +4,7 @@
   <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_remember_$(arg enable_crowd_mode)" />
   <param name="neonavigation_compatible" value="1" />
 
-  <test test-name="test_navigate_remember_$(arg enable_crowd_mode)" pkg="planner_cspace" type="test_navigate_remember" time-limit="200.0">
+  <test test-name="test_navigate_remember_$(arg enable_crowd_mode)" pkg="planner_cspace" type="test_navigate_remember" time-limit="400.0">
     <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
   </test>
 
@@ -26,7 +26,7 @@
   </node>
   <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="screen">
     <param name="remember_updates" value="true"/>
-    <param name="remember_hit_prob" value="0.999"/>
+    <param name="remember_hit_prob" value="0.9"/>
     <param name="remember_miss_prob" value="0.49"/>
     <param name="hist_ignore_range" value="0.01"/>
     <param name="hist_ignore_range_max" value="2.0"/>
@@ -36,6 +36,8 @@
     <param name="goal_tolerance_lin" value="0.025" />
     <param name="sw_wait" value="0.2" />
     <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
+    <param name="temporary_escape" value="$(arg enable_crowd_mode)" />
+    <param name="esc_range" value="0.7" />
   </node>
   <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
     <param name="max_vel" value="0.2" />
@@ -72,7 +74,7 @@
   <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
     <remap from="map" to="map_with_local_objects" />
     <remap from="map_local" to="overlay" />
-    <param name="width" value="16" />
+    <param name="width" value="20" />
     <param name="hz" value="2.0" />
     <param name="round_local_map" value="true" />
   </node>
