@@ -291,7 +291,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2 &&
         planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
     {
-      std::cerr << test_scope_ << "Navagation success." << std::endl;
+      std::cerr << test_scope_ << "Navigation success." << std::endl;
       ros::Duration(2.0).sleep();
       return;
     }
