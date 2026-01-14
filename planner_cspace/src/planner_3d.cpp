@@ -142,6 +142,7 @@ protected:
   DistanceMap cost_estim_cache_;
   DistanceMap cost_estim_cache_static_;
   DistanceMap arrivable_map_;
+  DistanceMap::Rect cost_estim_cache_static_update_;
 
   GridAstarModel3D::Ptr model_;
 
@@ -830,6 +831,11 @@ protected:
     prev_map_update_y_min_ = map_update_y_min;
     prev_map_update_y_max_ = map_update_y_max;
 
+    cost_estim_cache_static_update_.min[0] = std::min(cost_estim_cache_static_update_.min[0], map_update_x_min);
+    cost_estim_cache_static_update_.max[0] = std::max(cost_estim_cache_static_update_.max[0], map_update_x_max);
+    cost_estim_cache_static_update_.min[1] = std::min(cost_estim_cache_static_update_.min[1], map_update_y_min);
+    cost_estim_cache_static_update_.max[1] = std::max(cost_estim_cache_static_update_.max[1], map_update_y_max);
+
     bool clear_hysteresis(false);
 
     {
@@ -1084,6 +1090,13 @@ protected:
     prev_map_update_y_min_ = map_info_.height;
     prev_map_update_y_max_ = 0;
 
+    cost_estim_cache_static_update_.min[0] = map_info_.width;
+    cost_estim_cache_static_update_.max[0] = 0;
+    cost_estim_cache_static_update_.min[1] = map_info_.height;
+    cost_estim_cache_static_update_.max[1] = 0;
+    cost_estim_cache_static_update_.min[2] = 0;
+    cost_estim_cache_static_update_.max[2] = 0;
+
     createCostEstimCache();
 
     if (map_update_retained_ && map_update_retained_->header.stamp >= msg->header.stamp)
@@ -1154,8 +1167,11 @@ public:
     , parameter_server_(pnh_)
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
-    , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
+    , cost_estim_cache_static_(cm_rough_base_, bbf_costmap_)
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
+    , cost_estim_cache_static_update_(
+          DistanceMap::Astar::Vec(1, 1, 0),
+          DistanceMap::Astar::Vec(0, 0, 0))
     , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
@@ -2131,11 +2147,24 @@ protected:
 
       {
         const auto ts = boost::chrono::high_resolution_clock::now();
-        // Update without region.
-        // Distance map will expand distance map using edges_buf if needed.
-        cost_estim_cache_static_.update(
-            s, g_orig,
-            DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(0, 0, 0)));
+        if (remember_updates_)
+        {
+          cost_estim_cache_static_.update(
+              s, g_orig,
+              cost_estim_cache_static_update_);
+          cost_estim_cache_static_update_.min[0] = map_info_.width;
+          cost_estim_cache_static_update_.max[0] = 0;
+          cost_estim_cache_static_update_.min[1] = map_info_.height;
+          cost_estim_cache_static_update_.max[1] = 0;
+        }
+        else
+        {
+          // Update without region if remember_updates is disabled.
+          // Distance map will expand distance map using edges_buf if needed.
+          cost_estim_cache_static_.update(
+              s, g_orig,
+              DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(0, 0, 0)));
+        }
         const auto tnow = boost::chrono::high_resolution_clock::now();
         const float dur = boost::chrono::duration<float>(tnow - ts).count();
         ROS_DEBUG("Cost estimation cache for static map updated (%0.4f sec.)", dur);
