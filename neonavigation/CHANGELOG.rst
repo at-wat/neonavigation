@@ -2,6 +2,12 @@
 Changelog for package neonavigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.18.3 (2026-01-16)
+-------------------
+* Fix metapackage cmake version (`#788 <https://github.com/at-wat/neonavigation/issues/788>`_)
+* Update required cmake version (`#787 <https://github.com/at-wat/neonavigation/issues/787>`_)
+* Contributors: Atsushi Watanabe
+
 0.18.2 (2025-07-16)
 -------------------
 
