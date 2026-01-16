@@ -2,6 +2,11 @@
 Changelog for package track_odometry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update required cmake version (`#787 <https://github.com/at-wat/neonavigation/issues/787>`_)
+* Contributors: Atsushi Watanabe
+
 0.18.2 (2025-07-16)
 -------------------
 
