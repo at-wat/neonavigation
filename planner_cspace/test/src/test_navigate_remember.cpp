@@ -53,6 +53,7 @@ class NavigateWithRememberUpdates : public ::testing::Test
 {
 protected:
   ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
   planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
@@ -68,7 +69,8 @@ protected:
   std::string test_scope_;
 
   NavigateWithRememberUpdates()
-    : tfl_(tfbuf_)
+    : pnh_("~")
+    , tfl_(tfbuf_)
   {
     sub_costmap_ = nh_.subscribe("costmap", 1, &NavigateWithRememberUpdates::cbCostmap, this);
     sub_status_ = nh_.subscribe(
@@ -82,12 +84,31 @@ protected:
     pub_patrol_nodes_ = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
   }
 
-  virtual void SetUp()
+  void SetUp() override
   {
     test_scope_ = "[" + std::to_string(getpid()) + "] ";
 
-    srv_forget_.waitForExistence(ros::Duration(10.0));
     ros::Rate rate(10.0);
+
+    const ros::Time deadline = ros::Time::now() + ros::Duration(15);
+    while (ros::ok())
+    {
+      rate.sleep();
+      ASSERT_LT(ros::Time::now(), deadline)
+          << test_scope_ << "Initialization timeout: "
+          << "sub_costmap:" << sub_costmap_.getNumPublishers() << " "
+          << "sub_status:" << sub_status_.getNumPublishers() << " "
+          << "pub_initial_pose:" << pub_initial_pose_.getNumSubscribers() << " "
+          << "pub_patrol_nodes:" << pub_patrol_nodes_.getNumSubscribers() << " ";
+      if (sub_costmap_.getNumPublishers() > 0 &&
+          sub_status_.getNumPublishers() > 0 &&
+          pub_initial_pose_.getNumSubscribers() > 0 &&
+          pub_patrol_nodes_.getNumSubscribers() > 0)
+      {
+        break;
+      }
+    }
+    ASSERT_TRUE(srv_forget_.waitForExistence(ros::Duration(10.0)));
 
     geometry_msgs::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
@@ -95,8 +116,6 @@ protected:
     pose.pose.pose.position.y = 3.0;
     pose.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
     pub_initial_pose_.publish(pose);
-
-    const ros::Time deadline = ros::Time::now() + ros::Duration(15);
 
     while (ros::ok())
     {
@@ -117,11 +136,7 @@ protected:
     {
       ros::spinOnce();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
-      if (now > deadline)
-      {
-        FAIL() << test_scope_ << now << " SetUp: costmap timeout" << std::endl;
-      }
+      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial costmap timeout";
     }
 
     std_srvs::EmptyRequest req;
@@ -273,14 +288,83 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
 
     auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
-        std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
+        std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2 &&
+        planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
     {
-      std::cerr << test_scope_ << "Navagation success." << std::endl;
+      std::cerr << test_scope_ << "Navigation success." << std::endl;
       ros::Duration(2.0).sleep();
       return;
     }
   }
   ASSERT_TRUE(false);
+}
+
+TEST_F(NavigateWithRememberUpdates, CrowdEscape)
+{
+  if (!pnh_.param("enable_crowd_mode", false))
+  {
+    GTEST_SKIP() << "enable_crowd_mode is not set";
+  }
+
+  ros::Publisher pub_trigger = nh_.advertise<std_msgs::Empty>("/planner_3d/temporary_escape", 1);
+
+  ros::spinOnce();
+  ros::Duration(0.2).sleep();
+
+  nav_msgs::Path path;
+  path.poses.resize(1);
+  path.header.frame_id = "map";
+  path.poses[0].header.frame_id = path.header.frame_id;
+  path.poses[0].pose.position.x = 1.5;
+  path.poses[0].pose.position.y = 5.6;
+  path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
+  pub_patrol_nodes_.publish(path);
+
+  tf2::Transform goal;
+  tf2::fromMsg(path.poses.back().pose, goal);
+
+  ros::Rate wait(2);
+  const ros::Time deadline = ros::Time::now() + ros::Duration(120);
+  while (ros::ok())
+  {
+    std_msgs::Empty msg;
+    pub_trigger.publish(msg);
+
+    ros::spinOnce();
+    wait.sleep();
+
+    const ros::Time now = ros::Time::now();
+
+    if (now > deadline)
+    {
+      dumpRobotTrajectory();
+      FAIL()
+          << test_scope_ << "Navigation timeout." << std::endl
+          << "now: " << now << std::endl
+          << "status: " << planner_status_;
+      break;
+    }
+
+    tf2::Stamped<tf2::Transform> trans;
+    try
+    {
+      trans = lookupRobotTrans(now);
+    }
+    catch (tf2::TransformException& e)
+    {
+      std::cerr << test_scope_ << e.what() << std::endl;
+      continue;
+    }
+
+    const auto goal_rel = trans.inverse() * goal;
+    if (goal_rel.getOrigin().length() < 0.2 &&
+        std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2 &&
+        planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
+    {
+      std::cerr << test_scope_ << "Navigation success." << std::endl;
+      return;
+    }
+  }
 }
 
 int main(int argc, char** argv)
