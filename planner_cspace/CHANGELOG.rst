@@ -2,8 +2,8 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.18.3 (2026-01-16)
+-------------------
 * planner_cspace: use remembered obstacles in crowd mode (`#790 <https://github.com/at-wat/neonavigation/issues/790>`_)
 * planner_cspace: avoid finishing planning during temporary escape (`#789 <https://github.com/at-wat/neonavigation/issues/789>`_)
 * Update required cmake version (`#787 <https://github.com/at-wat/neonavigation/issues/787>`_)
