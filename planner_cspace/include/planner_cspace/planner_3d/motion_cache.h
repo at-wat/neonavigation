@@ -41,6 +41,12 @@ namespace planner_cspace
 {
 namespace planner_3d
 {
+enum class MotionPrimitiveType
+{
+  DEFAULT,
+  BEZIER,
+};
+
 class MotionCache
 {
 public:
@@ -110,7 +116,9 @@ public:
       const int range,
       const std::function<void(CyclicVecInt<3, 2>, size_t&, size_t&)> gm_addr,
       const float interpolation_resolution,
-      const float grid_enumeration_resolution);
+      const float grid_enumeration_resolution,
+      const MotionPrimitiveType type = MotionPrimitiveType::DEFAULT,
+      const float bezier_cp_dist = 0.5f);
 
   std::list<CyclicVecFloat<3, 2>> interpolatePath(const std::list<CyclicVecInt<3, 2>>& path_grid) const;
 

@@ -50,6 +50,10 @@ public:
                                              const CostCoeff& cc, const int range);
 
 private:
+  static std::vector<std::vector<Vec>> buildDefault(const costmap_cspace_msgs::MapMetaData3D& map_info,
+                                                    const CostCoeff& cc, const int range);
+  static std::vector<std::vector<Vec>> buildBezier(const costmap_cspace_msgs::MapMetaData3D& map_info,
+                                                   const CostCoeff& cc, const int range);
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace

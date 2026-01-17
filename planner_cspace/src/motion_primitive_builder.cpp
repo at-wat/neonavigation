@@ -31,6 +31,7 @@
 
 #include <utility>
 #include <vector>
+#include <cmath>
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <planner_cspace/cyclic_vec.h>
@@ -42,6 +43,16 @@ namespace planner_cspace
 namespace planner_3d
 {
 std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::build(
+    const costmap_cspace_msgs::MapMetaData3D& map_info, const CostCoeff& cc, const int range)
+{
+  if (cc.motion_primitive_type_ == MotionPrimitiveType::BEZIER)
+  {
+    return buildBezier(map_info, cc, range);
+  }
+  return buildDefault(map_info, cc, range);
+}
+
+std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::buildDefault(
     const costmap_cspace_msgs::MapMetaData3D& map_info, const CostCoeff& cc, const int range)
 {
   RotationCache rot_cache;
@@ -78,6 +89,7 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
       {
         if (prim[2] == 0)
         {
+          // No movement
           continue;
         }
         // Rotation
@@ -152,6 +164,117 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
         {
           continue;
         }
+        current_primitives.push_back(prim);
+      }
+    }
+  }
+
+  return motion_primitives;
+}
+
+std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::buildBezier(
+    const costmap_cspace_msgs::MapMetaData3D& map_info, const CostCoeff& cc, const int range)
+{
+  RotationCache rot_cache;
+  rot_cache.reset(map_info.linear_resolution, map_info.angular_resolution, range);
+
+  std::vector<std::vector<Vec>> motion_primitives;
+  std::vector<Vec> search_list;
+  {
+    Vec d;
+    for (d[0] = -range; d[0] <= range; d[0]++)
+    {
+      for (d[1] = -range; d[1] <= range; d[1]++)
+      {
+        if (d.sqlen() > range * range)
+          continue;
+        for (d[2] = 0; d[2] < static_cast<int>(map_info.angle); d[2]++)
+        {
+          search_list.push_back(d);
+        }
+      }
+    }
+  }
+
+  motion_primitives.resize(map_info.angle);
+  for (int i = 0; i < static_cast<int>(motion_primitives.size()); ++i)
+  {
+    auto& current_primitives = motion_primitives[i];
+    for (const auto& prim : search_list)
+    {
+      if (prim[0] == 0 && prim[1] == 0)
+      {
+        if (prim[2] != 0)
+        {
+          // Rotation
+          current_primitives.push_back(prim);
+        }
+        else
+        {
+          // No movement
+        }
+        continue;
+      }
+
+      int next_angle = i + prim[2];
+      if (next_angle >= static_cast<int>(map_info.angle))
+      {
+        next_angle -= map_info.angle;
+      }
+      const Vec d2(prim[0] + range, prim[1] + range, next_angle);
+      const Vecf motion = rot_cache.getMotion(i, d2);
+
+      const float x0 = 0, y0 = 0;
+      const float th0 = 0; // Relative to start yaw
+      const float x3 = motion[0], y3 = motion[1];
+      const float th3 = motion[2]; // Relative yaw from RotationCache
+      
+      const float dist = std::hypot(x3, y3);
+      if (dist < 1e-3) continue;
+
+      // Determine if backward (x3 is longitudinal displacement in rotated frame)
+      const float sign = (x3 >= 0) ? 1.0f : -1.0f;
+      const float d = sign * cc.bezier_cp_dist_ * dist;
+      
+      const float x1 = x0 + d * std::cos(th0);
+      const float y1 = y0 + d * std::sin(th0);
+      const float x2 = x3 - d * std::cos(th3);
+      const float y2 = y3 - d * std::sin(th3);
+      
+      bool valid = true;
+      // Sample curvature
+      for (float t = 0; t <= 1.05; t += 0.1)
+      {
+        const float cur_t = std::min(t, 1.0f);
+        const float t2 = cur_t * cur_t;
+        const float mt = 1.0 - cur_t;
+        const float mt2 = mt * mt;
+        
+        // P'(t) = 3(1-t)^2 (P1-P0) + 6(1-t)t (P2-P1) + 3t^2 (P3-P2)
+        const float dx = 3 * mt2 * (x1 - x0) + 6 * mt * cur_t * (x2 - x1) + 3 * t2 * (x3 - x2);
+        const float dy = 3 * mt2 * (y1 - y0) + 6 * mt * cur_t * (y2 - y1) + 3 * t2 * (y3 - y2);
+        
+        // Non-holonomic constraint: tangent must be close to heading?
+        // Actually for Bezier, the endpoints already satisfy the constraint.
+        // We just need to check if the curve stays "forward" or "backward" mostly.
+        const float speed = std::hypot(dx, dy);
+        if (speed < 1e-3) continue;
+
+        // P''(t) = 6(1-t)(P2-2P1+P0) + 6t(P3-2P2+P1)
+        const float ddx = 6 * mt * (x2 - 2 * x1 + x0) + 6 * cur_t * (x3 - 2 * x2 + x1);
+        const float ddy = 6 * mt * (y2 - 2 * y1 + y0) + 6 * cur_t * (y3 - 2 * y2 + y1);
+        
+        const float v2 = dx * dx + dy * dy;
+        const float kappa = std::abs(dx * ddy - dy * ddx) / (v2 * std::sqrt(v2));
+        if (kappa > 1.0 / cc.min_curve_radius_)
+        {
+          valid = false;
+          break;
+        }
+      }
+      
+      if (valid)
+      {
         current_primitives.push_back(prim);
       }
     }

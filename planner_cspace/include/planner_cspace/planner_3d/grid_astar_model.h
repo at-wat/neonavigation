@@ -67,6 +67,8 @@ public:
   float max_ang_vel_;
   float angle_resolution_aspect_;
   int turn_penalty_cost_threshold_;
+  MotionPrimitiveType motion_primitive_type_;
+  float bezier_cp_dist_;
 };
 
 class GridAstarModel3D : public GridAstarModelBase<3, 2>

@@ -92,7 +92,9 @@ GridAstarModel3D::GridAstarModel3D(
       range_,
       cm_.getAddressor(),
       path_interpolation_resolution,
-      grid_enumeration_resolution);
+      grid_enumeration_resolution,
+      cc_.motion_primitive_type_,
+      cc_.bezier_cp_dist_);
 
   // Make boundary check threshold
   min_boundary_ = motion_cache_.getMaxRange();

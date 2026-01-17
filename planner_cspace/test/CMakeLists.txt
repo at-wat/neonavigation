@@ -77,6 +77,14 @@ catkin_add_gtest(test_motion_primitive_builder
 )
 target_link_libraries(test_motion_primitive_builder ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+catkin_add_gtest(test_bezier_primitives
+  src/test_bezier_primitives.cpp
+  ../src/motion_primitive_builder.cpp
+  ../src/motion_cache.cpp
+  ../src/rotation_cache.cpp
+)
+target_link_libraries(test_bezier_primitives ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 catkin_add_gtest(test_start_pose_predictor
   src/test_start_pose_predictor.cpp
   ../src/motion_cache.cpp
