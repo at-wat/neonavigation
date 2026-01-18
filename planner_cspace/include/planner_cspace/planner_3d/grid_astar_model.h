@@ -69,6 +69,8 @@ public:
   int turn_penalty_cost_threshold_;
   MotionPrimitiveType motion_primitive_type_;
   float bezier_cp_dist_;
+  enum class BezierCpMode { FIXED, OPTIMIZE };
+  BezierCpMode bezier_cp_mode_ = BezierCpMode::FIXED;
 };
 
 class GridAstarModel3D : public GridAstarModelBase<3, 2>

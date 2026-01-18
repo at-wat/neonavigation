@@ -234,49 +234,73 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
 
       // Determine if backward (x3 is longitudinal displacement in rotated frame)
       const float sign = (x3 >= 0) ? 1.0f : -1.0f;
-      const float d = sign * cc.bezier_cp_dist_ * dist;
       
+      // Helper lambda to compute max curvature for a given cp_dist ratio
+      auto computeMaxCurvature = [&](float cp_ratio) {
+        const float d = sign * cp_ratio * dist;
+        const float x1 = x0 + d * std::cos(th0);
+        const float y1 = y0 + d * std::sin(th0);
+        const float x2 = x3 - d * std::cos(th3);
+        const float y2 = y3 - d * std::sin(th3);
+        
+        float max_kappa = 0;
+        const float dx0 = 3 * (x1 - x0);
+        const float dy0 = 3 * (y1 - y0);
+        
+        for (float t = 0; t <= 1.001f; t += 0.05f)
+        {
+          const float cur_t = std::min(t, 1.0f);
+          const float mt = 1.0f - cur_t;
+          const float mt2 = mt * mt;
+          const float t2 = cur_t * cur_t;
+          
+          const float dx = 3 * mt2 * (x1 - x0) + 6 * mt * cur_t * (x2 - x1) + 3 * t2 * (x3 - x2);
+          const float dy = 3 * mt2 * (y1 - y0) + 6 * mt * cur_t * (y2 - y1) + 3 * t2 * (y3 - y2);
+          const float v2 = dx * dx + dy * dy;
+          if (v2 < 1e-6) return std::numeric_limits<float>::max();
+          
+          // Reversal check: Tangent should not reverse relative to start tangent
+          if (dx * dx0 + dy * dy0 < 0) return std::numeric_limits<float>::max();
+
+          const float ddx = 6 * mt * (x2 - 2 * x1 + x0) + 6 * cur_t * (x3 - 2 * x2 + x1);
+          const float ddy = 6 * mt * (y2 - 2 * y1 + y0) + 6 * cur_t * (y3 - 2 * y2 + y1);
+          
+          const float kappa = std::abs(dx * ddy - dy * ddx) / (v2 * std::sqrt(v2));
+          max_kappa = std::max(max_kappa, kappa);
+        }
+        return max_kappa;
+      };
+      
+      float optimal_cp_ratio = cc.bezier_cp_dist_;
+      
+      if (cc.bezier_cp_mode_ == CostCoeff::BezierCpMode::OPTIMIZE)
+      {
+        float min_max_curvature = std::numeric_limits<float>::max();
+        for (float ratio = 0.1f; ratio <= 0.8f; ratio += 0.05f)
+        {
+          const float max_kappa = computeMaxCurvature(ratio);
+          if (max_kappa < min_max_curvature)
+          {
+            min_max_curvature = max_kappa;
+            optimal_cp_ratio = ratio;
+          }
+        }
+      }
+      
+      const float d = sign * optimal_cp_ratio * dist;
       const float x1 = x0 + d * std::cos(th0);
       const float y1 = y0 + d * std::sin(th0);
       const float x2 = x3 - d * std::cos(th3);
       const float y2 = y3 - d * std::sin(th3);
       
-      bool valid = true;
-      // Sample curvature
-      for (float t = 0; t <= 1.05; t += 0.1)
+      // Final curvature validation
+      const float max_kappa = computeMaxCurvature(optimal_cp_ratio);
+      if (max_kappa > 1.0 / cc.min_curve_radius_)
       {
-        const float cur_t = std::min(t, 1.0f);
-        const float t2 = cur_t * cur_t;
-        const float mt = 1.0 - cur_t;
-        const float mt2 = mt * mt;
-        
-        // P'(t) = 3(1-t)^2 (P1-P0) + 6(1-t)t (P2-P1) + 3t^2 (P3-P2)
-        const float dx = 3 * mt2 * (x1 - x0) + 6 * mt * cur_t * (x2 - x1) + 3 * t2 * (x3 - x2);
-        const float dy = 3 * mt2 * (y1 - y0) + 6 * mt * cur_t * (y2 - y1) + 3 * t2 * (y3 - y2);
-        
-        // Non-holonomic constraint: tangent must be close to heading?
-        // Actually for Bezier, the endpoints already satisfy the constraint.
-        // We just need to check if the curve stays "forward" or "backward" mostly.
-        const float speed = std::hypot(dx, dy);
-        if (speed < 1e-3) continue;
-
-        // P''(t) = 6(1-t)(P2-2P1+P0) + 6t(P3-2P2+P1)
-        const float ddx = 6 * mt * (x2 - 2 * x1 + x0) + 6 * cur_t * (x3 - 2 * x2 + x1);
-        const float ddy = 6 * mt * (y2 - 2 * y1 + y0) + 6 * cur_t * (y3 - 2 * y2 + y1);
-        
-        const float v2 = dx * dx + dy * dy;
-        const float kappa = std::abs(dx * ddy - dy * ddx) / (v2 * std::sqrt(v2));
-        if (kappa > 1.0 / cc.min_curve_radius_)
-        {
-          valid = false;
-          break;
-        }
+        continue;
       }
       
-      if (valid)
-      {
-        current_primitives.push_back(prim);
-      }
+      current_primitives.push_back(prim);
     }
   }
 
