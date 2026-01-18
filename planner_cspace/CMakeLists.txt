@@ -68,6 +68,14 @@ add_executable(primitive_exporter
 )
 target_link_libraries(primitive_exporter ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 add_dependencies(primitive_exporter ${catkin_EXPORTED_TARGETS})
+
+add_executable(primitive_stats
+  src/motion_primitive_builder.cpp
+  src/rotation_cache.cpp
+  src/primitive_stats.cpp
+)
+target_link_libraries(primitive_stats ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+add_dependencies(primitive_stats ${catkin_EXPORTED_TARGETS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h
