@@ -29,9 +29,10 @@
 
 #include <planner_cspace/planner_3d/motion_primitive_builder.h>
 
+#include <cmath>
+#include <cstdlib>
 #include <utility>
 #include <vector>
-#include <cmath>
 
 #include <costmap_cspace_msgs/MapMetaData3D.h>
 #include <planner_cspace/cyclic_vec.h>
@@ -57,6 +58,10 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
 {
   RotationCache rot_cache;
   rot_cache.reset(map_info.linear_resolution, map_info.angular_resolution, range);
+
+  // Optional debug hook: set PRIM_DEBUG=1 to log primitives near curvature limits
+  const bool debug_curvature = (std::getenv("PRIM_DEBUG") != nullptr);
+
   Vecf resolution_(1.0f / map_info.linear_resolution,
                    1.0f / map_info.linear_resolution,
                    1.0f / map_info.angular_resolution);
@@ -178,6 +183,9 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
   RotationCache rot_cache;
   rot_cache.reset(map_info.linear_resolution, map_info.angular_resolution, range);
 
+  // Optional debug hook: set PRIM_DEBUG=1 to log primitives near curvature limits
+  const bool debug_curvature = (std::getenv("PRIM_DEBUG") != nullptr);
+
   std::vector<std::vector<Vec>> motion_primitives;
   std::vector<Vec> search_list;
   {
@@ -225,54 +233,63 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
       const Vecf motion = rot_cache.getMotion(i, d2);
 
       const float x0 = 0, y0 = 0;
-      const float th0 = 0; // Relative to start yaw
+      const float th0 = 0;  // Relative to start yaw
       const float x3 = motion[0], y3 = motion[1];
-      const float th3 = motion[2]; // Relative yaw from RotationCache
-      
+      const float th3 = motion[2];  // Relative yaw from RotationCache
+
       const float dist = std::hypot(x3, y3);
-      if (dist < 1e-3) continue;
+      if (dist < 1e-3)
+        continue;
 
       // Determine if backward (x3 is longitudinal displacement in rotated frame)
       const float sign = (x3 >= 0) ? 1.0f : -1.0f;
-      
+
       // Helper lambda to compute max curvature for a given cp_dist ratio
-      auto computeMaxCurvature = [&](float cp_ratio) {
+      auto computeMaxCurvature = [&](float cp_ratio)
+      {
         const float d = sign * cp_ratio * dist;
         const float x1 = x0 + d * std::cos(th0);
         const float y1 = y0 + d * std::sin(th0);
         const float x2 = x3 - d * std::cos(th3);
         const float y2 = y3 - d * std::sin(th3);
-        
+
         float max_kappa = 0;
         const float dx0 = 3 * (x1 - x0);
         const float dy0 = 3 * (y1 - y0);
-        
+        constexpr float EPS_V2 = 1.0e-6f;
+        constexpr float EPS_DOT = 1.0e-6f;
+
         for (float t = 0; t <= 1.001f; t += 0.05f)
         {
           const float cur_t = std::min(t, 1.0f);
           const float mt = 1.0f - cur_t;
           const float mt2 = mt * mt;
           const float t2 = cur_t * cur_t;
-          
+
           const float dx = 3 * mt2 * (x1 - x0) + 6 * mt * cur_t * (x2 - x1) + 3 * t2 * (x3 - x2);
           const float dy = 3 * mt2 * (y1 - y0) + 6 * mt * cur_t * (y2 - y1) + 3 * t2 * (y3 - y2);
-          const float v2 = dx * dx + dy * dy;
-          if (v2 < 1e-6) return std::numeric_limits<float>::max();
-          
+          float v2 = dx * dx + dy * dy;
+          if (v2 < EPS_V2)
+          {
+            // Degenerate velocity; skip this sample instead of exploding curvature
+            continue;
+          }
+
           // Reversal check: Tangent should not reverse relative to start tangent
-          if (dx * dx0 + dy * dy0 < 0) return std::numeric_limits<float>::max();
+          if (dx * dx0 + dy * dy0 < -EPS_DOT)
+            return std::numeric_limits<float>::max();
 
           const float ddx = 6 * mt * (x2 - 2 * x1 + x0) + 6 * cur_t * (x3 - 2 * x2 + x1);
           const float ddy = 6 * mt * (y2 - 2 * y1 + y0) + 6 * cur_t * (y3 - 2 * y2 + y1);
-          
+
           const float kappa = std::abs(dx * ddy - dy * ddx) / (v2 * std::sqrt(v2));
           max_kappa = std::max(max_kappa, kappa);
         }
         return max_kappa;
       };
-      
+
       float optimal_cp_ratio = cc.bezier_cp_dist_;
-      
+
       if (cc.bezier_cp_mode_ == CostCoeff::BezierCpMode::OPTIMIZE)
       {
         float min_max_curvature = std::numeric_limits<float>::max();
@@ -286,20 +303,37 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
           }
         }
       }
-      
+
       const float d = sign * optimal_cp_ratio * dist;
       const float x1 = x0 + d * std::cos(th0);
       const float y1 = y0 + d * std::sin(th0);
       const float x2 = x3 - d * std::cos(th3);
       const float y2 = y3 - d * std::sin(th3);
-      
+
       // Final curvature validation
+      const float kappa_limit = 1.0f / cc.min_curve_radius_;
       const float max_kappa = computeMaxCurvature(optimal_cp_ratio);
-      if (max_kappa > 1.0 / cc.min_curve_radius_)
+
+      const bool near_limit = std::abs(max_kappa - kappa_limit) < 0.05f * kappa_limit;
+
+      if (debug_curvature && (near_limit || max_kappa > kappa_limit))
+      {
+        std::cerr << "[prim_debug] yaw=" << i
+                  << " dxyz=" << prim[0] << "," << prim[1] << "," << prim[2]
+                  << " dist=" << dist
+                  << " th3=" << th3
+                  << " cp_ratio=" << optimal_cp_ratio
+                  << " max_kappa=" << max_kappa
+                  << " limit=" << kappa_limit
+                  << " status=" << ((max_kappa > kappa_limit) ? "reject" : "accept")
+                  << std::endl;
+      }
+
+      if (max_kappa > kappa_limit)
       {
         continue;
       }
-      
+
       current_primitives.push_back(prim);
     }
   }

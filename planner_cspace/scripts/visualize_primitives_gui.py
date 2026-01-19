@@ -43,9 +43,39 @@ def get_primitives(
 fig, ax = plt.subplots(figsize=(12, 10))
 plt.subplots_adjust(bottom=0.35, left=0.25)
 
+
+def add_vstack_axes(fig, *, left, width, bottom, top, gap, weights):
+    """Create vertically stacked axes in figure-relative coordinates.
+
+    Args:
+        left/width/bottom/top: figure-relative [0..1] bounds.
+        gap: vertical gap between axes (figure-relative).
+        weights: relative heights per axis.
+    """
+    n = len(weights)
+    if n == 0:
+        return []
+    total_gap = gap * (n - 1)
+    total_h = top - bottom
+    usable_h = total_h - total_gap
+    if usable_h <= 0:
+        raise ValueError("Not enough vertical space for the requested axes + gaps")
+
+    wsum = float(sum(weights))
+    unit = usable_h / wsum
+
+    axes = []
+    y = top
+    for w in weights:
+        h = unit * float(w)
+        y -= h
+        axes.append(fig.add_axes([left, y, width, h]))
+        y -= gap
+    return axes
+
+
 # Initial parameters
-init_range = 8
-init_lin_res = 0.1
+init_range = 0.4
 init_ang_res = 0.392699  # PI/8
 init_min_curve = 0.4
 init_bezier_cp = 0.5
@@ -61,32 +91,71 @@ ax_bezier_cp = plt.axes([0.3, 0.14, 0.5, 0.02])
 ax_start_yaw = plt.axes([0.3, 0.10, 0.5, 0.02])
 ax_end_yaw = plt.axes([0.3, 0.06, 0.5, 0.02])
 ax_prim_idx = plt.axes([0.3, 0.02, 0.5, 0.02])
-ax_type = plt.axes([0.02, 0.60, 0.12, 0.08])
-ax_ang_res_sel = plt.axes([0.02, 0.50, 0.12, 0.08])
-ax_cp_mode = plt.axes([0.02, 0.40, 0.12, 0.08])
-ax_grid_size_sel = plt.axes([0.02, 0.24, 0.12, 0.12])
-ax_label_mode = plt.axes([0.02, 0.08, 0.12, 0.12])
 
-s_range = Slider(ax_range, "Range", 1, 20, valinit=init_range, valstep=0.1)
+# Auto layout for radio-button groups (top-to-bottom)
+ax_type, ax_ang_res_sel, ax_cp_mode, ax_grid_size_sel, ax_label_mode = add_vstack_axes(
+    fig,
+    left=0.02,
+    width=0.11,
+    bottom=0.06,
+    top=0.70,
+    gap=0.03,
+    weights=[1.0, 1.0, 1.0, 1.4, 1.4],
+)
+
+s_range = Slider(ax_range, "Range(Metric)", 0.05, 1, valinit=init_range, valstep=0.05)
 s_min_curve = Slider(
-    ax_min_curve, "Min Curve", 0.1, 2.0, valinit=init_min_curve, valstep=0.01
+    ax_min_curve, "Min Curve Radius", 0.1, 2.0, valinit=init_min_curve, valstep=0.01
 )
 s_bezier_cp = Slider(
     ax_bezier_cp, "Bezier CP", 0.0, 1.5, valinit=init_bezier_cp, valstep=0.01
 )
 s_start_yaw = Slider(
-    ax_start_yaw, "Start Yaw Idx", 0, 15, valinit=init_start_yaw, valstep=1
+    ax_start_yaw,
+    "Start Yaw Idx",
+    0,
+    15,
+    valinit=init_start_yaw,
+    valstep=1,
+    valfmt="%.0f",
 )
-s_end_yaw = Slider(ax_end_yaw, "End Yaw Idx", -1, 15, valinit=init_end_yaw, valstep=1)
-s_prim_idx = Slider(ax_prim_idx, "Prim Idx", -1, 100, valinit=init_prim_idx, valstep=1)
+s_end_yaw = Slider(
+    ax_end_yaw,
+    "End Yaw Idx",
+    -1,
+    15,
+    valinit=init_end_yaw,
+    valstep=1,
+    valfmt="%.0f",
+)
+s_prim_idx = Slider(
+    ax_prim_idx,
+    "Prim Idx",
+    -1,
+    100,
+    valinit=init_prim_idx,
+    valstep=1,
+    valfmt="%.0f",
+)
 r_type = RadioButtons(ax_type, ("DEFAULT", "BEZIER"), active=init_type)
 r_ang_res = RadioButtons(ax_ang_res_sel, ("22.5 deg", "45 deg"), active=0)
 r_cp_mode = RadioButtons(ax_cp_mode, ("FIXED", "OPTIMIZE"), active=1)
 r_grid_size = RadioButtons(
-    ax_grid_size_sel, ("0.025", "0.05", "0.1", "0.2"), active=2
-)  # Default 0.1
+    ax_grid_size_sel, ("0.025", "0.05", "0.1", "0.2"), active=1
+)  # Default 0.05
 r_labels = RadioButtons(ax_label_mode, ("None", "Original", "Filtered"), active=1)
 
+# Keep radio button markers circular (avoid ellipse distortion when axes pixels are not square)
+for _ax in (ax_type, ax_ang_res_sel, ax_cp_mode, ax_grid_size_sel, ax_label_mode):
+    # Use 'datalim' so the axes box stays the requested size; only limits change.
+    _ax.set_aspect("equal", adjustable="datalim")
+
+# Titles for radio-button groups
+ax_type.set_title("Type", fontsize=10, pad=2)
+ax_ang_res_sel.set_title("Angular Res", fontsize=10, pad=2)
+ax_cp_mode.set_title("CP Mode", fontsize=10, pad=2)
+ax_grid_size_sel.set_title("Grid Size", fontsize=10, pad=2)
+ax_label_mode.set_title("Labels", fontsize=10, pad=2)
 current_data = None
 
 
@@ -104,7 +173,7 @@ def update(val):
     # For now simplicity: always reload
     current_data = get_primitives(
         m_type,
-        int(s_range.val),
+        s_range.val,
         lin_res,
         ang_res,
         s_min_curve.val,

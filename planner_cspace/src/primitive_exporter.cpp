@@ -21,8 +21,9 @@ int main(int argc, char** argv)
   }
 
   int type_int = std::stoi(argv[1]);
-  int range = std::stoi(argv[2]);
+  float range_metric = std::stof(argv[2]);
   float linear_res = std::stof(argv[3]);
+  int range = static_cast<int>(std::round(range_metric / linear_res));
   float angular_res = std::stof(argv[4]);
   float min_curve_radius = std::stof(argv[5]);
   float bezier_cp_dist = (argc >= 7) ? std::stof(argv[6]) : 0.5f;
