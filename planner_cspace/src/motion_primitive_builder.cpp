@@ -39,6 +39,8 @@
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
+#include "ros/ros.h"
+
 namespace planner_cspace
 {
 namespace planner_3d
@@ -56,6 +58,10 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
 std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::buildDefault(
     const costmap_cspace_msgs::MapMetaData3D& map_info, const CostCoeff& cc, const int range)
 {
+  ROS_ERROR("Building Default motion primitives. range=%d, min_curve_radius=%.3f, angle_resolution_aspect=%.3f",
+            range, cc.min_curve_radius_, cc.angle_resolution_aspect_);
+  const auto start_system_time = std::chrono::system_clock::now();
+
   RotationCache rot_cache;
   rot_cache.reset(map_info.linear_resolution, map_info.angular_resolution, range);
 
@@ -174,12 +180,26 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
     }
   }
 
+  const auto end_system_time = std::chrono::system_clock::now();
+  const double elapsed_sec = std::chrono::duration_cast<std::chrono::duration<double>>(
+                                 end_system_time - start_system_time)
+                                 .count();
+  int primitive_total_size = 0;
+  for (const auto& prims : motion_primitives)
+    primitive_total_size += prims.size();
+  ROS_ERROR("Motion primitives build time taken: %.3f sec, total=%d",
+            elapsed_sec, primitive_total_size);
+
   return motion_primitives;
 }
 
 std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::buildBezier(
     const costmap_cspace_msgs::MapMetaData3D& map_info, const CostCoeff& cc, const int range)
 {
+  ROS_ERROR("Building Besier motion primitives. range=%d, min_curve_radius=%.3f, angle_resolution_aspect=%.3f",
+            range, cc.min_curve_radius_, cc.angle_resolution_aspect_);
+  const auto start_system_time = std::chrono::system_clock::now();
+
   RotationCache rot_cache;
   rot_cache.reset(map_info.linear_resolution, map_info.angular_resolution, range);
 
@@ -337,6 +357,16 @@ std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::bu
       current_primitives.push_back(prim);
     }
   }
+
+  const auto end_system_time = std::chrono::system_clock::now();
+  const double elapsed_sec = std::chrono::duration_cast<std::chrono::duration<double>>(
+                                 end_system_time - start_system_time)
+                                 .count();
+  int primitive_total_size = 0;
+  for (const auto& prims : motion_primitives)
+    primitive_total_size += prims.size();
+  ROS_ERROR("Motion primitives build time taken: %.3f sec, total=%d",
+            elapsed_sec, primitive_total_size);
 
   return motion_primitives;
 }

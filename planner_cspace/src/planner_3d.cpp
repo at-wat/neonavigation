@@ -1394,6 +1394,7 @@ public:
     cc_.max_ang_vel_ = config.max_ang_vel;
     cc_.min_curve_radius_ = config.min_curve_radius;
     cc_.motion_primitive_type_ = static_cast<MotionPrimitiveType>(config.motion_primitive_type);
+    cc_.bezier_cp_mode_ = static_cast<CostCoeff::BezierCpMode>(config.bezier_cp_mode);
     cc_.bezier_cp_dist_ = config.bezier_cp_dist;
     cc_.weight_decel_ = config.weight_decel;
     cc_.weight_backward_ = config.weight_backward;

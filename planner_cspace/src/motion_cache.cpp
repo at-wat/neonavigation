@@ -38,6 +38,8 @@
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 
+#include <chrono>
+
 namespace planner_cspace
 {
 namespace planner_3d
@@ -54,6 +56,11 @@ void MotionCache::reset(
 {
   const int angle = std::lround(M_PI * 2 / angular_resolution);
 
+  ROS_ERROR("Building motion cache. range=%d, linear_res=%.3f, type=%d, interpolation_res=%.3f, grid_enum_res=%.3f",
+            range, linear_resolution, static_cast<int>(type), interpolation_resolution, grid_enumeration_resolution);
+  ROS_ERROR("Type of motion primitive: %s, bezier_cp_dist=%.3f", (type == MotionPrimitiveType::BEZIER) ? "BEZIER" : "DEFAULT", bezier_cp_dist);
+
+  const auto start_system_time = std::chrono::system_clock::now();
   CyclicVecInt<3, 2> max_range(0, 0, 0);
   page_size_ = angle;
   cache_.resize(angle);
@@ -94,7 +101,8 @@ void MotionCache::reset(
             const float th3 = yaw_e;
 
             const float dist = std::hypot(x3, y3);
-            if (dist < 1e-3) continue;
+            if (dist < 1e-3)
+              continue;
 
             // Determine if backward
             const float dot = std::cos(th0) * x3 + std::sin(th0) * y3;
@@ -118,10 +126,12 @@ void MotionCache::reset(
               const float mt = 1.0 - t;
               const float x = mt * mt * mt * x0 + 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t * t * t * x3;
               const float y = mt * mt * mt * y0 + 3 * mt * mt * t * y1 + 3 * mt * t * t * y2 + t * t * t * y3;
-              if (i > 0) total_length += std::hypot(x - px, y - py);
+              if (i > 0)
+                total_length += std::hypot(x - px, y - py);
               lut_t[i] = t;
               lut_s[i] = total_length;
-              px = x; py = y;
+              px = x;
+              py = y;
             }
 
             // 2. Sample uniformly based on arc length
@@ -137,7 +147,8 @@ void MotionCache::reset(
               if (it != lut_s.end())
               {
                 int idx = std::distance(lut_s.begin(), it);
-                if (idx == 0) t = 0;
+                if (idx == 0)
+                  t = 0;
                 else
                 {
                   float s0 = lut_s[idx - 1];
@@ -150,13 +161,14 @@ void MotionCache::reset(
               const float mt = 1.0 - t;
               const float x = mt * mt * mt * x0 + 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t * t * t * x3;
               const float y = mt * mt * mt * y0 + 3 * mt * mt * t * y1 + 3 * mt * t * t * y2 + t * t * t * y3;
-              
+
               const float mt2 = mt * mt;
               const float t2 = t * t;
               const float dx = 3 * mt2 * (x1 - x0) + 6 * mt * t * (x2 - x1) + 3 * t2 * (x3 - x2);
               const float dy = 3 * mt2 * (y1 - y0) + 6 * mt * t * (y2 - y1) + 3 * t2 * (y3 - y2);
               float cyaw = std::atan2(dy, dx);
-              if (sign < 0) cyaw += M_PI;
+              if (sign < 0)
+                cyaw += M_PI;
 
               const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution, cyaw / angular_resolution);
               CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])), static_cast<int>(std::lround(posf[1])), static_cast<int>(std::lround(posf[2])));
@@ -287,6 +299,10 @@ void MotionCache::reset(
     }
   }
   max_range_ = max_range;
+
+  const auto end_system_time = std::chrono::system_clock::now();
+  const double elapsed_sec = std::chrono::duration_cast<std::chrono::duration<double>>(end_system_time - start_system_time).count();
+  ROS_ERROR("Motion cache built. time taken: %.3f sec", elapsed_sec);
 }
 
 std::list<CyclicVecFloat<3, 2>> MotionCache::interpolatePath(const std::list<CyclicVecInt<3, 2>>& grid_path) const
