@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     baddr = 0;
     addr = 0;
   };
-  motion_cache.reset(linear_res, angular_res, range, dummy_addr, 0.1, 0.05, cc.motion_primitive_type_, cc.bezier_cp_dist_);
+  motion_cache.reset(linear_res, angular_res, range, dummy_addr, 0.1, 0.05, cc.motion_primitive_type_, cc.bezier_cp_dist_, cp_mode_int);
 
   // JSON output
   std::cout << "{\"map_info\": {\"linear_resolution\": " << linear_res

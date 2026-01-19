@@ -58,11 +58,16 @@ public:
     std::vector<CyclicVecInt<3, 2>> motion_;
     std::vector<CyclicVecFloat<3, 2>> interpolated_motion_;
     float distance_;
+    float angle_travel_;
 
   public:
     inline float getDistance() const
     {
       return distance_;
+    }
+    inline float getAngleTravel() const
+    {
+      return angle_travel_;
     }
     const std::vector<CyclicVecInt<3, 2>>& getMotion() const
     {
@@ -118,7 +123,8 @@ public:
       const float interpolation_resolution,
       const float grid_enumeration_resolution,
       const MotionPrimitiveType type = MotionPrimitiveType::DEFAULT,
-      const float bezier_cp_dist = 0.5f);
+      const float bezier_cp_dist = 0.5f,
+      const int bezier_cp_mode = 0);
 
   std::list<CyclicVecFloat<3, 2>> interpolatePath(const std::list<CyclicVecInt<3, 2>>& path_grid) const;
 

@@ -32,7 +32,11 @@
 
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/blockmem_gridmap.h>
+#include <planner_cspace/planner_3d/grid_astar_model.h>
+#include <planner_cspace/planner_3d/motion_primitive_builder.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
+
+#include <costmap_cspace_msgs/MapMetaData3D.h>
 
 #include <gtest/gtest.h>
 
@@ -126,6 +130,74 @@ TEST(MotionCache, Generate)
 
       const float arc_length = i * 2 * M_PI / 4;
       EXPECT_NEAR(c->second.getDistance(), arc_length, 0.1);
+    }
+  }
+}
+
+TEST(MotionCache, BezierAngleTravelNonZeroForLaneChange)
+{
+  const int range = 6;
+  const int angle = 16;
+  const float angular_resolution = static_cast<float>(M_PI * 2 / angle);
+  const float linear_resolution = 0.5f;
+
+  BlockMemGridmap<char, 3, 2, 0x20> gm;
+  MotionCache cache;
+  cache.reset(
+      linear_resolution, angular_resolution, range,
+      gm.getAddressor(), 0.5f, 0.1f,
+      MotionPrimitiveType::BEZIER, 0.5f, 0);
+
+  // Net yaw difference is 0, but a lateral offset typically requires turning.
+  const int start_yaw = 0;
+  const CyclicVecInt<3, 2> goal(4, 2, start_yaw);
+  const auto it = cache.find(start_yaw, goal);
+  ASSERT_NE(it, cache.end(start_yaw));
+  EXPECT_GT(it->second.getAngleTravel(), 0.0f);
+}
+
+TEST(MotionCache, BezierMotionPrimitiveMappingMatchesBuilder)
+{
+  const int range = 6;
+  const float linear_resolution = 0.1f;
+  const int angle = 16;
+  const float angular_resolution = static_cast<float>(M_PI * 2 / angle);
+
+  costmap_cspace_msgs::MapMetaData3D map_info;
+  map_info.linear_resolution = linear_resolution;
+  map_info.angular_resolution = angular_resolution;
+  map_info.angle = angle;
+
+  CostCoeff cc;
+  cc.min_curve_radius_ = 0.4f;
+  cc.motion_primitive_type_ = MotionPrimitiveType::BEZIER;
+  cc.bezier_cp_dist_ = 0.4f;
+  cc.bezier_cp_mode_ = CostCoeff::BezierCpMode::OPTIMIZE;
+  cc.angle_resolution_aspect_ = 2.0f / std::tan(map_info.angular_resolution);
+
+  const auto primitives = MotionPrimitiveBuilder::build(map_info, cc, range);
+
+  BlockMemGridmap<char, 3, 2, 0x20> gm;
+  MotionCache cache;
+  cache.reset(
+      linear_resolution, angular_resolution, range,
+      gm.getAddressor(), 0.5f, 0.1f,
+      MotionPrimitiveType::BEZIER, cc.bezier_cp_dist_, 1);
+
+  for (int syaw = 0; syaw < angle; ++syaw)
+  {
+    for (const auto& p : primitives[syaw])
+    {
+      // Rotation primitives are handled separately (in-place turn) and are not stored in MotionCache.
+      if (p[0] == 0 && p[1] == 0)
+        continue;
+
+      const int goal_yaw = (syaw + p[2] + angle) % angle;
+      const CyclicVecInt<3, 2> goal(p[0], p[1], goal_yaw);
+      const auto it = cache.find(syaw, goal);
+      ASSERT_NE(it, cache.end(syaw))
+          << "Missing cache entry for syaw=" << syaw
+          << " goal=(" << goal[0] << "," << goal[1] << "," << goal[2] << ")";
     }
   }
 }

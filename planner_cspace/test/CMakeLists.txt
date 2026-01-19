@@ -67,6 +67,8 @@ target_link_libraries(test_costmap_bbf ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 catkin_add_gtest(test_motion_cache
   src/test_motion_cache.cpp
   ../src/motion_cache.cpp
+  ../src/motion_primitive_builder.cpp
+  ../src/rotation_cache.cpp
 )
 target_link_libraries(test_motion_cache ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
