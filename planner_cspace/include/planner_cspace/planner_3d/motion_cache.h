@@ -61,6 +61,11 @@ public:
     float angle_travel_;
 
   public:
+    Page()
+      : distance_(0.0f)
+      , angle_travel_(0.0f)
+    {
+    }
     inline float getDistance() const
     {
       return distance_;
