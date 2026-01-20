@@ -50,15 +50,18 @@ TEST(MotionPrimitiveBuilder, BezierSanity)
     {
       if (prim[0] == 0 && prim[1] == 0)
       {
-        if (prim[2] != 0) found_rotation = true;
+        if (prim[2] != 0)
+          found_rotation = true;
       }
       else
       {
         // For i=0, forward is prim[0] > 0
         if (i == 0)
         {
-          if (prim[0] > 0) found_forward = true;
-          if (prim[0] < 0) found_backward = true;
+          if (prim[0] > 0)
+            found_forward = true;
+          if (prim[0] < 0)
+            found_backward = true;
         }
       }
     }
@@ -106,7 +109,7 @@ TEST(MotionPrimitiveBuilder, BezierLaneChange)
   map_info.angle = 16;
 
   CostCoeff cc;
-  cc.min_curve_radius_ = 0.3f; // Loose enough for lane change
+  cc.min_curve_radius_ = 0.3f;  // Loose enough for lane change
   cc.motion_primitive_type_ = MotionPrimitiveType::BEZIER;
   cc.bezier_cp_dist_ = 0.5f;
   cc.angle_resolution_aspect_ = 10.0f;
@@ -131,40 +134,34 @@ TEST(MotionPrimitiveBuilder, BezierLaneChange)
   MotionCache cache;
   cache.reset(
       map_info.linear_resolution, map_info.angular_resolution, range,
-      gm.getAddressor(), 0.05, 0.1, 
+      gm.getAddressor(), 0.05, 0.1,
       MotionPrimitiveType::BEZIER, cc.bezier_cp_dist_);
 
   const auto it = cache.find(0, CyclicVecInt<3, 2>(7, 1, 0));
   ASSERT_NE(it, cache.end(0)) << "Lane change primitive not found in MotionCache";
-  
-  const auto& path = it->second.getInterpolatedMotion();
+
   ASSERT_GE(path.size(), 3);
 
-  // Check middle point (around t=0.5)
   // For a straight line (0,0)->(7.0, 1.0), the middle point would be (3.5, 0.5)
   // The curvature should make it S-shaped.
   // Actually, for a symmetrical lane change, the middle point IS on the line,
   // but the headings and intermediate points before/after will be different.
-  
-  // Let's check a point at t=0.25
-  // Straight line: y = (1.0/7.0)*x. For x=1.75, y=0.25.
-  // Bezier P0=(0,0), P1=(3.5,0), P2=(3.5, 1.0), P3=(7.0, 1.0) -> scaled by 0.1
-  // y(t) = 0.1 * (3t^2 - 2t^3). For t=0.25, y(0.25) = 0.1 * (3*0.0625 - 2*0.0156) = 0.1 * (0.1875 - 0.0312) = 0.01563.
+
   // In grid: y_grid = 0.156.
   // Straight line y_grid at x=1.75 is 0.25.
   // Difference is clear.
-  
+
   bool is_curved = false;
-  for(const auto& p : path)
+  for (const auto& p : path)
   {
-      if (p[0] > 1.0 && p[0] < 3.0)
+    if (p[0] > 1.0 && p[0] < 3.0)
+    {
+      float expected_straight_y = p[0] * (1.0 / 7.0);
+      if (std::abs(p[1] - expected_straight_y) > 0.05)
       {
-          float expected_straight_y = p[0] * (1.0 / 7.0);
-          if (std::abs(p[1] - expected_straight_y) > 0.05)
-          {
-              is_curved = true;
-          }
+        is_curved = true;
       }
+    }
   }
   EXPECT_TRUE(is_curved) << "Bezier path for lane change is too close to a straight line";
 }
@@ -182,13 +179,13 @@ TEST(MotionPrimitiveBuilder, BezierUniformSpacing)
   const float bezier_cp_dist = 0.5f;
   cache.reset(
       map_info.linear_resolution, map_info.angular_resolution, range,
-      gm.getAddressor(), 0.05, 0.1, 
+      gm.getAddressor(), 0.05, 0.1,
       MotionPrimitiveType::BEZIER, bezier_cp_dist);
 
   // Check a lane-change primitive (7, 1, 0)
   const auto it = cache.find(0, CyclicVecInt<3, 2>(7, 1, 0));
   ASSERT_NE(it, cache.end(0));
-  
+
   const auto& path = it->second.getInterpolatedMotion();
   ASSERT_GE(path.size(), 5);
 
@@ -196,23 +193,23 @@ TEST(MotionPrimitiveBuilder, BezierUniformSpacing)
   float sum_dist = 0;
   for (size_t i = 1; i < path.size(); ++i)
   {
-      float d = (path[i] - path[i-1]).len();
-      step_distances.push_back(d);
-      sum_dist += d;
+    float d = (path[i] - path[i - 1]).len();
+    step_distances.push_back(d);
+    sum_dist += d;
   }
 
   float avg_dist = sum_dist / step_distances.size();
   float sum_sq_diff = 0;
   for (float d : step_distances)
   {
-      sum_sq_diff += std::pow(d - avg_dist, 2);
+    sum_sq_diff += std::pow(d - avg_dist, 2);
   }
   float std_dev = std::sqrt(sum_sq_diff / step_distances.size());
 
   // With uniform arc length sampling, the standard deviation should be very small.
   // We use grid coords, so there might be slight float variations, but it should be < 0.01
   EXPECT_LT(std_dev, 0.01) << "Bezier steps are not uniform. StdDev: " << std_dev;
-  
+
   // For comparison, let's just log the distances
   // for(float d : step_distances) std::cout << d << ", ";
   // std::cout << std::endl;
@@ -228,23 +225,25 @@ TEST(MotionPrimitiveBuilder, BezierCurvature)
   CostCoeff cc;
   cc.motion_primitive_type_ = MotionPrimitiveType::BEZIER;
   cc.bezier_cp_dist_ = 0.5f;
-  cc.angle_resolution_aspect_ = 10.0f; 
+  cc.angle_resolution_aspect_ = 10.0f;
 
   const int range = 8;
 
   // With a very large min_curve_radius, only straight lines and rotations should remain
-  cc.min_curve_radius_ = 100.0f; 
+  cc.min_curve_radius_ = 100.0f;
   auto prims_tight = MotionPrimitiveBuilder::build(map_info, cc, range);
-  
+
   // With a small min_curve_radius, many more primitives should be valid
   cc.min_curve_radius_ = 0.1f;
   auto prims_loose = MotionPrimitiveBuilder::build(map_info, cc, range);
 
   size_t count_tight = 0;
-  for (const auto& v : prims_tight) count_tight += v.size();
-  
+  for (const auto& v : prims_tight)
+    count_tight += v.size();
+
   size_t count_loose = 0;
-  for (const auto& v : prims_loose) count_loose += v.size();
+  for (const auto& v : prims_loose)
+    count_loose += v.size();
 
   EXPECT_GT(count_loose, count_tight);
 }

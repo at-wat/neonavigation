@@ -253,8 +253,9 @@ float GridAstarModel3D::cost(
         sum_hyst += cm_hyst_[pos];
     }
     const float distf = cache_page->second.getDistance();
+    const float angf = cache_page->second.getAngleTravel();
     cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
-    cost += sum_turn * map_info_.angular_resolution * cache_page->second.getAngleTravel() * cc_.weight_costmap_turn_ / (100.0 * num);
+    cost += sum_turn * map_info_.angular_resolution * angf * cc_.weight_costmap_turn_ / (100.0 * num);
     cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
   }
   else
@@ -302,8 +303,9 @@ float GridAstarModel3D::cost(
           sum_hyst += cm_hyst_[pos];
       }
       const float distf = cache_page->second.getDistance();
+      const float angf = cache_page->second.getAngleTravel();
       cost += sum * map_info_.linear_resolution * distf * cc_.weight_costmap_ / (100.0 * num);
-      cost += sum_turn * map_info_.angular_resolution * cache_page->second.getAngleTravel() * cc_.weight_costmap_turn_ / (100.0 * num);
+      cost += sum_turn * map_info_.angular_resolution * angf * cc_.weight_costmap_turn_ / (100.0 * num);
       cost += sum_hyst * map_info_.linear_resolution * distf * cc_.weight_hysteresis_ / (100.0 * num);
     }
   }

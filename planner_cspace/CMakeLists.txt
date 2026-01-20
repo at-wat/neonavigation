@@ -103,6 +103,7 @@ add_dependencies(patrol ${catkin_EXPORTED_TARGETS})
 
 
 if(CATKIN_ENABLE_TESTING)
+  set(ROSLINT_CPP_OPTS "--filter=-runtime/references,-build/c++11")
   find_package(rostest REQUIRED)
   add_subdirectory(test)
   find_package(roslint REQUIRED)

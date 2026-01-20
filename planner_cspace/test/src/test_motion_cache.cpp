@@ -201,6 +201,83 @@ TEST(MotionCache, BezierMotionPrimitiveMappingMatchesBuilder)
     }
   }
 }
+
+TEST(MotionCache, BezierHasStraightPrimitivePerStartYaw)
+{
+  // Regression test for angular_resolution=22.5deg (angle=16):
+  // ensure each start yaw has at least one forward-straight and one backward-straight
+  // primitive that does not wiggle in yaw.
+  const int range = 6;
+  const int angle = 16;
+  const float angular_resolution = static_cast<float>(M_PI * 2 / angle);
+  const float linear_resolution = 0.1f;
+
+  BlockMemGridmap<char, 3, 2, 0x20> gm;
+  MotionCache cache;
+  cache.reset(
+      linear_resolution, angular_resolution, range,
+      gm.getAddressor(), 0.2f, 0.05f,
+      MotionPrimitiveType::BEZIER, 0.4f, 1);
+
+  auto normalizeAngle = [](float a)
+  {
+    while (a > static_cast<float>(M_PI))
+      a -= static_cast<float>(2.0 * M_PI);
+    while (a < static_cast<float>(-M_PI))
+      a += static_cast<float>(2.0 * M_PI);
+    return a;
+  };
+
+  for (int syaw = 0; syaw < angle; ++syaw)
+  {
+    bool found_fwd = false;
+    bool found_bwd = false;
+    for (int dx = -range; dx <= range && !(found_fwd && found_bwd); ++dx)
+    {
+      for (int dy = -range; dy <= range && !(found_fwd && found_bwd); ++dy)
+      {
+        if (dx == 0 && dy == 0)
+          continue;
+        if (dx * dx + dy * dy > range * range)
+          continue;
+
+        const CyclicVecInt<3, 2> goal(dx, dy, syaw);
+        const auto it = cache.find(syaw, goal);
+        if (it == cache.end(syaw))
+          continue;
+
+        const auto& interp = it->second.getInterpolatedMotion();
+        if (interp.empty())
+          continue;
+
+        const float yaw_ref = syaw * angular_resolution;
+        bool yaw_constant = true;
+        for (const auto& p : interp)
+        {
+          const float yaw = p[2] * angular_resolution;
+          if (std::abs(normalizeAngle(yaw - yaw_ref)) > 1.0e-4f)
+          {
+            yaw_constant = false;
+            break;
+          }
+        }
+
+        if (yaw_constant)
+        {
+          const float x = dx * linear_resolution;
+          const float y = dy * linear_resolution;
+          const float dot = std::cos(yaw_ref) * x + std::sin(yaw_ref) * y;
+          if (dot > 1.0e-6f)
+            found_fwd = true;
+          else if (dot < -1.0e-6f)
+            found_bwd = true;
+        }
+      }
+    }
+    EXPECT_TRUE(found_fwd) << "No forward-straight primitive for start yaw index=" << syaw;
+    EXPECT_TRUE(found_bwd) << "No backward-straight primitive for start yaw index=" << syaw;
+  }
+}
 }  // namespace planner_3d
 }  // namespace planner_cspace
 

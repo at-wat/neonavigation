@@ -3,6 +3,32 @@
  * Input arguments mirror primitive_exporter:
  *   primitive_stats [type: 0:DEFAULT, 1:BEZIER] [range] [linear_res] [angular_res]
  *                   [min_curve_radius] [bezier_cp_dist] [cp_mode: 0:FIXED, 1:OPTIMIZE]
+ *
+ * Copyright (c) 2018-2019, the neonavigation authors
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or produce products derived from
+ *       this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)\n * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <chrono>
@@ -16,13 +42,19 @@
 #include <planner_cspace/planner_3d/motion_primitive_builder.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 
-using namespace planner_cspace::planner_3d;
+using planner_cspace::planner_3d::CostCoeff;
+using planner_cspace::planner_3d::MotionPrimitiveBuilder;
+using planner_cspace::planner_3d::MotionPrimitiveType;
+using planner_cspace::planner_3d::RotationCache;
 
 int main(int argc, char** argv)
 {
   if (argc < 6)
   {
-    std::cerr << "Usage: primitive_stats [type: 0:DEFAULT, 1:BEZIER] [range] [linear_res] [angular_res] [min_curve_radius] [bezier_cp_dist] [cp_mode: 0:FIXED, 1:OPTIMIZE]" << std::endl;
+    std::cerr << "Usage: primitive_stats [type: 0:DEFAULT, 1:BEZIER] [range] "
+              << "[linear_res] [angular_res] [min_curve_radius] [bezier_cp_dist] "
+              << "[cp_mode: 0:FIXED, 1:OPTIMIZE]"
+              << std::endl;
     return 1;
   }
 
@@ -44,14 +76,18 @@ int main(int argc, char** argv)
   cc.motion_primitive_type_ = static_cast<MotionPrimitiveType>(type_int);
   cc.bezier_cp_dist_ = bezier_cp_dist;
   cc.bezier_cp_mode_ = static_cast<CostCoeff::BezierCpMode>(cp_mode_int);
-  cc.angle_resolution_aspect_ = 2.0 / std::tan(map_info.angular_resolution);
+  cc.angle_resolution_aspect_ =
+      2.0f / std::tan(map_info.angular_resolution);
 
   const auto start_time = std::chrono::high_resolution_clock::now();
   const auto primitives = MotionPrimitiveBuilder::build(map_info, cc, range);
   const auto end_time = std::chrono::high_resolution_clock::now();
-  const auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+  const auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               end_time - start_time)
+                               .count();
 
-  std::cerr << "Build time: " << duration_ms << " ms (mode: " << (cp_mode_int == 0 ? "FIXED" : "OPTIMIZE") << ")" << std::endl;
+  std::cerr << "Build time: " << duration_ms << " ms (mode: "
+            << (cp_mode_int == 0 ? "FIXED" : "OPTIMIZE") << ")" << std::endl;
 
   RotationCache rot_cache;
   rot_cache.reset(map_info.linear_resolution, map_info.angular_resolution, range);

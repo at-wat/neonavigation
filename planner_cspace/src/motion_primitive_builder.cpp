@@ -29,8 +29,10 @@
 
 #include <planner_cspace/planner_3d/motion_primitive_builder.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <utility>
 #include <vector>
 

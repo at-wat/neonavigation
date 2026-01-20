@@ -77,14 +77,163 @@ void MotionCache::reset(
     return static_cast<float>(std::abs(diff));
   };
 
-  ROS_ERROR("Building motion cache. range=%d, linear_res=%.3f, type=%d, interpolation_res=%.3f, grid_enum_res=%.3f",
-            range, linear_resolution, static_cast<int>(type), interpolation_resolution, grid_enumeration_resolution);
-  ROS_ERROR("Type of motion primitive: %s, bezier_cp_dist=%.3f", (type == MotionPrimitiveType::BEZIER) ? "BEZIER" : "DEFAULT", bezier_cp_dist);
+  ROS_ERROR(
+      "Building motion cache. range=%d, linear_res=%.3f, type=%d, "
+      "interpolation_res=%.3f, grid_enum_res=%.3f",
+      range, linear_resolution, static_cast<int>(type), interpolation_resolution,
+      grid_enumeration_resolution);
+  ROS_ERROR(
+      "Type of motion primitive: %s, bezier_cp_dist=%.3f",
+      (type == MotionPrimitiveType::BEZIER) ? "BEZIER" : "DEFAULT", bezier_cp_dist);
 
   const auto start_system_time = std::chrono::system_clock::now();
   CyclicVecInt<3, 2> max_range(0, 0, 0);
   page_size_ = angle;
   cache_.resize(angle);
+
+  // For BEZIER primitives, ensure each start yaw has at least one non-wiggly "straight"
+  // primitive. We pick, among primitives whose end yaw equals start yaw, the one whose
+  // straight-line direction is closest to the start yaw, and generate it as a straight segment
+  // (not Bezier).
+  std::vector<CyclicVecInt<3, 2>> selected_straight_goal_fwd(angle);
+  std::vector<CyclicVecInt<3, 2>> selected_straight_goal_bwd(angle);
+  std::vector<bool> has_selected_straight_goal_fwd(angle, false);
+  std::vector<bool> has_selected_straight_goal_bwd(angle, false);
+  if (type == MotionPrimitiveType::BEZIER)
+  {
+    for (int syaw = 0; syaw < angle; ++syaw)
+    {
+      const float yaw = syaw * angular_resolution;
+      float best_diff_fwd = std::numeric_limits<float>::max();
+      float best_dot_fwd = -std::numeric_limits<float>::max();
+      float best_dist_fwd = 0.0f;
+      CyclicVecInt<3, 2> best_goal_fwd(0, 0, syaw);
+      bool found_fwd = false;
+
+      const float yaw_bwd = yaw + static_cast<float>(M_PI);
+      float best_diff_bwd = std::numeric_limits<float>::max();
+      float best_dot_bwd = std::numeric_limits<float>::max();
+      float best_dist_bwd = 0.0f;
+      CyclicVecInt<3, 2> best_goal_bwd(0, 0, syaw);
+      bool found_bwd = false;
+
+      for (int dx = -range; dx <= range; ++dx)
+      {
+        for (int dy = -range; dy <= range; ++dy)
+        {
+          if (dx == 0 && dy == 0)
+            continue;
+          if (dx * dx + dy * dy > range * range)
+            continue;
+
+          const float x = dx * linear_resolution;
+          const float y = dy * linear_resolution;
+          const float dist = std::hypot(x, y);
+          if (dist < 1e-3f)
+            continue;
+
+          const float line_ang = std::atan2(y, x);
+          const float dot = std::cos(yaw) * x + std::sin(yaw) * y;
+
+          constexpr float EPS = 1.0e-6f;
+          if (dot >= 0.0f)
+          {
+            const float diff_fwd = std::abs(normalizeAngle(line_ang - yaw));
+            if ((!found_fwd) || (diff_fwd + EPS < best_diff_fwd) ||
+                ((std::abs(diff_fwd - best_diff_fwd) <= EPS) && (dot > best_dot_fwd + EPS)) ||
+                ((std::abs(diff_fwd - best_diff_fwd) <= EPS) && (std::abs(dot - best_dot_fwd) <= EPS) &&
+                 (dist > best_dist_fwd + EPS)))
+            {
+              best_diff_fwd = diff_fwd;
+              best_dot_fwd = dot;
+              best_dist_fwd = dist;
+              best_goal_fwd = CyclicVecInt<3, 2>(dx, dy, syaw);
+              found_fwd = true;
+            }
+          }
+          else
+          {
+            const float diff_bwd = std::abs(normalizeAngle(line_ang - yaw_bwd));
+            if ((!found_bwd) || (diff_bwd + EPS < best_diff_bwd) ||
+                ((std::abs(diff_bwd - best_diff_bwd) <= EPS) && (dot < best_dot_bwd - EPS)) ||
+                ((std::abs(diff_bwd - best_diff_bwd) <= EPS) && (std::abs(dot - best_dot_bwd) <= EPS) &&
+                 (dist > best_dist_bwd + EPS)))
+            {
+              best_diff_bwd = diff_bwd;
+              best_dot_bwd = dot;
+              best_dist_bwd = dist;
+              best_goal_bwd = CyclicVecInt<3, 2>(dx, dy, syaw);
+              found_bwd = true;
+            }
+          }
+        }
+      }
+
+      if (found_fwd)
+      {
+        selected_straight_goal_fwd[syaw] = best_goal_fwd;
+        has_selected_straight_goal_fwd[syaw] = true;
+      }
+      if (found_bwd)
+      {
+        selected_straight_goal_bwd[syaw] = best_goal_bwd;
+        has_selected_straight_goal_bwd[syaw] = true;
+      }
+    }
+  }
+
+  auto buildStraightPage = [&](
+                               Page& page,
+                               const int start_yaw_index,
+                               const CyclicVecInt<3, 2>& goal,
+                               const int interpolation_step,
+                               std::unordered_map<CyclicVecInt<3, 2>, bool, CyclicVecInt<3, 2>>& registered)
+  {
+    const float x3 = goal[0] * linear_resolution;
+    const float y3 = goal[1] * linear_resolution;
+    const float dist = std::hypot(x3, y3);
+    if (dist < 1e-3f)
+      return false;
+
+    const int total_step = std::max(1, static_cast<int>(std::round(dist / grid_enumeration_resolution)));
+
+    CyclicVecFloat<3, 2> posf_prev(0.0f, 0.0f, static_cast<float>(start_yaw_index));
+    float distf = 0.0f;
+
+    for (int step = 0; step < total_step; ++step)
+    {
+      const float ratio = step / static_cast<float>(total_step);
+      const float x = x3 * ratio;
+      const float y = y3 * ratio;
+
+      const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution,
+                                      static_cast<float>(start_yaw_index));
+      CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])),
+                             static_cast<int>(std::lround(posf[1])),
+                             static_cast<int>(std::lround(posf[2])));
+      pos.cycleUnsigned(angle);
+
+      if ((pos != goal) && (registered.find(pos) == registered.end()))
+      {
+        page.motion_.push_back(pos);
+        for (int i = 0; i < 3; ++i)
+          max_range[i] = std::max(max_range[i], std::abs(pos[i]));
+        registered[pos] = true;
+      }
+      if (step % interpolation_step == 0)
+      {
+        page.interpolated_motion_.push_back(posf);
+      }
+      if (step > 0)
+        distf += (posf - posf_prev).len();
+      posf_prev = posf;
+    }
+
+    distf += (CyclicVecFloat<3, 2>(goal) - posf_prev).len();
+    page.distance_ = distf;
+    page.angle_travel_ = 0.0f;
+    return true;
+  };
 
   // BEZIER page generation is kept as a local helper to keep reset() readable.
   auto buildBezierPage = [&](
@@ -234,8 +383,11 @@ void MotionCache::reset(
       cyaw_prev = cyaw;
       has_prev_yaw = true;
 
-      const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution, cyaw / angular_resolution);
-      CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])), static_cast<int>(std::lround(posf[1])), static_cast<int>(std::lround(posf[2])));
+      const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution,
+                                      cyaw / angular_resolution);
+      CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])),
+                             static_cast<int>(std::lround(posf[1])),
+                             static_cast<int>(std::lround(posf[2])));
       pos.cycleUnsigned(angle);
 
       if ((pos != goal) && (registered.find(pos) == registered.end()))
@@ -297,14 +449,29 @@ void MotionCache::reset(
           std::unordered_map<CyclicVecInt<3, 2>, bool, CyclicVecInt<3, 2>> registered;
           registered[d] = true;
 
-          const int total_step = static_cast<int>(std::round(d.len() / (grid_enumeration_resolution / linear_resolution)));
-          const int interpolation_step =
-              std::max(1, static_cast<int>(std::round(interpolation_resolution / grid_enumeration_resolution)));
+          const int total_step = static_cast<int>(std::round(
+              d.len() / (grid_enumeration_resolution / linear_resolution)));
+          const int interpolation_step = std::max(
+              1, static_cast<int>(std::round(
+                     interpolation_resolution / grid_enumeration_resolution)));
 
           if (type == MotionPrimitiveType::BEZIER)
           {
-            if (!buildBezierPage(page, syaw, d, interpolation_step, registered))
-              continue;
+            const bool use_straight = (d[2] == syaw) &&
+                                      ((has_selected_straight_goal_fwd[syaw] &&
+                                        (d == selected_straight_goal_fwd[syaw])) ||
+                                       (has_selected_straight_goal_bwd[syaw] &&
+                                        (d == selected_straight_goal_bwd[syaw])));
+            if (use_straight)
+            {
+              if (!buildStraightPage(page, syaw, d, interpolation_step, registered))
+                continue;
+            }
+            else
+            {
+              if (!buildBezierPage(page, syaw, d, interpolation_step, registered))
+                continue;
+            }
             cache_[syaw][d] = page;
             continue;
           }
@@ -322,8 +489,11 @@ void MotionCache::reset(
               const float x = diff_val[0] * ratio;
               const float y = diff_val[1] * ratio;
 
-              const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution, yaw / angular_resolution);
-              CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])), static_cast<int>(std::lround(posf[1])), static_cast<int>(std::lround(posf[2])));
+              const CyclicVecFloat<3, 2> posf(x / linear_resolution, y / linear_resolution,
+                                              yaw / angular_resolution);
+              CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])),
+                                     static_cast<int>(std::lround(posf[1])),
+                                     static_cast<int>(std::lround(posf[2])));
               pos.cycleUnsigned(angle);
 
               if ((pos != d) && (registered.find(pos) == registered.end()))
@@ -371,10 +541,13 @@ void MotionCache::reset(
             const float cy2 = cy_s * (1.0 - ratio) + cy * ratio;
             const float cyaw = yaw + ratio * dyaw;
 
-            const CyclicVecFloat<3, 2> posf((cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
-                                            (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
-                                            cyaw / angular_resolution);
-            CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])), static_cast<int>(std::lround(posf[1])), static_cast<int>(std::lround(posf[2])));
+            const CyclicVecFloat<3, 2> posf(
+                (cx2 - r * cosf(cyaw + M_PI / 2)) / linear_resolution,
+                (cy2 - r * sinf(cyaw + M_PI / 2)) / linear_resolution,
+                cyaw / angular_resolution);
+            CyclicVecInt<3, 2> pos(static_cast<int>(std::lround(posf[0])),
+                                   static_cast<int>(std::lround(posf[1])),
+                                   static_cast<int>(std::lround(posf[2])));
             pos.cycleUnsigned(angle);
             if ((pos != d) && (registered.find(pos) == registered.end()))
             {
@@ -417,7 +590,10 @@ void MotionCache::reset(
   max_range_ = max_range;
 
   const auto end_system_time = std::chrono::system_clock::now();
-  const double elapsed_sec = std::chrono::duration_cast<std::chrono::duration<double>>(end_system_time - start_system_time).count();
+  const double elapsed_sec =
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+          end_system_time - start_system_time)
+          .count();
   ROS_ERROR("Motion cache built. time taken: %.3f sec", elapsed_sec);
 }
 
@@ -444,8 +620,9 @@ std::list<CyclicVecFloat<3, 2>> MotionCache::interpolatePath(const std::list<Cyc
     const auto motion_it = find(*it_prev, *it);
     if (motion_it == end((*it)[2]))
     {
-      ROS_ERROR("Failed to find motion between [%d %d %d] and [%d %d %d]",
-                (*it_prev)[0], (*it_prev)[1], (*it_prev)[2], (*it)[0], (*it)[1], (*it)[2]);
+      ROS_ERROR(
+          "Failed to find motion between [%d %d %d] and [%d %d %d]",
+          (*it_prev)[0], (*it_prev)[1], (*it_prev)[2], (*it)[0], (*it)[1], (*it)[2]);
       result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0], (*it_prev)[1], (*it_prev)[2]));
     }
     else
