@@ -140,6 +140,7 @@ TEST(MotionPrimitiveBuilder, BezierLaneChange)
   const auto it = cache.find(0, CyclicVecInt<3, 2>(7, 1, 0));
   ASSERT_NE(it, cache.end(0)) << "Lane change primitive not found in MotionCache";
 
+  const auto& path = it->second.getInterpolatedMotion();
   ASSERT_GE(path.size(), 3);
 
   // For a straight line (0,0)->(7.0, 1.0), the middle point would be (3.5, 0.5)
