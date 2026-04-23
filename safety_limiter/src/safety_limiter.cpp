@@ -740,22 +740,25 @@ protected:
     const ros::Time stamp =
         can_transform ? msg->header.stamp : ros::Time(0);
 
-    sensor_msgs::PointCloud2 cloud_msg_fixed;
-    try
-    {
-      const geometry_msgs::TransformStamped cloud_to_fixed =
-          tfbuf_.lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
-      tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
-    }
-    catch (tf2::TransformException& e)
-    {
-      ROS_WARN_THROTTLE(1.0, "safety_limiter: Transform failed: %s", e.what());
-      return;
-    }
-
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_fixed(new pcl::PointCloud<pcl::PointXYZ>());
-    cloud_fixed->header.frame_id = fixed_frame_id_;
-    pcl::fromROSMsg(cloud_msg_fixed, *cloud_fixed);
+    if (!msg->data.empty())
+    {
+      sensor_msgs::PointCloud2 cloud_msg_fixed;
+      try
+      {
+        const geometry_msgs::TransformStamped cloud_to_fixed =
+            tfbuf_.lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
+        tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
+      }
+      catch (tf2::TransformException& e)
+      {
+        ROS_WARN_THROTTLE(1.0, "safety_limiter: Transform failed: %s", e.what());
+        return;
+      }
+
+      cloud_fixed->header.frame_id = fixed_frame_id_;
+      pcl::fromROSMsg(cloud_msg_fixed, *cloud_fixed);
+    }
 
     if (cloud_clear_)
     {
