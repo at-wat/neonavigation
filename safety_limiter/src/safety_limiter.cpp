@@ -523,24 +523,17 @@ protected:
       return 1.0;
 
     // delay compensation:
-    //   solve for d_compensated: d_compensated = d - delay * sqrt(2 * acc * d_compensated)
-    //     d_compensated = d + acc * delay^2 - sqrt((acc * delay^2)^2 + 2 * d * acc * delay^2)
+    //   the limit takes effect one cycle later, and the robot keeps running at
+    //   the commanded speed until then
 
     const float delay = 1.0 * (1.0 / hz_) + dt_;
-    const float acc_dtsq[2] =
-        {
-            static_cast<float>(acc_[0] * std::pow(delay, 2)),
-            static_cast<float>(acc_[1] * std::pow(delay, 2)),
-        };
 
     d_col = std::max<float>(
         0.0,
-        std::abs(d_col) - d_margin_ + acc_dtsq[0] -
-            std::sqrt(std::pow(acc_dtsq[0], 2) + 2 * acc_dtsq[0] * std::abs(d_col)));
+        std::abs(d_col) - d_margin_ - static_cast<float>(linear_vel * delay));
     yaw_col = std::max<float>(
         0.0,
-        std::abs(yaw_col) - yaw_margin_ + acc_dtsq[1] -
-            std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
+        std::abs(yaw_col) - yaw_margin_ - static_cast<float>(std::abs(twist_.angular.z) * delay));
 
     float d_r =
         std::sqrt(std::abs(2 * acc_[0] * d_col)) / linear_vel;

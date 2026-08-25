@@ -41,6 +41,26 @@
 
 #include <gtest/gtest.h>
 
+namespace
+{
+// Node parameters of safety_limiter_rostest.test, needed to state the expected
+// limits as physics instead of as magic numbers.
+constexpr float LIN_ACC = 1.0;
+constexpr float ANG_ACC = 1.57;
+constexpr float DELAY = 1.0 / 15.0 + 0.01;  // 1 / freq + dt
+
+// The command is still in effect during the delay, so only what is left after
+// travelling vel * DELAY can be used to brake.
+float expectedLinearLimit(const float dist, const float vel)
+{
+  return std::sqrt(2.0 * LIN_ACC * std::max<float>(0.0, dist - std::abs(vel) * DELAY));
+}
+float expectedAngularLimit(const float angle, const float vel)
+{
+  return std::sqrt(2.0 * ANG_ACC * std::max<float>(0.0, angle - std::abs(vel) * DELAY));
+}
+}  // namespace
+
 TEST_F(SafetyLimiterTest, Timeouts)
 {
   ros::Rate wait(10.0);
@@ -146,7 +166,8 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
 
   bool received = false;
   bool en = false;
-  // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s (t_margin: 0)
+  // 1.0 m/ss, obstacle at 0.5 m, commanded 2.0 m/s (t_margin: 0)
+  const float expected_vel = expectedLinearLimit(0.5, 2.0);
 
   for (int i = 0; i < 60 * 6 && ros::ok(); ++i)
   {
@@ -170,7 +191,7 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
     if (en && cmd_vel_)
     {
       received = true;
-      ASSERT_NEAR(cmd_vel_->linear.x, 1.0, 1e-1);
+      ASSERT_NEAR(cmd_vel_->linear.x, expected_vel, 1e-1);
     }
   }
   ASSERT_TRUE(received);
@@ -192,7 +213,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
 
   for (float vel = 0.0; vel < 2.0; vel += 0.4)
   {
-    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
+    // 1.0 m/ss, obstacle at 0.5 m: limited to what is left after the delay
+    const float expected_vel = std::min<float>(vel, expectedLinearLimit(0.5, vel));
     bool received = false;
     bool en = false;
 
@@ -210,7 +232,6 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
       if (en && cmd_vel_)
       {
         received = true;
-        const float expected_vel = std::min<float>(vel, 1.0);
         ASSERT_NEAR(cmd_vel_->linear.x, expected_vel, 1e-1);
       }
     }
@@ -243,7 +264,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
 
   for (float vel = 0.0; vel > -2.0; vel -= 0.4)
   {
-    // 1.0 m/ss, obstacle at -2.5 m: limited to -1.0 m/s
+    // 1.0 m/ss, obstacle 0.5 m behind the footprint: mirror of SafetyLimitLinear
+    const float expected_vel = std::max<float>(vel, -expectedLinearLimit(0.5, vel));
     bool received = false;
     bool en = false;
 
@@ -261,7 +283,6 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
       if (en && cmd_vel_)
       {
         received = true;
-        const float expected_vel = std::max<float>(vel, -1.0);
         ASSERT_NEAR(cmd_vel_->linear.x, expected_vel, 1e-1);
       }
     }
@@ -363,7 +384,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
 
   for (float vel = 0.0; vel < M_PI; vel += M_PI / 10)
   {
-    // pi/2 rad/ss, obstacle at pi/4 rad: limited to pi/2 rad/s
+    // pi/2 rad/ss, obstacle at pi/4 rad: limited to what is left after the delay
+    const float expected_vel = std::min<float>(vel, expectedAngularLimit(M_PI / 4, vel));
     bool received = false;
     bool en = false;
 
@@ -381,7 +403,6 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
       if (en && cmd_vel_)
       {
         received = true;
-        const float expected_vel = std::min<float>(vel, M_PI / 2);
         ASSERT_NEAR(cmd_vel_->angular.z, expected_vel, M_PI / 20);
       }
     }
@@ -549,15 +570,18 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
         count_after_stop--;
       }
     }
+    // The command stays in effect through the delay, so the robot comes to rest
+    // that much before the contact point at 1.0 m.
+    const float expected_x = 1.0 - std::abs(vel) * DELAY;
     if (vel > 0)
     {
-      EXPECT_GT(1.02, x);
-      EXPECT_LT(0.95, x);
+      EXPECT_GT(expected_x + 0.05, x) << "vel: " << vel;
+      EXPECT_LT(expected_x - 0.05, x) << "vel: " << vel;
     }
     else
     {
-      EXPECT_LT(-1.02, x);
-      EXPECT_GT(-0.95, x);
+      EXPECT_LT(-expected_x - 0.05, x) << "vel: " << vel;
+      EXPECT_GT(-expected_x + 0.05, x) << "vel: " << vel;
     }
   }
 }
@@ -658,7 +682,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
       obstacle_y = 0.5 * std::sin(angle) - 0.1;
     }
 
-    // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
+    // 1.0 m/ss, obstacle at 0.5 m: limited to what is left after the delay
+    const double expected_speed = expectedLinearLimit(0.5, vel);
     bool received = false;
     bool en = false;
     for (int i = 0; i < 10 && ros::ok(); ++i)
@@ -676,7 +701,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
       {
         received = true;
         const double current_speed = std::hypot(cmd_vel_->linear.x, cmd_vel_->linear.y);
-        ASSERT_NEAR(current_speed, 1.0, 1e-1)
+        ASSERT_NEAR(current_speed, expected_speed, 1e-1)
             << " Angle: " << angle << " i: " << i
             << " vel: (" << cmd_vel_->linear.x << "," << cmd_vel_->linear.y << ")";
         ASSERT_FLOAT_EQ(std::atan2(cmd_vel_->linear.y, cmd_vel_->linear.x), angle)

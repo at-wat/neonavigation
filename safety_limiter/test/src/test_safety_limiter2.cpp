@@ -40,6 +40,13 @@
 
 #include <gtest/gtest.h>
 
+namespace
+{
+// Node parameters of safety_limiter2_rostest.test.
+constexpr float D_MARGIN = 0.1;
+constexpr float DELAY = 1.0 / 15.0 + 0.05;  // 1 / freq + dt
+}  // namespace
+
 TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 {
   const float dt = 0.02;
@@ -90,20 +97,18 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
         count_after_stop--;
       }
     }
-    // margin is set to 0.2
+    // The robot rests d_margin short of the collision point at 1.5 m, plus what
+    // it covers at the commanded speed during the delay.
+    const float expected_x = 1.5 - (D_MARGIN + std::abs(vel) * DELAY);
     if (vel > 0)
     {
-      EXPECT_GT(1.4, x)
-          << "vel: " << vel;  // Collision point - margin
-      EXPECT_LT(1.3, x)
-          << "vel: " << vel;  // Collision point - margin * 2
+      EXPECT_GT(expected_x + 0.05, x) << "vel: " << vel;
+      EXPECT_LT(expected_x - 0.05, x) << "vel: " << vel;
     }
     else
     {
-      EXPECT_LT(-1.4, x)
-          << "vel: " << vel;  // Collision point + margin
-      EXPECT_GT(-1.3, x)
-          << "vel: " << vel;  // Collision point + margin * 2
+      EXPECT_LT(-expected_x - 0.05, x) << "vel: " << vel;
+      EXPECT_GT(-expected_x + 0.05, x) << "vel: " << vel;
     }
     sub_cmd_vel.shutdown();
   }
